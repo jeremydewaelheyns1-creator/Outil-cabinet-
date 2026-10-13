@@ -1,0 +1,88 @@
+{% extends "clients/sections/_base.html" %}
+{% block head_title %}{{ client.display_name }}{% endblock %}
+{% block heading %}{{ client.display_name }}{% endblock %}
+{% block page_actions %}{% if can_edit %}<a class="button" href="{% url 'clients:edit' client.pk %}">Modifier la fiche</a>{% endif %}{% endblock %}
+{% block content %}
+<section class="card">
+  <div class="card-header"><h2>Points d'attention</h2>{% if alerts %}<span class="badge">{{ alerts|length }}</span>{% endif %}</div>
+  {% if alerts %}
+    <ul class="alerts">
+      {% for a in alerts %}
+        <li class="{{ a.level }}"><a href="{% url 'clients:'|add:a.section client.pk %}"><span class="dot" aria-hidden="true"></span>{{ a.message }}<span class="go">Ouvrir →</span></a></li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p class="alert alert-success">Rien à signaler sur ce dossier.</p>
+  {% endif %}
+</section>
+
+<div class="grid grid-3" style="margin-top: 1rem">
+  <section class="card">
+    <div class="card-header"><h2>Identité</h2><a class="small" href="{% url 'clients:identity' client.pk %}">Détails</a></div>
+    <dl class="fields">
+      {% if client.legal_form %}<dt>Forme</dt><dd>{{ client.legal_form }}</dd>{% endif %}
+      {% if client.enterprise_number %}<dt>TVA</dt><dd class="mono">{{ client.vat_number }}</dd>{% endif %}
+      {% if client.is_person %}
+        <dt>N° national</dt><dd class="mono">{{ client.national_number_masked|default:"—" }}</dd>
+        {% if client.birth_date %}<dt>Naissance</dt><dd>{{ client.birth_date|date:"d/m/Y" }}</dd>{% endif %}
+      {% endif %}
+      <dt>Langue</dt><dd>{{ client.get_language_display }}</dd>
+      {% if client.client_since %}<dt>Client depuis</dt><dd>{{ client.client_since|date:"d/m/Y" }}</dd>{% endif %}
+    </dl>
+  </section>
+
+  <section class="card">
+    <div class="card-header"><h2>Coordonnées</h2><a class="small" href="{% url 'clients:identity' client.pk %}">Détails</a></div>
+    {% if client.address_lines %}<p style="margin-top:0">{% for line in client.address_lines %}{{ line }}{% if not forloop.last %}<br>{% endif %}{% endfor %}</p>{% endif %}
+    {% for c in primary_contacts %}
+      <div class="small">
+        {% if c.kind == "email" %}<a href="mailto:{{ c.value }}">{{ c.value }}</a>
+        {% elif c.kind == "website" %}{% with url=c.value|external_url %}{% if url %}<a href="{{ url }}" target="_blank" rel="noopener noreferrer">{{ c.value }}</a>{% else %}{{ c.value }}{% endif %}{% endwith %}
+        {% else %}<a href="tel:{{ c.value }}">{{ c.value }}</a>{% endif %}
+      </div>
+    {% empty %}
+      {% if not client.address_lines %}<p class="empty">Aucune coordonnée.</p>{% endif %}
+    {% endfor %}
+  </section>
+
+  <section class="card">
+    <div class="card-header"><h2>Fiscalité</h2>{% if not client.is_person %}<a class="small" href="{% url 'clients:public_data' client.pk %}">BCE et TVA</a>{% endif %}</div>
+    <dl class="fields">
+      <dt>Statut TVA</dt><dd>{% if client.vat_status %}{{ client.get_vat_status_display }}{% else %}<span class="empty">—</span>{% endif %}</dd>
+      {% if client.vat_periodicity %}<dt>Périodicité</dt><dd>{{ client.get_vat_periodicity_display }}</dd>{% endif %}
+      {% if not client.is_person %}<dt>Clôture</dt><dd>{{ client.fiscal_year_end_display|default:"—" }}</dd>{% endif %}
+      {% if client.nace_codes %}<dt>Activité</dt><dd class="small">{{ client.nace_codes.0.label|default:client.nace_codes.0.code }}</dd>{% endif %}
+    </dl>
+  </section>
+</div>
+
+<div class="grid grid-2" style="margin-top: 1rem">
+  <section class="card">
+    {% if client.is_person %}
+      <div class="card-header"><h2>Mandats</h2><a class="small" href="{% url 'clients:relations' client.pk %}">Toutes les relations</a></div>
+      {% for r in mandates %}<div><a href="{% url 'clients:detail' r.entity.pk %}">{{ r.entity }}</a> <span class="muted small">· {{ r.get_role_display }}</span></div>
+      {% empty %}<p class="empty">Aucun mandat encodé.</p>{% endfor %}
+    {% else %}
+      <div class="card-header"><h2>Dirigeants</h2><a class="small" href="{% url 'clients:relations' client.pk %}">Toutes les relations</a></div>
+      {% for r in managers %}<div><a href="{% url 'clients:detail' r.person.pk %}">{{ r.person }}</a> <span class="muted small">· {{ r.get_role_display }}</span></div>
+      {% empty %}<p class="empty">Aucun dirigeant encodé.</p>{% endfor %}
+      {% if ubo %}
+        <h3 style="margin-top: 1rem">Bénéficiaires effectifs</h3>
+        {% for c in ubo.candidates %}<div>{% if c.person.is_hidden %}<span class="muted">{{ c.person }}</span>{% else %}<a href="{% url 'clients:detail' c.person.pk %}">{{ c.person }}</a>{% endif %}{% if c.basis == "ownership" %} <span class="muted small">· {{ c.share_percentage|floatformat:"-2" }} % du capital</span>{% endif %}</div>
+        {% empty %}<p class="empty">Aucun bénéficiaire calculable.</p>{% endfor %}
+      {% endif %}
+    {% endif %}
+  </section>
+
+  <section class="card">
+    <div class="card-header"><h2>Équipe et activité</h2><a class="small" href="{% url 'clients:team' client.pk %}">Équipe</a></div>
+    {% if assignments %}<dl class="fields">{% for a in assignments %}<dt>{{ a.get_role_display }}</dt><dd>{{ a.user }}</dd>{% endfor %}</dl>
+    {% else %}<p class="empty">Personne n'est affecté à ce dossier.</p>{% endif %}
+    {% if events %}
+      <ul class="timeline small" style="margin-top: .75rem">
+        {% for e in events %}<li><span class="muted">{{ e.occurred_at|date:"d/m/Y H:i" }}</span> · {{ e.type|event_label }}{% if e.actor %} · {{ e.actor }}{% endif %}</li>{% endfor %}
+      </ul>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}

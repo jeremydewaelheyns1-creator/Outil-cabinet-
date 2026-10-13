@@ -2,12 +2,7 @@
 {% block head_title %}Accueil{% endblock %}
 {% block page_title %}Bonjour {{ user.first_name|default:"" }}{% endblock %}
 {% block page_subtitle %}<div class="subtitle">{% now "l j F Y" %}</div>{% endblock %}
-{% block page_actions %}
-  <form action="{% url 'clients:list' %}" method="get" role="search">
-    <label for="recherche-rapide" class="sr-only">Rechercher un client</label>
-    <input id="recherche-rapide" type="search" name="q" placeholder="Rechercher un client (nom, n° d'entreprise…)" style="min-width: 320px">
-  </form>
-{% endblock %}
+{% block page_actions %}{% endblock %}
 {% block content %}
 <div class="grid grid-4">
   <a class="card" href="{% url 'clients:list' %}?statut=active"><div class="stat">{{ counts.active }}</div><div class="stat-label">clients actifs</div></a>

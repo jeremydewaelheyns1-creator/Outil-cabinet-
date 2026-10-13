@@ -1,0 +1,79 @@
+{% extends "clients/sections/_base.html" %}
+{% block head_title %}BCE et TVA · {{ client.display_name }}{% endblock %}
+{% block heading %}BCE et TVA{% endblock %}
+{% block page_actions %}{% endblock %}
+{% block content %}
+{% if not client.enterprise_number %}
+  <p class="alert alert-warning">Ce dossier n'a pas de numéro d'entreprise. {% if can_edit %}<a href="{% url 'clients:edit' client.pk %}">L'ajouter</a>{% endif %}</p>
+{% else %}
+<div class="grid grid-2">
+<div>
+  <section class="card">
+    <div class="card-header">
+      <h2>Banque-Carrefour des Entreprises</h2>
+      {% if can_edit and bce_has_data %}
+        <form class="inline" method="post" action="{% url 'clients:bce_refresh' client.pk %}">{% csrf_token %}<button type="submit" class="button-secondary small">Actualiser</button></form>
+      {% endif %}
+    </div>
+    {% if bce_record %}
+      <dl class="fields">
+        <dt>Dénomination</dt><dd>{{ bce_record.name|default:"—" }}{% if bce_record.abbreviation %} ({{ bce_record.abbreviation }}){% endif %}</dd>
+        {% if bce_record.legal_form_label %}<dt>Forme</dt><dd>{{ bce_record.legal_form_label }}</dd>{% endif %}
+        <dt>Situation</dt><dd>{% if bce_record.is_normal_situation %}<span class="badge badge-success">normale</span>{% else %}<span class="badge badge-danger">{{ bce_record.juridical_situation_label }}</span>{% endif %}</dd>
+        {% if bce_record.start_date %}<dt>Début</dt><dd>{{ bce_record.start_date|date:"d/m/Y" }}</dd>{% endif %}
+        {% if bce_record.address %}<dt>Siège</dt><dd>{% for line in bce_record.address.lines %}{{ line }}{% if not forloop.last %}, {% endif %}{% endfor %}</dd>{% endif %}
+        {% if bce_record.activities %}<dt>Activités</dt><dd>{% for a in bce_record.activities %}<div class="small"><span class="mono">{{ a.code }}</span> {{ a.label }}</div>{% endfor %}</dd>{% endif %}
+        {% if bce_record.commercial_names %}<dt>Noms commerciaux</dt><dd>{{ bce_record.commercial_names|join:", " }}</dd>{% endif %}
+      </dl>
+      {% if bce_differences %}
+        <form method="post" action="{% url 'clients:bce_apply' client.pk %}" style="margin-top: 1rem">
+          {% csrf_token %}
+          <p class="alert alert-warning small">La fiche diffère de la BCE. Cochez ce qu'il faut reprendre :</p>
+          <table class="table">
+            <thead><tr><th></th><th>Champ</th><th>Fiche</th><th>BCE</th></tr></thead>
+            <tbody>
+            {% for d in bce_differences %}
+              <tr>
+                <td>{% if can_edit %}<input type="checkbox" name="champs" value="{{ d.field }}" aria-label="Reprendre {{ d.label }}">{% endif %}</td>
+                <td class="small">{{ d.label|capfirst }}</td><td>{{ d.current|default:"—" }}</td><td>{{ d.proposed|default:"—" }}</td>
+              </tr>
+            {% endfor %}
+            </tbody>
+          </table>
+          {% if can_edit %}<button type="submit" class="small" style="margin-top: .5rem">Reprendre la sélection</button>{% endif %}
+        </form>
+      {% endif %}
+      {% if client.bce_synced_at %}<p class="muted small" style="margin-top: .5rem">Synchronisé le {{ client.bce_synced_at|date:"d/m/Y H:i" }}.</p>{% endif %}
+    {% elif bce_has_data %}
+      <p class="alert alert-warning">Ce numéro ne figure pas dans la copie de la BCE : entreprise arrêtée, radiée ou numéro erroné ?</p>
+    {% else %}
+      <p class="empty">La copie de la BCE n'a pas encore été importée.</p>
+    {% endif %}
+  </section>
+  </div>
+<div>
+  <section class="card">
+    <div class="card-header"><h2>TVA (VIES)</h2></div>
+    <p class="muted small" style="margin-top:0">Vérification auprès du registre européen. Chaque résultat est conservé comme preuve.</p>
+    {% if client.enterprise_number %}
+      <div style="margin-top: .75rem">
+        <div id="vies">
+          {% with check=vat_checks.0 %}{% if check %}{% include "clients/_vies_result.html" %}{% endif %}{% endwith %}
+        </div>
+        {% if can_edit %}
+        <button type="button" class="button-secondary small" hx-post="{% url 'clients:vies_check' client.pk %}" hx-target="#vies" hx-indicator="#vies-wait">Vérifier la TVA dans VIES</button>
+        <span id="vies-wait" class="htmx-indicator small muted">interrogation de VIES…</span>
+        {% endif %}
+      </div>
+    {% endif %}
+    {% if vat_checks|length > 1 %}
+      <table class="table" style="margin-top: 1rem">
+        <thead><tr><th>Date</th><th>Résultat</th><th>Par</th></tr></thead>
+        <tbody>{% for v in vat_checks %}<tr><td class="small">{{ v.checked_at|date:"d/m/Y H:i" }}</td><td>{{ v.get_result_display }}</td><td class="small">{{ v.checked_by|default:"—" }}</td></tr>{% endfor %}</tbody>
+      </table>
+    {% endif %}
+  </section>
+</div>
+</div>
+{% endif %}
+{% endblock %}

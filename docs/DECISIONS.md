@@ -82,3 +82,11 @@ l'application, masqué.
 Les calculs (UBO) tiennent compte de toutes les fiches, mais celles que l'utilisateur ne peut
 pas voir sont affichées sans nom ni lien ; recherche BCE, relations et administration
 appliquent la même règle.
+
+## D-019 — Navigation par dossier client
+Comme dans les logiciels comptables par dossier : on choisit un client en haut de l'écran
+(recherche, derniers dossiers, raccourci Ctrl+K) ; il reste actif d'un écran à l'autre et le
+menu de gauche présente ses rubriques. Changer de client garde la rubrique ouverte. La
+synthèse du dossier commence par les points d'attention (ce qui manque ou demande une
+action), chacun menant à la rubrique concernée. Chaque nouveau module ajoute sa rubrique au
+dossier (`apps/clients/dossier.py`). La page d'accueil (sans dossier) sera revue ensuite.

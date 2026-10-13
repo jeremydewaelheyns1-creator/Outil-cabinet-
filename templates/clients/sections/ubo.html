@@ -1,0 +1,44 @@
+{% extends "clients/sections/_base.html" %}
+{% block head_title %}Bénéficiaires effectifs · {{ client.display_name }}{% endblock %}
+{% block heading %}Bénéficiaires effectifs{% endblock %}
+{% block page_actions %}{% if can_edit %}<a class="button button-secondary" href="{% url 'clients:relations' client.pk %}">Encoder les actionnaires</a>{% endif %}{% endblock %}
+{% block content %}
+<div style="max-width: 900px">
+  <section class="card">
+    <div class="card-header">
+      <h2>Bénéficiaires effectifs</h2>
+      {% if ubo.is_consistent and ubo.candidates %}<span class="badge badge-success">conforme aux déclarations</span>
+      {% elif ubo.candidates %}<span class="badge badge-warning">à vérifier</span>{% endif %}
+    </div>
+    <p class="muted small">Calcul à partir des relations encodées (seuil {{ ubo.threshold_label }}). C'est une proposition : la déclaration reste une décision du cabinet.</p>
+    {% if ubo.candidates %}
+      <table class="table">
+        <thead><tr><th>Personne</th><th>Fondement</th><th>Capital</th><th>Votes</th></tr></thead>
+        <tbody>
+        {% for c in ubo.candidates %}
+          <tr>
+            <td>{% if c.person.is_hidden %}<span class="muted">{{ c.person }}</span>{% else %}<a href="{{ c.person.get_absolute_url }}">{{ c.person }}</a>{% endif %}
+              {% for h in c.holdings %}{% if h.chain|length > 2 %}<div class="muted small">via {% for link in h.chain|slice:"1:-1" %}{{ link.name }}{% if not forloop.last %} → {% endif %}{% endfor %}</div>{% endif %}{% endfor %}
+            </td>
+            <td class="small">{{ c.basis_label }}</td>
+            <td class="nowrap">{% if c.basis == "ownership" %}{{ c.share_percentage|floatformat:"-2" }} %{% endif %}</td>
+            <td class="nowrap">{% if c.basis == "ownership" %}{{ c.voting_percentage|floatformat:"-2" }} %{% endif %}</td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <p class="empty">Aucun bénéficiaire ne peut être calculé : encodez les actionnaires (avec leurs pourcentages) ou les dirigeants.</p>
+    {% endif %}
+    {% if ubo.missing %}<p class="alert alert-warning small">Non déclaré{{ ubo.missing|pluralize }} comme bénéficiaire{{ ubo.missing|pluralize }} effectif{{ ubo.missing|pluralize }} : {% for p in ubo.missing %}{{ p }}{% if not forloop.last %}, {% endif %}{% endfor %}.</p>{% endif %}
+    {% if ubo.unexpected %}<p class="alert alert-warning small">Déclaré{{ ubo.unexpected|pluralize }} mais non retrouvé{{ ubo.unexpected|pluralize }} par le calcul : {% for p in ubo.unexpected %}{{ p }}{% if not forloop.last %}, {% endif %}{% endfor %}.</p>{% endif %}
+    {% if ubo.unresolved_entities %}<p class="alert alert-info small">Actionnariat inconnu pour : {% for e in ubo.unresolved_entities %}{% if e.is_hidden %}{{ e }}{% else %}<a href="{{ e.get_absolute_url }}">{{ e }}</a>{% endif %}{% if not forloop.last %}, {% endif %}{% endfor %}. Le calcul est incomplet.</p>{% endif %}
+    {% if ubo.unknown_percentages %}<p class="alert alert-info small">Pourcentage non encodé pour {{ ubo.unknown_percentages|length }} actionnaire{{ ubo.unknown_percentages|length|pluralize }}.</p>{% endif %}
+    {% if ubo.below_threshold %}
+      <details><summary class="small">Sous le seuil ({{ ubo.below_threshold|length }})</summary>
+        <ul class="small">{% for c in ubo.below_threshold %}<li>{{ c.person }} : {{ c.share_percentage|floatformat:2 }} % du capital, {{ c.voting_percentage|floatformat:2 }} % des votes</li>{% endfor %}</ul>
+      </details>
+    {% endif %}
+  </section>
+  </div>
+{% endblock %}

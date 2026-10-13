@@ -85,6 +85,7 @@ TEMPLATES = [
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
                 "apps.core.context_processors.app_context",
+                "apps.clients.context_processors.current_dossier",
             ],
             # Disponibles dans tous les gabarits sans {% load %}.
             "builtins": ["apps.core.templatetags.app_tags"],

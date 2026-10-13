@@ -1,0 +1,30 @@
+{# Sélecteur du dossier actif, en haut de chaque écran (voir apps/clients/dossier.py). #}
+<details class="switcher" id="switcher">
+  <summary aria-label="Choisir un client">
+    {% if current_client %}
+      <span class="badge {% if current_client.is_person %}badge-primary{% endif %}">{% if current_client.is_person %}Personne{% elif current_client.kind == "nonprofit" %}ASBL{% else %}Société{% endif %}</span>
+      <span class="switcher-name">{{ current_client.display_name }}</span>
+      <span class="switcher-meta">{% if current_client.enterprise_number %}{{ current_client.enterprise_number_display }}{% elif current_client.reference %}réf. {{ current_client.reference }}{% endif %}</span>
+    {% else %}
+      <span class="switcher-placeholder">Choisir un client…</span>
+    {% endif %}
+    <kbd class="switcher-key">Ctrl K</kbd>
+    <span class="switcher-caret" aria-hidden="true">▾</span>
+  </summary>
+  <div class="switcher-panel">
+    <label for="switcher-q" class="sr-only">Rechercher un client</label>
+    <input id="switcher-q" type="search" name="q" autocomplete="off"
+           placeholder="Nom, prénom, n° d'entreprise, référence…"
+           hx-get="{% url 'clients:switcher' %}" hx-vals='{"rubrique": "{{ current_section }}"}'
+           hx-trigger="focus once, input changed delay:200ms" hx-target="#switcher-results">
+    <div id="switcher-results" class="switcher-results"></div>
+    <div class="switcher-footer">
+      <a href="{% url 'clients:list' %}">Tous les clients</a>
+      {% if current_client %}
+        <form method="post" action="{% url 'clients:close' %}" class="inline">
+          {% csrf_token %}<button type="submit" class="link-button">Fermer le dossier</button>
+        </form>
+      {% endif %}
+    </div>
+  </div>
+</details>

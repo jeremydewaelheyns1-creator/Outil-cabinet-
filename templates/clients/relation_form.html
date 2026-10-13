@@ -32,7 +32,7 @@
   <p class="help">Pourcentage des droits de vote : à remplir seulement s'il diffère du pourcentage du capital.</p>
   <div class="actions">
     <button type="submit">Enregistrer</button>
-    <a class="button button-secondary" href="{{ client.get_absolute_url }}">Annuler</a>
+    <a class="button button-secondary" href="{% url 'clients:relations' client.pk %}">Annuler</a>
   </div>
 </form>
 {% if relation %}

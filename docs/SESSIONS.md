@@ -31,8 +31,15 @@
   sonde de santé compatible Cloud Run, journalisation des modifications manquantes.
 - 120 tests, tous au vert ; ruff, mypy strict, migrations, `check --deploy` au vert.
 
+**Ajout (demande de Jeremy, même jour)** : navigation centrée sur le client, « comme
+Horus ». Sélecteur de dossier en haut (recherche, récents, Ctrl+K), dossier actif mémorisé,
+menu du dossier (synthèse, identité, relations, bénéficiaires, équipe, BCE/TVA, historique ;
+modules à venir grisés), changement de client en gardant la rubrique, synthèse avec points
+d'attention, historique avec les consultations du dossier pour l'AMLCO.
+
 **Reste à faire / en attente**
 - Dépôt GitHub privé (action de Jeremy), puis pousser le code.
 - Structure réelle de l'export clients FID-Manager (en-têtes uniquement + lignes inventées).
 - Déploiement de l'environnement d'essai sur le Google Cloud du cabinet.
+- Page d'accueil (quand aucun dossier n'est ouvert) : à définir avec Jeremy.
 - Suite : épique 4 (moteur de tâches et d'échéances).

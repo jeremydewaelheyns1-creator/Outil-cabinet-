@@ -1,35 +1,46 @@
 {% extends "base.html" %}
+{% load static %}
 {% block body %}
 <div class="app">
+  <header class="topbar">
+    <a class="brand" href="{% url 'core:home' %}">{{ CABINET_NAME }}</a>
+    {% include "clients/_switcher.html" %}
+    <div class="topbar-user">
+      <span class="topbar-user-name">{{ user.get_full_name|default:user.email }}</span>
+      <a href="{% url 'mfa_index' %}">Sécurité</a>
+      <form class="inline" method="post" action="{% url 'account_logout' %}">
+        {% csrf_token %}<button type="submit" class="link-button">Se déconnecter</button>
+      </form>
+    </div>
+  </header>
+
   <aside class="sidebar">
-    <div class="brand">{{ CABINET_NAME }}</div>
-    <nav aria-label="Navigation principale">
+    {% if current_client %}
+      <nav class="dossier-nav" aria-label="Dossier {{ current_client.display_name }}">
+        <div class="nav-title">Dossier</div>
+        {% for s in dossier_sections %}
+          <a href="{% url 'clients:'|add:s.url_name current_client.pk %}" {% if request.resolver_match.namespace == "clients" and current_section == s.url_name and request.resolver_match.kwargs.pk == current_client.pk %}aria-current="page"{% endif %}>{{ s.label }}</a>
+        {% endfor %}
+        {% for label in dossier_upcoming %}
+          <span class="nav-upcoming" title="Module prévu">{{ label }} <small>bientôt</small></span>
+        {% endfor %}
+      </nav>
+    {% endif %}
+    <nav aria-label="Cabinet">
+      <div class="nav-title">Cabinet</div>
       <a href="{% url 'core:home' %}" {% nav_current request "core:home" %}>Accueil</a>
-      <a href="{% url 'clients:list' %}" {% nav_current request "clients" %}>Clients</a>
+      <a href="{% url 'clients:list' %}" {% nav_current request "clients:list" %}>Tous les clients</a>
+      {% if user|can:"clients.edit" %}<a href="{% url 'clients:create' %}" {% nav_current request "clients:create" %}>Nouveau client</a>{% endif %}
       {% if user|can:"reprise.import" or user|can:"bce.import" or user|can:"audit.view" or user.is_staff %}
         <div class="nav-title">Paramétrage</div>
       {% endif %}
-      {% if user|can:"reprise.import" %}
-        <a href="{% url 'reprise:index' %}" {% nav_current request "reprise" %}>Reprise FID-Manager</a>
-      {% endif %}
-      {% if user|can:"bce.import" %}
-        <a href="{% url 'bce:imports' %}" {% nav_current request "bce" %}>Données BCE</a>
-      {% endif %}
-      {% if user|can:"audit.view" %}
-        <a href="{% url 'core:access_log' %}" {% nav_current request "core:access_log" %}>Journal des consultations</a>
-      {% endif %}
-      {% if user.is_staff %}
-        <a href="{% url 'admin:index' %}">Administration</a>
-      {% endif %}
+      {% if user|can:"reprise.import" %}<a href="{% url 'reprise:index' %}" {% nav_current request "reprise" %}>Reprise FID-Manager</a>{% endif %}
+      {% if user|can:"bce.import" %}<a href="{% url 'bce:imports' %}" {% nav_current request "bce" %}>Données BCE</a>{% endif %}
+      {% if user|can:"audit.view" %}<a href="{% url 'core:access_log' %}" {% nav_current request "core:access_log" %}>Journal des consultations</a>{% endif %}
+      {% if user.is_staff %}<a href="{% url 'admin:index' %}">Administration</a>{% endif %}
     </nav>
-    <div class="account">
-      <div>{{ user.get_full_name|default:user.email }}</div>
-      <a href="{% url 'mfa_index' %}">Sécurité du compte</a> ·
-      <form class="inline" method="post" action="{% url 'account_logout' %}">
-        {% csrf_token %}<button type="submit" class="link-button" style="color:inherit">Se déconnecter</button>
-      </form>
-    </div>
   </aside>
+
   <main class="main" id="contenu">
     {% include "components/_messages.html" %}
     {% block page %}
@@ -44,4 +55,7 @@
     {% endblock %}
   </main>
 </div>
+{% endblock %}
+{% block extra_body %}
+<script src="{% static 'js/app.js' %}" defer></script>
 {% endblock %}

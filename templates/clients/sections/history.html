@@ -1,0 +1,41 @@
+{% extends "clients/sections/_base.html" %}
+{% block head_title %}Historique · {{ client.display_name }}{% endblock %}
+{% block heading %}Historique{% endblock %}
+{% block content %}
+<div class="grid grid-2">
+<section class="card">
+  <div class="card-header"><h2>Modifications de la fiche</h2></div>
+  <ul class="timeline">
+  {% for row in rows %}
+    <li>
+      <div><strong>{{ row.record.history_date|date:"d/m/Y H:i" }}</strong> · {{ row.record.history_user|default:"automatisme" }}
+        {% if row.created %}<span class="badge badge-primary">création</span>{% endif %}</div>
+      {% if row.changes %}
+        <ul class="small">{% for c in row.changes %}<li>{{ c.label|capfirst }} : <span class="muted">{{ c.old|default:"(vide)" }}</span> → {{ c.new|default:"(vide)" }}</li>{% endfor %}</ul>
+      {% elif not row.created %}<div class="small muted">Mise à jour technique (synchronisation).</div>{% endif %}
+    </li>
+  {% empty %}
+    <li class="empty">Aucun historique.</li>
+  {% endfor %}
+  </ul>
+</section>
+<div>
+  <section class="card">
+    <div class="card-header"><h2>Événements</h2></div>
+    {% if events %}
+      <ul class="timeline small">{% for e in events %}<li><span class="muted">{{ e.occurred_at|date:"d/m/Y H:i" }}</span> · {{ e.type|event_label }}{% if e.actor %} · {{ e.actor }}{% endif %}</li>{% endfor %}</ul>
+    {% else %}<p class="empty">Aucun événement.</p>{% endif %}
+  </section>
+  {% if consultations is not None %}
+  <section class="card">
+    <div class="card-header"><h2>Consultations du dossier</h2></div>
+    <p class="muted small" style="margin-top:0">Visible avec le droit « journal des consultations ».</p>
+    <ul class="timeline small">
+      {% for entry in consultations %}<li><span class="muted">{{ entry.at|date:"d/m/Y H:i" }}</span> · {{ entry.user_email }} · {{ entry.get_action_display }}{% if entry.details.rubrique %} ({{ entry.details.rubrique }}){% endif %}</li>
+      {% empty %}<li class="empty">Aucune consultation.</li>{% endfor %}
+    </ul>
+  </section>
+  {% endif %}
+</div>
+</div>
+{% endblock %}

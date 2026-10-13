@@ -59,7 +59,7 @@
   </fieldset>
   <div class="actions">
     <button type="submit">Enregistrer</button>
-    <a class="button button-secondary" href="{% if client %}{{ client.get_absolute_url }}{% else %}{% url 'clients:list' %}{% endif %}">Annuler</a>
+    <a class="button button-secondary" href="{% if client %}{% url 'clients:identity' client.pk %}{% else %}{% url 'clients:list' %}{% endif %}">Annuler</a>
   </div>
 </form>
 {% endblock %}

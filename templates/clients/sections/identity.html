@@ -1,0 +1,88 @@
+{% extends "clients/sections/_base.html" %}
+{% block head_title %}Identité et coordonnées · {{ client.display_name }}{% endblock %}
+{% block heading %}Identité et coordonnées{% endblock %}
+{% block page_actions %}{% if can_edit %}<a class="button" href="{% url 'clients:edit' client.pk %}">Modifier</a>{% endif %}{% endblock %}
+{% block content %}
+<div class="grid grid-2">
+<div>
+  <section class="card">
+    <div class="card-header"><h2>Identité</h2></div>
+    <dl class="fields">
+      {% if client.legal_form %}<dt>Forme juridique</dt><dd>{{ client.legal_form }}</dd>{% endif %}
+      {% if client.enterprise_number %}
+        <dt>N° d'entreprise</dt><dd class="mono">{{ client.enterprise_number_display }} <span class="muted">(TVA {{ client.vat_number }})</span></dd>
+      {% endif %}
+      {% if client.is_person %}
+        <dt>N° national</dt>
+        <dd>
+          {% if client.national_number %}
+            <span id="numero-national"><span class="mono">{{ client.national_number_masked }}</span>
+            {% if can_see_sensitive %}
+              <button type="button" class="link-button small" hx-post="{% url 'clients:reveal_nn' client.pk %}" hx-target="#numero-national" hx-swap="innerHTML">Afficher</button>
+            {% endif %}</span>
+          {% else %}<span class="empty">non renseigné</span>{% endif %}
+        </dd>
+        <dt>Date de naissance</dt><dd>{{ client.birth_date|date:"d/m/Y"|default:"—" }}</dd>
+        {% if client.nationality %}<dt>Nationalité</dt><dd>{{ client.nationality }}</dd>{% endif %}
+      {% endif %}
+      <dt>Langue</dt><dd>{{ client.get_language_display }}</dd>
+      {% if client.founded_on %}<dt>Début d'activité</dt><dd>{{ client.founded_on|date:"d/m/Y" }}</dd>{% endif %}
+      {% if client.client_since %}<dt>Client depuis</dt><dd>{{ client.client_since|date:"d/m/Y" }}</dd>{% endif %}
+      {% if client.client_until %}<dt>Client jusqu'au</dt><dd>{{ client.client_until|date:"d/m/Y" }}</dd>{% endif %}
+    </dl>
+    {% if client.notes %}<p class="small" style="white-space: pre-line; margin-top: .75rem">{{ client.notes }}</p>{% endif %}
+  </section>
+
+  <section class="card">
+    <div class="card-header"><h2>Fiscalité</h2></div>
+    <dl class="fields">
+      <dt>Statut TVA</dt><dd>{% if client.vat_status %}{{ client.get_vat_status_display }}{% else %}<span class="empty">non renseigné</span>{% endif %}</dd>
+      {% if client.vat_periodicity %}<dt>Périodicité TVA</dt><dd>{{ client.get_vat_periodicity_display }}</dd>{% endif %}
+      {% if not client.is_person %}<dt>Clôture de l'exercice</dt><dd>{{ client.fiscal_year_end_display|default:"—" }}</dd>{% endif %}
+    </dl>
+  </section>
+</div>
+<div>
+  <section class="card">
+    <div class="card-header"><h2>Adresse et coordonnées</h2></div>
+    {% if client.address_lines %}
+      <p>{% for line in client.address_lines %}{{ line }}{% if not forloop.last %}<br>{% endif %}{% endfor %}</p>
+    {% else %}<p class="empty">Adresse non renseignée.</p>{% endif %}
+    {% if contacts %}
+      <ul class="timeline">
+      {% for contact in contacts %}
+        <li>
+          <span class="badge">{{ contact.get_kind_display }}</span>
+          {% if contact.kind == "email" %}<a href="mailto:{{ contact.value }}">{{ contact.value }}</a>
+          {% elif contact.kind == "website" %}{% with url=contact.value|external_url %}{% if url %}<a href="{{ url }}" target="_blank" rel="noopener noreferrer">{{ contact.value }}</a>{% else %}{{ contact.value }}{% endif %}{% endwith %}
+          {% else %}<a href="tel:{{ contact.value }}">{{ contact.value }}</a>{% endif %}
+          {% if contact.label %}<span class="muted small">{{ contact.label }}</span>{% endif %}
+          {% if contact.is_primary %}<span class="badge badge-primary">principal</span>{% endif %}
+          {% if contact.source == "bce" %}<span class="muted small">(BCE)</span>{% endif %}
+          {% if can_edit %}
+            <form class="inline" method="post" action="{% url 'clients:contact_delete' client.pk contact.pk %}">{% csrf_token %}
+              <button type="submit" class="link-button small" aria-label="Supprimer {{ contact.value }}">supprimer</button>
+            </form>
+          {% endif %}
+        </li>
+      {% endfor %}
+      </ul>
+    {% endif %}
+    {% if can_edit %}
+      <details style="margin-top: .75rem">
+        <summary>Ajouter une coordonnée</summary>
+        <form method="post" action="{% url 'clients:contact_add' client.pk %}" class="form-grid">
+          {% csrf_token %}
+          {{ contact_form.kind.as_field_group }}
+          {{ contact_form.value.as_field_group }}
+          {{ contact_form.label.as_field_group }}
+          {{ contact_form.is_primary.as_field_group }}
+          <div class="wide"><button type="submit">Ajouter</button></div>
+        </form>
+      </details>
+    {% endif %}
+  </section>
+
+</div>
+</div>
+{% endblock %}

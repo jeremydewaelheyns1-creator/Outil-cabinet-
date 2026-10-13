@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import io
+from collections.abc import Callable
 from typing import Any
 
 from django.contrib import messages
@@ -26,10 +27,12 @@ from apps.core.permissions import require_capability
 from apps.integrations import vies
 from apps.integrations.models import VatCheck
 
+from . import dossier
 from .forms import AssignmentForm, ClientForm, ContactPointForm, RelationForm
 from .identifiers import format_enterprise_number, normalize_national_number
 from .models import Client, ClientQuerySet, ContactPoint, Relation
 from .services import ubo
+from .services.alerts import dossier_alerts
 
 PAGE_SIZE = 50
 STATUS_FILTERS = {
@@ -238,33 +241,168 @@ def _split_relations(
     return {"current": current, "past": past, "hidden": hidden}
 
 
-def client_detail(request: AppRequest, pk: int) -> HttpResponse:
+def _open(request: AppRequest, pk: int) -> Client:
+    """Client demandé, devenu le dossier actif (en haut de l'écran)."""
     client = _get_client(request, pk)
-    log_access(request, AccessLog.Action.VIEW, client)
-    record = bce.lookup(client.enterprise_number) if client.enterprise_number else None
-    context = {
+    dossier.activate(request, client)
+    return client
+
+
+def _section(
+    request: AppRequest,
+    pk: int,
+    section: str,
+    template: str,
+    build: Callable[[Client], dict[str, Any]] | None = None,
+) -> HttpResponse:
+    """Affiche une rubrique du dossier : ouvre le dossier, journalise, rend le gabarit."""
+    client = _open(request, pk)
+    log_access(request, AccessLog.Action.VIEW, client, details={"rubrique": section})
+    context: dict[str, Any] = {
         "client": client,
-        "contacts": client.contacts.all(),
-        "contact_form": ContactPointForm(),
-        "as_entity": _split_relations(
-            request, client.relations_as_entity.select_related("person"), "person"
-        ),
-        "as_person": _split_relations(
-            request, client.relations_as_person.select_related("entity"), "entity"
-        ),
-        "assignments": client.assignments.select_related("user"),
-        "ubo": None
-        if client.is_person
-        else ubo.analyse(client).redact(_visible_portfolio_ids(request)),
-        "bce_record": record,
-        "bce_differences": bce.differences(client, record) if record else [],
-        "bce_has_data": bce.has_data(),
-        "vat_checks": client.vat_checks.all()[:3],
-        "events": events_for(client).select_related("actor")[:10],
+        "section": section,
         "can_edit": request.user.has_capability(Capability.CLIENTS_EDIT),
         "can_see_sensitive": request.user.has_capability(Capability.CLIENTS_SENSITIVE),
     }
-    return render(request, "clients/detail.html", context)
+    if build is not None:
+        context.update(build(client))
+    return render(request, template, context)
+
+
+def _ubo(request: AppRequest, client: Client) -> ubo.UboAnalysis | None:
+    if client.is_person:
+        return None
+    return ubo.analyse(client).redact(_visible_portfolio_ids(request))
+
+
+def client_detail(request: AppRequest, pk: int) -> HttpResponse:
+    """Synthèse du dossier : l'essentiel et les points d'attention."""
+
+    def build(client: Client) -> dict[str, Any]:
+        analysis = _ubo(request, client)
+        relations = _split_relations(
+            request, client.relations_as_entity.select_related("person"), "person"
+        )
+        return {
+            "alerts": dossier_alerts(client, analysis),
+            "ubo": analysis,
+            "managers": [r for r in relations["current"] if r.role in Relation.MANAGEMENT_ROLES],
+            "mandates": [
+                r
+                for r in _split_relations(
+                    request, client.relations_as_person.select_related("entity"), "entity"
+                )["current"]
+                if r.role in Relation.MANAGEMENT_ROLES
+            ],
+            "primary_contacts": _primary_contacts(client),
+            "assignments": client.assignments.select_related("user"),
+            "events": events_for(client).select_related("actor")[:8],
+        }
+
+    return _section(request, pk, "detail", "clients/sections/summary.html", build)
+
+
+def _primary_contacts(client: Client) -> list[ContactPoint]:
+    """Une coordonnée par type : la principale, à défaut la première."""
+    chosen: dict[str, ContactPoint] = {}
+    for contact in client.contacts.order_by("kind", "-is_primary", "value"):
+        chosen.setdefault(contact.kind, contact)
+    return list(chosen.values())
+
+
+def client_identity(request: AppRequest, pk: int) -> HttpResponse:
+    return _section(
+        request,
+        pk,
+        "identity",
+        "clients/sections/identity.html",
+        lambda client: {"contacts": client.contacts.all(), "contact_form": ContactPointForm()},
+    )
+
+
+def client_relations(request: AppRequest, pk: int) -> HttpResponse:
+    return _section(
+        request,
+        pk,
+        "relations",
+        "clients/sections/relations.html",
+        lambda client: {
+            "as_entity": _split_relations(
+                request, client.relations_as_entity.select_related("person"), "person"
+            ),
+            "as_person": _split_relations(
+                request, client.relations_as_person.select_related("entity"), "entity"
+            ),
+        },
+    )
+
+
+def client_ubo(request: AppRequest, pk: int) -> HttpResponse:
+    return _section(
+        request,
+        pk,
+        "ubo",
+        "clients/sections/ubo.html",
+        lambda client: {"ubo": _ubo(request, client)},
+    )
+
+
+def client_team(request: AppRequest, pk: int) -> HttpResponse:
+    return _section(
+        request,
+        pk,
+        "team",
+        "clients/sections/team.html",
+        lambda client: {"assignments": client.assignments.select_related("user")},
+    )
+
+
+def client_public_data(request: AppRequest, pk: int) -> HttpResponse:
+    def build(client: Client) -> dict[str, Any]:
+        record = bce.lookup(client.enterprise_number) if client.enterprise_number else None
+        return {
+            "bce_record": record,
+            "bce_differences": bce.differences(client, record) if record else [],
+            "bce_has_data": bce.has_data(),
+            "vat_checks": client.vat_checks.select_related("checked_by")[:10],
+        }
+
+    return _section(request, pk, "public_data", "clients/sections/public_data.html", build)
+
+
+# --- Dossier actif --------------------------------------------------------------------------
+
+
+def dossier_switcher(request: AppRequest) -> HttpResponse:
+    """Résultats du sélecteur de client (en haut de l'écran) : recherche ou derniers dossiers."""
+    query = request.GET.get("q", "").strip()
+    section = request.GET.get("rubrique", "detail")
+    current = dossier.current(request)
+    if len(query) >= 2:
+        results = list(_visible_clients(request).search(query).select_related("portfolio")[:12])
+        title = ""
+    else:
+        results = dossier.recent(request, exclude=current)
+        title = "Derniers dossiers ouverts"
+    return render(
+        request,
+        "clients/_switcher_results.html",
+        {"results": results, "title": title, "query": query, "section": section},
+    )
+
+
+def dossier_open(request: AppRequest, pk: int) -> HttpResponse:
+    """Change de dossier en restant, si possible, sur la même rubrique."""
+    client = _open(request, pk)
+    section = request.GET.get("rubrique", "detail")
+    allowed = {s.url_name for s in dossier.sections_for(client)}
+    return redirect(f"clients:{section if section in allowed else 'detail'}", pk=client.pk)
+
+
+@require_POST
+def dossier_close(request: AppRequest) -> HttpResponse:
+    dossier.close(request)
+    return redirect("core:home")
 
 
 @require_POST
@@ -297,11 +435,18 @@ def _history_rows(client: Client) -> list[dict[str, Any]]:
 
 
 def client_history(request: AppRequest, pk: int) -> HttpResponse:
-    client = _get_client(request, pk)
-    log_access(request, AccessLog.Action.VIEW, client, details={"écran": "historique"})
-    return render(
-        request, "clients/history.html", {"client": client, "rows": _history_rows(client)}
-    )
+    def build(client: Client) -> dict[str, Any]:
+        context: dict[str, Any] = {
+            "rows": _history_rows(client),
+            "events": events_for(client).select_related("actor")[:50],
+        }
+        if request.user.has_capability(Capability.AUDIT_VIEW):
+            context["consultations"] = AccessLog.objects.filter(
+                object_type=client._meta.label_lower, object_id=str(client.pk)
+            )[:50]
+        return context
+
+    return _section(request, pk, "history", "clients/sections/history.html", build)
 
 
 # --- Création et modification ---------------------------------------------------------------
@@ -348,7 +493,7 @@ def client_create(request: AppRequest) -> HttpResponse:
 
 @require_capability(Capability.CLIENTS_EDIT)
 def client_edit(request: AppRequest, pk: int) -> HttpResponse:
-    client = _get_client(request, pk)
+    client = _open(request, pk)
     previous_number = client.enterprise_number
     if request.method == "POST":
         form = ClientForm(request.POST, instance=client, user=request.user)
@@ -367,7 +512,7 @@ def client_edit(request: AppRequest, pk: int) -> HttpResponse:
             if client.enterprise_number and client.enterprise_number != previous_number:
                 events.emit("client.enterprise_number_changed", subject=client, actor=request.user)
             messages.success(request, "Modifications enregistrées.")
-            return redirect(client)
+            return redirect("clients:identity", pk=client.pk)
     else:
         form = ClientForm(
             instance=client,
@@ -398,7 +543,7 @@ def contact_add(request: AppRequest, pk: int) -> HttpResponse:
     else:
         errors = "; ".join(str(e) for errs in form.errors.values() for e in errs)
         messages.error(request, f"Coordonnée non ajoutée : {errors}")
-    return redirect(client)
+    return redirect("clients:identity", pk=client.pk)
 
 
 @require_POST
@@ -411,7 +556,7 @@ def contact_delete(request: AppRequest, pk: int, contact_pk: int) -> HttpRespons
         request, AccessLog.Action.UPDATE, client, details={"coordonnée supprimée": contact.kind}
     )
     messages.success(request, "Coordonnée supprimée.")
-    return redirect(client)
+    return redirect("clients:identity", pk=client.pk)
 
 
 # --- Relations ------------------------------------------------------------------------------
@@ -419,7 +564,7 @@ def contact_delete(request: AppRequest, pk: int, contact_pk: int) -> HttpRespons
 
 @require_capability(Capability.CLIENTS_EDIT)
 def relation_edit(request: AppRequest, pk: int, relation_pk: int | None = None) -> HttpResponse:
-    client = _get_client(request, pk)
+    client = _open(request, pk)
     relation = None
     if relation_pk is not None:
         relation = _get_relation(request, client, relation_pk)
@@ -448,7 +593,7 @@ def relation_edit(request: AppRequest, pk: int, relation_pk: int | None = None) 
             payload={"relation": saved.pk, "role": saved.role},
         )
         messages.success(request, "Relation enregistrée.")
-        return redirect(client)
+        return redirect("clients:relations", pk=client.pk)
     selected = form["other"].value()
     selected_client = (
         _visible_clients(request).filter(pk=selected).first()
@@ -478,7 +623,7 @@ def relation_delete(request: AppRequest, pk: int, relation_pk: int) -> HttpRespo
     relation.delete()
     events.emit("relation.deleted", subject=entity, actor=request.user)
     messages.success(request, "Relation supprimée.")
-    return redirect(client)
+    return redirect("clients:relations", pk=client.pk)
 
 
 # --- Équipe ---------------------------------------------------------------------------------
@@ -486,13 +631,13 @@ def relation_delete(request: AppRequest, pk: int, relation_pk: int) -> HttpRespo
 
 @require_capability(Capability.CLIENTS_EDIT)
 def assignments_edit(request: AppRequest, pk: int) -> HttpResponse:
-    client = _get_client(request, pk)
+    client = _open(request, pk)
     form = AssignmentForm(request.POST or None, client=client)
     if request.method == "POST" and form.is_valid():
         form.save()
         log_access(request, AccessLog.Action.UPDATE, client, details={"écran": "équipe"})
         messages.success(request, "Équipe mise à jour.")
-        return redirect(client)
+        return redirect("clients:team", pk=client.pk)
     return render(request, "clients/assignments_form.html", {"client": client, "form": form})
 
 
@@ -511,7 +656,7 @@ def bce_apply(request: AppRequest, pk: int) -> HttpResponse:
         messages.success(request, "Données de la BCE appliquées.")
     else:
         messages.info(request, "Aucune donnée sélectionnée.")
-    return redirect(client)
+    return redirect("clients:public_data", pk=client.pk)
 
 
 @require_POST
@@ -525,7 +670,7 @@ def bce_refresh(request: AppRequest, pk: int) -> HttpResponse:
     else:
         log_access(request, AccessLog.Action.UPDATE, client, details={"source": "BCE"})
         messages.success(request, "Fiche complétée avec la BCE.")
-    return redirect(client)
+    return redirect("clients:public_data", pk=client.pk)
 
 
 @require_POST
@@ -537,4 +682,4 @@ def vies_check(request: AppRequest, pk: int) -> HttpResponse:
         check = vies.check("BE", client.enterprise_number, client=client, user=request.user)
     if request.htmx:
         return render(request, "clients/_vies_result.html", {"check": check, "client": client})
-    return redirect(client)
+    return redirect("clients:public_data", pk=client.pk)
