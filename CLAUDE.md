@@ -27,9 +27,13 @@ technique. Parler en français, simplement, sans jargon.
 - L'IA propose, l'humain décide : un automatisme qui modifie une donnée saisie par le
   cabinet passe par une proposition validée (voir BCE : différences à cocher).
 - Un fait métier = `events.emit(...)` ; un automatisme = `@events.on(...)`, idempotent.
-- Interface centrée sur le dossier client (D-019, D-021) : tout écran propre à un client est un
-  sous-onglet d'un des onglets de `TABS` (`apps/clients/dossier.py`), rendu via
-  `render_section()` (apps/clients/views.py). Ne jamais ajouter d'onglet principal ; deux clics maximum pour toute information (D-023).
+- Interface centrée sur le dossier client (D-019, D-026) : tout écran propre à un client est
+  une entrée de `TOP` (onglets du haut, travail fréquent) ou de `SIDE` (panneau de gauche,
+  paperasse) dans `apps/clients/dossier.py`, rendue via `render_section()`
+  (apps/clients/views.py). Ne jamais ajouter d'onglet du haut sans l'accord de Jeremy ; deux
+  clics maximum pour toute information (D-023).
+- Ne prendre aucune initiative : faire ce que Jeremy demande, et proposer (sans le faire) ce qui
+  pourrait être utile en plus. Attendre son accord.
 
 ## Commandes
 

@@ -86,3 +86,9 @@ def iso_date(value: object) -> str:
     if len(text) == 10 and text[4] == "-" and text[7] == "-":
         return f"{text[8:10]}/{text[5:7]}/{text[:4]}"
     return text
+
+
+@register.filter
+def get_item(mapping: object, key: str) -> object:
+    """Valeur d'un dictionnaire dans un gabarit (compteurs du panneau du dossier)."""
+    return mapping.get(key) if isinstance(mapping, dict) else None

@@ -606,3 +606,55 @@ a.badge:hover { text-decoration: none; filter: brightness(0.95); }
 .official-bar { display: flex; flex-wrap: wrap; gap: 0.5rem 1rem; align-items: center; justify-content: space-between; margin-bottom: 0.75rem; }
 .official-actions { display: flex; gap: 0.4rem; align-items: center; }
 .official-links { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.75rem; }
+
+/* --- Dossier : panneau de gauche (D-026) --------------------------------------------------- */
+.dossier-body { display: grid; grid-template-columns: 250px minmax(0, 1fr); gap: 1.5rem; align-items: start; }
+.dossier-side {
+  position: sticky;
+  top: 1rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+}
+.side-group + .side-group { border-top: 1px solid var(--border); }
+.side-group-title {
+  background: var(--surface-muted);
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  padding: 0.45rem 0.9rem;
+}
+.side-link {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.45rem 0.9rem;
+  color: var(--text);
+  font-size: 0.92rem;
+  border-left: 3px solid transparent;
+}
+.side-link:hover { background: var(--surface-muted); text-decoration: none; }
+.side-link[aria-current="page"] { border-left-color: var(--primary); background: var(--primary-soft); color: var(--primary); font-weight: 600; }
+.side-soon { color: var(--text-muted); }
+.side-count {
+  min-width: 1.4rem;
+  padding: 0 0.35rem;
+  border-radius: 999px;
+  background: #6b7a90;
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-align: center;
+  line-height: 1.4rem;
+}
+.side-count-zero { background: var(--surface-muted); color: var(--text-muted); }
+.side-count-danger { background: var(--danger, #c0392b); }
+.dossier-content { min-width: 0; }
+@media (width <= 900px) {
+  .dossier-body { grid-template-columns: minmax(0, 1fr); }
+  .dossier-side { position: static; }
+}

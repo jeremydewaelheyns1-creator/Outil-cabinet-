@@ -12,8 +12,8 @@ from apps.core.testing.factories import ClientFactory, PersonFactory, PortfolioF
 pytestmark = pytest.mark.django_db
 
 SECTIONS = [
-    "identity", "relations", "ubo", "team", "public_data", "moniteur",
-    "annual_accounts", "history",
+    "identity", "mandates", "shareholders", "other_relations", "ubo", "team", "public_data",
+    "moniteur", "annual_accounts", "history",
 ]  # fmt: skip
 
 
@@ -32,12 +32,14 @@ def test_inside_a_dossier_only_the_dossier_is_shown(web):
     html = web.get(reverse("clients:identity", args=[client.pk])).content.decode()
     assert 'class="sidebar"' not in html  # pas de menu du cabinet
     assert "⌂ Accueil" in html
-    for label in ("Fiche", "Travail", "Documents et conformité", "Facturation"):
-        assert label in html
     assert "Synthèse" not in html  # supprimée (D-025)
-    # Sous-onglets de « Fiche ».
-    assert reverse("clients:relations", args=[client.pk]) in html
-    assert reverse("clients:public_data", args=[client.pk]) in html
+    # En haut : le travail fréquent (D-026).
+    for slug in ("documents", "cloture", "versements-anticipes", "time-sheet"):
+        assert reverse("clients:work", args=[client.pk, slug]) in html
+    # À gauche : la paperasse, chaque page à un clic.
+    for name in ("identity", "public_data", "moniteur", "mandates", "shareholders", "ubo",
+                 "other_relations", "tasks", "history"):  # fmt: skip
+        assert reverse(f"clients:{name}", args=[client.pk]) in html
 
 
 @pytest.mark.parametrize("section", SECTIONS)
@@ -58,9 +60,11 @@ def test_person_sections_skip_company_only_ones(web):
 
 def test_switching_client_keeps_the_section(web):
     first, second = ClientFactory(), ClientFactory()
-    web.get(reverse("clients:relations", args=[first.pk]))
-    response = web.get(reverse("clients:open", args=[second.pk]), {"rubrique": "relations"})
-    assert response.url == reverse("clients:relations", args=[second.pk])
+    web.get(reverse("clients:shareholders", args=[first.pk]))
+    response = web.get(reverse("clients:open", args=[second.pk]), {"rubrique": "shareholders"})
+    assert response.url == reverse("clients:shareholders", args=[second.pk])
+    response = web.get(reverse("clients:open", args=[second.pk]), {"rubrique": "work:cloture"})
+    assert response.url == reverse("clients:work", args=[second.pk, "cloture"])
     # Une rubrique inexistante pour ce type de client renvoie à la Fiche.
     person = PersonFactory()
     response = web.get(reverse("clients:open", args=[person.pk]), {"rubrique": "ubo"})
@@ -137,18 +141,56 @@ def test_alert_rules():
 def test_relation_links_open_the_other_dossier(web):
     company, manager = ClientFactory(), PersonFactory(name="Gérante")
     Relation.objects.create(entity=company, person=manager, role="manager")
-    html = web.get(reverse("clients:relations", args=[company.pk])).content.decode()
+    html = web.get(reverse("clients:mandates", args=[company.pk])).content.decode()
     assert reverse("clients:identity", args=[manager.pk]) in html
 
 
-def test_upcoming_tab_describes_what_is_coming(web):
+def test_work_pages_are_placeholders_until_defined(web):
     client = ClientFactory()
-    response = web.get(reverse("clients:upcoming", args=[client.pk, "documents"]))
+    response = web.get(reverse("clients:work", args=[client.pk, "cloture"]))
     html = response.content.decode()
     assert response.status_code == 200
-    assert "Pièces d&#x27;identité" in html or "Pièces d'identité" in html
+    assert "Page à construire" in html
     assert "aria-current" in html
-    assert web.get(reverse("clients:upcoming", args=[client.pk, "inconnu"])).status_code == 404
+    assert web.get(reverse("clients:work", args=[client.pk, "inconnu"])).status_code == 404
+
+
+def test_vat_tab_only_for_vat_subject_clients(web):
+    subject = ClientFactory(vat_status="subject")
+    exempt = ClientFactory(vat_status="exempt")
+    url = reverse("clients:work", args=[subject.pk, "tva"])
+    assert url in web.get(reverse("clients:identity", args=[subject.pk])).content.decode()
+    html = web.get(reverse("clients:identity", args=[exempt.pk])).content.decode()
+    assert reverse("clients:work", args=[exempt.pk, "tva"]) not in html
+
+
+def test_relations_are_split_by_kind_with_counts(web):
+    company = ClientFactory()
+    manager, owner, other = PersonFactory(name="Gérante"), PersonFactory(), PersonFactory()
+    Relation.objects.create(entity=company, person=manager, role="manager")
+    Relation.objects.create(entity=company, person=owner, role="shareholder", share_percentage=60)
+    Relation.objects.create(entity=company, person=other, role="other")
+    mandates = web.get(reverse("clients:mandates", args=[company.pk])).content.decode()
+    assert "Gérante" in mandates and owner.name not in mandates.split("dossier-content")[1]
+    shareholders = web.get(reverse("clients:shareholders", args=[company.pk])).content.decode()
+    assert "60 %" in shareholders
+    assert 'class="side-count">1<' in mandates
+    # Une personne voit les sociétés où elle a un mandat.
+    html = web.get(reverse("clients:mandates", args=[manager.pk])).content.decode()
+    assert company.name in html.split("dossier-content")[1]
+    # L'ancienne adresse « Relations » mène aux mandataires.
+    assert web.get(reverse("clients:relations", args=[company.pk])).url == reverse(
+        "clients:mandates", args=[company.pk]
+    )
+
+
+def test_saving_a_relation_returns_to_its_page(web):
+    company, person = ClientFactory(), PersonFactory()
+    response = web.post(
+        reverse("clients:relation_add", args=[company.pk]),
+        {"other": person.pk, "role": "shareholder", "share_percentage": "10"},
+    )
+    assert response.url == reverse("clients:shareholders", args=[company.pk])
 
 
 def test_header_lists_relations_clickable_in_both_directions(web):

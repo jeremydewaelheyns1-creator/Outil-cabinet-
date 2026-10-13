@@ -1,49 +1,31 @@
 {% extends "clients/sections/_base.html" %}
-{% block head_title %}Relations · {{ client.display_name }}{% endblock %}
-{% block page_title %}Relations{% endblock %}
-{% block page_actions %}{% endblock %}
+{% block head_title %}{{ title }} · {{ client.display_name }}{% endblock %}
+{% block page_title %}{{ title }}{% endblock %}
+{% block page_actions %}
+  {% if can_edit %}<a class="button button-small" href="{% url 'clients:relation_add' client.pk %}?role={{ default_role }}{% if client.is_person and page != "other_relations" %}&amp;sens=mandat{% endif %}">+ Ajouter</a>{% endif %}
+  {% if page == "mandates" and not client.is_person %}<a class="button button-secondary button-small" href="{% url 'clients:public_data' client.pk %}">Importer de la BCE</a>{% endif %}
+{% endblock %}
 {% block content %}
-<div class="grid grid-2">
-<div>
-  {% if not client.is_person or as_entity.current or as_entity.past %}
-  <section class="card">
-    <div class="card-header">
-      <h2>{% if client.is_person %}Proches{% else %}Dirigeants et actionnaires{% endif %}</h2>
-      {% if can_edit %}<a class="button button-secondary button-small" href="{% url 'clients:relation_add' client.pk %}">Ajouter</a>{% endif %}
-    </div>
-    {% include "clients/_relations_table.html" with relations=as_entity.current other_side="person" %}
-    {% if as_entity.past %}
-      <details style="margin-top: .5rem"><summary class="small">Anciennes relations ({{ as_entity.past|length }})</summary>
-        {% include "clients/_relations_table.html" with relations=as_entity.past other_side="person" %}
+<section class="card">
+  {% if incoming is not None %}
+    {% include "clients/_relations_table.html" with relations=incoming.current other_side="person" %}
+    {% if incoming.past %}
+      <details style="margin-top: .5rem"><summary class="small">Anciennes ({{ incoming.past|length }})</summary>
+        {% include "clients/_relations_table.html" with relations=incoming.past other_side="person" %}
       </details>
     {% endif %}
-    {% if as_entity.hidden %}<p class="muted small">{{ as_entity.hidden }} relation{{ as_entity.hidden|pluralize }} masquée{{ as_entity.hidden|pluralize }} (portefeuille privé).</p>{% endif %}
-  </section>
+    {% if incoming.hidden %}<p class="muted small">{{ incoming.hidden }} masquée{{ incoming.hidden|pluralize }} (portefeuille privé).</p>{% endif %}
   {% endif %}
-
-  <section class="card">
-    <div class="card-header">
-      <h2>{% if client.is_person %}Mandats, participations et liens{% else %}Participations dans d'autres sociétés{% endif %}</h2>
-      {% if can_edit %}<a class="button button-secondary button-small" href="{% url 'clients:relation_add' client.pk %}?sens=mandat">Ajouter</a>{% endif %}
-    </div>
-    {% include "clients/_relations_table.html" with relations=as_person.current other_side="entity" %}
-    {% if as_person.past %}
-      <details style="margin-top: .5rem"><summary class="small">Anciennes relations ({{ as_person.past|length }})</summary>
-        {% include "clients/_relations_table.html" with relations=as_person.past other_side="entity" %}
-      </details>
+  {% if outgoing is not None %}
+    {% if incoming is None or outgoing.current or outgoing.past %}
+      {% include "clients/_relations_table.html" with relations=outgoing.current other_side="entity" %}
+      {% if outgoing.past %}
+        <details style="margin-top: .5rem"><summary class="small">Anciennes ({{ outgoing.past|length }})</summary>
+          {% include "clients/_relations_table.html" with relations=outgoing.past other_side="entity" %}
+        </details>
+      {% endif %}
+      {% if outgoing.hidden %}<p class="muted small">{{ outgoing.hidden }} masquée{{ outgoing.hidden|pluralize }} (portefeuille privé).</p>{% endif %}
     {% endif %}
-    {% if as_person.hidden %}<p class="muted small">{{ as_person.hidden }} relation{{ as_person.hidden|pluralize }} masquée{{ as_person.hidden|pluralize }} (portefeuille privé).</p>{% endif %}
-  </section>
-</div>
-<div>
-  <section class="card">
-    <div class="card-header"><h2>Comment ça marche</h2></div>
-    <p class="small">Chaque personne ou société n'a qu'une fiche, reliée aux autres : le gérant d'une société
-    est aussi un client avec son propre dossier. Cliquez sur un nom pour ouvrir son dossier.</p>
-    <p class="small">Encodez les actionnaires avec leur pourcentage : les bénéficiaires effectifs sont
-    calculés automatiquement{% if not client.is_person %} (rubrique <a href="{% url 'clients:ubo' client.pk %}">Bénéficiaires effectifs</a>){% endif %}.</p>
-    <p class="small">À la fin d'un mandat ou après une cession, indiquez la date de fin plutôt que de supprimer la relation : l'historique est conservé.</p>
-  </section>
-</div>
-</div>
+  {% endif %}
+</section>
 {% endblock %}

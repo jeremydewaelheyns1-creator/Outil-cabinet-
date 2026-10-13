@@ -139,3 +139,16 @@ supprimée ; ouvrir un client mène à Fiche › Identité et coordonnées (comm
 qui sera retravaillée. Quatre onglets : Fiche, Travail, Documents et conformité, Facturation.
 L'adresse `/clients/<n>/` reste valable et affiche la Fiche. Les points d'attention
 (`services/alerts.py`) ne sont plus affichés : leur place est à décider avec Jeremy.
+
+## D-026 — Travail fréquent en haut, paperasse à gauche (comme FID-Manager)
+Remplace l'organisation en onglets et sous-onglets de D-021/D-022 (demande de Jeremy). Dans un
+dossier : l'en-tête du client reste en haut (nom, badges, relations). Dessous, les onglets du
+travail le plus fréquent : Documents, Clôture, Versements anticipés, Déclaration TVA
+(seulement si le client est assujetti), Time sheet — mêmes onglets pour une société et un
+IPP ; leur contenu sera défini un par un avec Jeremy. À gauche, un panneau groupé comme celui
+de FID-Manager : Fiche (identité, BCE et TVA, Moniteur, comptes annuels, équipe), Organisation
+(Mandataires, Actionnaires, Bénéficiaires effectifs, Autres relations, avec compteurs), Suivi
+(échéances, historique), Conformité, Facturation. Toute page est à un clic. La page
+« Relations » est découpée en Mandataires / Actionnaires / Autres relations ; pour une
+société on n'y montre plus ses participations dans d'autres sociétés (visibles chez celles-ci).
+Ajouter une entrée : dans `TOP` ou `SIDE` (`apps/clients/dossier.py`), jamais ailleurs.

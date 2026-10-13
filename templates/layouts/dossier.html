@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% load static %}
-{# Écrans d'un dossier client : rien d'autre que le dossier (en-tête, onglets, sous-onglets). #}
+{# Écrans d'un dossier client (D-026) : en-tête, onglets du travail en haut, panneau à gauche. #}
 {% block body %}
 <div class="app app-dossier">
   {% include "components/_topbar.html" %}
@@ -26,7 +26,7 @@
               {% for l in links %}
                 <li><a href="{% url 'clients:open' l.other.pk %}?rubrique={{ current_section }}">{% client_icon l.other %} {{ l.other.display_name }}</a> <span class="muted">{{ l.role|lower }}</span></li>
               {% endfor %}
-              {% if more %}<li><a href="{% url 'clients:relations' c.pk %}">+ {{ more }} autre{{ more|pluralize }}</a></li>{% endif %}
+              {% if more %}<li><a href="{% url 'clients:mandates' c.pk %}">+ {{ more }} autre{{ more|pluralize }}</a></li>{% endif %}
             </ul>
           {% endif %}
         {% endwith %}
@@ -36,27 +36,32 @@
       </div>
     </header>
 
-    <nav class="tabs" aria-label="Onglets du dossier">
+    <nav class="tabs" aria-label="Travail sur le dossier">
       <a class="tab tab-home" href="{% url 'core:home' %}">⌂ Accueil</a>
-      {% for t in dossier_tabs %}
-        {% if t.first %}
-          <a class="tab" href="{% url 'clients:'|add:t.first.url_name c.pk %}"{% if current_tab.key == t.key %} aria-current="page"{% endif %}>{{ t.label }}{% if t.key == "travail" and dossier_overdue %} <span class="tab-count">{{ dossier_overdue }}</span>{% endif %}</a>
-        {% else %}
-          <a class="tab tab-soon" href="{% url 'clients:upcoming' c.pk t.key %}"{% if current_tab.key == t.key %} aria-current="page"{% endif %}>{{ t.label }}</a>
-        {% endif %}
+      {% for s in dossier_top %}
+        <a class="tab" href="{% url 'clients:work' c.pk s.slug %}"{% if current_section == s.key %} aria-current="page"{% endif %}>{{ s.label }}</a>
       {% endfor %}
-      <a class="tab tab-end" href="{% url 'clients:history' c.pk %}"{% if current_section == "history" %} aria-current="page"{% endif %}>Historique</a>
     </nav>
 
-    {% if current_tab.sections and current_tab.sections|length > 1 or current_tab.sections and current_tab.upcoming %}
-      <nav class="subtabs" aria-label="{{ current_tab.label }}">
-        {% for s in current_tab.sections %}
-          <a href="{% url 'clients:'|add:s.url_name c.pk %}"{% if current_section == s.url_name %} aria-current="page"{% endif %}>{{ s.label }}</a>
-        {% endfor %}
-        {% for label in current_tab.upcoming %}<span class="subtab-disabled" title="Bientôt disponible">{{ label }}</span>{% endfor %}
-      </nav>
-    {% endif %}
-
+    <div class="dossier-body">
+    <aside class="dossier-side" aria-label="Dossier">
+      {% for g in dossier_side %}
+        <div class="side-group">
+          <div class="side-group-title">{{ g.label }}</div>
+          {% for s in g.sections %}
+            {% if s.slug %}
+              <a class="side-link side-soon" href="{% url 'clients:work' c.pk s.slug %}"{% if current_section == s.key %} aria-current="page"{% endif %}>{{ s.label }}</a>
+            {% else %}
+              <a class="side-link" href="{% url 'clients:'|add:s.url_name c.pk %}"{% if current_section == s.key %} aria-current="page"{% endif %}>
+                <span>{{ s.label }}</span>
+                {% if s.count %}{% with n=dossier_counts|get_item:s.count %}{% if s.count == "overdue" %}{% if n %}<span class="side-count side-count-danger" title="en retard">{{ n }}</span>{% endif %}{% else %}<span class="side-count{% if not n %} side-count-zero{% endif %}">{{ n|default:0 }}</span>{% endif %}{% endwith %}{% endif %}
+              </a>
+            {% endif %}
+          {% endfor %}
+        </div>
+      {% endfor %}
+    </aside>
+    <div class="dossier-content">
     {% include "components/_messages.html" %}
     {% block page %}
       <div class="section-bar">
@@ -65,6 +70,8 @@
       </div>
       {% block content %}{% endblock %}
     {% endblock %}
+    </div>
+    </div>
   </main>
   {% endwith %}
 </div>

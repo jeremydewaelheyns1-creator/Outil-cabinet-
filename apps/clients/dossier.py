@@ -1,10 +1,11 @@
 """Dossier actif : le client choisi en haut de l'écran.
 
 Comme dans un logiciel comptable par dossier, on choisit un client une fois ; il reste
-affiché en haut de l'écran. Dans un dossier, l'écran ne montre que lui : un en-tête fixe, des
-onglets (Fiche, Travail, Documents et conformité, Facturation) et leurs
-sous-onglets ; un onglet « Accueil » ramène aux écrans du cabinet. Changer de client garde
-la rubrique ouverte (on passe des « Relations » d'un client à celles d'un autre).
+affiché en haut de l'écran. Dans un dossier, l'écran ne montre que lui (D-026) : un en-tête
+fixe, en haut les onglets du travail fréquent (Documents, Clôture, Versements anticipés,
+TVA, Time sheet), à gauche un panneau « paperasse » comme FID-Manager (Fiche, Organisation,
+Suivi, Conformité, Facturation), chaque page à un clic. Changer de client garde la rubrique
+ouverte (on passe des « Mandataires » d'un client à ceux d'un autre).
 
 Le dossier actif et les derniers dossiers ouverts sont gardés dans la session (identifiants
 seulement) ; la visibilité est revérifiée à chaque lecture.
@@ -18,7 +19,7 @@ from django.http import HttpRequest
 
 from apps.core.models import User
 
-from .models import Client
+from .models import Client, Relation
 
 SESSION_CURRENT = "dossier_actif"
 SESSION_RECENT = "dossiers_recents"
@@ -27,81 +28,105 @@ RECENT_SIZE = 8
 
 @dataclass(frozen=True)
 class Section:
+    """Une entrée du dossier : page existante (`url_name`) ou page à construire (`slug`)."""
+
     url_name: str
     label: str
     for_persons: bool = True
     for_entities: bool = True
+    vat_only: bool = False  # seulement pour un client assujetti à la TVA
+    slug: str = ""  # page « à construire » (url_name == WORK)
+    count: str = ""  # compteur affiché à côté (clé de `counts`)
 
-
-# Organisation du dossier : quelques grands onglets stables, des sous-onglets dedans. Chaque
-# nouvelle fonction vient se ranger dans l'onglet qui lui correspond (pas de nouvel onglet).
-HISTORY = Section("history", "Historique")
+    @property
+    def key(self) -> str:
+        """Identifiant de la page affichée (nom d'URL, ou « work:<slug> »)."""
+        return f"{WORK}:{self.slug}" if self.slug else self.url_name
 
 
 @dataclass(frozen=True)
-class Tab:
-    key: str
+class Group:
     label: str
-    sections: tuple[Section, ...] = ()
-    upcoming: tuple[str, ...] = ()  # sous-onglets prévus, affichés grisés
+    sections: tuple[Section, ...]
 
 
-TABS: tuple[Tab, ...] = (
-    Tab(
-        "fiche",
+WORK = "work"  # page « à construire » (onglets du haut, entrées prévues à gauche)
+HISTORY = Section("history", "Historique")
+
+# D-026 — En haut : le travail le plus fréquent. Contenu défini un par un avec Jeremy.
+TOP: tuple[Section, ...] = (
+    Section(WORK, "Documents", slug="documents"),
+    Section(WORK, "Clôture", slug="cloture"),
+    Section(WORK, "Versements anticipés", slug="versements-anticipes"),
+    Section(WORK, "Déclaration TVA", slug="tva", vat_only=True),
+    Section(WORK, "Time sheet", slug="time-sheet"),
+)
+
+# À gauche : la « paperasse », comme le panneau latéral de FID-Manager.
+SIDE: tuple[Group, ...] = (
+    Group(
         "Fiche",
         (
             Section("identity", "Identité et coordonnées"),
-            Section("relations", "Relations"),
-            Section("ubo", "Bénéficiaires effectifs", for_persons=False),
             Section("public_data", "BCE et TVA", for_persons=False),
             Section("moniteur", "Moniteur belge", for_persons=False),
             Section("annual_accounts", "Comptes annuels", for_persons=False),
             Section("team", "Équipe du cabinet"),
         ),
     ),
-    Tab("travail", "Travail", (Section("tasks", "Échéances"),), ("Prestations",)),
-    Tab(
-        "documents",
-        "Documents et conformité",
-        (),
+    Group(
+        "Organisation",
         (
-            "Pièces",
-            "Courriers et e-mails",
-            "Signatures",
-            "Anti-blanchiment",
-            "Pièces d'identité",
-            "Déclarations UBO",
+            Section("mandates", "Mandataires", count="mandates"),
+            Section("shareholders", "Actionnaires", count="shareholders"),
+            Section("ubo", "Bénéficiaires effectifs (UBO)", for_persons=False, count="ubo"),
+            Section("other_relations", "Autres relations", count="others"),
         ),
     ),
-    Tab("facturation", "Facturation", (), ("Honoraires", "Factures")),
+    Group(
+        "Suivi",
+        (Section("tasks", "Échéances", count="overdue"), HISTORY),
+    ),
+    Group(
+        "Conformité",
+        (
+            Section(WORK, "Anti-blanchiment", slug="anti-blanchiment"),
+            Section(WORK, "Pièces d'identité", slug="pieces-identite"),
+        ),
+    ),
+    Group(
+        "Facturation",
+        (
+            Section(WORK, "Honoraires", slug="honoraires"),
+            Section(WORK, "Factures", slug="factures"),
+        ),
+    ),
 )
 
-SECTIONS: tuple[Section, ...] = (*(s for t in TABS for s in t.sections), HISTORY)
-SECTION_NAMES = {s.url_name for s in SECTIONS}
-TAB_OF = {s.url_name: t.key for t in TABS for s in t.sections}
-TAB_KEYS = {t.key for t in TABS}
+SECTIONS: tuple[Section, ...] = (*TOP, *(s for g in SIDE for s in g.sections))
+SECTION_NAMES = {s.url_name for s in SECTIONS if s.url_name != WORK}
+WORK_PAGES = {s.slug: s for s in SECTIONS if s.slug}
 
-# Ce que contiendront les sous-onglets prévus (page « bientôt » d'un onglet pas encore construit).
-UPCOMING_DESCRIPTIONS = {
-    "Prestations": "Le temps passé sur le dossier, par collaborateur et par type de travail.",
-    "Pièces": "Tous les documents du client, classés automatiquement (factures, extraits, "
-    "statuts, déclarations…), avec recherche et durée de conservation légale.",
-    "Courriers et e-mails": "Les échanges avec le client, reliés au dossier, et les modèles de "
-    "courrier préremplis.",
-    "Signatures": "Envoi de documents à signer (itsme) et suivi des signatures.",
-    "Anti-blanchiment": "Le dossier KYC : niveau de risque, vérifications (listes de sanctions), "
-    "revue périodique, décisions de l'AMLCO.",
-    "Pièces d'identité": "Les cartes d'identité des personnes liées, avec alerte avant expiration "
-    "et demande automatique de la nouvelle carte au client.",
-    "Déclarations UBO": "Les déclarations au registre UBO et leur confirmation annuelle, "
-    "comparées au calcul des bénéficiaires effectifs.",
-    "Honoraires": "Les conditions de facturation du client (forfaits, tarifs horaires).",
-    "Factures": "Les factures émises au client, envoyées par Peppol, et leur paiement.",
+
+# Pages « Organisation » : quels rôles de relation chacune montre.
+RELATION_PAGES: dict[str, tuple[str, ...]] = {
+    "mandates": (*Relation.MANAGEMENT_ROLES, Relation.Role.PERMANENT_REPRESENTATIVE),
+    "shareholders": (Relation.Role.SHAREHOLDER,),
+    "other_relations": (
+        Relation.Role.SPOUSE,
+        Relation.Role.BENEFICIAL_OWNER,
+        Relation.Role.OTHER,
+    ),
 }
 
 
+def page_for_role(role: str) -> str:
+    return next((page for page, roles in RELATION_PAGES.items() if role in roles), "mandates")
+
+
 def _allowed(section: Section, client: Client) -> bool:
+    if section.vat_only and client.vat_status != Client.VatStatus.SUBJECT:
+        return False
     return section.for_persons if client.is_person else section.for_entities
 
 
@@ -109,25 +134,13 @@ def sections_for(client: Client) -> list[Section]:
     return [s for s in SECTIONS if _allowed(s, client)]
 
 
-@dataclass(frozen=True)
-class TabView:
-    """Onglet tel qu'affiché pour un client donné."""
-
-    key: str
-    label: str
-    sections: list[Section]
-    upcoming: tuple[str, ...]
-
-    @property
-    def first(self) -> Section | None:
-        return self.sections[0] if self.sections else None
+def top_for(client: Client) -> list[Section]:
+    return [s for s in TOP if _allowed(s, client)]
 
 
-def tabs_for(client: Client) -> list[TabView]:
-    return [
-        TabView(t.key, t.label, [s for s in t.sections if _allowed(s, client)], t.upcoming)
-        for t in TABS
-    ]
+def side_for(client: Client) -> list[Group]:
+    groups = [Group(g.label, tuple(s for s in g.sections if _allowed(s, client))) for g in SIDE]
+    return [g for g in groups if g.sections]
 
 
 def activate(request: HttpRequest, client: Client) -> None:
@@ -174,12 +187,9 @@ DEFAULT_SECTION = "identity"
 ACTION_SECTIONS = {
     "detail": DEFAULT_SECTION,  # ancienne adresse de la Synthèse : ouvre la Fiche
     "edit": "identity",
-    "relation_add": "relations",
-    "relation_edit": "relations",
     "assignments": "team",
     "official_function_add": "public_data",
 }
-UPCOMING_SECTION = "upcoming"
 
 
 def section_of(request: HttpRequest) -> str:
@@ -189,8 +199,17 @@ def section_of(request: HttpRequest) -> str:
         return DEFAULT_SECTION
     if match.url_name in SECTION_NAMES:
         return match.url_name
-    if match.url_name == UPCOMING_SECTION:
-        return f"{UPCOMING_SECTION}:{match.kwargs.get('tab', '')}"
+    if match.url_name == WORK:
+        return f"{WORK}:{match.kwargs.get('slug', '')}"
+    if match.url_name == "relation_add":
+        return page_for_role(str(request.GET.get("role", "")))
+    if match.url_name == "relation_edit":
+        role = (
+            Relation.objects.filter(pk=match.kwargs.get("relation_pk", 0))
+            .values_list("role", flat=True)
+            .first()
+        )
+        return page_for_role(role or "")
     return ACTION_SECTIONS.get(match.url_name, DEFAULT_SECTION)
 
 

@@ -77,7 +77,7 @@ def dossier_alerts(client: Client, ubo: UboAnalysis | None) -> list[Alert]:
                 Alert(
                     "info",
                     "Bénéficiaires effectifs : encodez actionnaires ou dirigeants",
-                    "relations",
+                    "shareholders",
                 )
             )
         elif not ubo.is_complete:

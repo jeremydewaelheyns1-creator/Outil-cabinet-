@@ -3,6 +3,17 @@
 Ce qui a été ajouté à l'outil, du plus récent au plus ancien. Toutes les données de la démo
 sont inventées.
 
+## 13 octobre 2026 — Nouvelle organisation du dossier (comme FID-Manager)
+
+- **En haut**, sous le nom du client, les onglets du travail de tous les jours : Documents,
+  Clôture, Versements anticipés, Déclaration TVA (seulement si le client est assujetti) et
+  Time sheet. Leur contenu sera défini un par un.
+- **À gauche**, un panneau pour la paperasse, comme dans FID : Fiche, Organisation, Suivi,
+  Conformité, Facturation. Tout est à un clic.
+- L'ancienne page « Relations » est découpée en **Mandataires**, **Actionnaires** et **Autres
+  relations**, avec le nombre de fiches à côté de chacune, comme les **Bénéficiaires
+  effectifs (UBO)**.
+
 ## 13 octobre 2026 — Plus d'onglet « Synthèse »
 
 - L'onglet « Synthèse » est supprimé. Quand on ouvre un client, on arrive directement sur sa

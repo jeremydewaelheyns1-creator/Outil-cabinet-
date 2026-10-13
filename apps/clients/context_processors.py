@@ -1,11 +1,14 @@
-"""Dossier actif, disponible dans tous les gabarits (barre du haut, onglets du dossier)."""
+"""Dossier actif, disponible dans tous les gabarits (en-tête, onglets, panneau de gauche)."""
 
 from typing import Any
 
+from django.db.models import Q
 from django.http import HttpRequest
 
+from apps.core.models import User
+
 from . import dossier
-from .models import Client
+from .models import Client, Relation
 
 
 def current_dossier(request: HttpRequest) -> dict[str, Any]:
@@ -13,18 +16,17 @@ def current_dossier(request: HttpRequest) -> dict[str, Any]:
     if user is None or not user.is_authenticated:
         return {}
     client = dossier.current(request)
-    section = dossier.section_of(request)
-    tabs = dossier.tabs_for(client) if client else []
-    current_tab = dossier.TAB_OF.get(section, "")
-    if section.startswith(f"{dossier.UPCOMING_SECTION}:"):
-        current_tab = section.split(":", 1)[1]
+    if client is None:
+        return {"current_client": None, "current_section": dossier.section_of(request)}
+    overdue = _overdue(client)
     return {
         "current_client": client,
-        "current_section": section,
-        "dossier_tabs": tabs,
-        "current_tab": next((t for t in tabs if t.key == current_tab), None),
-        "dossier_overdue": _overdue(client) if client else 0,
-        "dossier_relations": dossier.header_relations(client, user) if client else ([], 0),
+        "current_section": dossier.section_of(request),
+        "dossier_top": dossier.top_for(client),
+        "dossier_side": dossier.side_for(client),
+        "dossier_counts": {**_relation_counts(client, user), "overdue": overdue},
+        "dossier_overdue": overdue,
+        "dossier_relations": dossier.header_relations(client, user),
     }
 
 
@@ -32,3 +34,25 @@ def _overdue(client: Client) -> int:
     from apps.tasks.models import Task  # le module échéances dépend des clients
 
     return Task.objects.filter(client=client).overdue().count()
+
+
+def _relation_counts(client: Client, user: User) -> dict[str, int]:
+    """Compteurs du panneau « Organisation » (relations en cours, fiches visibles)."""
+    from .services import ubo
+
+    visible = Client.objects.visible_to(user)
+    current = Relation.objects.current()
+    if client.is_person:
+        base = current.filter(
+            Q(person=client, entity__in=visible) | Q(entity=client, person__in=visible)
+        )
+    else:
+        base = current.filter(entity=client, person__in=visible)
+    counts = {
+        "mandates": base.filter(role__in=dossier.RELATION_PAGES["mandates"]).count(),
+        "shareholders": base.filter(role__in=dossier.RELATION_PAGES["shareholders"]).count(),
+        "others": base.filter(role__in=dossier.RELATION_PAGES["other_relations"]).count(),
+    }
+    if not client.is_person:
+        counts["ubo"] = len(ubo.analyse(client).candidates)
+    return counts

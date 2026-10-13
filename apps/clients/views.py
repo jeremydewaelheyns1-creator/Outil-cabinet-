@@ -318,20 +318,54 @@ def _external_links(client: Client) -> list[tuple[str, str]]:
 
 
 def client_relations(request: AppRequest, pk: int) -> HttpResponse:
-    return render_section(
-        request,
-        pk,
-        "relations",
-        "clients/sections/relations.html",
-        lambda client: {
-            "as_entity": _split_relations(
-                request, client.relations_as_entity.select_related("person"), "person"
-            ),
-            "as_person": _split_relations(
-                request, client.relations_as_person.select_related("entity"), "entity"
-            ),
-        },
-    )
+    """Ancienne page « Relations » : remplacée par Mandataires, Actionnaires, Autres (D-026)."""
+    return redirect("clients:mandates", pk=pk)
+
+
+RELATION_TITLES = {
+    "mandates": "Mandataires",
+    "shareholders": "Actionnaires",
+    "other_relations": "Autres relations",
+}
+
+
+def _relation_page(request: AppRequest, pk: int, page: str) -> HttpResponse:
+    roles = dossier.RELATION_PAGES[page]
+
+    def build(client: Client) -> dict[str, Any]:
+        incoming = _split_relations(
+            request,
+            client.relations_as_entity.filter(role__in=roles).select_related("person"),
+            "person",
+        )
+        outgoing = _split_relations(
+            request,
+            client.relations_as_person.filter(role__in=roles).select_related("entity"),
+            "entity",
+        )
+        return {
+            "page": page,
+            "title": RELATION_TITLES[page],
+            # Pour une société : ses mandataires / actionnaires. Pour une personne : les
+            # sociétés où elle a un mandat / des parts (et ses proches, dans les deux sens).
+            "incoming": incoming if not client.is_person or page == "other_relations" else None,
+            "outgoing": outgoing if client.is_person else None,
+            "default_role": roles[0],
+        }
+
+    return render_section(request, pk, page, "clients/sections/relations.html", build)
+
+
+def client_mandates(request: AppRequest, pk: int) -> HttpResponse:
+    return _relation_page(request, pk, "mandates")
+
+
+def client_shareholders(request: AppRequest, pk: int) -> HttpResponse:
+    return _relation_page(request, pk, "shareholders")
+
+
+def client_other_relations(request: AppRequest, pk: int) -> HttpResponse:
+    return _relation_page(request, pk, "other_relations")
 
 
 def client_ubo(request: AppRequest, pk: int) -> HttpResponse:
@@ -406,18 +440,17 @@ def client_annual_accounts(request: AppRequest, pk: int) -> HttpResponse:
     )
 
 
-def client_upcoming(request: AppRequest, pk: int, tab: str) -> HttpResponse:
-    """Onglet pas encore construit : ce qu'il contiendra."""
-    found = next((t for t in dossier.TABS if t.key == tab), None)
+def client_work(request: AppRequest, pk: int, slug: str) -> HttpResponse:
+    """Page pas encore construite : son contenu sera défini avec Jeremy (D-026)."""
+    found = dossier.WORK_PAGES.get(slug)
     if found is None:
         raise Http404
-    items = [(label, dossier.UPCOMING_DESCRIPTIONS.get(label, "")) for label in found.upcoming]
     return render_section(
         request,
         pk,
-        f"upcoming:{tab}",
-        "clients/sections/upcoming.html",
-        lambda client: {"tab": found, "items": items},
+        found.key,
+        "clients/sections/work.html",
+        lambda client: {"page_label": found.label},
     )
 
 
@@ -446,9 +479,12 @@ def dossier_open(request: AppRequest, pk: int) -> HttpResponse:
     """Change de dossier en restant, si possible, sur la même rubrique."""
     client = open_dossier(request, pk)
     section = request.GET.get("rubrique", dossier.DEFAULT_SECTION)
-    allowed = {s.url_name for s in dossier.sections_for(client)}
+    allowed = {s.key: s for s in dossier.sections_for(client)}
+    target = allowed.get(section)
+    if target is not None and target.slug:
+        return redirect("clients:work", pk=client.pk, slug=target.slug)
     return redirect(
-        f"clients:{section if section in allowed else dossier.DEFAULT_SECTION}", pk=client.pk
+        f"clients:{target.url_name if target else dossier.DEFAULT_SECTION}", pk=client.pk
     )
 
 
@@ -624,8 +660,10 @@ def relation_edit(request: AppRequest, pk: int, relation_pk: int | None = None) 
         as_person = relation.person_id == client.pk
     else:
         as_person = request.GET.get("sens") == "mandat" or request.POST.get("sens") == "mandat"
+    role = request.GET.get("role", "")
     form = RelationForm(
         request.POST or None,
+        initial={"role": role} if role in Relation.Role.values else None,
         instance=relation,
         client=client,
         as_person=as_person,
@@ -646,7 +684,7 @@ def relation_edit(request: AppRequest, pk: int, relation_pk: int | None = None) 
             payload={"relation": saved.pk, "role": saved.role},
         )
         messages.success(request, "Relation enregistrée.")
-        return redirect("clients:relations", pk=client.pk)
+        return redirect(f"clients:{dossier.page_for_role(saved.role)}", pk=client.pk)
     selected = form["other"].value()
     selected_client = (
         _visible_clients(request).filter(pk=selected).first()
@@ -662,6 +700,7 @@ def relation_edit(request: AppRequest, pk: int, relation_pk: int | None = None) 
             "relation": relation,
             "as_person": as_person,
             "selected_client": selected_client,
+            "back": dossier.page_for_role(relation.role if relation else role),
         },
     )
 
@@ -676,7 +715,7 @@ def relation_delete(request: AppRequest, pk: int, relation_pk: int) -> HttpRespo
     relation.delete()
     events.emit("relation.deleted", subject=entity, actor=request.user)
     messages.success(request, "Relation supprimée.")
-    return redirect("clients:relations", pk=client.pk)
+    return redirect(f"clients:{dossier.page_for_role(relation.role)}", pk=client.pk)
 
 
 # --- Équipe ---------------------------------------------------------------------------------
