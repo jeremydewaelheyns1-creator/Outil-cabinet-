@@ -107,7 +107,7 @@ def test_staff_reaches_admin_through_application_login(client):
 
 def test_settings_page_only_for_admin_tools(web, make_user, client):
     assert web.get(reverse("core:settings")).status_code == 403
-    assert "Paramètres" not in web.get(reverse("core:home")).content.decode()
+    assert "Paramètres" not in web.get(reverse("core:home")).content.decode()  # masqué du menu
     auditor = make_user(capabilities=["audit.view"])
     client.force_login(auditor)
     html = client.get(reverse("core:settings")).content.decode()

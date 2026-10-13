@@ -10,11 +10,6 @@
       <a href="{% url 'core:home' %}" {% nav_current request "core:home" %}>Accueil</a>
       <a href="{% url 'clients:list' %}" {% nav_current request "clients:list" %}>Tous les clients</a>
     </nav>
-    {% if user|can:"reprise.import" or user|can:"bce.import" or user|can:"audit.view" or user.is_staff %}
-      <nav class="nav-bottom" aria-label="Paramètres">
-        <a href="{% url 'core:settings' %}" {% nav_current request "core:settings" %}>⚙ Paramètres</a>
-      </nav>
-    {% endif %}
   </aside>
 
   <main class="main" id="contenu">

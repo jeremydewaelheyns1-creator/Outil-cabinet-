@@ -3,10 +3,11 @@
 Ce qui a été ajouté à l'outil, du plus récent au plus ancien. Toutes les données de la démo
 sont inventées.
 
-## 13 octobre 2026 — Paramètres regroupés
+## 13 octobre 2026 — Menu réduit à l'essentiel
 
-- Reprise FID-Manager, Données BCE, Journal des consultations et gestion des comptes sont
-  rangés derrière un seul lien « Paramètres », en bas du menu, visible des administrateurs.
+- Le menu de gauche ne contient plus que « Accueil » et « Tous les clients ».
+- Les outils d'administration (reprise FID-Manager, données BCE, journal des consultations,
+  comptes) sont masqués du menu ; ils restent accessibles à l'adresse /parametres/.
 
 ## 13 octobre 2026 — Menu de l'accueil allégé
 
