@@ -1,0 +1,62 @@
+# Démo cliquable publiée sur GitHub Pages à chaque mise à jour de `main`.
+# Données entièrement fictives (commande `demo`). Réglage GitHub requis une fois :
+# Settings → Pages → Source : « GitHub Actions ».
+name: Démo en ligne
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: demo-pages
+  cancel-in-progress: true
+
+jobs:
+  construire:
+    runs-on: ubuntu-24.04
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: outil
+          POSTGRES_PASSWORD: outil
+          POSTGRES_DB: outil
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U outil" --health-interval 5s --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgres://outil:outil@localhost:5432/outil
+      DJANGO_SETTINGS_MODULE: config.settings.dev
+      JOBS_MODE: eager
+      CABINET_NAME: Cabinet (démo)
+      TZ: Europe/Brussels
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.11.32"
+      - run: uv sync --frozen
+      - name: Base de démonstration (données fictives)
+        run: uv run python manage.py migrate -v0 && uv run python manage.py demo
+      - name: Export des pages
+        run: uv run python manage.py export_demo_site site --base "/${{ github.event.repository.name }}/"
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+  publier:
+    needs: construire
+    runs-on: ubuntu-24.04
+    environment:
+      name: github-pages
+      url: ${{ steps.deploiement.outputs.page_url }}
+    steps:
+      - id: deploiement
+        uses: actions/deploy-pages@v4

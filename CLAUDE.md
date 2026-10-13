@@ -43,4 +43,8 @@ uv run python manage.py runserver               # poste de développement
 uv run python manage.py demo                    # données fictives
 ```
 
+Après chaque étape livrée : ajouter une entrée en langage simple en tête de
+`docs/NOUVEAUTES.md` (page « Nouveautés » de la démo en ligne, publiée automatiquement sur
+GitHub Pages par `.github/workflows/demo.yml`).
+
 Une session n'est terminée que si format, ruff, mypy, migrations et pytest sont au vert.
