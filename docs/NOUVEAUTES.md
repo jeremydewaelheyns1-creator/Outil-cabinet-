@@ -3,6 +3,11 @@
 Ce qui a été ajouté à l'outil, du plus récent au plus ancien. Toutes les données de la démo
 sont inventées.
 
+## 13 octobre 2026 — Menu de l'accueil allégé
+
+- Le menu de gauche ne contient plus « Échéancier » ni « Nouveau client » : on crée un client
+  depuis « Tous les clients ».
+
 ## 13 octobre 2026 — Onglets à venir cliquables
 
 - « Documents » et « Conformité » sont regroupés en un seul onglet « Documents et conformité ».
