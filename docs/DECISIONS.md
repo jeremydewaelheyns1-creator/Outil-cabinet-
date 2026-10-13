@@ -111,3 +111,8 @@ gauche n'existe que sur les écrans du cabinet (accueil, échéancier, clients, 
 ## D-022 — Cinq onglets : Documents et Conformité regroupés
 Précise D-021 (demande de Jeremy) : Synthèse, Fiche, Travail, Documents et conformité,
 Facturation. Un onglet pas encore construit reste cliquable et décrit ce qu'il contiendra.
+
+## D-023 — Deux clics maximum
+Règle d'ergonomie fixée par Jeremy : dans un dossier, toute information est atteignable en deux
+clics au plus (onglet puis sous-onglet). Jamais de troisième niveau. Préférer des pages riches
+(beaucoup d'informations, présentation aérée) à des pages supplémentaires.
