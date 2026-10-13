@@ -1,0 +1,13 @@
+{% if query|length < 2 %}
+  <p class="muted small">Tapez au moins deux caractères.</p>
+{% else %}
+  <div class="picker-results">
+    {% for result in results %}
+      <label><input type="radio" name="{{ field_name }}" value="{{ result.pk }}" required> {{ result.display_name }}
+        <span class="muted small">· {{ result.get_kind_display }}{% if result.city %} · {{ result.city }}{% endif %}{% if result.enterprise_number %} · {{ result.enterprise_number_display }}{% endif %}</span>
+      </label>
+    {% empty %}
+      <p class="muted small">Aucune fiche trouvée. <a href="{% url 'clients:create' %}" target="_blank" rel="noopener">Créer la fiche</a> puis recherchez-la à nouveau.</p>
+    {% endfor %}
+  </div>
+{% endif %}

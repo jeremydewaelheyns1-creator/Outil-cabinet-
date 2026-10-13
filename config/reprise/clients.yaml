@@ -1,0 +1,67 @@
+# Correspondance entre les colonnes de l'export « clients » de FID-Manager et nos champs.
+#
+# Pour chaque champ, la liste des intitulés de colonne acceptés. La comparaison ignore les
+# majuscules, les accents et la ponctuation : « N° d'entreprise » = « n d entreprise ».
+# Si l'export du cabinet utilise un autre intitulé, il suffit de l'ajouter ici : aucun code
+# à modifier. Les colonnes non reconnues sont listées dans le rapport d'analyse.
+
+champs:
+  reference: ["Référence", "Réf", "Réf.", "Code client", "Code", "N° client", "Numéro client", "Référence comptable", "Code dossier"]
+  name: ["Nom", "Dénomination", "Raison sociale", "Nom client", "Nom / Dénomination", "Société", "Client"]
+  first_name: ["Prénom"]
+  legal_form: ["Forme juridique", "Forme"]
+  kind: ["Type", "Type de client", "Type client", "Personne physique / morale", "Catégorie"]
+  status: ["Statut", "Statut client", "État"]
+  enterprise_number: ["N° d'entreprise", "Numéro d'entreprise", "N° entreprise", "N° BCE", "BCE", "Numéro BCE", "N° TVA", "Numéro de TVA", "TVA", "Numéro TVA"]
+  national_number: ["N° national", "Numéro national", "Registre national", "N° registre national", "NISS", "N° NISS"]
+  birth_date: ["Date de naissance", "Né le", "Naissance"]
+  nationality: ["Nationalité"]
+  language: ["Langue", "Langue de correspondance"]
+  street: ["Rue", "Adresse", "Rue et numéro"]
+  house_number: ["Numéro", "N°", "N° rue", "Numéro de rue"]
+  box: ["Boîte", "Bte", "Boîte postale"]
+  postal_code: ["Code postal", "CP", "Code Postal"]
+  city: ["Localité", "Ville", "Commune"]
+  country: ["Pays", "Code pays"]
+  email: ["E-mail", "Email", "Courriel", "Adresse e-mail", "Mail"]
+  phone: ["Téléphone", "Tél", "Tél.", "Téléphone fixe"]
+  mobile: ["GSM", "Mobile", "Portable"]
+  website: ["Site web", "Site internet", "Web"]
+  vat_status: ["Statut TVA", "Assujettissement TVA", "Régime TVA"]
+  vat_periodicity: ["Périodicité TVA", "Périodicité", "Déclaration TVA"]
+  fiscal_year_end: ["Fin d'exercice", "Clôture", "Date de clôture", "Fin exercice comptable"]
+  client_since: ["Client depuis", "Date d'entrée", "Début de mission", "Date début"]
+  client_until: ["Client jusqu'au", "Date de sortie", "Fin de mission", "Date fin"]
+  portfolio: ["Portefeuille", "Bureau"]
+  notes: ["Remarques", "Notes", "Commentaire", "Commentaires"]
+  partner: ["Associé", "Associé responsable"]
+  manager: ["Responsable", "Gestionnaire", "Responsable dossier"]
+  assistant: ["Assistant", "Assistante", "Collaborateur"]
+
+# Valeurs reconnues pour les champs à choix (comparaison sans accents ni majuscules).
+valeurs:
+  kind:
+    person: ["Personne physique", "PP", "Physique", "Indépendant", "Particulier"]
+    company: ["Personne morale", "PM", "Société", "Morale"]
+    nonprofit: ["ASBL", "Association", "Fondation", "AISBL"]
+  status:
+    active: ["Actif", "Client", "En cours", "Oui"]
+    prospect: ["Prospect", "Potentiel"]
+    former: ["Inactif", "Ancien", "Ancien client", "Clôturé", "Terminé", "Non"]
+  language:
+    fr: ["FR", "F", "Français", "Francais"]
+    nl: ["NL", "N", "Néerlandais", "Nederlands"]
+    de: ["DE", "D", "Allemand", "Deutsch"]
+    en: ["EN", "E", "Anglais", "English"]
+  vat_status:
+    subject: ["Assujetti", "Assujetti normal", "Oui"]
+    franchise: ["Franchise", "Assujetti franchisé", "Régime de franchise", "Petite entreprise"]
+    exempt: ["Exonéré", "Art. 44", "Assujetti exonéré"]
+    mixed: ["Mixte", "Assujetti mixte"]
+    not_subject: ["Non assujetti", "Non"]
+  vat_periodicity:
+    monthly: ["Mensuel", "Mensuelle", "M", "Mois"]
+    quarterly: ["Trimestriel", "Trimestrielle", "T", "Trimestre"]
+
+# Formes juridiques qui désignent une ASBL ou une fondation.
+formes_non_marchandes: ["ASBL", "AISBL", "Fondation", "Fondation privée", "FUP", "VZW"]

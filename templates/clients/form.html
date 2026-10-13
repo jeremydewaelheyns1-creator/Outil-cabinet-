@@ -1,0 +1,65 @@
+{% extends "layouts/app.html" %}
+{% block head_title %}{% if client %}Modifier {{ client.display_name }}{% else %}Nouveau client{% endif %}{% endblock %}
+{% block page_title %}{% if client %}Modifier la fiche{% else %}Nouveau client{% endif %}{% endblock %}
+{% block page_subtitle %}{% if client %}<div class="subtitle">{{ client.display_name }}</div>{% endif %}{% endblock %}
+{% block content %}
+{% if not client %}
+<section class="card" style="margin-bottom: 1rem">
+  <div class="card-header"><h2>Partir de la BCE</h2></div>
+  <label for="bce-q">Nom ou numéro d'entreprise</label>
+  <input id="bce-q" type="search" name="q" autocomplete="off" placeholder="Ex. : Boulangerie Dupont, 0123.456.789"
+         hx-get="{% url 'bce:search' %}" hx-trigger="input changed delay:300ms" hx-target="#bce-resultats">
+  <p class="help">Choisir une entreprise préremplit la fiche avec les données publiques. Sinon, remplissez le formulaire ci-dessous.</p>
+  <div id="bce-resultats"></div>
+</section>
+{% endif %}
+
+<form method="post" novalidate>
+  {% csrf_token %}
+  {% if form.non_field_errors %}<ul class="errorlist nonfield">{% for e in form.non_field_errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+  <fieldset>
+    <legend>Identité</legend>
+    <div class="form-grid">
+      {{ form.kind.as_field_group }}
+      {{ form.status.as_field_group }}
+      {{ form.portfolio.as_field_group }}
+      {{ form.language.as_field_group }}
+      {{ form.name.as_field_group }}
+      {{ form.first_name.as_field_group }}
+      {{ form.legal_form.as_field_group }}
+      {{ form.reference.as_field_group }}
+      {{ form.enterprise_number.as_field_group }}
+      {% if form.new_national_number %}{{ form.new_national_number.as_field_group }}{% endif %}
+      {{ form.birth_date.as_field_group }}
+      {{ form.nationality.as_field_group }}
+    </div>
+  </fieldset>
+  <fieldset>
+    <legend>Adresse</legend>
+    <div class="form-grid">
+      {{ form.street.as_field_group }}
+      {{ form.house_number.as_field_group }}
+      {{ form.box.as_field_group }}
+      {{ form.postal_code.as_field_group }}
+      {{ form.city.as_field_group }}
+      {{ form.country.as_field_group }}
+    </div>
+  </fieldset>
+  <fieldset>
+    <legend>Fiscalité et mission</legend>
+    <div class="form-grid">
+      {{ form.vat_status.as_field_group }}
+      {{ form.vat_periodicity.as_field_group }}
+      {{ form.fiscal_year_end_day.as_field_group }}
+      {{ form.fiscal_year_end_month.as_field_group }}
+      {{ form.client_since.as_field_group }}
+      {{ form.client_until.as_field_group }}
+      <div class="wide">{{ form.notes.as_field_group }}</div>
+    </div>
+  </fieldset>
+  <div class="actions">
+    <button type="submit">Enregistrer</button>
+    <a class="button button-secondary" href="{% if client %}{{ client.get_absolute_url }}{% else %}{% url 'clients:list' %}{% endif %}">Annuler</a>
+  </div>
+</form>
+{% endblock %}

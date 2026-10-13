@@ -1,0 +1,32 @@
+{% extends "layouts/app.html" %}
+{% block head_title %}Reprise FID-Manager{% endblock %}
+{% block page_title %}Reprise des données FID-Manager{% endblock %}
+{% block page_subtitle %}<div class="subtitle">Déposez l'export Excel des clients. Il est d'abord analysé : rien n'est modifié avant votre confirmation.</div>{% endblock %}
+{% block content %}
+<form method="post" enctype="multipart/form-data" class="card" style="max-width: 640px">
+  {% csrf_token %}
+  {{ form.file.as_field_group }}
+  <button type="submit">Analyser le fichier</button>
+</form>
+
+<section class="card">
+  <div class="card-header"><h2>Dépôts précédents</h2></div>
+  <div class="table-wrap">
+  <table class="table">
+    <thead><tr><th>Date</th><th>Fichier</th><th>Par</th><th>Statut</th></tr></thead>
+    <tbody>
+    {% for batch in batches %}
+      <tr>
+        <td class="small">{{ batch.created_at|date:"d/m/Y H:i" }}</td>
+        <td><a href="{% url 'reprise:detail' batch.pk %}">{{ batch.file_name }}</a></td>
+        <td class="small">{{ batch.uploaded_by }}</td>
+        <td><span class="badge {% if batch.status == 'applied' %}badge-success{% elif batch.status == 'analysed' %}badge-primary{% endif %}">{{ batch.get_status_display }}</span></td>
+      </tr>
+    {% empty %}
+      <tr><td colspan="4" class="empty">Aucun dépôt.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</section>
+{% endblock %}

@@ -1,0 +1,47 @@
+name: Vérifications
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  verifier:
+    runs-on: ubuntu-24.04
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: outil
+          POSTGRES_PASSWORD: outil
+          POSTGRES_DB: outil
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U outil" --health-interval 5s --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgres://outil:outil@localhost:5432/outil
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.11.32"
+      - name: Installer Python et les dépendances
+        run: uv sync --frozen
+      - name: Style (ruff)
+        run: uv run ruff format --check . && uv run ruff check .
+      - name: Typage (mypy)
+        run: uv run mypy .
+      - name: Migrations à jour
+        run: uv run python manage.py makemigrations --check --dry-run --settings=config.settings.test
+      - name: Tests
+        run: uv run pytest
+      - name: Contrôles de déploiement
+        env:
+          DJANGO_SECRET_KEY: verification-ci-uniquement-0123456789-abcdefghijklmnopqrstuvwxyz
+          DJANGO_ALLOWED_HOSTS: outil.example.be
+          DJANGO_CSRF_TRUSTED_ORIGINS: https://outil.example.be
+        run: uv run python manage.py check --deploy --fail-level WARNING --settings=config.settings.prod

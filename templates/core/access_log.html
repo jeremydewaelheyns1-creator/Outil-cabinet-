@@ -1,0 +1,38 @@
+{% extends "layouts/app.html" %}
+{% block head_title %}Journal des consultations{% endblock %}
+{% block page_title %}Journal des consultations{% endblock %}
+{% block page_subtitle %}<div class="subtitle">Qui a consulté, modifié ou exporté quoi. Ce journal ne peut être ni modifié ni effacé.</div>{% endblock %}
+{% block content %}
+<form class="filters" method="get">
+  <div>
+    <label for="f-action">Action</label>
+    <select id="f-action" name="action">
+      <option value="">Toutes</option>
+      {% for value, label in actions %}<option value="{{ value }}" {% if filters.action == value %}selected{% endif %}>{{ label }}</option>{% endfor %}
+    </select>
+  </div>
+  <div><label for="f-qui">Utilisateur</label><input id="f-qui" type="text" name="qui" value="{{ filters.qui }}"></div>
+  <div><label for="f-objet">Objet</label><input id="f-objet" type="text" name="objet" value="{{ filters.objet }}"></div>
+  <div><button type="submit">Filtrer</button></div>
+</form>
+<div class="table-wrap">
+<table class="table">
+  <thead><tr><th>Date</th><th>Utilisateur</th><th>Action</th><th>Objet</th><th>Adresse IP</th><th>Détails</th></tr></thead>
+  <tbody>
+  {% for entry in page %}
+    <tr>
+      <td class="small">{{ entry.at|date:"d/m/Y H:i:s" }}</td>
+      <td>{{ entry.user_email|default:"—" }}</td>
+      <td><span class="badge">{{ entry.get_action_display }}</span></td>
+      <td>{{ entry.object_repr|default:"—" }}</td>
+      <td class="mono small">{{ entry.ip_address|default:"" }}</td>
+      <td class="small muted">{% for key, value in entry.details.items %}{{ key }} : {{ value }}{% if not forloop.last %} · {% endif %}{% endfor %}</td>
+    </tr>
+  {% empty %}
+    <tr><td colspan="6" class="empty">Aucune entrée.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+{% include "components/_pagination.html" %}
+{% endblock %}

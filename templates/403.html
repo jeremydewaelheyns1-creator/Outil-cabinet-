@@ -1,0 +1,4 @@
+{% extends "layouts/app.html" %}
+{% block head_title %}Accès refusé{% endblock %}
+{% block page_title %}Accès refusé{% endblock %}
+{% block content %}<div class="card"><p>Votre profil ne donne pas accès à cet écran. Adressez-vous à un administrateur si vous en avez besoin.</p><p><a href="{% url 'core:home' %}">Retour à l'accueil</a></p></div>{% endblock %}

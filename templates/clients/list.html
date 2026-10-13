@@ -1,0 +1,45 @@
+{% extends "layouts/app.html" %}
+{% block head_title %}Clients{% endblock %}
+{% block page_title %}Clients{% endblock %}
+{% block page_actions %}
+  {% if can_export %}<a class="button button-secondary" href="{% url 'clients:export' %}?{% querystring page=None %}">Exporter (Excel)</a>{% endif %}
+  {% if can_edit %}<a class="button" href="{% url 'clients:create' %}">Nouveau client</a>{% endif %}
+{% endblock %}
+{% block content %}
+<form class="filters" method="get" action="{% url 'clients:list' %}"
+      hx-get="{% url 'clients:list' %}" hx-target="#resultats" hx-push-url="true"
+      hx-trigger="input delay:300ms, change, submit">
+  <div class="search">
+    <label for="q">Rechercher</label>
+    <input id="q" type="search" name="q" value="{{ filters.q }}" autofocus autocomplete="off"
+           placeholder="Nom, prénom, n° d'entreprise, référence…">
+  </div>
+  <div>
+    <label for="statut">Statut</label>
+    <select id="statut" name="statut">
+      <option value="active" {% if filters.statut == "active" %}selected{% endif %}>Clients</option>
+      <option value="prospect" {% if filters.statut == "prospect" %}selected{% endif %}>Prospects</option>
+      <option value="former" {% if filters.statut == "former" %}selected{% endif %}>Anciens clients</option>
+      <option value="tous" {% if filters.statut == "tous" %}selected{% endif %}>Tous</option>
+    </select>
+  </div>
+  <div>
+    <label for="type">Type</label>
+    <select id="type" name="type">
+      <option value="">Tous</option>
+      {% for value, label in kinds %}<option value="{{ value }}" {% if filters.type == value %}selected{% endif %}>{{ label }}</option>{% endfor %}
+    </select>
+  </div>
+  {% if portfolios|length > 1 %}
+  <div>
+    <label for="portefeuille">Portefeuille</label>
+    <select id="portefeuille" name="portefeuille">
+      <option value="">Tous</option>
+      {% for p in portfolios %}<option value="{{ p.pk }}" {% if filters.portefeuille == p.pk|stringformat:"s" %}selected{% endif %}>{{ p.name }}</option>{% endfor %}
+    </select>
+  </div>
+  {% endif %}
+  <noscript><div><button type="submit">Filtrer</button></div></noscript>
+</form>
+<div id="resultats">{% include "clients/_list_results.html" %}</div>
+{% endblock %}

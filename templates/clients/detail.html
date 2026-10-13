@@ -1,0 +1,253 @@
+{% extends "layouts/app.html" %}
+{% block head_title %}{{ client.display_name }}{% endblock %}
+{% block page_title %}{{ client.display_name }}{% endblock %}
+{% block page_subtitle %}
+<div class="subtitle">
+  <span class="badge">{{ client.get_kind_display }}</span>
+  {% if client.status == "active" %}<span class="badge badge-success">Client</span>{% elif client.status == "prospect" %}<span class="badge badge-primary">Prospect</span>{% else %}<span class="badge">Ancien client</span>{% endif %}
+  {% if client.bce_juridical_situation %}<span class="badge badge-danger">{{ client.bce_juridical_situation }}</span>{% endif %}
+  {% if client.bce_status == "absent" %}<span class="badge badge-warning">Absent de la BCE</span>{% endif %}
+  {% if client.enterprise_number %}<span class="mono">{{ client.enterprise_number_display }}</span> ·{% endif %}
+  {% if client.reference %}réf. {{ client.reference }} ·{% endif %}
+  {{ client.portfolio.name }}
+</div>
+{% endblock %}
+{% block page_actions %}
+  <a class="button button-secondary" href="{% url 'clients:history' client.pk %}">Historique</a>
+  {% if can_edit %}<a class="button" href="{% url 'clients:edit' client.pk %}">Modifier</a>{% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="grid grid-2">
+<div>
+  {# --- Identité ------------------------------------------------------------------------- #}
+  <section class="card">
+    <div class="card-header"><h2>Identité</h2></div>
+    <dl class="fields">
+      {% if client.legal_form %}<dt>Forme juridique</dt><dd>{{ client.legal_form }}</dd>{% endif %}
+      {% if client.enterprise_number %}
+        <dt>N° d'entreprise</dt><dd class="mono">{{ client.enterprise_number_display }} <span class="muted">(TVA {{ client.vat_number }})</span></dd>
+      {% endif %}
+      {% if client.is_person %}
+        <dt>N° national</dt>
+        <dd>
+          {% if client.national_number %}
+            <span id="numero-national"><span class="mono">{{ client.national_number_masked }}</span>
+            {% if can_see_sensitive %}
+              <button type="button" class="link-button small" hx-post="{% url 'clients:reveal_nn' client.pk %}" hx-target="#numero-national" hx-swap="innerHTML">Afficher</button>
+            {% endif %}</span>
+          {% else %}<span class="empty">non renseigné</span>{% endif %}
+        </dd>
+        <dt>Date de naissance</dt><dd>{{ client.birth_date|date:"d/m/Y"|default:"—" }}</dd>
+        {% if client.nationality %}<dt>Nationalité</dt><dd>{{ client.nationality }}</dd>{% endif %}
+      {% endif %}
+      <dt>Langue</dt><dd>{{ client.get_language_display }}</dd>
+      {% if client.founded_on %}<dt>Début d'activité</dt><dd>{{ client.founded_on|date:"d/m/Y" }}</dd>{% endif %}
+      {% if client.client_since %}<dt>Client depuis</dt><dd>{{ client.client_since|date:"d/m/Y" }}</dd>{% endif %}
+      {% if client.client_until %}<dt>Client jusqu'au</dt><dd>{{ client.client_until|date:"d/m/Y" }}</dd>{% endif %}
+    </dl>
+    {% if client.notes %}<p class="small" style="white-space: pre-line; margin-top: .75rem">{{ client.notes }}</p>{% endif %}
+  </section>
+
+  {# --- Adresse et coordonnées ----------------------------------------------------------- #}
+  <section class="card">
+    <div class="card-header"><h2>Adresse et coordonnées</h2></div>
+    {% if client.address_lines %}
+      <p>{% for line in client.address_lines %}{{ line }}{% if not forloop.last %}<br>{% endif %}{% endfor %}</p>
+    {% else %}<p class="empty">Adresse non renseignée.</p>{% endif %}
+    {% if contacts %}
+      <ul class="timeline">
+      {% for contact in contacts %}
+        <li>
+          <span class="badge">{{ contact.get_kind_display }}</span>
+          {% if contact.kind == "email" %}<a href="mailto:{{ contact.value }}">{{ contact.value }}</a>
+          {% elif contact.kind == "website" %}<a href="{{ contact.value }}" target="_blank" rel="noopener noreferrer">{{ contact.value }}</a>
+          {% else %}<a href="tel:{{ contact.value }}">{{ contact.value }}</a>{% endif %}
+          {% if contact.label %}<span class="muted small">{{ contact.label }}</span>{% endif %}
+          {% if contact.is_primary %}<span class="badge badge-primary">principal</span>{% endif %}
+          {% if contact.source == "bce" %}<span class="muted small">(BCE)</span>{% endif %}
+          {% if can_edit %}
+            <form class="inline" method="post" action="{% url 'clients:contact_delete' client.pk contact.pk %}">{% csrf_token %}
+              <button type="submit" class="link-button small" aria-label="Supprimer {{ contact.value }}">supprimer</button>
+            </form>
+          {% endif %}
+        </li>
+      {% endfor %}
+      </ul>
+    {% endif %}
+    {% if can_edit %}
+      <details style="margin-top: .75rem">
+        <summary>Ajouter une coordonnée</summary>
+        <form method="post" action="{% url 'clients:contact_add' client.pk %}" class="form-grid">
+          {% csrf_token %}
+          {{ contact_form.kind.as_field_group }}
+          {{ contact_form.value.as_field_group }}
+          {{ contact_form.label.as_field_group }}
+          {{ contact_form.is_primary.as_field_group }}
+          <div class="wide"><button type="submit">Ajouter</button></div>
+        </form>
+      </details>
+    {% endif %}
+  </section>
+
+  {# --- Fiscalité ------------------------------------------------------------------------ #}
+  <section class="card">
+    <div class="card-header"><h2>Fiscalité</h2></div>
+    <dl class="fields">
+      <dt>Statut TVA</dt><dd>{% if client.vat_status %}{{ client.get_vat_status_display }}{% else %}<span class="empty">non renseigné</span>{% endif %}</dd>
+      {% if client.vat_periodicity %}<dt>Périodicité TVA</dt><dd>{{ client.get_vat_periodicity_display }}</dd>{% endif %}
+      {% if not client.is_person %}<dt>Clôture de l'exercice</dt><dd>{{ client.fiscal_year_end_display|default:"—" }}</dd>{% endif %}
+    </dl>
+    {% if client.enterprise_number %}
+      <div style="margin-top: .75rem">
+        <div id="vies">
+          {% with check=vat_checks.0 %}{% if check %}{% include "clients/_vies_result.html" %}{% endif %}{% endwith %}
+        </div>
+        <button type="button" class="button-secondary small" hx-post="{% url 'clients:vies_check' client.pk %}" hx-target="#vies" hx-indicator="#vies-wait">Vérifier la TVA dans VIES</button>
+        <span id="vies-wait" class="htmx-indicator small muted">interrogation de VIES…</span>
+      </div>
+    {% endif %}
+  </section>
+
+  {# --- Relations ------------------------------------------------------------------------ #}
+  {% if not client.is_person or as_entity.current or as_entity.past %}
+  <section class="card">
+    <div class="card-header">
+      <h2>{% if client.is_person %}Proches{% else %}Dirigeants et actionnaires{% endif %}</h2>
+      {% if can_edit %}<a class="button button-secondary button-small" href="{% url 'clients:relation_add' client.pk %}">Ajouter</a>{% endif %}
+    </div>
+    {% include "clients/_relations_table.html" with relations=as_entity.current other_side="person" %}
+    {% if as_entity.past %}
+      <details style="margin-top: .5rem"><summary class="small">Anciennes relations ({{ as_entity.past|length }})</summary>
+        {% include "clients/_relations_table.html" with relations=as_entity.past other_side="person" %}
+      </details>
+    {% endif %}
+    {% if as_entity.hidden %}<p class="muted small">{{ as_entity.hidden }} relation{{ as_entity.hidden|pluralize }} masquée{{ as_entity.hidden|pluralize }} (portefeuille privé).</p>{% endif %}
+  </section>
+  {% endif %}
+
+  <section class="card">
+    <div class="card-header">
+      <h2>{% if client.is_person %}Mandats, participations et liens{% else %}Participations dans d'autres sociétés{% endif %}</h2>
+      {% if can_edit %}<a class="button button-secondary button-small" href="{% url 'clients:relation_add' client.pk %}?sens=mandat">Ajouter</a>{% endif %}
+    </div>
+    {% include "clients/_relations_table.html" with relations=as_person.current other_side="entity" %}
+    {% if as_person.past %}
+      <details style="margin-top: .5rem"><summary class="small">Anciennes relations ({{ as_person.past|length }})</summary>
+        {% include "clients/_relations_table.html" with relations=as_person.past other_side="entity" %}
+      </details>
+    {% endif %}
+    {% if as_person.hidden %}<p class="muted small">{{ as_person.hidden }} relation{{ as_person.hidden|pluralize }} masquée{{ as_person.hidden|pluralize }} (portefeuille privé).</p>{% endif %}
+  </section>
+</div>
+
+<div>
+  {# --- Équipe -------------------------------------------------------------------------- #}
+  <section class="card">
+    <div class="card-header">
+      <h2>Équipe du cabinet</h2>
+      {% if can_edit %}<a class="button button-secondary button-small" href="{% url 'clients:assignments' client.pk %}">Modifier</a>{% endif %}
+    </div>
+    {% if assignments %}
+      <dl class="fields">{% for a in assignments %}<dt>{{ a.get_role_display }}</dt><dd>{{ a.user }}</dd>{% endfor %}</dl>
+    {% else %}<p class="empty">Personne n'est encore affecté à ce dossier.</p>{% endif %}
+  </section>
+
+  {# --- Bénéficiaires effectifs ----------------------------------------------------------- #}
+  {% if ubo %}
+  <section class="card">
+    <div class="card-header">
+      <h2>Bénéficiaires effectifs</h2>
+      {% if ubo.is_consistent and ubo.candidates %}<span class="badge badge-success">conforme aux déclarations</span>
+      {% elif ubo.candidates %}<span class="badge badge-warning">à vérifier</span>{% endif %}
+    </div>
+    <p class="muted small">Calcul à partir des relations encodées (seuil {{ ubo.threshold_label }}). C'est une proposition : la déclaration reste une décision du cabinet.</p>
+    {% if ubo.candidates %}
+      <table class="table">
+        <thead><tr><th>Personne</th><th>Fondement</th><th>Capital</th><th>Votes</th></tr></thead>
+        <tbody>
+        {% for c in ubo.candidates %}
+          <tr>
+            <td><a href="{{ c.person.get_absolute_url }}">{{ c.person }}</a>
+              {% for h in c.holdings %}{% if h.chain|length > 2 %}<div class="muted small">via {% for link in h.chain|slice:"1:-1" %}{{ link.name }}{% if not forloop.last %} → {% endif %}{% endfor %}</div>{% endif %}{% endfor %}
+            </td>
+            <td class="small">{{ c.basis_label }}</td>
+            <td class="nowrap">{% if c.basis == "ownership" %}{{ c.share_percentage|floatformat:"-2" }} %{% endif %}</td>
+            <td class="nowrap">{% if c.basis == "ownership" %}{{ c.voting_percentage|floatformat:"-2" }} %{% endif %}</td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <p class="empty">Aucun bénéficiaire ne peut être calculé : encodez les actionnaires (avec leurs pourcentages) ou les dirigeants.</p>
+    {% endif %}
+    {% if ubo.missing %}<p class="alert alert-warning small">Non déclaré{{ ubo.missing|pluralize }} comme bénéficiaire{{ ubo.missing|pluralize }} effectif{{ ubo.missing|pluralize }} : {% for p in ubo.missing %}{{ p }}{% if not forloop.last %}, {% endif %}{% endfor %}.</p>{% endif %}
+    {% if ubo.unexpected %}<p class="alert alert-warning small">Déclaré{{ ubo.unexpected|pluralize }} mais non retrouvé{{ ubo.unexpected|pluralize }} par le calcul : {% for p in ubo.unexpected %}{{ p }}{% if not forloop.last %}, {% endif %}{% endfor %}.</p>{% endif %}
+    {% if ubo.unresolved_entities %}<p class="alert alert-info small">Actionnariat inconnu pour : {% for e in ubo.unresolved_entities %}<a href="{{ e.get_absolute_url }}">{{ e }}</a>{% if not forloop.last %}, {% endif %}{% endfor %}. Le calcul est incomplet.</p>{% endif %}
+    {% if ubo.unknown_percentages %}<p class="alert alert-info small">Pourcentage non encodé pour {{ ubo.unknown_percentages|length }} actionnaire{{ ubo.unknown_percentages|length|pluralize }}.</p>{% endif %}
+    {% if ubo.below_threshold %}
+      <details><summary class="small">Sous le seuil ({{ ubo.below_threshold|length }})</summary>
+        <ul class="small">{% for c in ubo.below_threshold %}<li>{{ c.person }} : {{ c.share_percentage|floatformat:2 }} % du capital, {{ c.voting_percentage|floatformat:2 }} % des votes</li>{% endfor %}</ul>
+      </details>
+    {% endif %}
+  </section>
+  {% endif %}
+
+  {# --- BCE ----------------------------------------------------------------------------- #}
+  {% if client.enterprise_number %}
+  <section class="card">
+    <div class="card-header">
+      <h2>Banque-Carrefour des Entreprises</h2>
+      {% if can_edit and bce_has_data %}
+        <form class="inline" method="post" action="{% url 'clients:bce_refresh' client.pk %}">{% csrf_token %}<button type="submit" class="button-secondary small">Actualiser</button></form>
+      {% endif %}
+    </div>
+    {% if bce_record %}
+      <dl class="fields">
+        <dt>Dénomination</dt><dd>{{ bce_record.name|default:"—" }}{% if bce_record.abbreviation %} ({{ bce_record.abbreviation }}){% endif %}</dd>
+        {% if bce_record.legal_form_label %}<dt>Forme</dt><dd>{{ bce_record.legal_form_label }}</dd>{% endif %}
+        <dt>Situation</dt><dd>{% if bce_record.is_normal_situation %}<span class="badge badge-success">normale</span>{% else %}<span class="badge badge-danger">{{ bce_record.juridical_situation_label }}</span>{% endif %}</dd>
+        {% if bce_record.start_date %}<dt>Début</dt><dd>{{ bce_record.start_date|date:"d/m/Y" }}</dd>{% endif %}
+        {% if bce_record.address %}<dt>Siège</dt><dd>{% for line in bce_record.address.lines %}{{ line }}{% if not forloop.last %}, {% endif %}{% endfor %}</dd>{% endif %}
+        {% if bce_record.activities %}<dt>Activités</dt><dd>{% for a in bce_record.activities %}<div class="small"><span class="mono">{{ a.code }}</span> {{ a.label }}</div>{% endfor %}</dd>{% endif %}
+        {% if bce_record.commercial_names %}<dt>Noms commerciaux</dt><dd>{{ bce_record.commercial_names|join:", " }}</dd>{% endif %}
+      </dl>
+      {% if bce_differences %}
+        <form method="post" action="{% url 'clients:bce_apply' client.pk %}" style="margin-top: 1rem">
+          {% csrf_token %}
+          <p class="alert alert-warning small">La fiche diffère de la BCE. Cochez ce qu'il faut reprendre :</p>
+          <table class="table">
+            <thead><tr><th></th><th>Champ</th><th>Fiche</th><th>BCE</th></tr></thead>
+            <tbody>
+            {% for d in bce_differences %}
+              <tr>
+                <td>{% if can_edit %}<input type="checkbox" name="champs" value="{{ d.field }}" aria-label="Reprendre {{ d.label }}">{% endif %}</td>
+                <td class="small">{{ d.label|capfirst }}</td><td>{{ d.current|default:"—" }}</td><td>{{ d.proposed|default:"—" }}</td>
+              </tr>
+            {% endfor %}
+            </tbody>
+          </table>
+          {% if can_edit %}<button type="submit" class="small" style="margin-top: .5rem">Reprendre la sélection</button>{% endif %}
+        </form>
+      {% endif %}
+      {% if client.bce_synced_at %}<p class="muted small" style="margin-top: .5rem">Synchronisé le {{ client.bce_synced_at|date:"d/m/Y H:i" }}.</p>{% endif %}
+    {% elif bce_has_data %}
+      <p class="alert alert-warning">Ce numéro ne figure pas dans la copie de la BCE : entreprise arrêtée, radiée ou numéro erroné ?</p>
+    {% else %}
+      <p class="empty">La copie de la BCE n'a pas encore été importée.</p>
+    {% endif %}
+  </section>
+  {% endif %}
+
+  {# --- Événements ---------------------------------------------------------------------- #}
+  <section class="card">
+    <div class="card-header"><h2>Derniers événements</h2></div>
+    {% if events %}
+      <ul class="timeline small">
+        {% for e in events %}<li><span class="muted">{{ e.occurred_at|date:"d/m/Y H:i" }}</span> · {{ e.type|event_label }}{% if e.actor %} · {{ e.actor }}{% endif %}</li>{% endfor %}
+      </ul>
+    {% else %}<p class="empty">Aucun événement.</p>{% endif %}
+  </section>
+</div>
+</div>
+{% endblock %}

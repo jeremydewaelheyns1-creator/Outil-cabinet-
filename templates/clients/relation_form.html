@@ -1,0 +1,45 @@
+{% extends "layouts/app.html" %}
+{% block head_title %}Relation · {{ client.display_name }}{% endblock %}
+{% block page_title %}{% if relation %}Modifier la relation{% elif as_person %}Ajouter un mandat ou une participation{% else %}Ajouter un dirigeant ou un actionnaire{% endif %}{% endblock %}
+{% block page_subtitle %}<div class="subtitle"><a href="{{ client.get_absolute_url }}">{{ client.display_name }}</a></div>{% endblock %}
+{% block content %}
+<form method="post" class="card" style="max-width: 760px" novalidate>
+  {% csrf_token %}
+  {% if as_person %}<input type="hidden" name="sens" value="mandat">{% endif %}
+  {% if form.non_field_errors %}<ul class="errorlist nonfield">{% for e in form.non_field_errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+  <div class="field">
+    <label for="picker-q">{{ form.other.label }}</label>
+    {{ form.other.errors }}
+    {% if selected_client %}
+      <div class="picker-results" id="picker-resultats">
+        <label><input type="radio" name="other" value="{{ selected_client.pk }}" checked> {{ selected_client.display_name }}</label>
+      </div>
+      <p class="help">Pour choisir une autre fiche, recherchez-la :</p>
+    {% endif %}
+    <input id="picker-q" type="search" autocomplete="off" placeholder="Nom, n° d'entreprise…"
+           name="q" hx-get="{% url 'clients:picker' %}?exclure={{ client.pk }}&champ=other"
+           hx-trigger="input changed delay:300ms" hx-target="#picker-resultats-recherche">
+    <div id="picker-resultats-recherche"></div>
+  </div>
+  <div class="form-grid">
+    {{ form.role.as_field_group }}
+    {{ form.share_percentage.as_field_group }}
+    {{ form.voting_percentage.as_field_group }}
+    {{ form.start_date.as_field_group }}
+    {{ form.end_date.as_field_group }}
+    <div class="wide">{{ form.notes.as_field_group }}</div>
+  </div>
+  <p class="help">Pourcentage des droits de vote : à remplir seulement s'il diffère du pourcentage du capital.</p>
+  <div class="actions">
+    <button type="submit">Enregistrer</button>
+    <a class="button button-secondary" href="{{ client.get_absolute_url }}">Annuler</a>
+  </div>
+</form>
+{% if relation %}
+<form method="post" action="{% url 'clients:relation_delete' client.pk relation.pk %}" style="margin-top: 1rem">
+  {% csrf_token %}
+  <button type="submit" class="danger">Supprimer cette relation</button>
+  <span class="help">Pour une fin de mandat ou une cession, indiquez plutôt la date de fin : l'historique est conservé.</span>
+</form>
+{% endif %}
+{% endblock %}

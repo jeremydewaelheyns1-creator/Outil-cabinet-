@@ -1,0 +1,28 @@
+{% if relations %}
+<table class="table">
+  <thead><tr><th>{% if other_side == "person" %}Personne{% else %}Société{% endif %}</th><th>Rôle</th><th>%</th><th>Période</th>{% if can_edit %}<th></th>{% endif %}</tr></thead>
+  <tbody>
+  {% for r in relations %}
+    {% if other_side == "person" %}{% with other=r.person %}
+      <tr>
+        <td><a href="{{ other.get_absolute_url }}">{{ other }}</a></td>
+        <td class="small">{{ r.get_role_display }}</td>
+        <td class="small nowrap">{% if r.share_percentage is not None %}{{ r.share_percentage|floatformat:"-2" }} %{% endif %}{% if r.voting_percentage is not None and r.voting_percentage != r.share_percentage %} <span class="muted">({{ r.voting_percentage|floatformat:"-2" }} % des votes)</span>{% endif %}</td>
+        <td class="small muted nowrap">{% if r.start_date %}du {{ r.start_date|date:"d/m/Y" }}{% endif %}{% if r.end_date %} au {{ r.end_date|date:"d/m/Y" }}{% endif %}</td>
+        {% if can_edit %}<td><a class="small" href="{% url 'clients:relation_edit' client.pk r.pk %}">modifier</a></td>{% endif %}
+      </tr>
+    {% endwith %}{% else %}{% with other=r.entity %}
+      <tr>
+        <td><a href="{{ other.get_absolute_url }}">{{ other }}</a></td>
+        <td class="small">{{ r.get_role_display }}</td>
+        <td class="small nowrap">{% if r.share_percentage is not None %}{{ r.share_percentage|floatformat:"-2" }} %{% endif %}</td>
+        <td class="small muted nowrap">{% if r.start_date %}du {{ r.start_date|date:"d/m/Y" }}{% endif %}{% if r.end_date %} au {{ r.end_date|date:"d/m/Y" }}{% endif %}</td>
+        {% if can_edit %}<td><a class="small" href="{% url 'clients:relation_edit' client.pk r.pk %}">modifier</a></td>{% endif %}
+      </tr>
+    {% endwith %}{% endif %}
+  {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<p class="empty">Aucune relation encodée.</p>
+{% endif %}

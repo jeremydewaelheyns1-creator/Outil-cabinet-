@@ -1,0 +1,71 @@
+{% extends "layouts/app.html" %}
+{% block head_title %}Reprise · {{ batch.file_name }}{% endblock %}
+{% block page_title %}{% if batch.status == "applied" %}Rapport d'import{% else %}Analyse du fichier{% endif %}{% endblock %}
+{% block page_subtitle %}<div class="subtitle">{{ batch.file_name }} · déposé le {{ batch.created_at|date:"d/m/Y H:i" }} par {{ batch.uploaded_by }} · <span class="badge">{{ batch.get_status_display }}</span></div>{% endblock %}
+{% block page_actions %}
+  {% if batch.status == "analysed" %}
+    <form method="post" action="{% url 'reprise:discard' batch.pk %}" class="inline">{% csrf_token %}<button type="submit" class="secondary">Abandonner</button></form>
+    <form method="post" action="{% url 'reprise:apply' batch.pk %}" class="inline">{% csrf_token %}<button type="submit">Confirmer l'import</button></form>
+  {% endif %}
+{% endblock %}
+{% block content %}
+<div class="grid grid-4">
+  <div class="card"><div class="stat">{{ report.rows }}</div><div class="stat-label">lignes lues</div></div>
+  <div class="card"><div class="stat">{{ report.created }}</div><div class="stat-label">fiches {% if report.applied %}créées{% else %}à créer{% endif %}</div></div>
+  <div class="card"><div class="stat">{{ report.updated }}</div><div class="stat-label">fiches {% if report.applied %}complétées{% else %}à compléter{% endif %}</div></div>
+  <div class="card"><div class="stat">{{ report.skipped }}</div><div class="stat-label">lignes ignorées</div></div>
+</div>
+
+<div class="grid grid-2" style="margin-top: 1rem">
+  <section class="card">
+    <div class="card-header"><h2>Colonnes reconnues</h2></div>
+    <p class="muted small">En-têtes trouvés à la ligne {{ report.header_row }} de la feuille « {{ report.sheet }} ».</p>
+    <table class="table"><tbody>
+      {% for header, target in report.columns.items %}<tr><td>{{ header }}</td><td class="mono small">{{ target }}</td></tr>{% endfor %}
+    </tbody></table>
+    {% if report.unmapped %}
+      <p class="alert alert-warning small" style="margin-top: .75rem">Colonnes non reprises : {{ report.unmapped|join:", " }}.<br>
+      Si l'une d'elles doit être reprise, son intitulé peut être ajouté dans <span class="mono">config/reprise/clients.yaml</span>.</p>
+    {% endif %}
+    {% if report.duplicated_columns %}<p class="alert alert-info small">Colonnes en double ignorées : {{ report.duplicated_columns|join:", " }}.</p>{% endif %}
+  </section>
+
+  <section class="card">
+    <div class="card-header"><h2>Compléments</h2></div>
+    <dl class="fields">
+      <dt>Coordonnées</dt><dd>{{ report.contacts_added }} {% if report.applied %}ajoutée{{ report.contacts_added|pluralize }}{% else %}à ajouter{% endif %}</dd>
+      <dt>Affectations</dt><dd>{{ report.assignments_added }} {% if report.applied %}ajoutée{{ report.assignments_added|pluralize }}{% else %}à ajouter{% endif %}</dd>
+      {% if report.portfolios_created %}<dt>Portefeuilles</dt><dd>{{ report.portfolios_created|join:", " }} ({% if report.applied %}créés{% else %}à créer{% endif %})</dd>{% endif %}
+      {% if report.unknown_initials %}<dt>Collaborateurs inconnus</dt><dd>{{ report.unknown_initials|join:", " }} <span class="muted small">(créez les comptes avec ces initiales, puis relancez)</span></dd>{% endif %}
+    </dl>
+  </section>
+</div>
+
+{% if report.issues %}
+<section class="card">
+  <div class="card-header"><h2>Points d'attention ({{ report.issues|length }})</h2></div>
+  <div class="table-wrap"><table class="table">
+    <thead><tr><th>Ligne</th><th>Champ</th><th>Message</th><th></th></tr></thead>
+    <tbody>
+    {% for issue in report.issues %}
+      <tr><td>{{ issue.row }}</td><td class="mono small">{{ issue.field }}</td><td>{{ issue.message }}</td>
+        <td>{% if issue.level == "error" %}<span class="badge badge-danger">ligne ignorée</span>{% else %}<span class="badge badge-warning">importée</span>{% endif %}</td></tr>
+    {% endfor %}
+    </tbody>
+  </table></div>
+</section>
+{% endif %}
+
+{% if report.conflicts %}
+<section class="card">
+  <div class="card-header"><h2>Différences avec les fiches existantes ({{ report.conflicts|length }})</h2></div>
+  <p class="muted small">Les fiches existantes ne sont jamais écrasées : la valeur actuelle est conservée. Corrigez à la main si nécessaire.</p>
+  <div class="table-wrap"><table class="table">
+    <thead><tr><th>Ligne</th><th>Fiche</th><th>Champ</th><th>Actuel</th><th>Dans le fichier</th></tr></thead>
+    <tbody>
+    {% for c in report.conflicts %}<tr><td>{{ c.row }}</td><td>{{ c.client }}</td><td>{{ c.field }}</td><td>{{ c.existing }}</td><td>{{ c.imported }}</td></tr>{% endfor %}
+    </tbody>
+  </table></div>
+</section>
+{% endif %}
+{% endblock %}

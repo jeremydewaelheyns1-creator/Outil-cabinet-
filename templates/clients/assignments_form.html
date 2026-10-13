@@ -1,0 +1,11 @@
+{% extends "layouts/app.html" %}
+{% block head_title %}Équipe · {{ client.display_name }}{% endblock %}
+{% block page_title %}Équipe du cabinet{% endblock %}
+{% block page_subtitle %}<div class="subtitle"><a href="{{ client.get_absolute_url }}">{{ client.display_name }}</a></div>{% endblock %}
+{% block content %}
+<form method="post" class="card" style="max-width: 760px">
+  {% csrf_token %}
+  <div class="form-grid">{% for field in form %}{{ field.as_field_group }}{% endfor %}</div>
+  <div class="actions"><button type="submit">Enregistrer</button><a class="button button-secondary" href="{{ client.get_absolute_url }}">Annuler</a></div>
+</form>
+{% endblock %}

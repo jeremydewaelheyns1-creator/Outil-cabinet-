@@ -1,0 +1,90 @@
+[project]
+name = "outil-cabinet"
+version = "0.1.0"
+description = "Outil interne de gestion du cabinet : clients, échéances, documents, anti-blanchiment."
+readme = "README.md"
+requires-python = ">=3.13,<3.14"
+dependencies = [
+    "django>=6.1,<6.2",
+    "django-allauth[mfa]>=65.19,<66",
+    "django-environ>=0.14,<0.15",
+    "django-htmx>=1.29,<2",
+    "django-simple-history>=3.13,<4",
+    "django-stubs-ext>=6.1,<6.2",
+    "gunicorn>=26,<27",
+    "httpx>=0.28,<0.29",
+    "openpyxl>=3.1,<3.2",
+    "procrastinate[django]>=3.10,<4",
+    "psycopg[binary]>=3.3,<3.4",
+    "python-stdnum>=2.2,<3",
+    "pyyaml>=6,<7",
+    "whitenoise>=6.12,<7",
+]
+
+[dependency-groups]
+dev = [
+    "django-stubs[compatible-mypy]>=6.1,<6.2",
+    "factory-boy>=3.3,<4",
+    "mypy",
+    "pytest>=8",
+    "pytest-django>=4.14,<5",
+    "ruff>=0.17,<0.18",
+    "types-pyyaml",
+    "types-openpyxl",
+]
+
+[tool.uv]
+package = false
+
+[tool.ruff]
+line-length = 100
+target-version = "py313"
+extend-exclude = ["**/migrations/*.py"]
+
+[tool.ruff.lint]
+select = [
+    "E", "W",   # pycodestyle
+    "F",        # pyflakes
+    "I",        # imports triés
+    "B",        # bugbear : erreurs fréquentes
+    "UP",       # syntaxe Python moderne
+    "DJ",       # bonnes pratiques Django
+    "S",        # sécurité (bandit)
+    "SIM",      # simplifications
+    "RUF",
+]
+ignore = [
+    "RUF001", "RUF002", "RUF003",  # caractères typographiques français (’, «, »)
+]
+
+[tool.ruff.lint.per-file-ignores]
+"**/tests/**" = ["S101", "S105", "S106"]
+"config/settings/*" = ["F405", "F403"]
+
+[tool.mypy]
+python_version = "3.13"
+plugins = ["mypy_django_plugin.main"]
+strict = true
+warn_unreachable = true
+disallow_subclassing_any = false
+disallow_untyped_decorators = false
+exclude = ["migrations/"]
+
+# Les tests sont vérifiés en les exécutant ; le typage strict y coûte plus qu'il ne rapporte
+# (les fabriques factory-boy ne sont pas typées à l'appel).
+[[tool.mypy.overrides]]
+module = ["*.tests.*", "apps.core.testing.*", "conftest"]
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = ["allauth.*", "simple_history.*", "procrastinate.*", "stdnum.*", "environ.*", "django_htmx.*"]
+ignore_missing_imports = true
+
+[tool.django-stubs]
+django_settings_module = "config.settings.test"
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "config.settings.test"
+python_files = ["test_*.py"]
+addopts = "--strict-markers -q"
+filterwarnings = ["error::RuntimeWarning"]

@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block body %}
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand">{{ CABINET_NAME }}</div>
+    <nav aria-label="Navigation principale">
+      <a href="{% url 'core:home' %}" {% nav_current request "core:home" %}>Accueil</a>
+      <a href="{% url 'clients:list' %}" {% nav_current request "clients" %}>Clients</a>
+      {% if user|can:"reprise.import" or user|can:"bce.import" or user|can:"audit.view" or user.is_staff %}
+        <div class="nav-title">Paramétrage</div>
+      {% endif %}
+      {% if user|can:"reprise.import" %}
+        <a href="{% url 'reprise:index' %}" {% nav_current request "reprise" %}>Reprise FID-Manager</a>
+      {% endif %}
+      {% if user|can:"bce.import" %}
+        <a href="{% url 'bce:imports' %}" {% nav_current request "bce" %}>Données BCE</a>
+      {% endif %}
+      {% if user|can:"audit.view" %}
+        <a href="{% url 'core:access_log' %}" {% nav_current request "core:access_log" %}>Journal des consultations</a>
+      {% endif %}
+      {% if user.is_staff %}
+        <a href="{% url 'admin:index' %}">Administration</a>
+      {% endif %}
+    </nav>
+    <div class="account">
+      <div>{{ user.get_full_name|default:user.email }}</div>
+      <a href="{% url 'mfa_index' %}">Sécurité du compte</a> ·
+      <form class="inline" method="post" action="{% url 'account_logout' %}">
+        {% csrf_token %}<button type="submit" class="link-button" style="color:inherit">Se déconnecter</button>
+      </form>
+    </div>
+  </aside>
+  <main class="main" id="contenu">
+    {% include "components/_messages.html" %}
+    {% block page %}
+      <div class="page-header">
+        <div>
+          <h1>{% block page_title %}{% endblock %}</h1>
+          {% block page_subtitle %}{% endblock %}
+        </div>
+        <div class="actions">{% block page_actions %}{% endblock %}</div>
+      </div>
+      {% block content %}{% endblock %}
+    {% endblock %}
+  </main>
+</div>
+{% endblock %}

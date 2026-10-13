@@ -1,0 +1,21 @@
+{% extends "layouts/app.html" %}
+{% block head_title %}Historique · {{ client.display_name }}{% endblock %}
+{% block page_title %}Historique de la fiche{% endblock %}
+{% block page_subtitle %}<div class="subtitle"><a href="{{ client.get_absolute_url }}">{{ client.display_name }}</a></div>{% endblock %}
+{% block content %}
+<section class="card">
+  <ul class="timeline">
+  {% for row in rows %}
+    <li>
+      <div><strong>{{ row.record.history_date|date:"d/m/Y H:i" }}</strong> · {{ row.record.history_user|default:"automatisme" }}
+        {% if row.created %}<span class="badge badge-primary">création</span>{% endif %}</div>
+      {% if row.changes %}
+        <ul class="small">{% for c in row.changes %}<li>{{ c.label|capfirst }} : <span class="muted">{{ c.old|default:"(vide)" }}</span> → {{ c.new|default:"(vide)" }}</li>{% endfor %}</ul>
+      {% elif not row.created %}<div class="small muted">Mise à jour technique (synchronisation).</div>{% endif %}
+    </li>
+  {% empty %}
+    <li class="empty">Aucun historique.</li>
+  {% endfor %}
+  </ul>
+</section>
+{% endblock %}

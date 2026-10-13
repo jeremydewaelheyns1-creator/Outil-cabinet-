@@ -1,0 +1,54 @@
+{% extends "layouts/app.html" %}
+{% block head_title %}Accueil{% endblock %}
+{% block page_title %}Bonjour {{ user.first_name|default:"" }}{% endblock %}
+{% block page_subtitle %}<div class="subtitle">{% now "l j F Y" %}</div>{% endblock %}
+{% block page_actions %}
+  <form action="{% url 'clients:list' %}" method="get" role="search">
+    <label for="recherche-rapide" class="sr-only">Rechercher un client</label>
+    <input id="recherche-rapide" type="search" name="q" placeholder="Rechercher un client (nom, n° d'entreprise…)" style="min-width: 320px">
+  </form>
+{% endblock %}
+{% block content %}
+<div class="grid grid-4">
+  <a class="card" href="{% url 'clients:list' %}?statut=active"><div class="stat">{{ counts.active }}</div><div class="stat-label">clients actifs</div></a>
+  <a class="card" href="{% url 'clients:list' %}?statut=active&type=company"><div class="stat">{{ counts.companies }}</div><div class="stat-label">sociétés</div></a>
+  <a class="card" href="{% url 'clients:list' %}?statut=active&type=person"><div class="stat">{{ counts.persons }}</div><div class="stat-label">personnes physiques</div></a>
+  <a class="card" href="{% url 'clients:list' %}?statut=prospect"><div class="stat">{{ counts.prospect }}</div><div class="stat-label">prospects</div></a>
+</div>
+
+<div class="grid grid-2" style="margin-top: 1rem">
+  <section class="card">
+    <div class="card-header"><h2>Mes dossiers</h2></div>
+    {% if my_clients %}
+      <ul class="timeline">
+        {% for client in my_clients %}<li><a href="{{ client.get_absolute_url }}">{{ client }}</a></li>{% endfor %}
+      </ul>
+    {% else %}
+      <p class="empty">Aucun dossier ne vous est encore affecté.</p>
+    {% endif %}
+  </section>
+
+  <section class="card">
+    <div class="card-header"><h2>Signaux de la BCE</h2></div>
+    {% if bce_alerts or bce_missing %}
+      <ul class="timeline">
+        {% for client in bce_alerts %}
+          <li><a href="{{ client.get_absolute_url }}">{{ client }}</a> <span class="badge badge-danger">{{ client.bce_juridical_situation }}</span></li>
+        {% endfor %}
+        {% for client in bce_missing %}
+          <li><a href="{{ client.get_absolute_url }}">{{ client }}</a> <span class="badge badge-warning">absent de la BCE</span></li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p class="empty">Aucune faillite, liquidation ou radiation détectée parmi vos clients actifs.</p>
+    {% endif %}
+  </section>
+</div>
+
+{% if failed_events %}
+  <p class="alert alert-warning" style="margin-top: 1rem">
+    {{ failed_events }} automatisme{{ failed_events|pluralize }} en échec :
+    <a href="{% url 'admin:core_event_changelist' %}?status__exact=failed">voir le journal des événements</a>.
+  </p>
+{% endif %}
+{% endblock %}

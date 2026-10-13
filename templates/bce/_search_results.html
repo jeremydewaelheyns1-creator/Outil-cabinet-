@@ -1,0 +1,19 @@
+{% if not has_data %}
+  <p class="muted small">La copie de la BCE n'a pas encore été importée : saisissez la fiche à la main.</p>
+{% elif query|length < 3 %}
+{% else %}
+  <div class="picker-results">
+  {% for hit in hits %}
+    {% if hit.client_id %}
+      <div class="alert alert-info small">{{ hit.name|default:hit.number }} · déjà client : <a href="{% url 'clients:detail' hit.client_id %}">ouvrir la fiche</a></div>
+    {% else %}
+      <a class="card" href="{% url 'clients:create' %}?bce={{ hit.number }}" style="padding: 0.5rem 0.75rem">
+        <strong>{{ hit.name|default:"(sans dénomination publiée)" }}</strong>
+        <span class="muted small">· {{ hit.number|slice:":4" }}.{{ hit.number|slice:"4:7" }}.{{ hit.number|slice:"7:" }}{% if hit.city %} · {{ hit.city }}{% endif %}</span>
+      </a>
+    {% endif %}
+  {% empty %}
+    <p class="muted small">Aucune entreprise active trouvée pour « {{ query }} ».</p>
+  {% endfor %}
+  </div>
+{% endif %}

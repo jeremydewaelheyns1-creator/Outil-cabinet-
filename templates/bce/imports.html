@@ -1,0 +1,26 @@
+{% extends "layouts/app.html" %}
+{% block head_title %}Données BCE{% endblock %}
+{% block page_title %}Copie de la Banque-Carrefour des Entreprises{% endblock %}
+{% block page_subtitle %}<div class="subtitle">Export complet mensuel et mises à jour quotidiennes « KBO Open Data » (SPF Économie).</div>{% endblock %}
+{% block content %}
+<div class="table-wrap">
+<table class="table">
+  <thead><tr><th>Début</th><th>Type</th><th>N°</th><th>Données du</th><th>Statut</th><th>Entreprises modifiées</th><th>Remarques</th></tr></thead>
+  <tbody>
+  {% for run in runs %}
+    <tr>
+      <td class="small">{{ run.started_at|date:"d/m/Y H:i" }}</td>
+      <td>{{ run.get_kind_display }}</td>
+      <td>{{ run.extract_number|default:"" }}</td>
+      <td>{{ run.snapshot_date|date:"d/m/Y" }}</td>
+      <td>{% if run.status == "success" %}<span class="badge badge-success">Réussi</span>{% elif run.status == "failed" %}<span class="badge badge-danger">Échoué</span>{% else %}<span class="badge">En cours</span>{% endif %}</td>
+      <td>{% if run.kind == "update" %}{{ run.changed_enterprises }}{% endif %}</td>
+      <td class="small">{{ run.notes }}{% if run.error %}<span class="muted">{{ run.error|truncatechars:200 }}</span>{% endif %}</td>
+    </tr>
+  {% empty %}
+    <tr><td colspan="7" class="empty">Aucun import pour l'instant. Commande : <span class="mono">python manage.py import_bce archive.zip</span></td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+{% endblock %}
