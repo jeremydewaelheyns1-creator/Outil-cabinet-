@@ -1,0 +1,40 @@
+{% extends "layouts/app.html" %}
+{% block head_title %}Échéancier{% endblock %}
+{% block page_title %}Échéancier{% endblock %}
+{% block page_subtitle %}<div class="subtitle">Toutes les échéances des dossiers que vous pouvez voir.</div>{% endblock %}
+{% block content %}
+<div class="grid grid-3" style="margin-bottom: 1rem">
+  <a class="card" href="?qui=moi&quand=retard"><div class="stat" style="color: var(--danger)">{{ counts.overdue }}</div><div class="stat-label">mes échéances en retard</div></a>
+  <a class="card" href="?qui=moi&quand=7"><div class="stat">{{ counts.week }}</div><div class="stat-label">mes échéances des 7 prochains jours</div></a>
+  <a class="card" href="?qui=moi&statut=attente&quand=tout"><div class="stat">{{ counts.waiting }}</div><div class="stat-label">en attente d'un client</div></a>
+</div>
+<form class="filters" method="get" hx-get="{% url 'tasks:board' %}" hx-target="#echeances" hx-push-url="true"
+      hx-trigger="change, input delay:300ms from:#f-q, submit">
+  <div>
+    <label for="f-qui">Responsable</label>
+    <select id="f-qui" name="qui">
+      <option value="moi"{% if filters.qui == "moi" %} selected{% endif %}>Moi</option>
+      <option value="tous"{% if filters.qui == "tous" %} selected{% endif %}>Tout le cabinet</option>
+      <option value="personne"{% if filters.qui == "personne" %} selected{% endif %}>Personne (non attribuées)</option>
+      {% for u in users %}<option value="{{ u.pk }}"{% if filters.qui == u.pk|stringformat:"s" %} selected{% endif %}>{{ u }}</option>{% endfor %}
+    </select>
+  </div>
+  <div>
+    <label for="f-quand">Échéance</label>
+    <select id="f-quand" name="quand">{% for v, l in when_choices %}<option value="{{ v }}"{% if filters.quand == v %} selected{% endif %}>{{ l }}</option>{% endfor %}</select>
+  </div>
+  <div>
+    <label for="f-statut">Statut</label>
+    <select id="f-statut" name="statut">{% for v, l in status_filters %}<option value="{{ v }}"{% if filters.statut == v %} selected{% endif %}>{{ l }}</option>{% endfor %}</select>
+  </div>
+  <div>
+    <label for="f-cat">Type</label>
+    <select id="f-cat" name="categorie"><option value="">Tous</option>{% for v, l in categories %}<option value="{{ v }}"{% if filters.categorie == v %} selected{% endif %}>{{ l }}</option>{% endfor %}</select>
+  </div>
+  <div class="search">
+    <label for="f-q">Client</label>
+    <input id="f-q" type="search" name="q" value="{{ filters.q }}" placeholder="Nom, n° d'entreprise…" autocomplete="off">
+  </div>
+</form>
+<div id="echeances">{% include "tasks/_board_results.html" %}</div>
+{% endblock %}

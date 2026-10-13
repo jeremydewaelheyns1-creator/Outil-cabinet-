@@ -39,8 +39,15 @@ d'attention, historique avec les consultations du dossier pour l'AMLCO.
 
 Code poussé sur GitHub : `jeremydewaelheyns1-creator/Outil-cabinet-` (privé), branche `main`.
 
+**Épique 4 (après-midi)** : moteur d'échéances. Règles en YAML (TVA mensuelle et
+trimestrielle, listing clients, AG, dépôt des comptes, ISOC, IPP), jours fériés belges et report
+au jour ouvrable, génération sans doublon qui suit la fiche et l'équipe, rubrique « Échéances »
+du dossier (en retard / à venir / plus tard / terminées, check-lists, responsable, statut,
+ajout manuel), échéancier du cabinet filtrable, alerte « en retard » dans la synthèse.
+
 **Reste à faire / en attente**
 - Structure réelle de l'export clients FID-Manager (en-têtes uniquement + lignes inventées).
 - Déploiement de l'environnement d'essai sur le Google Cloud du cabinet.
 - Page d'accueil (quand aucun dossier n'est ouvert) : à définir avec Jeremy.
-- Suite : épique 4 (moteur de tâches et d'échéances).
+- Validation des délais des règles d'échéances par le cabinet ; date IPP de l'année.
+- Suite : épique 5 (tâches TVA détaillées).

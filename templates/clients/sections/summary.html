@@ -16,6 +16,26 @@
   {% endif %}
 </section>
 
+<section class="card" style="margin-top: 1rem">
+  <div class="card-header"><h2>Prochaines échéances</h2><a class="small" href="{% url 'clients:tasks' client.pk %}">Toutes les échéances</a></div>
+  {% if next_tasks %}
+    <table class="table">
+      <tbody>
+      {% for t in next_tasks %}
+        <tr>
+          <td class="nowrap" style="width: 7rem"><strong>{{ t.due_date|date:"d/m/Y" }}</strong></td>
+          <td>{{ t.title }}</td>
+          <td class="small nowrap {% if t.is_overdue %}text-danger{% else %}muted{% endif %}">{{ t.delay_label }}</td>
+          <td class="small muted">{{ t.assignee.get_short_name|default:"" }}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <p class="empty">Aucune échéance ouverte.</p>
+  {% endif %}
+</section>
+
 <div class="grid grid-3" style="margin-top: 1rem">
   <section class="card">
     <div class="card-header"><h2>Identité</h2><a class="small" href="{% url 'clients:identity' client.pk %}">Détails</a></div>

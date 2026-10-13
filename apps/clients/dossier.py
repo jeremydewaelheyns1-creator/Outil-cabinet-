@@ -35,6 +35,7 @@ class Section:
 # Rubriques du dossier, dans l'ordre du menu. Le nom d'URL est dans l'espace « clients ».
 SECTIONS: tuple[Section, ...] = (
     Section("detail", "Synthèse"),
+    Section("tasks", "Échéances"),
     Section("identity", "Identité et coordonnées"),
     Section("relations", "Relations"),
     Section("ubo", "Bénéficiaires effectifs", for_persons=False),
@@ -46,7 +47,6 @@ SECTION_NAMES = {s.url_name for s in SECTIONS}
 
 # Rubriques prévues, affichées grisées pour donner la structure du dossier.
 UPCOMING = (
-    "Échéances",
     "Documents",
     "Anti-blanchiment",
     "Facturation",

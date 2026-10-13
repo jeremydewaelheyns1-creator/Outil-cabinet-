@@ -23,8 +23,15 @@ class Alert:
 
 
 def dossier_alerts(client: Client, ubo: UboAnalysis | None) -> list[Alert]:
+    from apps.tasks.models import Task  # import local : le module échéances dépend des clients
+
     alerts: list[Alert] = []
     entity = not client.is_person
+
+    overdue = Task.objects.filter(client=client).overdue().count()
+    if overdue:
+        plural = "s" if overdue > 1 else ""
+        alerts.append(Alert("danger", f"{overdue} échéance{plural} en retard", "tasks"))
 
     if client.bce_juridical_situation:
         alerts.append(

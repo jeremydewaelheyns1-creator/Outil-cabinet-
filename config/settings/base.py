@@ -49,6 +49,7 @@ INSTALLED_APPS = [
     "apps.bce",
     "apps.integrations",
     "apps.reprise",
+    "apps.tasks",
 ]
 
 MIDDLEWARE = [

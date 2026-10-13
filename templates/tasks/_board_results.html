@@ -1,0 +1,6 @@
+{% if page.object_list %}
+  <div class="task-list">{% for t in page %}{% include "tasks/_task.html" with show_client=True %}{% endfor %}</div>
+{% else %}
+  <p class="empty card">Aucune échéance pour ces critères.</p>
+{% endif %}
+{% include "components/_pagination.html" %}

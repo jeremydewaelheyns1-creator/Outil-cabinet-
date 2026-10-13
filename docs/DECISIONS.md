@@ -90,3 +90,12 @@ menu de gauche présente ses rubriques. Changer de client garde la rubrique ouve
 synthèse du dossier commence par les points d'attention (ce qui manque ou demande une
 action), chacun menant à la rubrique concernée. Chaque nouveau module ajoute sa rubrique au
 dossier (`apps/clients/dossier.py`). La page d'accueil (sans dossier) sera revue ensuite.
+
+## D-020 — Échéances générées à partir de règles en données
+Les échéances récurrentes (TVA, listing, AG, comptes annuels, ISOC, IPP) sont décrites dans
+`config/taches/regles.yaml` : périodicité, conditions sur la fiche client, calcul de la date
+(report au jour ouvrable suivant avec les jours fériés belges), responsable par rôle de
+l'équipe, check-list. La génération est idempotente (clé client + règle + période), suit les
+changements de fiche via les événements et tourne une fois par jour via `run_jobs`. Une tâche
+déjà travaillée n'est jamais modifiée ni supprimée automatiquement. Les délais sont les délais
+légaux usuels, à valider par le cabinet ; la date IPP est à renseigner chaque année.

@@ -1,5 +1,7 @@
 from django.urls import path
 
+from apps.tasks import views as task_views
+
 from . import views
 
 app_name = "clients"
@@ -21,6 +23,7 @@ urlpatterns = [
     path("<int:pk>/beneficiaires/", views.client_ubo, name="ubo"),
     path("<int:pk>/equipe/", views.client_team, name="team"),
     path("<int:pk>/bce-tva/", views.client_public_data, name="public_data"),
+    path("<int:pk>/echeances/", task_views.client_tasks, name="tasks"),
     path("<int:pk>/historique/", views.client_history, name="history"),
     # Actions
     path("<int:pk>/modifier/", views.client_edit, name="edit"),

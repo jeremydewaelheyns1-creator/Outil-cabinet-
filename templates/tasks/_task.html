@@ -1,0 +1,54 @@
+{# Une échéance. Les actions remplacent ce bloc sans recharger la page (HTMX). #}
+{% with p=t.progress %}
+<div class="task urgency-{{ t.urgency }}" id="task-{{ t.pk }}">
+  <div class="task-due">
+    <div class="task-date">{{ t.due_date|date:"d/m/Y" }}</div>
+    <div class="task-delay">{{ t.delay_label }}</div>
+  </div>
+  <div class="task-main">
+    <div class="task-title">{{ t.title }}</div>
+    <div class="task-meta">
+      {% if show_client %}<a href="{% url 'clients:tasks' t.client_id %}">{{ t.client.display_name }}</a> ·{% endif %}
+      <span class="badge">{{ t.get_category_display }}</span>
+      {% if p.1 %}<span>{{ p.0 }}/{{ p.1 }} étapes</span>{% endif %}
+      {% if not t.generated %}<span class="muted">ajoutée à la main</span>{% endif %}
+    </div>
+    {% if p.1 %}
+      <details class="task-steps"{% if open_steps %} open{% endif %}>
+        <summary class="small">Check-list</summary>
+        <ul>
+          {% for s in t.steps.all %}
+            <li><button type="button" class="step{% if s.done %} done{% endif %}"
+                  hx-post="{% url 'tasks:step' t.pk s.pk %}" hx-target="#task-{{ t.pk }}" hx-swap="outerHTML"
+                  hx-vals='{"avec_client": "{% if show_client %}1{% else %}0{% endif %}"}'
+                  aria-pressed="{% if s.done %}true{% else %}false{% endif %}">
+                <span class="check" aria-hidden="true">{% if s.done %}✓{% endif %}</span>{{ s.label }}
+                {% if s.done and s.done_by %}<span class="muted small">— {{ s.done_by.get_short_name }}, {{ s.done_at|date:"d/m" }}</span>{% endif %}
+            </button></li>
+          {% endfor %}
+        </ul>
+      </details>
+    {% endif %}
+    {% if t.notes %}<div class="small muted" style="white-space: pre-line">{{ t.notes }}</div>{% endif %}
+  </div>
+  <div class="task-side">
+    <label class="sr-only" for="assignee-{{ t.pk }}">Responsable</label>
+    <select id="assignee-{{ t.pk }}" name="assignee" class="compact"
+            hx-post="{% url 'tasks:assignee' t.pk %}" hx-trigger="change" hx-target="#task-{{ t.pk }}" hx-swap="outerHTML"
+            hx-vals='{"avec_client": "{% if show_client %}1{% else %}0{% endif %}"}'>
+      <option value="">— personne —</option>
+      {% for u in users %}<option value="{{ u.pk }}"{% if u.pk == t.assignee_id %} selected{% endif %}>{{ u.get_short_name }}</option>{% endfor %}
+    </select>
+    <label class="sr-only" for="status-{{ t.pk }}">Statut</label>
+    <select id="status-{{ t.pk }}" name="status" class="compact"
+            hx-post="{% url 'tasks:status' t.pk %}" hx-trigger="change" hx-target="#task-{{ t.pk }}" hx-swap="outerHTML"
+            hx-vals='{"avec_client": "{% if show_client %}1{% else %}0{% endif %}"}'>
+      {% for value, label in statuses %}<option value="{{ value }}"{% if value == t.status %} selected{% endif %}>{{ label }}</option>{% endfor %}
+    </select>
+    {% if t.is_open %}
+      <button type="button" class="small" hx-post="{% url 'tasks:status' t.pk %}" hx-target="#task-{{ t.pk }}" hx-swap="outerHTML"
+              hx-vals='{"status": "done", "avec_client": "{% if show_client %}1{% else %}0{% endif %}"}'>Terminer</button>
+    {% endif %}
+  </div>
+</div>
+{% endwith %}

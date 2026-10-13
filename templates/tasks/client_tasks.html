@@ -1,0 +1,57 @@
+{% extends "clients/sections/_base.html" %}
+{% block head_title %}Échéances · {{ client.display_name }}{% endblock %}
+{% block heading %}Échéances{% endblock %}
+{% block content %}
+<div class="grid task-layout">
+<div>
+  {% if overdue %}
+    <section class="card">
+      <div class="card-header"><h2>En retard</h2><span class="badge badge-danger">{{ overdue|length }}</span></div>
+      <div class="task-list">{% for t in overdue %}{% include "tasks/_task.html" %}{% endfor %}</div>
+    </section>
+  {% endif %}
+  <section class="card">
+    <div class="card-header"><h2>À venir (90 jours)</h2><span class="badge">{{ upcoming|length }}</span></div>
+    {% if upcoming %}<div class="task-list">{% for t in upcoming %}{% include "tasks/_task.html" %}{% endfor %}</div>
+    {% else %}<p class="empty">Aucune échéance dans les 90 prochains jours.</p>{% endif %}
+  </section>
+  {% if later %}
+    <section class="card">
+      <details>
+        <summary>Plus tard ({{ later|length }})</summary>
+        <div class="task-list">{% for t in later %}{% include "tasks/_task.html" %}{% endfor %}</div>
+      </details>
+    </section>
+  {% endif %}
+  {% if closed %}
+    <section class="card">
+      <details>
+        <summary>Terminées récemment ({{ closed|length }})</summary>
+        <div class="task-list">{% for t in closed %}{% include "tasks/_task.html" %}{% endfor %}</div>
+      </details>
+    </section>
+  {% endif %}
+</div>
+<div>
+  <section class="card">
+    <div class="card-header"><h2>Ajouter une échéance</h2></div>
+    <form method="post" action="{% url 'tasks:add' client.pk %}">
+      {% csrf_token %}
+      {{ manual_form.title.as_field_group }}
+      {{ manual_form.due_date.as_field_group }}
+      {{ manual_form.category.as_field_group }}
+      {{ manual_form.assignee.as_field_group }}
+      {{ manual_form.notes.as_field_group }}
+      <button type="submit">Ajouter</button>
+    </form>
+  </section>
+  <section class="card">
+    <div class="card-header"><h2>D'où viennent ces échéances ?</h2></div>
+    <p class="small">Les déclarations TVA, l'assemblée générale, les comptes annuels, l'ISOC… sont
+    créés automatiquement d'après la fiche du client (statut et périodicité TVA, date de clôture)
+    et l'équipe du dossier. Si la fiche change, les échéances suivent.</p>
+    <p class="small muted">Délais légaux usuels, à valider par le cabinet.</p>
+  </section>
+</div>
+</div>
+{% endblock %}

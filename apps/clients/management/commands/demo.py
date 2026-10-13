@@ -149,8 +149,12 @@ class Command(BaseCommand):
                 share_percentage=Decimal(share) if share else None,
                 start_date=date(2018, 1, 1),
             )
+        from apps.tasks.generator import generate_all
+
+        run = generate_all()
         self.stdout.write(
             self.style.SUCCESS(
-                f"{len(companies) + len(persons)} fiches fictives créées. Connexion : {user.email}"
+                f"{len(companies) + len(persons)} fiches fictives, {run.created} échéances. "
+                f"Connexion : {user.email}"
             )
         )

@@ -241,14 +241,14 @@ def _split_relations(
     return {"current": current, "past": past, "hidden": hidden}
 
 
-def _open(request: AppRequest, pk: int) -> Client:
+def open_dossier(request: AppRequest, pk: int) -> Client:
     """Client demandé, devenu le dossier actif (en haut de l'écran)."""
     client = _get_client(request, pk)
     dossier.activate(request, client)
     return client
 
 
-def _section(
+def render_section(
     request: AppRequest,
     pk: int,
     section: str,
@@ -256,7 +256,7 @@ def _section(
     build: Callable[[Client], dict[str, Any]] | None = None,
 ) -> HttpResponse:
     """Affiche une rubrique du dossier : ouvre le dossier, journalise, rend le gabarit."""
-    client = _open(request, pk)
+    client = open_dossier(request, pk)
     log_access(request, AccessLog.Action.VIEW, client, details={"rubrique": section})
     context: dict[str, Any] = {
         "client": client,
@@ -295,11 +295,14 @@ def client_detail(request: AppRequest, pk: int) -> HttpResponse:
                 if r.role in Relation.MANAGEMENT_ROLES
             ],
             "primary_contacts": _primary_contacts(client),
+            "next_tasks": client.tasks.filter(
+                status__in=["todo", "in_progress", "waiting"]
+            ).order_by("due_date")[:5],
             "assignments": client.assignments.select_related("user"),
             "events": events_for(client).select_related("actor")[:8],
         }
 
-    return _section(request, pk, "detail", "clients/sections/summary.html", build)
+    return render_section(request, pk, "detail", "clients/sections/summary.html", build)
 
 
 def _primary_contacts(client: Client) -> list[ContactPoint]:
@@ -311,7 +314,7 @@ def _primary_contacts(client: Client) -> list[ContactPoint]:
 
 
 def client_identity(request: AppRequest, pk: int) -> HttpResponse:
-    return _section(
+    return render_section(
         request,
         pk,
         "identity",
@@ -321,7 +324,7 @@ def client_identity(request: AppRequest, pk: int) -> HttpResponse:
 
 
 def client_relations(request: AppRequest, pk: int) -> HttpResponse:
-    return _section(
+    return render_section(
         request,
         pk,
         "relations",
@@ -338,7 +341,7 @@ def client_relations(request: AppRequest, pk: int) -> HttpResponse:
 
 
 def client_ubo(request: AppRequest, pk: int) -> HttpResponse:
-    return _section(
+    return render_section(
         request,
         pk,
         "ubo",
@@ -348,7 +351,7 @@ def client_ubo(request: AppRequest, pk: int) -> HttpResponse:
 
 
 def client_team(request: AppRequest, pk: int) -> HttpResponse:
-    return _section(
+    return render_section(
         request,
         pk,
         "team",
@@ -367,7 +370,7 @@ def client_public_data(request: AppRequest, pk: int) -> HttpResponse:
             "vat_checks": client.vat_checks.select_related("checked_by")[:10],
         }
 
-    return _section(request, pk, "public_data", "clients/sections/public_data.html", build)
+    return render_section(request, pk, "public_data", "clients/sections/public_data.html", build)
 
 
 # --- Dossier actif --------------------------------------------------------------------------
@@ -393,7 +396,7 @@ def dossier_switcher(request: AppRequest) -> HttpResponse:
 
 def dossier_open(request: AppRequest, pk: int) -> HttpResponse:
     """Change de dossier en restant, si possible, sur la même rubrique."""
-    client = _open(request, pk)
+    client = open_dossier(request, pk)
     section = request.GET.get("rubrique", "detail")
     allowed = {s.url_name for s in dossier.sections_for(client)}
     return redirect(f"clients:{section if section in allowed else 'detail'}", pk=client.pk)
@@ -446,7 +449,7 @@ def client_history(request: AppRequest, pk: int) -> HttpResponse:
             )[:50]
         return context
 
-    return _section(request, pk, "history", "clients/sections/history.html", build)
+    return render_section(request, pk, "history", "clients/sections/history.html", build)
 
 
 # --- Création et modification ---------------------------------------------------------------
@@ -493,7 +496,7 @@ def client_create(request: AppRequest) -> HttpResponse:
 
 @require_capability(Capability.CLIENTS_EDIT)
 def client_edit(request: AppRequest, pk: int) -> HttpResponse:
-    client = _open(request, pk)
+    client = open_dossier(request, pk)
     previous_number = client.enterprise_number
     if request.method == "POST":
         form = ClientForm(request.POST, instance=client, user=request.user)
@@ -564,7 +567,7 @@ def contact_delete(request: AppRequest, pk: int, contact_pk: int) -> HttpRespons
 
 @require_capability(Capability.CLIENTS_EDIT)
 def relation_edit(request: AppRequest, pk: int, relation_pk: int | None = None) -> HttpResponse:
-    client = _open(request, pk)
+    client = open_dossier(request, pk)
     relation = None
     if relation_pk is not None:
         relation = _get_relation(request, client, relation_pk)
@@ -631,11 +634,12 @@ def relation_delete(request: AppRequest, pk: int, relation_pk: int) -> HttpRespo
 
 @require_capability(Capability.CLIENTS_EDIT)
 def assignments_edit(request: AppRequest, pk: int) -> HttpResponse:
-    client = _open(request, pk)
+    client = open_dossier(request, pk)
     form = AssignmentForm(request.POST or None, client=client)
     if request.method == "POST" and form.is_valid():
         form.save()
         log_access(request, AccessLog.Action.UPDATE, client, details={"écran": "équipe"})
+        events.emit("client.team_changed", subject=client, actor=request.user)
         messages.success(request, "Équipe mise à jour.")
         return redirect("clients:team", pk=client.pk)
     return render(request, "clients/assignments_form.html", {"client": client, "form": form})

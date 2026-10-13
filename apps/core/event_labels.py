@@ -8,6 +8,9 @@ EVENT_LABELS = {
     "bce.enterprise_changed": "Changement publié à la BCE",
     "relation.saved": "Relation enregistrée",
     "relation.deleted": "Relation supprimée",
+    "client.team_changed": "Équipe modifiée",
+    "task.completed": "Échéance terminée",
+    "task.reopened": "Échéance rouverte",
 }
 
 

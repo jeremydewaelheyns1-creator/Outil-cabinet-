@@ -28,7 +28,7 @@ technique. Parler en français, simplement, sans jargon.
   cabinet passe par une proposition validée (voir BCE : différences à cocher).
 - Un fait métier = `events.emit(...)` ; un automatisme = `@events.on(...)`, idempotent.
 - Interface centrée sur le dossier client (D-019) : tout écran propre à un client est une
-  rubrique déclarée dans `apps/clients/dossier.py` et rendue via `_section()`.
+  rubrique déclarée dans `apps/clients/dossier.py` et rendue via `render_section()` (apps/clients/views.py).
 
 ## Commandes
 

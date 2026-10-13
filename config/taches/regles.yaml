@@ -1,0 +1,138 @@
+# Règles d'échéances du cabinet.
+#
+# Chaque règle crée, pour chaque client concerné, une tâche par période. Modifier ce fichier
+# suffit pour ajouter une échéance ou changer une date : aucun code à toucher. Les tâches déjà
+# commencées ne sont jamais modifiées ; les tâches futures pas encore entamées sont retirées si
+# le client n'est plus concerné (changement de périodicité, ancien client…).
+#
+# ⚠ Les délais ci-dessous sont les délais légaux usuels : à valider par le cabinet.
+#
+# periodicite : mensuelle | trimestrielle | annuelle (année civile) | exercice (exercice
+#   comptable du client, d'après sa date de clôture)
+# conditions (toutes doivent être remplies) :
+#   type : person | company | nonprofit | other
+#   statut_tva : subject | franchise | exempt | mixed | not_subject
+#   periodicite_tva : monthly | quarterly
+#   cloture_connue : true  (date de clôture renseignée)
+# echeance :
+#   {type: jour_du_mois_suivant, mois_apres: 1, jour: 20}  → le 20 du mois qui suit la période
+#   {type: mois_apres_fin, mois: 7, jour: dernier}          → dernier jour du 7e mois après la fin
+#   {type: date_annee_suivante, mois: 3, jour: 31}          → 31 mars de l'année suivante
+#   {type: dates_par_annee, dates: {2025: 2026-10-16}}       → date publiée chaque année
+# report_jour_ouvrable : true → samedi, dimanche ou jour férié : reporté au jour ouvrable suivant
+# responsable : rôle d'affectation du client (assistant, manager, partner…) ; à défaut, le
+#   responsable du dossier.
+
+fenetre:
+  jours_passes: 60     # on crée aussi les échéances récentes (60 jours) pour ne rien rater
+  mois_futurs: 12      # et celles des 12 prochains mois
+
+regles:
+  - code: tva_mensuelle
+    titre: "Déclaration TVA {periode}"
+    categorie: tva
+    periodicite: mensuelle
+    conditions:
+      statut_tva: [subject, mixed]
+      periodicite_tva: [monthly]
+    echeance: {type: jour_du_mois_suivant, mois_apres: 1, jour: 20}
+    report_jour_ouvrable: true
+    responsable: assistant
+    etapes:
+      - Pièces d'achat et de vente reçues
+      - Encodage terminé
+      - Contrôle de la déclaration
+      - Déclaration déposée (Intervat)
+      - Montant à payer communiqué au client
+
+  - code: tva_trimestrielle
+    titre: "Déclaration TVA {periode}"
+    categorie: tva
+    periodicite: trimestrielle
+    conditions:
+      statut_tva: [subject, mixed]
+      periodicite_tva: [quarterly]
+    echeance: {type: jour_du_mois_suivant, mois_apres: 1, jour: 20}
+    report_jour_ouvrable: true
+    responsable: assistant
+    etapes:
+      - Pièces d'achat et de vente reçues
+      - Encodage terminé
+      - Contrôle de la déclaration
+      - Déclaration déposée (Intervat)
+      - Montant à payer communiqué au client
+
+  - code: listing_clients_tva
+    titre: "Listing annuel des clients assujettis {periode}"
+    categorie: tva
+    periodicite: annuelle
+    conditions:
+      statut_tva: [subject, mixed, franchise]
+    echeance: {type: date_annee_suivante, mois: 3, jour: 31}
+    report_jour_ouvrable: true
+    responsable: assistant
+
+  - code: assemblee_generale
+    titre: "Assemblée générale ordinaire ({periode})"
+    categorie: juridique
+    periodicite: exercice
+    conditions:
+      type: [company]
+      cloture_connue: true
+    echeance: {type: mois_apres_fin, mois: 6, jour: dernier}
+    responsable: manager
+    etapes:
+      - Convocation envoyée
+      - Procès-verbal rédigé
+      - Procès-verbal signé
+
+  - code: comptes_annuels
+    titre: "Dépôt des comptes annuels à la BNB ({periode})"
+    categorie: comptes
+    periodicite: exercice
+    conditions:
+      type: [company]
+      cloture_connue: true
+    echeance: {type: mois_apres_fin, mois: 7, jour: dernier}
+    responsable: manager
+    etapes:
+      - Clôture comptable terminée
+      - Comptes annuels établis
+      - Comptes approuvés par l'assemblée générale
+      - Dépôt effectué à la BNB
+
+  - code: isoc
+    titre: "Déclaration à l'impôt des sociétés ({periode})"
+    categorie: isoc
+    periodicite: exercice
+    conditions:
+      type: [company]
+      cloture_connue: true
+    # Au plus tard le dernier jour du 7e mois après la clôture (date exacte publiée chaque
+    # année par le SPF Finances, parfois prolongée).
+    echeance: {type: mois_apres_fin, mois: 7, jour: dernier}
+    report_jour_ouvrable: true
+    responsable: manager
+    etapes:
+      - Comptes annuels approuvés
+      - Déclaration préparée
+      - Déclaration contrôlée
+      - Déclaration déposée (Biztax)
+
+  - code: ipp
+    titre: "Déclaration à l'impôt des personnes physiques (revenus {periode})"
+    categorie: ipp
+    periodicite: annuelle
+    conditions:
+      type: [person]
+    # Date limite pour les déclarations déposées par un mandataire, publiée chaque année par le
+    # SPF Finances. Tant qu'elle n'est pas indiquée ici, aucune tâche IPP n'est créée.
+    echeance:
+      type: dates_par_annee
+      dates: {}
+    responsable: manager
+    etapes:
+      - Documents demandés au client
+      - Documents reçus
+      - Déclaration préparée
+      - Déclaration déposée (Tax-on-web)

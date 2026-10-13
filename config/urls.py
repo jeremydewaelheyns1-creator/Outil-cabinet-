@@ -29,5 +29,6 @@ urlpatterns = [
     path("clients/", include("apps.clients.urls")),
     path("bce/", include("apps.bce.urls")),
     path("reprise/", include("apps.reprise.urls")),
+    path("echeances/", include("apps.tasks.urls")),
     path("", include("apps.core.urls")),
 ]
