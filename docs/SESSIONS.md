@@ -53,8 +53,13 @@ hebdomadaire automatique, points d'attention ; carte « Registre UBO » sur la p
 bénéficiaires effectifs.
 
 **Reste à faire / en attente**
-- Registre UBO (déclarations, justificatifs, confirmation annuelle, questionnaire client) : à
-  intégrer dans l'onglet **Documents** du haut quand on le construira (choix de Jeremy).
+- **Prochaine session : onglet Documents** (en haut). Pour Jeremy, c'est là que doit se jouer la
+  plus-value sur FID-Manager : le développer au maximum pour tout automatiser. Tout ce qui
+  touche aux UBO doit s'y retrouver (calcul, registre UBO, déclarations, justificatifs,
+  confirmation annuelle, questionnaire client) ; la page « Bénéficiaires effectifs » du panneau
+  de gauche ne sert alors plus à grand-chose : à confirmer avec lui avant de la retirer.
+- En attente de sa réponse : propositions sur Mandataires / Actionnaires (colonne %, total des
+  parts, clic sur la ligne) et retrait du cadre « Registre UBO ».
 - Vérifier sur l'environnement d'essai que les pages réelles de la BCE et du Moniteur sont
   bien lues (analyseurs écrits sans accès réseau à ces sites, testés sur des pages fictives).
 - Clé d'accès gratuite de la Banque Nationale (developer.cbso.nbb.be, produit « Authentic
