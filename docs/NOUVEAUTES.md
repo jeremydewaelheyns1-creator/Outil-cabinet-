@@ -3,6 +3,11 @@
 Ce qui a été ajouté à l'outil, du plus récent au plus ancien. Toutes les données de la démo
 sont inventées.
 
+## 13 octobre 2026 — Onglets à venir cliquables
+
+- « Documents » et « Conformité » sont regroupés en un seul onglet « Documents et conformité ».
+- Les onglets pas encore construits s'ouvrent et montrent ce qu'ils contiendront.
+
 ## 13 octobre 2026 — Dossier client réorganisé en onglets
 
 - Dans un client, l'écran ne montre plus que le dossier : un en-tête toujours visible (nom,

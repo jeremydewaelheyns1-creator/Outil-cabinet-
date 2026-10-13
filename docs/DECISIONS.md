@@ -107,3 +107,7 @@ deviendrait illisible). Dans un dossier : en-tête fixe du client, six onglets s
 « Accueil » pour revenir, l'historique en lien discret. Aucune nouvelle fonction ne crée
 d'onglet : elle devient un sous-onglet (`TABS` dans `apps/clients/dossier.py`). Le menu de
 gauche n'existe que sur les écrans du cabinet (accueil, échéancier, clients, paramétrage).
+
+## D-022 — Cinq onglets : Documents et Conformité regroupés
+Précise D-021 (demande de Jeremy) : Synthèse, Fiche, Travail, Documents et conformité,
+Facturation. Un onglet pas encore construit reste cliquable et décrit ce qu'il contiendra.

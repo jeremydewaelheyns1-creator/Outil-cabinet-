@@ -25,6 +25,7 @@ urlpatterns = [
     path("<int:pk>/bce-tva/", views.client_public_data, name="public_data"),
     path("<int:pk>/echeances/", task_views.client_tasks, name="tasks"),
     path("<int:pk>/historique/", views.client_history, name="history"),
+    path("<int:pk>/bientot/<slug:tab>/", views.client_upcoming, name="upcoming"),
     # Actions
     path("<int:pk>/modifier/", views.client_edit, name="edit"),
     path("<int:pk>/numero-national/", views.reveal_national_number, name="reveal_nn"),

@@ -16,6 +16,8 @@ def current_dossier(request: HttpRequest) -> dict[str, Any]:
     section = dossier.section_of(request)
     tabs = dossier.tabs_for(client) if client else []
     current_tab = dossier.TAB_OF.get(section, "")
+    if section.startswith(f"{dossier.UPCOMING_SECTION}:"):
+        current_tab = section.split(":", 1)[1]
     return {
         "current_client": client,
         "current_section": section,

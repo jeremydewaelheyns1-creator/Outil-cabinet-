@@ -11,7 +11,7 @@ from django.core.exceptions import ValidationError
 from django.core.paginator import Paginator
 from django.db import IntegrityError, transaction
 from django.db.models import Q, QuerySet
-from django.http import HttpResponse
+from django.http import Http404, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.http import require_POST
@@ -371,6 +371,21 @@ def client_public_data(request: AppRequest, pk: int) -> HttpResponse:
         }
 
     return render_section(request, pk, "public_data", "clients/sections/public_data.html", build)
+
+
+def client_upcoming(request: AppRequest, pk: int, tab: str) -> HttpResponse:
+    """Onglet pas encore construit : ce qu'il contiendra."""
+    found = next((t for t in dossier.TABS if t.key == tab), None)
+    if found is None:
+        raise Http404
+    items = [(label, dossier.UPCOMING_DESCRIPTIONS.get(label, "")) for label in found.upcoming]
+    return render_section(
+        request,
+        pk,
+        f"upcoming:{tab}",
+        "clients/sections/upcoming.html",
+        lambda client: {"tab": found, "items": items},
+    )
 
 
 # --- Dossier actif --------------------------------------------------------------------------

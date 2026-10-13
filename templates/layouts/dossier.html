@@ -32,13 +32,13 @@
         {% if t.first %}
           <a class="tab" href="{% url 'clients:'|add:t.first.url_name c.pk %}"{% if current_tab.key == t.key %} aria-current="page"{% endif %}>{{ t.label }}{% if t.key == "travail" and dossier_overdue %} <span class="tab-count">{{ dossier_overdue }}</span>{% endif %}</a>
         {% else %}
-          <span class="tab tab-disabled" title="Bientôt disponible">{{ t.label }}</span>
+          <a class="tab tab-soon" href="{% url 'clients:upcoming' c.pk t.key %}"{% if current_tab.key == t.key %} aria-current="page"{% endif %}>{{ t.label }}</a>
         {% endif %}
       {% endfor %}
       <a class="tab tab-end" href="{% url 'clients:history' c.pk %}"{% if current_section == "history" %} aria-current="page"{% endif %}>Historique</a>
     </nav>
 
-    {% if current_tab and current_tab.sections|length > 1 or current_tab.upcoming %}
+    {% if current_tab.sections and current_tab.sections|length > 1 or current_tab.sections and current_tab.upcoming %}
       <nav class="subtabs" aria-label="{{ current_tab.label }}">
         {% for s in current_tab.sections %}
           <a href="{% url 'clients:'|add:s.url_name c.pk %}"{% if current_section == s.url_name %} aria-current="page"{% endif %}>{{ s.label }}</a>

@@ -1,0 +1,14 @@
+{% extends "clients/sections/_base.html" %}
+{% block head_title %}{{ tab.label }} · {{ client.display_name }}{% endblock %}
+{% block page_title %}{{ tab.label }} — bientôt{% endblock %}
+{% block content %}
+<p class="muted" style="margin-top:0">Cet onglet n'est pas encore construit. Voici ce qu'on y trouvera :</p>
+<div class="grid grid-2">
+  {% for label, description in items %}
+    <section class="card soon-card">
+      <div class="card-header"><h2>{{ label }}</h2><span class="badge">bientôt</span></div>
+      <p class="small" style="margin:0">{{ description }}</p>
+    </section>
+  {% endfor %}
+</div>
+{% endblock %}

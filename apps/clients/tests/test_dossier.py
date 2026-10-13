@@ -29,7 +29,7 @@ def test_inside_a_dossier_only_the_dossier_is_shown(web):
     html = web.get(reverse("clients:identity", args=[client.pk])).content.decode()
     assert 'class="sidebar"' not in html  # pas de menu du cabinet
     assert "⌂ Accueil" in html
-    for label in ("Synthèse", "Fiche", "Travail", "Documents", "Conformité", "Facturation"):
+    for label in ("Synthèse", "Fiche", "Travail", "Documents et conformité", "Facturation"):
         assert label in html
     # Sous-onglets de « Fiche ».
     assert reverse("clients:relations", args=[client.pk]) in html
@@ -127,3 +127,13 @@ def test_relation_links_open_the_other_dossier(web):
     Relation.objects.create(entity=company, person=manager, role="manager")
     html = web.get(reverse("clients:detail", args=[company.pk])).content.decode()
     assert reverse("clients:detail", args=[manager.pk]) in html
+
+
+def test_upcoming_tab_describes_what_is_coming(web):
+    client = ClientFactory()
+    response = web.get(reverse("clients:upcoming", args=[client.pk, "documents"]))
+    html = response.content.decode()
+    assert response.status_code == 200
+    assert "Pièces d&#x27;identité" in html or "Pièces d'identité" in html
+    assert "aria-current" in html
+    assert web.get(reverse("clients:upcoming", args=[client.pk, "inconnu"])).status_code == 404

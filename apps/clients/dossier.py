@@ -61,12 +61,18 @@ TABS: tuple[Tab, ...] = (
         ),
     ),
     Tab("travail", "Travail", (Section("tasks", "Échéances"),), ("Prestations",)),
-    Tab("documents", "Documents", (), ("Pièces", "Courriers et e-mails", "Signatures")),
     Tab(
-        "conformite",
-        "Conformité",
+        "documents",
+        "Documents et conformité",
         (),
-        ("Anti-blanchiment", "Pièces d'identité", "Déclarations UBO"),
+        (
+            "Pièces",
+            "Courriers et e-mails",
+            "Signatures",
+            "Anti-blanchiment",
+            "Pièces d'identité",
+            "Déclarations UBO",
+        ),
     ),
     Tab("facturation", "Facturation", (), ("Honoraires", "Factures")),
 )
@@ -74,6 +80,25 @@ TABS: tuple[Tab, ...] = (
 SECTIONS: tuple[Section, ...] = (*(s for t in TABS for s in t.sections), HISTORY)
 SECTION_NAMES = {s.url_name for s in SECTIONS}
 TAB_OF = {s.url_name: t.key for t in TABS for s in t.sections}
+TAB_KEYS = {t.key for t in TABS}
+
+# Ce que contiendront les sous-onglets prévus (page « bientôt » d'un onglet pas encore construit).
+UPCOMING_DESCRIPTIONS = {
+    "Prestations": "Le temps passé sur le dossier, par collaborateur et par type de travail.",
+    "Pièces": "Tous les documents du client, classés automatiquement (factures, extraits, "
+    "statuts, déclarations…), avec recherche et durée de conservation légale.",
+    "Courriers et e-mails": "Les échanges avec le client, reliés au dossier, et les modèles de "
+    "courrier préremplis.",
+    "Signatures": "Envoi de documents à signer (itsme) et suivi des signatures.",
+    "Anti-blanchiment": "Le dossier KYC : niveau de risque, vérifications (listes de sanctions), "
+    "revue périodique, décisions de l'AMLCO.",
+    "Pièces d'identité": "Les cartes d'identité des personnes liées, avec alerte avant expiration "
+    "et demande automatique de la nouvelle carte au client.",
+    "Déclarations UBO": "Les déclarations au registre UBO et leur confirmation annuelle, "
+    "comparées au calcul des bénéficiaires effectifs.",
+    "Honoraires": "Les conditions de facturation du client (forfaits, tarifs horaires).",
+    "Factures": "Les factures émises au client, envoyées par Peppol, et leur paiement.",
+}
 
 
 def _allowed(section: Section, client: Client) -> bool:
@@ -149,6 +174,7 @@ ACTION_SECTIONS = {
     "relation_edit": "relations",
     "assignments": "team",
 }
+UPCOMING_SECTION = "upcoming"
 
 
 def section_of(request: HttpRequest) -> str:
@@ -158,4 +184,6 @@ def section_of(request: HttpRequest) -> str:
         return "detail"
     if match.url_name in SECTION_NAMES:
         return match.url_name
+    if match.url_name == UPCOMING_SECTION:
+        return f"{UPCOMING_SECTION}:{match.kwargs.get('tab', '')}"
     return ACTION_SECTIONS.get(match.url_name, "detail")
