@@ -2,7 +2,7 @@
 {% block head_title %}{{ title }} · {{ client.display_name }}{% endblock %}
 {% block page_title %}{{ title }}{% endblock %}
 {% block page_actions %}
-  {% if can_edit %}<a class="button button-small" href="{% url 'clients:relation_add' client.pk %}?role={{ default_role }}{% if client.is_person and page != "other_relations" %}&amp;sens=mandat{% endif %}">+ Ajouter</a>{% endif %}
+  {% if can_edit %}<a class="button button-small" href="{% url 'clients:relation_add' client.pk %}?role={{ default_role }}{% if client.is_person %}&amp;sens=mandat{% endif %}">+ Ajouter</a>{% endif %}
 {% endblock %}
 {% block content %}
 <section class="card">

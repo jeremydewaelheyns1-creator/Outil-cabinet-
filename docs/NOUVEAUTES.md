@@ -3,6 +3,11 @@
 Ce qui a été ajouté à l'outil, du plus récent au plus ancien. Toutes les données de la démo
 sont inventées.
 
+## 13 octobre 2026 — « Autres relations » supprimé
+
+- La page « Autres relations » disparaît du panneau de gauche. Le conjoint reste visible sous le
+  nom du client.
+
 ## 13 octobre 2026 — Fiche allégée
 
 - Les pages « BCE et TVA », « Moniteur belge » et « Équipe du cabinet » disparaissent du panneau

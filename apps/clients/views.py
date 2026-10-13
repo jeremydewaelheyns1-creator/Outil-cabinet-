@@ -339,7 +339,6 @@ def client_relations(request: AppRequest, pk: int) -> HttpResponse:
 RELATION_TITLES = {
     "mandates": "Mandataires",
     "shareholders": "Actionnaires",
-    "other_relations": "Autres relations",
 }
 
 
@@ -361,8 +360,8 @@ def _relation_page(request: AppRequest, pk: int, page: str) -> HttpResponse:
             "page": page,
             "title": RELATION_TITLES[page],
             # Pour une société : ses mandataires / actionnaires. Pour une personne : les
-            # sociétés où elle a un mandat / des parts (et ses proches, dans les deux sens).
-            "incoming": incoming if not client.is_person or page == "other_relations" else None,
+            # sociétés où elle a un mandat / des parts.
+            "incoming": incoming if not client.is_person else None,
             "outgoing": outgoing if client.is_person else None,
             "default_role": roles[0],
             **(_bce_functions(client) if page == "mandates" and not client.is_person else {}),
@@ -387,10 +386,6 @@ def client_mandates(request: AppRequest, pk: int) -> HttpResponse:
 
 def client_shareholders(request: AppRequest, pk: int) -> HttpResponse:
     return _relation_page(request, pk, "shareholders")
-
-
-def client_other_relations(request: AppRequest, pk: int) -> HttpResponse:
-    return _relation_page(request, pk, "other_relations")
 
 
 def client_ubo(request: AppRequest, pk: int) -> HttpResponse:

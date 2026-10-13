@@ -170,3 +170,8 @@ administrateurs publiés à la BCE sont sur la page Mandataires (« Ajouter aux 
 VIES : un simple lien vers le site officiel, comme FID-Manager (la vérification intégrée est
 retirée de l'écran). Pas de fenêtre d'aperçu des sites officiels : les boutons ouvrent le site
 sur la bonne société.
+
+## D-030 — Pas de page « Autres relations »
+Demande de Jeremy : la page est supprimée. Les liens existants (conjoint, autres) restent
+enregistrés et visibles sous le nom du client. Les bénéficiaires effectifs déclarés se gèrent
+depuis la page Bénéficiaires effectifs.

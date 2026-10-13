@@ -51,7 +51,6 @@ def _relation_counts(client: Client, user: User) -> dict[str, int]:
     counts = {
         "mandates": base.filter(role__in=dossier.RELATION_PAGES["mandates"]).count(),
         "shareholders": base.filter(role__in=dossier.RELATION_PAGES["shareholders"]).count(),
-        "others": base.filter(role__in=dossier.RELATION_PAGES["other_relations"]).count(),
     }
     if not client.is_person:
         counts["ubo"] = len(ubo.analyse(client).candidates)

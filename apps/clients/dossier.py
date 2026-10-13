@@ -76,7 +76,6 @@ SIDE: tuple[Group, ...] = (
             Section("mandates", "Mandataires", count="mandates"),
             Section("shareholders", "Actionnaires", count="shareholders"),
             Section("ubo", "Bénéficiaires effectifs (UBO)", for_persons=False, count="ubo"),
-            Section("other_relations", "Autres relations", count="others"),
         ),
     ),
     Group(
@@ -108,15 +107,13 @@ WORK_PAGES = {s.slug: s for s in SECTIONS if s.slug}
 RELATION_PAGES: dict[str, tuple[str, ...]] = {
     "mandates": (*Relation.MANAGEMENT_ROLES, Relation.Role.PERMANENT_REPRESENTATIVE),
     "shareholders": (Relation.Role.SHAREHOLDER,),
-    "other_relations": (
-        Relation.Role.SPOUSE,
-        Relation.Role.BENEFICIAL_OWNER,
-        Relation.Role.OTHER,
-    ),
 }
 
 
 def page_for_role(role: str) -> str:
+    """Page où revenir après avoir enregistré une relation de ce rôle."""
+    if role == Relation.Role.BENEFICIAL_OWNER:
+        return "ubo"
     return next((page for page, roles in RELATION_PAGES.items() if role in roles), "mandates")
 
 

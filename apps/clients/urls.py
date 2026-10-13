@@ -22,7 +22,6 @@ urlpatterns = [
     path("<int:pk>/relations/", views.client_relations, name="relations"),
     path("<int:pk>/mandataires/", views.client_mandates, name="mandates"),
     path("<int:pk>/actionnaires/", views.client_shareholders, name="shareholders"),
-    path("<int:pk>/autres-relations/", views.client_other_relations, name="other_relations"),
     path("<int:pk>/beneficiaires/", views.client_ubo, name="ubo"),
     path("<int:pk>/comptes-annuels/", views.client_annual_accounts, name="annual_accounts"),
     path("<int:pk>/echeances/", task_views.client_tasks, name="tasks"),

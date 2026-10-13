@@ -12,7 +12,7 @@ from apps.core.testing.factories import ClientFactory, PersonFactory, PortfolioF
 pytestmark = pytest.mark.django_db
 
 SECTIONS = [
-    "identity", "mandates", "shareholders", "other_relations", "ubo", "annual_accounts",
+    "identity", "mandates", "shareholders", "ubo", "annual_accounts",
     "history",
 ]  # fmt: skip
 
@@ -41,7 +41,7 @@ def test_inside_a_dossier_only_the_dossier_is_shown(web):
     assert "time-sheet" not in html
     # À gauche : la paperasse, chaque page à un clic.
     for name in ("identity", "mandates", "shareholders", "ubo",
-                 "other_relations", "tasks", "history"):  # fmt: skip
+                 "tasks", "history"):  # fmt: skip
         assert reverse(f"clients:{name}", args=[client.pk]) in html
 
 
@@ -175,6 +175,7 @@ def test_relations_are_split_by_kind_with_counts(web):
     # Une personne voit les sociétés où elle a un mandat.
     html = web.get(reverse("clients:mandates", args=[manager.pk])).content.decode()
     assert company.name in html.split("dossier-content")[1]
+    assert "Autres relations" not in mandates  # page supprimée (D-030)
     # L'ancienne adresse « Relations » mène aux mandataires.
     assert web.get(reverse("clients:relations", args=[company.pk])).url == reverse(
         "clients:mandates", args=[company.pk]
