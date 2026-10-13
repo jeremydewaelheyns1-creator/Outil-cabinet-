@@ -44,3 +44,45 @@ class VatCheck(models.Model):
 
     def __str__(self) -> str:
         return f"{self.country_code}{self.vat_number} : {self.get_result_display()}"
+
+
+class OfficialSnapshot(models.Model):
+    """Relevé d'un site officiel pour un client : ce qu'on y a lu, à quelle date.
+
+    On garde les derniers relevés pour repérer ce qui change (nouvelle publication au
+    Moniteur, nouvel administrateur, nouveaux comptes annuels).
+    """
+
+    class Source(models.TextChoices):
+        KBO = "kbo", "BCE (fonctions)"
+        MONITEUR = "moniteur", "Moniteur belge"
+        NBB = "nbb", "Banque Nationale (comptes annuels)"
+
+    class Status(models.TextChoices):
+        OK = "ok", "Lu"
+        UNAVAILABLE = "unavailable", "Site injoignable"
+        NOT_CONFIGURED = "not_configured", "Accès non configuré"
+        UNREADABLE = "unreadable", "Page illisible"
+
+    client = models.ForeignKey(Client, on_delete=models.CASCADE, related_name="official_snapshots")
+    source = models.CharField("source", max_length=20, choices=Source.choices)
+    status = models.CharField("état", max_length=20, choices=Status.choices)
+    items = models.JSONField("éléments lus", default=list, blank=True)
+    error = models.CharField("erreur", max_length=200, blank=True)
+    fetched_at = models.DateTimeField("consulté le", default=timezone.now)
+    fetched_by = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True, related_name="+"
+    )
+
+    class Meta:
+        verbose_name = "relevé d'un site officiel"
+        verbose_name_plural = "relevés des sites officiels"
+        ordering: ClassVar = ["-fetched_at"]
+        indexes: ClassVar = [models.Index(fields=["client", "source", "-fetched_at"])]
+
+    def __str__(self) -> str:
+        return f"{self.get_source_display()} · {self.client_id} · {self.fetched_at:%d/%m/%Y}"
+
+    @property
+    def ok(self) -> bool:
+        return self.status == self.Status.OK

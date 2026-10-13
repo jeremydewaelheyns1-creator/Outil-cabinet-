@@ -15,6 +15,7 @@ from django.core.management import call_command
 from django.core.management.base import BaseCommand
 
 from apps.core import events
+from apps.integrations import official
 from apps.reprise.models import purge_stale_uploads
 from apps.tasks.generator import generate_all_if_due
 
@@ -29,4 +30,5 @@ class Command(BaseCommand):
         run = generate_all_if_due()
         if run is not None:
             self.stdout.write(f"Échéances : {run.created} créées, {run.removed} retirées")
+        self.stdout.write(f"Sites officiels consultés : {official.refresh_due()} sociétés")
         call_command("procrastinate", "worker", "--one-shot")

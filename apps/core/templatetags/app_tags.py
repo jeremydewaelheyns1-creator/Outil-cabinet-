@@ -77,3 +77,12 @@ def client_icon(client: object) -> SafeString:
         f'stroke-linejoin="round" role="img" aria-label="{title}">'
         f"<title>{title}</title>{paths}</svg>"
     )
+
+
+@register.filter
+def iso_date(value: object) -> str:
+    """« 2026-10-13 » → « 13/10/2026 » (dates lues sur les sites officiels)."""
+    text = str(value or "")[:10]
+    if len(text) == 10 and text[4] == "-" and text[7] == "-":
+        return f"{text[8:10]}/{text[5:7]}/{text[:4]}"
+    return text

@@ -15,4 +15,9 @@ STORAGES = {
 }
 # Aucune requête réseau réelle en test : les clients HTTP sont simulés.
 VIES_API_URL = "https://vies.invalid/check-vat-number"
+KBO_PUBLIC_URL = "https://kbo.invalid/toonondernemingps.html"
+MONITEUR_URL = "https://moniteur.invalid/list.pl"
+NBB_CBSO_API_URL = "https://nbb.invalid"
+NBB_CBSO_KEY = ""
+OFFICIAL_AUTO_REFRESH = False
 LOGGING["root"]["level"] = "WARNING"

@@ -1,0 +1,14 @@
+{# Bandeau commun : date de la dernière consultation, bouton « Actualiser », lien officiel. #}
+<div class="official-bar">
+  <div class="small muted">
+    {% if snapshot %}Consulté le {{ snapshot.fetched_at|date:"d/m/Y à H:i" }}{% if snapshot.fetched_by %} par {{ snapshot.fetched_by.get_short_name }}{% else %} (automatique){% endif %}.
+    {% else %}Pas encore consulté automatiquement.{% endif %}
+    {% if last and not last.ok %}<span class="badge badge-warning" title="{{ last.error }}">dernier essai le {{ last.fetched_at|date:"d/m H:i" }} : {{ last.get_status_display|lower }}</span>{% endif %}
+  </div>
+  <div class="official-actions">
+    {% if client.enterprise_number %}
+      <form class="inline" method="post" action="{% url 'clients:official_refresh' client.pk source %}">{% csrf_token %}<button type="submit" class="button-secondary small">Actualiser</button></form>
+    {% endif %}
+    {% if official_url %}<a class="button button-small" href="{{ official_url }}" target="_blank" rel="noopener noreferrer">{{ official_label }} ↗</a>{% endif %}
+  </div>
+</div>

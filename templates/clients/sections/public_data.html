@@ -50,6 +50,36 @@
       <p class="empty">La copie de la BCE n'a pas encore été importée.</p>
     {% endif %}
   </section>
+
+  <section class="card">
+    <div class="card-header"><h2>Administrateurs et gérants (BCE)</h2></div>
+    {% include "clients/official/_status.html" with official_label="Ouvrir à la BCE" %}
+    {% if function_checks %}
+      <table class="table">
+        <thead><tr><th>Fonction</th><th>Nom</th><th>Depuis</th><th></th></tr></thead>
+        <tbody>
+        {% for c in function_checks %}
+          <tr>
+            <td class="small">{{ c.function.role }}</td>
+            <td>{{ c.function.display_name }}{% if c.function.enterprise_number %} <span class="mono small muted">{{ c.function.enterprise_number }}</span>{% endif %}</td>
+            <td class="nowrap small">{% if c.function.since %}{{ c.function.since|iso_date }}{% endif %}</td>
+            <td class="nowrap">
+              {% if c.matched %}<span class="badge badge-success" title="Déjà dans les relations">✓ dans les relations</span>
+              {% elif can_edit %}
+                <form class="inline" method="post" action="{% url 'clients:official_function_add' client.pk c.index %}">{% csrf_token %}<button type="submit" class="small">Ajouter aux relations</button></form>
+              {% else %}<span class="badge badge-warning">absent des relations</span>{% endif %}
+            </td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+      <p class="muted small">La BCE publie les fonctions (gérants, administrateurs), pas les actionnaires ni les bénéficiaires effectifs.</p>
+    {% elif snapshot %}
+      <p class="empty">Aucune fonction publiée à la BCE.</p>
+    {% else %}
+      <p class="empty">Les administrateurs et gérants publiés à la BCE s'afficheront ici après la première consultation.</p>
+    {% endif %}
+  </section>
   </div>
 <div>
   <section class="card">

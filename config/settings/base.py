@@ -231,6 +231,22 @@ VIES_TIMEOUT_SECONDS = env.float("VIES_TIMEOUT_SECONDS", default=10.0)
 # consultation qui sert de preuve. Facultatif.
 VIES_REQUESTER_VAT = env("VIES_REQUESTER_VAT", default="")
 
+# Sites officiels consultés pour chaque société (D-024) : BCE (fonctions), Moniteur belge,
+# Banque Nationale (comptes annuels). Une consultation par client et par source, au plus une
+# fois par OFFICIAL_REFRESH_DAYS jours en automatique, ou à la demande.
+KBO_PUBLIC_URL = env(
+    "KBO_PUBLIC_URL", default="https://kbopub.economie.fgov.be/kbopub/toonondernemingps.html"
+)
+MONITEUR_URL = env("MONITEUR_URL", default="https://www.ejustice.just.fgov.be/cgi_tsv/list.pl")
+# API officielle de la Banque Nationale (CBSO) : clé gratuite à demander par le cabinet sur
+# https://developer.cbso.nbb.be/ (produit « Authentic Query »). Sans clé : lien vers le site.
+NBB_CBSO_API_URL = env("NBB_CBSO_API_URL", default="https://ws.cbso.nbb.be")
+NBB_CBSO_KEY = env("NBB_CBSO_KEY", default="")
+OFFICIAL_TIMEOUT_SECONDS = env.float("OFFICIAL_TIMEOUT_SECONDS", default=15.0)
+OFFICIAL_AUTO_REFRESH = env.bool("OFFICIAL_AUTO_REFRESH", default=True)
+OFFICIAL_REFRESH_DAYS = env.int("OFFICIAL_REFRESH_DAYS", default=7)
+OFFICIAL_REFRESH_BATCH = env.int("OFFICIAL_REFRESH_BATCH", default=10)
+
 # Nombre de relais de confiance (répartiteur de charge Google) qui ajoutent l'adresse IP du
 # visiteur dans l'en-tête X-Forwarded-For. 0 = on se fie à l'adresse de connexion directe.
 TRUSTED_PROXY_COUNT = env.int("TRUSTED_PROXY_COUNT", default=0)

@@ -1,0 +1,34 @@
+{% extends "clients/sections/_base.html" %}
+{% block head_title %}Comptes annuels · {{ client.display_name }}{% endblock %}
+{% block page_title %}Comptes annuels (Banque Nationale){% endblock %}
+{% block content %}
+{% if not client.enterprise_number %}
+  <p class="alert alert-warning">Ce dossier n'a pas de numéro d'entreprise.</p>
+{% else %}
+<section class="card">
+  {% include "clients/official/_status.html" with official_label="Ouvrir à la Banque Nationale" %}
+  {% if snapshot.items %}
+    <table class="table">
+      <thead><tr><th>Exercice</th><th>Déposé le</th><th>Assemblée générale</th><th>Modèle</th><th>Type</th></tr></thead>
+      <tbody>
+      {% for f in snapshot.items %}
+        <tr>
+          <td class="nowrap">{{ f.exercise_start|iso_date }} → {{ f.exercise_end|iso_date }}</td>
+          <td class="nowrap">{{ f.deposit_date|iso_date }}</td>
+          <td class="nowrap">{% if f.general_assembly %}{{ f.general_assembly|iso_date }}{% else %}—{% endif %}</td>
+          <td class="small">{{ f.model|default:"—" }}</td>
+          <td class="small">{{ f.deposit_type|default:"—" }}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  {% elif snapshot %}
+    <p class="empty">Aucun dépôt de comptes annuels à la Banque Nationale pour ce numéro.</p>
+  {% elif last.status == "not_configured" %}
+    <p class="alert alert-info small">La lecture automatique des comptes annuels utilise l'accès officiel (gratuit) de la Banque Nationale. Il sera activé quand le cabinet aura demandé sa clé d'accès sur <a href="https://developer.cbso.nbb.be/" target="_blank" rel="noopener noreferrer">developer.cbso.nbb.be</a>. En attendant, le bouton ouvre la page officielle.</p>
+  {% else %}
+    <p class="empty">Les dépôts (exercice, date de dépôt, assemblée générale, modèle) s'afficheront ici après la première consultation. En attendant, le bouton ouvre la page officielle.</p>
+  {% endif %}
+</section>
+{% endif %}
+{% endblock %}

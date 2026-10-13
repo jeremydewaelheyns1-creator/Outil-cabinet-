@@ -1,0 +1,33 @@
+{% extends "clients/sections/_base.html" %}
+{% block head_title %}Moniteur belge · {{ client.display_name }}{% endblock %}
+{% block page_title %}Moniteur belge{% endblock %}
+{% block content %}
+{% if not client.enterprise_number %}
+  <p class="alert alert-warning">Ce dossier n'a pas de numéro d'entreprise.</p>
+{% else %}
+<section class="card">
+  {% include "clients/official/_status.html" with official_label="Ouvrir au Moniteur belge" %}
+  {% if snapshot.items %}
+    <table class="table">
+      <thead><tr><th class="nowrap">Publié le</th><th>Objet</th><th></th></tr></thead>
+      <tbody>
+      {% for p in snapshot.items %}
+        <tr>
+          <td class="nowrap">{{ p.published_on|iso_date }}</td>
+          <td>
+            {% for t in p.tags %}<span class="badge">{{ t }}</span> {% endfor %}
+            <span class="small">{{ p.subject|default:"—" }}</span>
+          </td>
+          <td class="nowrap">{% if p.pdf_url %}<a href="{{ p.pdf_url }}" target="_blank" rel="noopener noreferrer">Lire (PDF) ↗</a>{% endif %} <span class="muted small mono">{{ p.number }}</span></td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  {% elif snapshot %}
+    <p class="empty">Aucune publication trouvée au Moniteur pour ce numéro.</p>
+  {% else %}
+    <p class="empty">Les publications (statuts, nominations, démissions, transferts de siège…) s'afficheront ici après la première consultation. En attendant, le bouton ouvre la page officielle.</p>
+  {% endif %}
+</section>
+{% endif %}
+{% endblock %}

@@ -11,7 +11,10 @@ from apps.core.testing.factories import ClientFactory, PersonFactory, PortfolioF
 
 pytestmark = pytest.mark.django_db
 
-SECTIONS = ["detail", "identity", "relations", "ubo", "team", "public_data", "history"]
+SECTIONS = [
+    "detail", "identity", "relations", "ubo", "team", "public_data", "moniteur",
+    "annual_accounts", "history",
+]  # fmt: skip
 
 
 def test_opening_a_client_makes_it_the_active_dossier_everywhere(web):

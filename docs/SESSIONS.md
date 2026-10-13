@@ -45,7 +45,18 @@ au jour ouvrable, génération sans doublon qui suit la fiche et l'équipe, rubr
 du dossier (en retard / à venir / plus tard / terminées, check-lists, responsable, statut,
 ajout manuel), échéancier du cabinet filtrable, alerte « en retard » dans la synthèse.
 
+**Soirée (demandes de Jeremy)** : dossier en cinq onglets (D-021 à D-023), en-tête riche à
+la FID (relations cliquables, icônes société/personne/ASBL), page Identité enrichie. Sites
+officiels (D-024) : fonctions BCE comparées aux relations et reprises en un clic, publications
+du Moniteur belge, comptes annuels BNB (API officielle), relevés datés, consultation
+hebdomadaire automatique, points d'attention ; carte « Registre UBO » sur la page des
+bénéficiaires effectifs.
+
 **Reste à faire / en attente**
+- Vérifier sur l'environnement d'essai que les pages réelles de la BCE et du Moniteur sont
+  bien lues (analyseurs écrits sans accès réseau à ces sites, testés sur des pages fictives).
+- Clé d'accès gratuite de la Banque Nationale (developer.cbso.nbb.be, produit « Authentic
+  Query ») à demander par le cabinet ; à placer dans `NBB_CBSO_KEY`.
 - Structure réelle de l'export clients FID-Manager (en-têtes uniquement + lignes inventées).
 - Déploiement de l'environnement d'essai sur le Google Cloud du cabinet.
 - Page d'accueil (quand aucun dossier n'est ouvert) : à définir avec Jeremy.

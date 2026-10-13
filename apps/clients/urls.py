@@ -23,12 +23,24 @@ urlpatterns = [
     path("<int:pk>/beneficiaires/", views.client_ubo, name="ubo"),
     path("<int:pk>/equipe/", views.client_team, name="team"),
     path("<int:pk>/bce-tva/", views.client_public_data, name="public_data"),
+    path("<int:pk>/moniteur/", views.client_moniteur, name="moniteur"),
+    path("<int:pk>/comptes-annuels/", views.client_annual_accounts, name="annual_accounts"),
     path("<int:pk>/echeances/", task_views.client_tasks, name="tasks"),
     path("<int:pk>/historique/", views.client_history, name="history"),
     path("<int:pk>/bientot/<slug:tab>/", views.client_upcoming, name="upcoming"),
     # Actions
     path("<int:pk>/modifier/", views.client_edit, name="edit"),
     path("<int:pk>/numero-national/", views.reveal_national_number, name="reveal_nn"),
+    path(
+        "<int:pk>/sites-officiels/<slug:source>/actualiser/",
+        views.official_refresh,
+        name="official_refresh",
+    ),
+    path(
+        "<int:pk>/bce-tva/fonction/<int:index>/reprendre/",
+        views.official_function_add,
+        name="official_function_add",
+    ),
     path("<int:pk>/equipe/modifier/", views.assignments_edit, name="assignments"),
     path("<int:pk>/coordonnees/ajouter/", views.contact_add, name="contact_add"),
     path(

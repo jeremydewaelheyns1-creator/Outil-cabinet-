@@ -24,8 +24,8 @@ from apps.core.capabilities import Capability
 from apps.core.http import AppRequest
 from apps.core.models import AccessLog, Portfolio, events_for
 from apps.core.permissions import require_capability
-from apps.integrations import vies
-from apps.integrations.models import VatCheck
+from apps.integrations import official, vies
+from apps.integrations.models import OfficialSnapshot, VatCheck
 
 from . import dossier
 from .forms import AssignmentForm, ClientForm, ContactPointForm, RelationForm
@@ -396,9 +396,48 @@ def client_public_data(request: AppRequest, pk: int) -> HttpResponse:
             "bce_differences": bce.differences(client, record) if record else [],
             "bce_has_data": bce.has_data(),
             "vat_checks": client.vat_checks.select_related("checked_by")[:10],
+            **_official(client, OfficialSnapshot.Source.KBO),
+            "function_checks": official.compare_functions(
+                client, official.latest(client, OfficialSnapshot.Source.KBO, ok_only=True)
+            ),
         }
 
     return render_section(request, pk, "public_data", "clients/sections/public_data.html", build)
+
+
+def _official(client: Client, source: str) -> dict[str, Any]:
+    """Dernier relevé d'un site officiel (et le dernier réussi, s'il est plus ancien)."""
+    last = official.latest(client, source)
+    good = last if last is not None and last.ok else official.latest(client, source, ok_only=True)
+    urls = official.public_urls(client.enterprise_number) if client.enterprise_number else {}
+    return {
+        "source": source,
+        "last": last,
+        "snapshot": good,
+        "official_url": urls.get(source, ""),
+    }
+
+
+def client_moniteur(request: AppRequest, pk: int) -> HttpResponse:
+    """Publications de la société aux annexes du Moniteur belge."""
+    return render_section(
+        request,
+        pk,
+        "moniteur",
+        "clients/sections/moniteur.html",
+        lambda client: _official(client, OfficialSnapshot.Source.MONITEUR),
+    )
+
+
+def client_annual_accounts(request: AppRequest, pk: int) -> HttpResponse:
+    """Comptes annuels déposés à la Banque Nationale."""
+    return render_section(
+        request,
+        pk,
+        "annual_accounts",
+        "clients/sections/annual_accounts.html",
+        lambda client: _official(client, OfficialSnapshot.Source.NBB),
+    )
 
 
 def client_upcoming(request: AppRequest, pk: int, tab: str) -> HttpResponse:
@@ -730,3 +769,122 @@ def vies_check(request: AppRequest, pk: int) -> HttpResponse:
     if request.htmx:
         return render(request, "clients/_vies_result.html", {"check": check, "client": client})
     return redirect("clients:public_data", pk=client.pk)
+
+
+SOURCE_SECTIONS: dict[str, str] = {
+    OfficialSnapshot.Source.KBO: "clients:public_data",
+    OfficialSnapshot.Source.MONITEUR: "clients:moniteur",
+    OfficialSnapshot.Source.NBB: "clients:annual_accounts",
+}
+
+
+@require_POST
+def official_refresh(request: AppRequest, pk: int, source: str) -> HttpResponse:
+    """Consulte maintenant un site officiel pour ce client (BCE, Moniteur, BNB)."""
+    client = _get_client(request, pk)
+    if source not in SOURCE_SECTIONS:
+        raise Http404
+    if client.enterprise_number:
+        snapshot = official.refresh(client, source, user=request.user)
+        if snapshot.ok:
+            messages.success(request, f"{snapshot.get_source_display()} : informations à jour.")
+        else:
+            messages.warning(
+                request,
+                f"{snapshot.get_source_display()} : {snapshot.get_status_display().lower()}"
+                f"{f' ({snapshot.error})' if snapshot.error else ''}. "
+                "Le lien vers le site officiel reste disponible.",
+            )
+    return redirect(SOURCE_SECTIONS[source], pk=client.pk)
+
+
+@require_POST
+@require_capability(Capability.CLIENTS_EDIT)
+def official_function_add(request: AppRequest, pk: int, index: int) -> HttpResponse:
+    """Reprend dans les relations une fonction lue à la BCE (décision du cabinet, un clic)."""
+    client = _get_client(request, pk)
+    snapshot = official.latest(client, OfficialSnapshot.Source.KBO, ok_only=True)
+    check = next(
+        (c for c in official.compare_functions(client, snapshot) if c.index == index), None
+    )
+    if check is None:
+        raise Http404
+    if check.matched:
+        messages.info(request, "Cette fonction figure déjà dans les relations.")
+        return redirect("clients:public_data", pk=client.pk)
+    function = check.function
+    with transaction.atomic():
+        other, created = _client_for_function(request, client, function)
+        if other is None:
+            return redirect("clients:public_data", pk=client.pk)
+        relation = Relation.objects.create(
+            entity=client,
+            person=other,
+            role=check.role,
+            start_date=function.since or None,
+            notes="Repris de la BCE",
+        )
+    if created:
+        log_access(request, AccessLog.Action.CREATE, other, details={"source": "BCE"})
+        events.emit("client.created", subject=other, actor=request.user)
+    log_access(request, AccessLog.Action.CREATE, relation, details={"rôle": relation.role})
+    events.emit(
+        "relation.saved",
+        subject=client,
+        actor=request.user,
+        payload={"relation": relation.pk, "role": relation.role, "source": "BCE"},
+    )
+    messages.success(
+        request,
+        f"{other.display_name} ajouté aux relations ({relation.get_role_display().lower()})"
+        f"{' — nouvelle fiche créée' if created else ''}.",
+    )
+    return redirect("clients:public_data", pk=client.pk)
+
+
+def _client_for_function(
+    request: AppRequest, client: Client, function: official.Function
+) -> tuple[Client | None, bool]:
+    """Fiche existante correspondant à la fonction, sinon nouvelle fiche (prospect)."""
+    if function.enterprise_number:
+        existing = Client.objects.filter(enterprise_number=function.enterprise_number).first()
+        if existing is not None:
+            if not _visible_clients(request).filter(pk=existing.pk).exists():
+                messages.error(request, "Cette société est suivie dans un portefeuille privé.")
+                return None, False
+            return existing, False
+        return (
+            Client.objects.create(
+                kind=Client.Kind.COMPANY,
+                status=Client.Status.PROSPECT,
+                name=function.name,
+                enterprise_number=function.enterprise_number,
+                portfolio=client.portfolio,
+            ),
+            True,
+        )
+    persons = [
+        p
+        for p in _visible_clients(request).filter(
+            kind=Client.Kind.PERSON, name__iexact=function.name
+        )
+        if official.same_person(function, p)
+    ]
+    if len(persons) > 1:
+        messages.warning(
+            request,
+            "Plusieurs fiches portent ce nom : ajoutez la relation à la main (choix de la fiche).",
+        )
+        return None, False
+    if persons:
+        return persons[0], False
+    return (
+        Client.objects.create(
+            kind=Client.Kind.PERSON,
+            status=Client.Status.PROSPECT,
+            name=function.name,
+            first_name=function.first_name,
+            portfolio=client.portfolio,
+        ),
+        True,
+    )

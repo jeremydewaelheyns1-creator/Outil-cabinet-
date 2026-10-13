@@ -116,3 +116,19 @@ Facturation. Un onglet pas encore construit reste cliquable et décrit ce qu'il 
 Règle d'ergonomie fixée par Jeremy : dans un dossier, toute information est atteignable en deux
 clics au plus (onglet puis sous-onglet). Jamais de troisième niveau. Préférer des pages riches
 (beaucoup d'informations, présentation aérée) à des pages supplémentaires.
+
+## D-024 — Sites officiels lus pour chaque société, sans rien modifier seul
+Pour chaque société active, l'outil consulte la BCE publique (fonctions : gérants,
+administrateurs), les annexes du Moniteur belge (publications) et la Banque Nationale (dépôts
+des comptes annuels, par son API officielle « Authentic Query », clé gratuite du cabinet). Un
+relevé daté est conservé à chaque consultation (10 derniers par source) ; une nouveauté
+déclenche l'événement `official.changed` et un point d'attention dans la synthèse. Consultation
+automatique une fois par semaine et par société, par petits lots (`run_jobs`), ou à la demande
+(bouton « Actualiser »). La BCE et le Moniteur n'ayant pas d'API ouverte, leurs pages sont lues
+avec des analyseurs tolérants : si la page devient illisible, l'outil le dit et garde le
+dernier relevé ; le lien vers le site officiel reste toujours disponible. Les fonctions lues
+sont comparées aux relations ; les reprendre est une décision du cabinet (un clic, fiche
+existante réutilisée, sinon fiche « prospect » créée). Les bénéficiaires effectifs ne sont pas
+publiés à la BCE : le registre UBO (SPF Finances) se consulte dans MyMinfin, sans accès
+automatique, et la loi interdit de s'y fier seul ; l'outil compare le calcul UBO aux
+déclarations encodées.

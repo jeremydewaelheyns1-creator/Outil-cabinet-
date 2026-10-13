@@ -3,6 +3,24 @@
 Ce qui a été ajouté à l'outil, du plus récent au plus ancien. Toutes les données de la démo
 sont inventées.
 
+## 13 octobre 2026 — Les sites officiels dans le dossier (BCE, Moniteur belge, Banque Nationale)
+
+- Dans l'onglet **Fiche** d'une société, deux nouveaux sous-onglets : **Moniteur belge**
+  (toutes les publications : constitution, nominations, démissions, transfert de siège…, avec
+  le PDF) et **Comptes annuels** (exercices déposés à la Banque Nationale, date de dépôt, date
+  de l'assemblée générale).
+- Dans **BCE et TVA** : les administrateurs et gérants publiés à la BCE, comparés aux relations
+  de la fiche. S'il en manque un, un bouton « Ajouter aux relations » le reprend en un clic.
+- Chaque page a un bouton qui ouvre directement la page officielle du client, et un bouton
+  « Actualiser ». L'outil consulte aussi ces sites tout seul, une fois par semaine.
+- La **Synthèse** signale ce qui bouge : publication récente au Moniteur, dirigeant publié à la
+  BCE mais absent des relations.
+- **Bénéficiaires effectifs** : ils ne sont pas publiés à la BCE. La page explique où les
+  vérifier (registre UBO dans MyMinfin) et propose les raccourcis utiles.
+- Dans la démo, ces informations sont inventées. Dans l'outil du cabinet, elles seront lues
+  sur les vrais sites. Pour la Banque Nationale, le cabinet devra demander une clé d'accès
+  gratuite.
+
 ## 13 octobre 2026 — Plus d'informations d'un coup d'œil (inspiré de FID-Manager)
 
 - Sous le nom du client : la liste de ses relations (gérant, associés, conjoint, sociétés dont

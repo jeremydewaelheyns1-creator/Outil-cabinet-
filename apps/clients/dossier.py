@@ -57,6 +57,8 @@ TABS: tuple[Tab, ...] = (
             Section("relations", "Relations"),
             Section("ubo", "Bénéficiaires effectifs", for_persons=False),
             Section("public_data", "BCE et TVA", for_persons=False),
+            Section("moniteur", "Moniteur belge", for_persons=False),
+            Section("annual_accounts", "Comptes annuels", for_persons=False),
             Section("team", "Équipe du cabinet"),
         ),
     ),
@@ -173,6 +175,7 @@ ACTION_SECTIONS = {
     "relation_add": "relations",
     "relation_edit": "relations",
     "assignments": "team",
+    "official_function_add": "public_data",
 }
 UPCOMING_SECTION = "upcoming"
 

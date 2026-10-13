@@ -601,3 +601,8 @@ a.badge:hover { text-decoration: none; filter: brightness(0.95); }
   .identity-note { border-left: none; padding-left: 0; }
   .fields-wide dt { text-align: left; }
 }
+
+/* --- Sites officiels ------------------------------------------------------------------------ */
+.official-bar { display: flex; flex-wrap: wrap; gap: 0.5rem 1rem; align-items: center; justify-content: space-between; margin-bottom: 0.75rem; }
+.official-actions { display: flex; gap: 0.4rem; align-items: center; }
+.official-links { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.75rem; }
