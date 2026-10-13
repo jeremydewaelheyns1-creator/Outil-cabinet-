@@ -53,6 +53,8 @@ hebdomadaire automatique, points d'attention ; carte « Registre UBO » sur la p
 bénéficiaires effectifs.
 
 **Reste à faire / en attente**
+- Registre UBO (déclarations, justificatifs, confirmation annuelle, questionnaire client) : à
+  intégrer dans l'onglet **Documents** du haut quand on le construira (choix de Jeremy).
 - Vérifier sur l'environnement d'essai que les pages réelles de la BCE et du Moniteur sont
   bien lues (analyseurs écrits sans accès réseau à ces sites, testés sur des pages fictives).
 - Clé d'accès gratuite de la Banque Nationale (developer.cbso.nbb.be, produit « Authentic
