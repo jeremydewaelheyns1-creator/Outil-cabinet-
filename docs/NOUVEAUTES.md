@@ -3,6 +3,11 @@
 Ce qui a été ajouté à l'outil, du plus récent au plus ancien. Toutes les données de la démo
 sont inventées.
 
+## 13 octobre 2026 — Un dossier s'ouvre sur « Identité et coordonnées »
+
+- Quand on ouvre un client (depuis la liste, le sélecteur du haut ou une relation), on arrive
+  toujours sur « Identité et coordonnées ».
+
 ## 13 octobre 2026 — Onglets du haut réordonnés
 
 - Nouvel ordre : Clôture, Déclaration TVA, Versements anticipés, Documents.

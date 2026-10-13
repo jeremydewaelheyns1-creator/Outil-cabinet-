@@ -61,19 +61,13 @@ def test_person_sections_skip_company_only_ones(web):
     assert reverse("clients:identity", args=[person.pk]) in html
 
 
-def test_switching_client_keeps_the_section(web):
+def test_opening_a_dossier_always_shows_identity(web):
     first, second = ClientFactory(), ClientFactory()
     web.get(reverse("clients:shareholders", args=[first.pk]))
     response = web.get(reverse("clients:open", args=[second.pk]), {"rubrique": "shareholders"})
-    assert response.url == reverse("clients:shareholders", args=[second.pk])
-    response = web.get(reverse("clients:open", args=[second.pk]), {"rubrique": "work:cloture"})
-    assert response.url == reverse("clients:work", args=[second.pk, "cloture"])
-    # Une rubrique inexistante pour ce type de client renvoie à la Fiche.
-    person = PersonFactory()
-    response = web.get(reverse("clients:open", args=[person.pk]), {"rubrique": "ubo"})
-    assert response.url == reverse("clients:identity", args=[person.pk])
-    response = web.get(reverse("clients:open", args=[person.pk]), {"rubrique": "../admin"})
-    assert response.url == reverse("clients:identity", args=[person.pk])
+    assert response.url == reverse("clients:identity", args=[second.pk])
+    html = web.get(reverse("clients:shareholders", args=[first.pk])).content.decode()
+    assert "?rubrique=" not in html
 
 
 def test_switcher_shows_recent_dossiers_then_search_results(web):
@@ -87,7 +81,7 @@ def test_switcher_shows_recent_dossiers_then_search_results(web):
     assert "Charlie" not in recent
     found = web.get(reverse("clients:switcher"), {"q": "charlie", "rubrique": "team"})
     html = found.content.decode()
-    assert "Charlie Fictif" in html and "rubrique=team" in html
+    assert "Charlie Fictif" in html and "rubrique=" not in html
 
 
 def test_switcher_never_shows_private_clients(web):
@@ -202,7 +196,7 @@ def test_header_lists_relations_clickable_in_both_directions(web):
     Relation.objects.create(entity=company, person=manager, role="manager")
     html = web.get(reverse("clients:identity", args=[company.pk])).content.decode()
     assert 'class="head-relations"' in html
-    assert reverse("clients:open", args=[manager.pk]) + "?rubrique=identity" in html
+    assert reverse("clients:open", args=[manager.pk]) in html
     # Depuis la personne, la société apparaît (« … de »).
     html = web.get(reverse("clients:detail", args=[manager.pk])).content.decode()
     assert reverse("clients:open", args=[company.pk]) in html

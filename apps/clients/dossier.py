@@ -4,8 +4,8 @@ Comme dans un logiciel comptable par dossier, on choisit un client une fois ; il
 affiché en haut de l'écran. Dans un dossier, l'écran ne montre que lui (D-026) : un en-tête
 fixe, en haut les onglets du travail fréquent (Clôture, Déclaration TVA, Versements
 anticipés, Documents), à gauche un panneau « paperasse » comme FID-Manager (Fiche, Organisation,
-Suivi, Conformité, Facturation), chaque page à un clic. Changer de client garde la rubrique
-ouverte (on passe des « Mandataires » d'un client à ceux d'un autre).
+Suivi, Conformité, Facturation), chaque page à un clic. Ouvrir un dossier mène toujours à
+« Identité et coordonnées » (D-028).
 
 Le dossier actif et les derniers dossiers ouverts sont gardés dans la session (identifiants
 seulement) ; la visibilité est revérifiée à chaque lecture.

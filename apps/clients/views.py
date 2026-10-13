@@ -476,16 +476,9 @@ def dossier_switcher(request: AppRequest) -> HttpResponse:
 
 
 def dossier_open(request: AppRequest, pk: int) -> HttpResponse:
-    """Change de dossier en restant, si possible, sur la même rubrique."""
+    """Ouvre un dossier, toujours sur Identité et coordonnées (D-028)."""
     client = open_dossier(request, pk)
-    section = request.GET.get("rubrique", dossier.DEFAULT_SECTION)
-    allowed = {s.key: s for s in dossier.sections_for(client)}
-    target = allowed.get(section)
-    if target is not None and target.slug:
-        return redirect("clients:work", pk=client.pk, slug=target.slug)
-    return redirect(
-        f"clients:{target.url_name if target else dossier.DEFAULT_SECTION}", pk=client.pk
-    )
+    return redirect(f"clients:{dossier.DEFAULT_SECTION}", pk=client.pk)
 
 
 @require_POST

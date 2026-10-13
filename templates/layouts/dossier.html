@@ -24,7 +24,7 @@
           {% if links %}
             <ul class="head-relations" aria-label="Relations">
               {% for l in links %}
-                <li><a href="{% url 'clients:open' l.other.pk %}?rubrique={{ current_section }}">{% client_icon l.other %} {{ l.other.display_name }}</a> <span class="muted">{{ l.role|lower }}</span></li>
+                <li><a href="{% url 'clients:open' l.other.pk %}">{% client_icon l.other %} {{ l.other.display_name }}</a> <span class="muted">{{ l.role|lower }}</span></li>
               {% endfor %}
               {% if more %}<li><a href="{% url 'clients:mandates' c.pk %}">+ {{ more }} autre{{ more|pluralize }}</a></li>{% endif %}
             </ul>

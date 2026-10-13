@@ -156,3 +156,8 @@ Ajouter une entrée : dans `TOP` ou `SIDE` (`apps/clients/dossier.py`), jamais a
 ## D-027 — Ordre des onglets du haut
 Précise D-026 (demande de Jeremy) : Clôture, Déclaration TVA (si assujetti), Versements
 anticipés, Documents. Time sheet retiré pour l'instant ; on en reparlera.
+
+## D-028 — Un dossier s'ouvre toujours sur « Identité et coordonnées »
+Remplace la règle de D-019 « changer de client garde la rubrique ouverte » (demande de
+Jeremy) : quel que soit le chemin (liste, sélecteur du haut, relation cliquée), ouvrir un
+dossier affiche Identité et coordonnées.
