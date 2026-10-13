@@ -3,7 +3,7 @@
 {% else %}
   <div class="picker-results">
     {% for result in results %}
-      <label><input type="radio" name="{{ field_name }}" value="{{ result.pk }}" required> {{ result.display_name }}
+      <label><input type="radio" name="{{ field_name }}" value="{{ result.pk }}" required> {% client_icon result %} {{ result.display_name }}
         <span class="muted small">· {{ result.get_kind_display }}{% if result.city %} · {{ result.city }}{% endif %}{% if result.enterprise_number %} · {{ result.enterprise_number_display }}{% endif %}</span>
       </label>
     {% empty %}

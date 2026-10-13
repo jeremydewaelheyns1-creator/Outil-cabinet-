@@ -8,7 +8,7 @@
   <main class="main dossier-main" id="contenu">
     <header class="dossier-head">
       <div class="dossier-id">
-        <h1 class="dossier-name">{{ c.display_name }}</h1>
+        <h1 class="dossier-name">{% client_icon c %} {{ c.display_name }}</h1>
         <div class="meta">
           <span class="badge">{{ c.get_kind_display }}</span>
           {% if c.status == "active" %}<span class="badge badge-success">Client</span>{% elif c.status == "prospect" %}<span class="badge badge-primary">Prospect</span>{% else %}<span class="badge">Ancien client</span>{% endif %}
@@ -20,6 +20,16 @@
           <span>{{ c.portfolio.name }}</span>
           {% for a in c.assignments.all %}{% if a.role == "manager" %}<span>Responsable : {{ a.user.get_short_name }}</span>{% endif %}{% endfor %}
         </div>
+        {% with links=dossier_relations.0 more=dossier_relations.1 %}
+          {% if links %}
+            <ul class="head-relations" aria-label="Relations">
+              {% for l in links %}
+                <li><a href="{% url 'clients:open' l.other.pk %}?rubrique={{ current_section }}">{% client_icon l.other %} {{ l.other.display_name }}</a> <span class="muted">{{ l.role|lower }}</span></li>
+              {% endfor %}
+              {% if more %}<li><a href="{% url 'clients:relations' c.pk %}">+ {{ more }} autre{{ more|pluralize }}</a></li>{% endif %}
+            </ul>
+          {% endif %}
+        {% endwith %}
       </div>
       <div class="actions">
         {% if user|can:"clients.edit" %}<a class="button button-secondary button-small" href="{% url 'clients:edit' c.pk %}">Modifier la fiche</a>{% endif %}

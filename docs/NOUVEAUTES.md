@@ -3,6 +3,18 @@
 Ce qui a été ajouté à l'outil, du plus récent au plus ancien. Toutes les données de la démo
 sont inventées.
 
+## 13 octobre 2026 — Plus d'informations d'un coup d'œil (inspiré de FID-Manager)
+
+- Sous le nom du client : la liste de ses relations (gérant, associés, conjoint, sociétés dont
+  il est administrateur…). Un clic ouvre la fiche de la relation, sur le même onglet.
+- Une petite icône distingue partout une société, une personne physique (IPP) et une ASBL :
+  en-tête, sélecteur de client, liste des clients, relations.
+- La page « Identité et coordonnées » est plus complète : toutes les informations en deux
+  colonnes, une zone « Note », les e-mails et téléphones, l'adresse avec lien Google Maps,
+  des boutons pour copier les numéros, la date d'ajout et de dernière modification.
+- En bas de la fiche d'une société : boutons qui ouvrent directement la BCE, la Banque
+  Nationale (comptes annuels), le Moniteur belge et Companyweb sur ce client.
+
 ## 13 octobre 2026 — Menu réduit à l'essentiel
 
 - Le menu de gauche ne contient plus que « Accueil » et « Tous les clients ».

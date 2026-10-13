@@ -187,3 +187,38 @@ def section_of(request: HttpRequest) -> str:
     if match.url_name == UPCOMING_SECTION:
         return f"{UPCOMING_SECTION}:{match.kwargs.get('tab', '')}"
     return ACTION_SECTIONS.get(match.url_name, "detail")
+
+
+@dataclass(frozen=True)
+class Link:
+    """Une relation affichée sous le nom du client (cliquable vers l'autre dossier)."""
+
+    other: Client
+    role: str
+
+
+def header_relations(client: Client, user: User, limit: int = 8) -> tuple[list[Link], int]:
+    """Relations en cours du client, dans les deux sens, limitées aux fiches visibles."""
+    from django.db.models import Q
+
+    from .models import Relation
+
+    visible = Client.objects.visible_to(user)
+    relations = (
+        Relation.objects.current()
+        .filter(Q(entity=client, person__in=visible) | Q(person=client, entity__in=visible))
+        .select_related("entity", "person")
+    )
+    links: list[Link] = []
+    seen: dict[int, Link] = {}
+    order = {r: i for i, r in enumerate(Relation.MANAGEMENT_ROLES)}
+    for relation in sorted(relations, key=lambda r: order.get(r.role, 99)):
+        other = relation.person if relation.entity_id == client.pk else relation.entity
+        role = relation.get_role_display()
+        if relation.person_id == client.pk and relation.role != Relation.Role.SPOUSE:
+            role = f"{role} de"
+        if other.pk in seen:
+            continue
+        seen[other.pk] = Link(other, role)
+        links.append(seen[other.pk])
+    return links[:limit], max(0, len(links) - limit)

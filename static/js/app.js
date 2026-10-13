@@ -1,3 +1,14 @@
+// Bouton « copier » (numéros, e-mails) : fonctionne sur toutes les pages.
+document.addEventListener("click", function (event) {
+  var button = event.target.closest && event.target.closest("button.copy[data-copy]");
+  if (!button || !navigator.clipboard) return;
+  navigator.clipboard.writeText(button.dataset.copy).then(function () {
+    button.classList.add("copied");
+    button.textContent = "✓";
+    setTimeout(function () { button.classList.remove("copied"); button.textContent = "⧉"; }, 1200);
+  });
+});
+
 // Comportements de l'interface (sans dépendance). HTMX gère les échanges avec le serveur.
 (function () {
   "use strict";

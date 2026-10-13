@@ -1,7 +1,7 @@
 {% if title %}<div class="switcher-title">{{ title }}</div>{% endif %}
 {% for c in results %}
   <a class="switcher-item" href="{% url 'clients:open' c.pk %}?rubrique={{ section }}">
-    <span class="switcher-item-name">{{ c.display_name }}</span>
+    <span class="switcher-item-name">{% client_icon c %} {{ c.display_name }}</span>
     <span class="switcher-item-meta">{{ c.get_kind_display }}{% if c.enterprise_number %} · {{ c.enterprise_number_display }}{% endif %}{% if c.city %} · {{ c.city }}{% endif %}{% if c.status != "active" %} · {{ c.get_status_display }}{% endif %}</span>
   </a>
 {% empty %}

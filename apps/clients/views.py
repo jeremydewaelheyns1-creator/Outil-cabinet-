@@ -319,8 +319,36 @@ def client_identity(request: AppRequest, pk: int) -> HttpResponse:
         pk,
         "identity",
         "clients/sections/identity.html",
-        lambda client: {"contacts": client.contacts.all(), "contact_form": ContactPointForm()},
+        lambda client: {
+            "contacts": client.contacts.all(),
+            "contact_form": ContactPointForm(),
+            "assignments": client.assignments.select_related("user"),
+            "last_change": client.history.select_related("history_user").first(),
+            "external_links": _external_links(client),
+        },
     )
+
+
+def _external_links(client: Client) -> list[tuple[str, str]]:
+    """Sites publics, déjà ouverts sur ce client (comme les boutons du bas de FID-Manager)."""
+    number = client.enterprise_number
+    if not number:
+        return []
+    return [
+        (
+            "BCE",
+            f"https://kbopub.economie.fgov.be/kbopub/toonondernemingps.html?ondernemingsnummer={number}&lang=fr",
+        ),
+        (
+            "Banque Nationale (comptes annuels)",
+            f"https://consult.cbso.nbb.be/consult-enterprise/{number}",
+        ),
+        (
+            "Moniteur belge",
+            f"https://www.ejustice.just.fgov.be/cgi_tsv/list.pl?language=fr&btw={number}",
+        ),
+        ("Companyweb", f"https://www.companyweb.be/fr/{number}"),
+    ]
 
 
 def client_relations(request: AppRequest, pk: int) -> HttpResponse:

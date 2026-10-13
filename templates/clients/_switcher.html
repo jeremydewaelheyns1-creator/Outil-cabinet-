@@ -2,7 +2,7 @@
 <details class="switcher" id="switcher">
   <summary aria-label="Choisir un client">
     {% if current_client %}
-      <span class="badge {% if current_client.is_person %}badge-primary{% endif %}">{% if current_client.is_person %}Personne{% elif current_client.kind == "nonprofit" %}ASBL{% else %}Société{% endif %}</span>
+      {% client_icon current_client %}
       <span class="switcher-name">{{ current_client.display_name }}</span>
       <span class="switcher-meta">{% if current_client.enterprise_number %}{{ current_client.enterprise_number_display }}{% elif current_client.reference %}réf. {{ current_client.reference }}{% endif %}</span>
     {% else %}

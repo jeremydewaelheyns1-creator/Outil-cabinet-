@@ -24,6 +24,7 @@ def current_dossier(request: HttpRequest) -> dict[str, Any]:
         "dossier_tabs": tabs,
         "current_tab": next((t for t in tabs if t.key == current_tab), None),
         "dossier_overdue": _overdue(client) if client else 0,
+        "dossier_relations": dossier.header_relations(client, user) if client else ([], 0),
     }
 
 

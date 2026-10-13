@@ -558,3 +558,46 @@ a.badge:hover { text-decoration: none; filter: brightness(0.95); }
 .section-title { margin: 0; font-size: 1.1rem; color: var(--text-muted); font-weight: 600; }
 
 .sidebar .nav-bottom { margin-top: auto; border-top: 1px solid var(--border); padding-top: 0.5rem; }
+
+/* --- Icônes de type, relations sous le nom, page Identité ----------------------------------- */
+
+.kind-icon { vertical-align: -3px; flex-shrink: 0; }
+.kind-person { color: #2f6db5; }
+.kind-company { color: #1e7a6a; }
+.kind-nonprofit { color: #9a5b13; }
+.topbar .kind-icon, .switcher > summary .kind-icon { color: inherit; }
+.dossier-name .kind-icon { width: 22px; height: 22px; vertical-align: -3px; }
+
+.head-relations {
+  list-style: none;
+  margin: 0.55rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1.1rem;
+  font-size: 0.9rem;
+}
+.head-relations a { color: var(--text); }
+.head-relations a:hover { color: var(--primary); }
+
+.identity-layout { display: grid; grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr); gap: 1rem; align-items: start; }
+.identity-columns { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: 1.5rem; }
+.fields-wide { grid-template-columns: 11rem 1fr; row-gap: 0.55rem; }
+.fields-wide dt { text-align: right; }
+.identity-note { border-left: 1px solid var(--border); padding-left: 1.25rem; }
+.note-label, .side-title { color: var(--text-muted); font-size: 0.85rem; font-weight: 600; margin-bottom: 0.4rem; }
+.identity-side { display: grid; gap: 1rem; }
+.identity-side .card + .card { margin-top: 0; }
+.side-box { padding: 0.85rem 1rem; }
+.contact-line { display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: center; padding: 0.15rem 0; }
+.copy { background: none; border: none; color: var(--text-muted); padding: 0 0.2rem; font-weight: 400; cursor: pointer; }
+.copy:hover { background: none; color: var(--primary); }
+.copy.copied { color: var(--success); }
+.chip { display: inline-grid; place-items: center; min-width: 1.9rem; height: 1.9rem; padding: 0 0.35rem; border-radius: 999px; background: var(--surface-muted); border: 1px solid var(--border); font-size: 0.78rem; font-weight: 600; margin-right: 0.25rem; }
+.identity-footer { margin-top: 1rem; display: grid; gap: 0.6rem; }
+.ext-links { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+@media (width <= 1000px) {
+  .identity-layout, .identity-columns { grid-template-columns: minmax(0, 1fr); }
+  .identity-note { border-left: none; padding-left: 0; }
+  .fields-wide dt { text-align: left; }
+}

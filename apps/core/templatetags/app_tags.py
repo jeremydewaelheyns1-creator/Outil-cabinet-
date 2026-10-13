@@ -41,3 +41,39 @@ def external_url(value: str) -> str:
         value = f"https://{value}"
     scheme = value.split("://", 1)[0].lower()
     return value if scheme in ("http", "https") else ""
+
+
+_ICONS = {
+    # Personne physique (IPP)
+    "person": (
+        "Personne physique",
+        '<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/>',
+    ),
+    # Société
+    "company": (
+        "Société",
+        '<rect x="4" y="3" width="11" height="18" rx="1"/><path d="M15 9h5v12h-5M8 7h3M8 11h3'
+        'M8 15h3"/>',
+    ),
+    # ASBL, fondation
+    "nonprofit": (
+        "ASBL ou fondation",
+        '<circle cx="8" cy="8" r="3"/><circle cx="16" cy="8" r="3"/>'
+        '<path d="M2 20c0-3.3 2.7-5.5 6-5.5s6 2.2 6 5.5M12 20c0-3.3 2.2-5.5 5-5.5s5 2.2 5 5.5"/>',
+    ),
+}
+
+
+@register.simple_tag
+def client_icon(client: object) -> SafeString:
+    """Petite icône distinguant d'un coup d'œil une société, une personne (IPP), une ASBL."""
+    kind = getattr(client, "kind", "company")
+    if kind not in _ICONS:
+        kind = "company"
+    title, paths = _ICONS[kind]
+    return mark_safe(  # noqa: S308 (contenu fixe, défini ci-dessus)
+        f'<svg class="kind-icon kind-{kind}" viewBox="0 0 24 24" width="16" height="16" '
+        f'fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" '
+        f'stroke-linejoin="round" role="img" aria-label="{title}">'
+        f"<title>{title}</title>{paths}</svg>"
+    )

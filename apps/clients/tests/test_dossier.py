@@ -137,3 +137,55 @@ def test_upcoming_tab_describes_what_is_coming(web):
     assert "Pièces d&#x27;identité" in html or "Pièces d'identité" in html
     assert "aria-current" in html
     assert web.get(reverse("clients:upcoming", args=[client.pk, "inconnu"])).status_code == 404
+
+
+def test_header_lists_relations_clickable_in_both_directions(web):
+    company = ClientFactory(name="Société Fictive")
+    manager = PersonFactory(name="Gérante", first_name="Anne")
+    Relation.objects.create(entity=company, person=manager, role="manager")
+    html = web.get(reverse("clients:identity", args=[company.pk])).content.decode()
+    assert 'class="head-relations"' in html
+    assert reverse("clients:open", args=[manager.pk]) + "?rubrique=identity" in html
+    # Depuis la personne, la société apparaît (« … de »).
+    html = web.get(reverse("clients:detail", args=[manager.pk])).content.decode()
+    assert reverse("clients:open", args=[company.pk]) in html
+    assert "Société Fictive" in html
+
+
+def test_header_relations_hide_private_clients(web):
+    company = ClientFactory()
+    hidden = PersonFactory(name="Cachée Fictive", portfolio=PortfolioFactory(is_private=True))
+    Relation.objects.create(entity=company, person=hidden, role="manager")
+    html = web.get(reverse("clients:detail", args=[company.pk])).content.decode()
+    assert reverse("clients:open", args=[hidden.pk]) not in html
+
+
+def test_header_relations_are_limited():
+    from apps.clients.dossier import header_relations
+    from apps.core.testing.factories import UserFactory
+
+    company = ClientFactory()
+    for _ in range(10):
+        Relation.objects.create(entity=company, person=PersonFactory(), role="shareholder")
+    links, more = header_relations(company, UserFactory(), limit=8)
+    assert (len(links), more) == (8, 2)
+
+
+def test_type_icons_distinguish_person_and_company(web):
+    company, person = ClientFactory(), PersonFactory()
+    assert "kind-company" in web.get(reverse("clients:detail", args=[company.pk])).content.decode()
+    assert "kind-person" in web.get(reverse("clients:detail", args=[person.pk])).content.decode()
+
+
+def test_identity_page_links_to_public_sites(web):
+    company = ClientFactory()
+    html = web.get(reverse("clients:identity", args=[company.pk])).content.decode()
+    assert (
+        f"kbopub.economie.fgov.be/kbopub/toonondernemingps.html?ondernemingsnummer={company.enterprise_number}"
+        in html
+    )
+    assert f"consult.cbso.nbb.be/consult-enterprise/{company.enterprise_number}" in html
+    assert "Ajouté le" in html
+    person = PersonFactory()
+    html = web.get(reverse("clients:identity", args=[person.pk])).content.decode()
+    assert "kbopub" not in html
