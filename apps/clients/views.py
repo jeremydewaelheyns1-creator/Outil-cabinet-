@@ -6,8 +6,9 @@ import io
 from typing import Any
 
 from django.contrib import messages
-from django.core.exceptions import PermissionDenied
+from django.core.exceptions import ValidationError
 from django.core.paginator import Paginator
+from django.db import IntegrityError, transaction
 from django.db.models import Q, QuerySet
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
@@ -26,7 +27,7 @@ from apps.integrations import vies
 from apps.integrations.models import VatCheck
 
 from .forms import AssignmentForm, ClientForm, ContactPointForm, RelationForm
-from .identifiers import format_enterprise_number
+from .identifiers import format_enterprise_number, normalize_national_number
 from .models import Client, ClientQuerySet, ContactPoint, Relation
 from .services import ubo
 
@@ -46,9 +47,22 @@ def _get_client(request: AppRequest, pk: int) -> Client:
     return get_object_or_404(_visible_clients(request).select_related("portfolio"), pk=pk)
 
 
-def _require(request: AppRequest, capability: Capability) -> None:
-    if not request.user.has_capability(capability):
-        raise PermissionDenied
+def _visible_portfolio_ids(request: AppRequest) -> set[int]:
+    return set(Portfolio.objects.visible_to(request.user).values_list("pk", flat=True))
+
+
+def _get_relation(request: AppRequest, client: Client, relation_pk: int) -> Relation:
+    """Relation du client dont les deux côtés sont visibles par l'utilisateur."""
+    visible = _visible_clients(request)
+    return get_object_or_404(
+        Relation.objects.filter(entity__in=visible, person__in=visible).filter(pk=relation_pk),
+        Q(entity=client) | Q(person=client),
+    )
+
+
+def _masked_query(text: str) -> str:
+    """Une recherche qui contient un numéro national ne va pas en clair au journal."""
+    return "(numéro masqué)" if sum(c.isdigit() for c in text) >= 11 else text
 
 
 # --- Liste ----------------------------------------------------------------------------------
@@ -83,6 +97,7 @@ def client_list(request: AppRequest) -> HttpResponse:
         "portfolios": Portfolio.objects.visible_to(request.user),
         "can_export": request.user.has_capability(Capability.DATA_EXPORT),
         "can_edit": request.user.has_capability(Capability.CLIENTS_EDIT),
+        "can_see_sensitive": request.user.has_capability(Capability.CLIENTS_SENSITIVE),
     }
     if request.htmx and request.htmx.target == "resultats":
         return render(request, "clients/_list_results.html", context)
@@ -149,7 +164,7 @@ def client_export(request: AppRequest) -> HttpResponse:
         AccessLog.Action.EXPORT,
         object_type="clients.client",
         object_repr=f"Export de {count} clients",
-        details={"filtres": filters, "lignes": count},
+        details={"filtres": {**filters, "q": _masked_query(filters["q"])}, "lignes": count},
     )
     response = HttpResponse(
         buffer.getvalue(),
@@ -180,10 +195,35 @@ def client_picker(request: AppRequest) -> HttpResponse:
 # --- Fiche ----------------------------------------------------------------------------------
 
 
+@require_POST
+@require_capability(Capability.CLIENTS_SENSITIVE)
+def national_number_lookup(request: AppRequest) -> HttpResponse:
+    """Retrouver une fiche par numéro national (requête POST : le numéro n'apparaît ni dans
+    l'adresse de la page, ni dans les journaux du serveur). Chaque recherche est journalisée."""
+    try:
+        number = normalize_national_number(request.POST.get("numero", ""))
+    except ValidationError:
+        messages.error(request, "Numéro national invalide.")
+        return redirect("clients:list")
+    client = _visible_clients(request).filter(national_number=number).first() if number else None
+    log_access(
+        request,
+        AccessLog.Action.VIEW,
+        client,
+        object_type="clients.client",
+        object_repr="" if client else "Recherche par numéro national sans résultat",
+        details={"recherche": "numéro national", "résultat": client is not None},
+    )
+    if client is None:
+        messages.info(request, "Aucune fiche visible ne porte ce numéro national.")
+        return redirect("clients:list")
+    return redirect(client)
+
+
 def _split_relations(
     request: AppRequest, relations: QuerySet[Relation], other_side: str
 ) -> dict[str, Any]:
-    visible = set(Portfolio.objects.visible_to(request.user).values_list("pk", flat=True))
+    visible = _visible_portfolio_ids(request)
     today = timezone.localdate()
     current, past, hidden = [], [], 0
     for relation in relations:
@@ -213,7 +253,9 @@ def client_detail(request: AppRequest, pk: int) -> HttpResponse:
             request, client.relations_as_person.select_related("entity"), "entity"
         ),
         "assignments": client.assignments.select_related("user"),
-        "ubo": None if client.is_person else ubo.analyse(client),
+        "ubo": None
+        if client.is_person
+        else ubo.analyse(client).redact(_visible_portfolio_ids(request)),
         "bce_record": record,
         "bce_differences": bce.differences(client, record) if record else [],
         "bce_has_data": bce.has_data(),
@@ -256,6 +298,7 @@ def _history_rows(client: Client) -> list[dict[str, Any]]:
 
 def client_history(request: AppRequest, pk: int) -> HttpResponse:
     client = _get_client(request, pk)
+    log_access(request, AccessLog.Action.VIEW, client, details={"écran": "historique"})
     return render(
         request, "clients/history.html", {"client": client, "rows": _history_rows(client)}
     )
@@ -274,12 +317,24 @@ def _initial_from_bce(number: str) -> dict[str, Any]:
     return initial
 
 
+def _save_form(form: ClientForm) -> bool:
+    """Enregistre ; un doublon créé entre-temps par un collègue devient une erreur de saisie
+    au lieu d'une erreur serveur (dont le détail contiendrait la valeur en double)."""
+    try:
+        with transaction.atomic():
+            form.save()
+    except IntegrityError:
+        form.add_error(None, "Une autre fiche porte déjà ce numéro ou cette référence.")
+        return False
+    return True
+
+
 @require_capability(Capability.CLIENTS_EDIT)
 def client_create(request: AppRequest) -> HttpResponse:
     if request.method == "POST":
         form = ClientForm(request.POST, user=request.user)
-        if form.is_valid():
-            client = form.save()
+        if form.is_valid() and _save_form(form):
+            client = form.instance
             log_access(request, AccessLog.Action.CREATE, client)
             events.emit("client.created", subject=client, actor=request.user)
             messages.success(request, f"Fiche « {client} » créée.")
@@ -297,8 +352,7 @@ def client_edit(request: AppRequest, pk: int) -> HttpResponse:
     previous_number = client.enterprise_number
     if request.method == "POST":
         form = ClientForm(request.POST, instance=client, user=request.user)
-        if form.is_valid():
-            client = form.save()
+        if form.is_valid() and _save_form(form):
             changed = [f for f in form.changed_data if f != "new_national_number"]
             if form.cleaned_data.get("new_national_number"):
                 changed.append("national_number")
@@ -337,6 +391,9 @@ def contact_add(request: AppRequest, pk: int) -> HttpResponse:
             client.contacts.filter(kind=contact.kind).exclude(pk=contact.pk).update(
                 is_primary=False
             )
+        log_access(
+            request, AccessLog.Action.UPDATE, client, details={"coordonnée ajoutée": contact.kind}
+        )
         messages.success(request, "Coordonnée ajoutée.")
     else:
         errors = "; ".join(str(e) for errs in form.errors.values() for e in errs)
@@ -348,7 +405,11 @@ def contact_add(request: AppRequest, pk: int) -> HttpResponse:
 @require_capability(Capability.CLIENTS_EDIT)
 def contact_delete(request: AppRequest, pk: int, contact_pk: int) -> HttpResponse:
     client = _get_client(request, pk)
-    get_object_or_404(client.contacts, pk=contact_pk).delete()
+    contact = get_object_or_404(client.contacts, pk=contact_pk)
+    contact.delete()
+    log_access(
+        request, AccessLog.Action.UPDATE, client, details={"coordonnée supprimée": contact.kind}
+    )
     messages.success(request, "Coordonnée supprimée.")
     return redirect(client)
 
@@ -361,9 +422,7 @@ def relation_edit(request: AppRequest, pk: int, relation_pk: int | None = None) 
     client = _get_client(request, pk)
     relation = None
     if relation_pk is not None:
-        relation = get_object_or_404(
-            Relation.objects.filter(Q(entity=client) | Q(person=client)), pk=relation_pk
-        )
+        relation = _get_relation(request, client, relation_pk)
         as_person = relation.person_id == client.pk
     else:
         as_person = request.GET.get("sens") == "mandat" or request.POST.get("sens") == "mandat"
@@ -376,6 +435,12 @@ def relation_edit(request: AppRequest, pk: int, relation_pk: int | None = None) 
     )
     if request.method == "POST" and form.is_valid():
         saved = form.save()
+        log_access(
+            request,
+            AccessLog.Action.UPDATE if relation else AccessLog.Action.CREATE,
+            saved,
+            details={"rôle": saved.role},
+        )
         events.emit(
             "relation.saved",
             subject=saved.entity,
@@ -407,10 +472,9 @@ def relation_edit(request: AppRequest, pk: int, relation_pk: int | None = None) 
 @require_capability(Capability.CLIENTS_EDIT)
 def relation_delete(request: AppRequest, pk: int, relation_pk: int) -> HttpResponse:
     client = _get_client(request, pk)
-    relation = get_object_or_404(
-        Relation.objects.filter(Q(entity=client) | Q(person=client)), pk=relation_pk
-    )
+    relation = _get_relation(request, client, relation_pk)
     entity = relation.entity
+    log_access(request, AccessLog.Action.DELETE, relation, details={"rôle": relation.role})
     relation.delete()
     events.emit("relation.deleted", subject=entity, actor=request.user)
     messages.success(request, "Relation supprimée.")
@@ -426,6 +490,7 @@ def assignments_edit(request: AppRequest, pk: int) -> HttpResponse:
     form = AssignmentForm(request.POST or None, client=client)
     if request.method == "POST" and form.is_valid():
         form.save()
+        log_access(request, AccessLog.Action.UPDATE, client, details={"écran": "équipe"})
         messages.success(request, "Équipe mise à jour.")
         return redirect(client)
     return render(request, "clients/assignments_form.html", {"client": client, "form": form})
@@ -458,11 +523,13 @@ def bce_refresh(request: AppRequest, pk: int) -> HttpResponse:
     elif bce.fill_blanks(client) is None:
         messages.warning(request, "Numéro absent de la copie BCE (entreprise radiée ou arrêtée ?).")
     else:
+        log_access(request, AccessLog.Action.UPDATE, client, details={"source": "BCE"})
         messages.success(request, "Fiche complétée avec la BCE.")
     return redirect(client)
 
 
 @require_POST
+@require_capability(Capability.CLIENTS_EDIT)
 def vies_check(request: AppRequest, pk: int) -> HttpResponse:
     client = _get_client(request, pk)
     check: VatCheck | None = None

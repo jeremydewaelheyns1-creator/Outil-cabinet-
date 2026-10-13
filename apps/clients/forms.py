@@ -129,8 +129,15 @@ class ContactPointForm(forms.ModelForm[ContactPoint]):
         elif kind == ContactPoint.Kind.WEBSITE and value:
             if "://" not in value:
                 value = f"https://{value}"
-            URLValidator(message="Adresse web invalide.")(value)
+            URLValidator(message="Adresse web invalide.", schemes=["http", "https"])(value)
             data["value"] = value
+        client_id = self.instance.client_id
+        if client_id and kind and data.get("value"):
+            duplicate = ContactPoint.objects.filter(
+                client_id=client_id, kind=kind, value=data["value"]
+            ).exclude(pk=self.instance.pk)
+            if duplicate.exists():
+                raise ValidationError("Cette coordonnée est déjà enregistrée.")
         return data
 
 

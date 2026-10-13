@@ -4,6 +4,7 @@
 {% block page_subtitle %}<div class="subtitle">{{ batch.file_name }} · déposé le {{ batch.created_at|date:"d/m/Y H:i" }} par {{ batch.uploaded_by }} · <span class="badge">{{ batch.get_status_display }}</span></div>{% endblock %}
 {% block page_actions %}
   {% if batch.status == "analysed" %}
+    <span class="muted small">Fichier conservé 24 heures au plus.</span>
     <form method="post" action="{% url 'reprise:discard' batch.pk %}" class="inline">{% csrf_token %}<button type="submit" class="secondary">Abandonner</button></form>
     <form method="post" action="{% url 'reprise:apply' batch.pk %}" class="inline">{% csrf_token %}<button type="submit">Confirmer l'import</button></form>
   {% endif %}

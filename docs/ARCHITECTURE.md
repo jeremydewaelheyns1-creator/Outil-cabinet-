@@ -62,3 +62,7 @@ puis import confirmé. Les fiches existantes ne sont jamais écrasées.
 - Secret Manager pour `DJANGO_SECRET_KEY`, `DATABASE_URL`, identifiants SMTP/Graph.
 - Deux environnements : essai et production. Migrations lancées par un Cloud Run Job
   `python manage.py migrate` avant chaque déploiement.
+- Deux rôles PostgreSQL : le propriétaire des tables (migrations uniquement) et le rôle de
+  l'application, sans droit de propriété (il ne peut ni supprimer les déclencheurs ni vider le
+  journal des consultations), avec seulement SELECT/INSERT sur `core_accesslog`.
+- Sonde de santé : `/sante/` (répond avant tout contrôle d'hôte ou de HTTPS).

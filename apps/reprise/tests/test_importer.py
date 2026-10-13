@@ -155,7 +155,7 @@ def test_web_flow_analysis_then_confirmation(make_user, client):
     client.post(reverse("reprise:apply", args=[batch.pk]))
     batch.refresh_from_db()
     assert batch.status == ImportBatch.Status.APPLIED
-    assert not batch.stored_file
+    assert batch.content is None
     assert Client.objects.count() == 4
     assert AccessLog.objects.filter(action=AccessLog.Action.IMPORT).exists()
     # Une seconde confirmation est impossible.
@@ -176,3 +176,32 @@ def test_command(tmp_path):
     assert "ANALYSE" in out.getvalue() and Client.objects.count() == 0
     call_command("import_fid_clients", str(path), "--appliquer", stdout=out)
     assert Client.objects.count() == 4
+
+
+def test_bulk_import_defers_bce_completion():
+    from apps.core.models import Event
+
+    run_import(workbook(sample_rows()), file_name="x.xlsx", apply=True)
+    assert Event.objects.filter(type="client.created", status=Event.Status.PENDING).count() == 4
+
+
+def test_stale_uploads_are_purged(make_user):
+    from datetime import timedelta
+
+    from django.utils import timezone
+
+    from apps.reprise.models import purge_stale_uploads
+
+    owner = make_user()
+    old = ImportBatch.objects.create(
+        file_name="a.xlsx",
+        uploaded_by=owner,
+        content=b"x",
+        created_at=timezone.now() - timedelta(days=2),
+    )
+    recent = ImportBatch.objects.create(file_name="b.xlsx", uploaded_by=owner, content=b"y")
+    assert purge_stale_uploads() == 1
+    old.refresh_from_db()
+    recent.refresh_from_db()
+    assert old.content is None and old.status == ImportBatch.Status.EXPIRED
+    assert recent.content is not None

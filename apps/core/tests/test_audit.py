@@ -53,3 +53,10 @@ def test_ip_behind_one_proxy_uses_last_entry_not_spoofed_first():
         "/", HTTP_X_FORWARDED_FOR="6.6.6.6, 81.82.83.84", REMOTE_ADDR="169.254.1.1"
     )
     assert client_ip(request) == "81.82.83.84"
+
+
+def test_access_log_cannot_be_truncated():
+    make_entry()
+    with pytest.raises(DatabaseError), transaction.atomic(), connection.cursor() as cursor:
+        cursor.execute("TRUNCATE core_accesslog")
+    assert AccessLog.objects.exists()

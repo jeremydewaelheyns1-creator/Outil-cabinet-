@@ -36,7 +36,7 @@ def vat_number_from_enterprise_number(value: str) -> str:
 
 
 def normalize_national_number(value: str | None) -> str:
-    """'85.07.30-033.28' → '85073003328'. Lève ValidationError si le numéro est invalide."""
+    """'AA.MM.JJ-SSS.CC' → 'AAMMJJSSSCC'. Lève ValidationError si le numéro est invalide."""
     if value is None or not str(value).strip():
         return ""
     try:

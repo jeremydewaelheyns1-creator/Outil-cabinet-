@@ -57,11 +57,10 @@ def test_search_ignores_accents_and_case_and_finds_numbers():
     assert list(Client.objects.search("Lefevre Helene")) == [person]
 
 
-def test_search_by_national_number_is_exact_only():
+def test_general_search_never_matches_national_number():
     number = national_number(5)
-    person = PersonFactory(national_number=number)
-    assert list(Client.objects.search(number)) == [person]
-    assert list(Client.objects.search(number[:8])) == []
+    PersonFactory(national_number=number, name="Sans", first_name="Rapport")
+    assert list(Client.objects.search(number)) == []
 
 
 def test_visible_to_respects_private_portfolios():

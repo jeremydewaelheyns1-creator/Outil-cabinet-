@@ -54,9 +54,8 @@ class ClientQuerySet(models.QuerySet["Client"]):
         query |= Q(reference__iexact=text)
         if len(digits) >= 4:
             query |= Q(enterprise_number__contains=digits)
-        if len(digits) == 11:
-            # Recherche exacte uniquement : on ne laisse pas deviner un numéro national.
-            query |= Q(national_number=digits)
+        # Jamais de recherche par numéro national ici : elle passe par une recherche dédiée,
+        # réservée au profil autorisé et journalisée (voir clients.views.national_number_lookup).
         parts = text.split()
         if len(parts) >= 2:
             # « Jean Dupont » ou « Dupont Jean »

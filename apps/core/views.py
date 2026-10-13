@@ -1,12 +1,8 @@
-"""Accueil, journal des consultations, santé du service."""
+"""Accueil et journal des consultations (la sonde de santé est dans `health.py`)."""
 
-from django.contrib.auth.decorators import login_not_required
 from django.core.paginator import Paginator
-from django.db import connection
-from django.http import HttpRequest, HttpResponse, JsonResponse
+from django.http import HttpResponse
 from django.shortcuts import render
-from django.views.decorators.cache import never_cache
-from django.views.decorators.http import require_GET
 
 from apps.clients.models import Client
 
@@ -65,13 +61,3 @@ def access_log(request: AppRequest) -> HttpResponse:
             "filters": {"action": action, "qui": who, "objet": what},
         },
     )
-
-
-@login_not_required
-@never_cache
-@require_GET
-def health(request: HttpRequest) -> JsonResponse:
-    """Sonde de santé pour Cloud Run : l'application répond et la base aussi."""
-    with connection.cursor() as cursor:
-        cursor.execute("SELECT 1")
-    return JsonResponse({"status": "ok"})

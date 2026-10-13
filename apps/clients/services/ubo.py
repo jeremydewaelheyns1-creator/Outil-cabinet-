@@ -51,17 +51,36 @@ MANAGEMENT_ROLES = (*Relation.MANAGEMENT_ROLES, Relation.Role.PERMANENT_REPRESEN
 
 
 @dataclass
+class HiddenClient:
+    """Fiche d'un portefeuille privé que l'utilisateur ne peut pas voir : comptée dans le
+    calcul, mais affichée sans nom ni lien."""
+
+    pk: int
+    name: str = "Fiche d'un portefeuille privé"
+    is_hidden: bool = True
+
+    def __str__(self) -> str:
+        return self.name
+
+    def get_absolute_url(self) -> str:
+        return ""
+
+
+Party = Client | HiddenClient
+
+
+@dataclass
 class Holding:
     """Un chemin de détention, de la personne physique jusqu'à l'entité analysée."""
 
-    chain: list[Client]
+    chain: list[Party]
     share: Decimal | None
     voting: Decimal | None
 
 
 @dataclass
 class UboCandidate:
-    person: Client
+    person: Party
     basis: str
     share_percentage: Decimal = Decimal(0)
     voting_percentage: Decimal = Decimal(0)
@@ -77,20 +96,36 @@ class UboAnalysis:
     entity: Client
     candidates: list[UboCandidate]
     below_threshold: list[UboCandidate]
-    declared: list[Client]
-    unresolved_entities: list[Client]
+    declared: list[Party]
+    unresolved_entities: list[Party]
     unknown_percentages: list[Relation]
     threshold: Decimal
     inclusive: bool
 
+    def redact(self, visible_portfolio_ids: set[int]) -> UboAnalysis:
+        """Masque les fiches que l'utilisateur ne peut pas voir (le calcul reste complet)."""
+
+        def mask(party: Party) -> Party:
+            if isinstance(party, Client) and party.portfolio_id not in visible_portfolio_ids:
+                return HiddenClient(pk=party.pk)
+            return party
+
+        for candidate in [*self.candidates, *self.below_threshold]:
+            candidate.person = mask(candidate.person)
+            for holding in candidate.holdings:
+                holding.chain = [mask(link) for link in holding.chain]
+        self.declared = [mask(p) for p in self.declared]
+        self.unresolved_entities = [mask(e) for e in self.unresolved_entities]
+        return self
+
     @property
-    def missing(self) -> list[Client]:
+    def missing(self) -> list[Party]:
         """Bénéficiaires calculés mais non déclarés."""
         declared_ids = {p.pk for p in self.declared}
         return [c.person for c in self.candidates if c.person.pk not in declared_ids]
 
     @property
-    def unexpected(self) -> list[Client]:
+    def unexpected(self) -> list[Party]:
         """Bénéficiaires déclarés que le calcul ne retrouve pas."""
         computed_ids = {c.person.pk for c in self.candidates}
         return [p for p in self.declared if p.pk not in computed_ids]
@@ -180,7 +215,7 @@ def _measure(path: list[Relation]) -> Holding:
         and all(v is not None and v > CONTROL_THRESHOLD for v in upper)
     ):
         voting = max(voting, first)
-    chain = [path[-1].person, *(r.entity for r in reversed(path))]
+    chain: list[Party] = [path[-1].person, *(r.entity for r in reversed(path))]
     return Holding(chain=chain, share=share, voting=voting)
 
 
@@ -201,7 +236,7 @@ def analyse(entity: Client, on: date | None = None) -> UboAnalysis:
     on = on or timezone.localdate()
     threshold: Decimal = settings.UBO_THRESHOLD_PERCENT
     inclusive: bool = settings.UBO_THRESHOLD_INCLUSIVE
-    declared = [
+    declared: list[Party] = [
         r.person
         for r in Relation.objects.current(on)
         .filter(entity=entity, role=Relation.Role.BENEFICIAL_OWNER)

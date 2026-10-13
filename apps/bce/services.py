@@ -239,10 +239,11 @@ class SearchHit:
     number: str
     name: str
     city: str
-    client_id: int | None
+    client_id: int | None  # fiche existante visible par l'utilisateur
+    registered: bool  # fiche existante, visible ou non
 
 
-def search(text: str, limit: int = 15) -> list[SearchHit]:
+def search(text: str, user: User, limit: int = 15) -> list[SearchHit]:
     text = text.strip()
     digits = "".join(c for c in text if c.isdigit())
     numbers: list[str]
@@ -272,10 +273,13 @@ def search(text: str, limit: int = 15) -> list[SearchHit]:
     cities: dict[str, str] = {}
     for a in Address.objects.filter(entity_number__in=numbers, type_of_address=REGISTERED_OFFICE):
         cities.setdefault(a.entity_number, a.municipality_fr or a.municipality_nl)
-    clients = dict(
-        Client.objects.filter(enterprise_number__in=numbers).values_list("enterprise_number", "pk")
-    )
-    return [SearchHit(n, names.get(n, ""), cities.get(n, ""), clients.get(n)) for n in numbers]
+    existing = Client.objects.filter(enterprise_number__in=numbers)
+    registered = set(existing.values_list("enterprise_number", flat=True))
+    visible = dict(existing.visible_to(user).values_list("enterprise_number", "pk"))
+    return [
+        SearchHit(n, names.get(n, ""), cities.get(n, ""), visible.get(n), n in registered)
+        for n in numbers
+    ]
 
 
 # --- Comparaison et mise à jour des clients -------------------------------------------------
@@ -341,15 +345,42 @@ def differences(client: Client, record: BceRecord) -> list[Difference]:
     return result
 
 
-def sync_public_fields(client: Client, record: BceRecord | None) -> list[str]:
+def _apply_public_values(client: Client, record: BceRecord | None) -> list[str]:
     changed = []
     for name, value in public_values(record).items():
         if getattr(client, name) != value:
             setattr(client, name, value)
             changed.append(name)
-    client.bce_synced_at = timezone.now()
-    client.save()
     return changed
+
+
+def _mark_synced(client: Client) -> None:
+    # Mise à jour directe : la date de synchronisation seule ne crée pas d'entrée d'historique.
+    client.bce_synced_at = timezone.now()
+    Client.objects.filter(pk=client.pk).update(bce_synced_at=client.bce_synced_at)
+
+
+def sync_public_fields(client: Client, record: BceRecord | None) -> list[str]:
+    """Aligne statut, situation juridique, activités et date de début sur la BCE."""
+    changed = _apply_public_values(client, record)
+    if changed:
+        client.save()
+    _mark_synced(client)
+    return changed
+
+
+def out_of_sync_numbers() -> set[str]:
+    """Numéros des clients dont les champs publics diffèrent de la copie BCE actuelle."""
+    numbers = set()
+    clients = Client.objects.exclude(enterprise_number=None).only(
+        "pk", "enterprise_number", *public_values(None).keys(), "founded_on"
+    )
+    for client in clients.iterator(chunk_size=500):
+        number = client.enterprise_number or ""
+        values = public_values(lookup(number))
+        if any(getattr(client, name) != value for name, value in values.items()):
+            numbers.add(number)
+    return numbers
 
 
 def _sync_contacts(client: Client, record: BceRecord) -> None:
@@ -371,10 +402,15 @@ def fill_blanks(client: Client) -> BceRecord | None:
         if has_data():
             sync_public_fields(client, None)
         return None
+    changed = False
     for name, value in proposed_values(record).items():
         if value and not getattr(client, name):
             setattr(client, name, value)
-    sync_public_fields(client, record)
+            changed = True
+    changed = bool(_apply_public_values(client, record)) or changed
+    if changed:
+        client.save()
+    _mark_synced(client)
     _sync_contacts(client, record)
     return record
 
@@ -399,7 +435,7 @@ def apply_differences(client: Client, fields: list[str], actor: User | None) -> 
 
 
 def notify_changed_clients(run: ImportRun, numbers: set[str]) -> int:
-    """Après une mise à jour BCE : un événement par client dont l'entreprise a changé."""
+    """Après un import BCE : un événement par client dont l'entreprise a changé."""
     if not numbers:
         return 0
     count = 0

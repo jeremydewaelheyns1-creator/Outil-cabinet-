@@ -65,8 +65,13 @@ def emit(
     actor: User | Any | None = None,
     payload: dict[str, Any] | None = None,
     idempotency_key: str | None = None,
+    process_now: bool = True,
 ) -> Event:
-    """Enregistre un événement et programme son traitement après la transaction."""
+    """Enregistre un événement et programme son traitement après la transaction.
+
+    `process_now=False` (imports en masse) : l'événement reste en attente et sera traité par
+    le passage périodique de `run_jobs`, pour ne pas allonger la requête.
+    """
     fields: dict[str, Any] = {
         "type": event_type,
         "payload": payload or {},
@@ -87,7 +92,8 @@ def emit(
             return Event.objects.get(idempotency_key=idempotency_key)
     else:
         event = Event.objects.create(**fields)
-    transaction.on_commit(lambda: schedule(event.pk))
+    if process_now:
+        transaction.on_commit(lambda: schedule(event.pk))
     return event
 
 

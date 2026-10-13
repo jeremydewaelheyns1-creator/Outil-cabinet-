@@ -22,7 +22,14 @@
   fiche, complétion automatique, différences à valider, alertes faillite/radiation à l'accueil.
 - VIES : vérification TVA avec preuve conservée.
 - Reprise FID-Manager : analyse à blanc puis import de l'export clients Excel (mapping YAML).
-- Commande `demo` (données fictives). 99 tests.
+- Commande `demo` (données fictives).
+- Relecture indépendante (sécurité) puis corrections : écran de connexion de l'administration
+  sans second facteur supprimé, recherche par numéro national séparée et journalisée, fiches
+  privées masquées (UBO, recherche BCE, relations, administration), journal vidé par TRUNCATE
+  bloqué, fichiers de reprise gardés en base 24 h au plus, double confirmation d'import
+  verrouillée, import BCE complet sans verrou de lecture et resynchronisation des clients,
+  sonde de santé compatible Cloud Run, journalisation des modifications manquantes.
+- 120 tests, tous au vert ; ruff, mypy strict, migrations, `check --deploy` au vert.
 
 **Reste à faire / en attente**
 - Dépôt GitHub privé (action de Jeremy), puis pousser le code.

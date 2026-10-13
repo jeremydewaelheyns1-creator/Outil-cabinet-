@@ -41,9 +41,11 @@ son critère de fin est vérifié par des tests et sur l'environnement d'essai.
 
 - Recherche clients par `unaccent icontains` : suffisant pour quelques milliers de fiches ;
   ajouter un index trigramme sur un champ normalisé au-delà.
-- Les fichiers de reprise abandonnés (statut « analysé ») ne sont pas encore purgés
-  automatiquement après 7 jours.
 - Calcul UBO : des chemins de détention qui se recoupent peuvent être comptés deux fois
   (signalé comme estimation à l'écran).
-- L'import BCE vide les tables pendant l'import complet (verrou de quelques minutes) :
-  à lancer la nuit.
+- L'import BCE complet remplace les tables par DELETE dans une transaction (lecture non
+  bloquée, mais base plus volumineuse jusqu'au prochain VACUUM) : à lancer la nuit.
+- `retry_pending` ignore un événement dès qu'un de ses traitements a épuisé ses 5 essais
+  (cas d'un traitement abonné plus tard) : à revoir si cela arrive.
+- Unicité du numéro national : un utilisateur au profil « données sensibles » apprend qu'un
+  numéro existe dans un portefeuille privé (inévitable, contrainte d'unicité).

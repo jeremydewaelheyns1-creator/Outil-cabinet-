@@ -41,5 +41,16 @@
   {% endif %}
   <noscript><div><button type="submit">Filtrer</button></div></noscript>
 </form>
+{% if can_see_sensitive %}
+<details class="small" style="margin: -0.5rem 0 1rem">
+  <summary>Retrouver une personne par son numéro national</summary>
+  <form method="post" action="{% url 'clients:nn_lookup' %}" class="filters" autocomplete="off">
+    {% csrf_token %}
+    <div><label for="nn">Numéro national</label><input id="nn" type="text" name="numero" inputmode="numeric" placeholder="AA.MM.JJ-XXX.CC"></div>
+    <div><button type="submit" class="secondary">Ouvrir la fiche</button></div>
+  </form>
+  <p class="help">Recherche enregistrée au journal des consultations.</p>
+</details>
+{% endif %}
 <div id="resultats">{% include "clients/_list_results.html" %}</div>
 {% endblock %}

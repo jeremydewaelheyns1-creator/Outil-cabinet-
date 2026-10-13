@@ -52,11 +52,37 @@ def test_lookup_builds_a_readable_record(full_import):
     assert services.lookup(enterprise_number(999)) is None
 
 
-def test_search_by_name_and_number(full_import):
-    assert [h.number for h in services.search("bistrot fictif")] == [RESTO]
-    assert [h.number for h in services.search(dotted(RESTO))] == [RESTO]
-    assert [h.number for h in services.search(RESTO[1:])] == [RESTO]  # 9 chiffres
-    assert services.search("ab") == []
+def test_search_by_name_and_number(full_import, user):
+    assert [h.number for h in services.search("bistrot fictif", user)] == [RESTO]
+    assert [h.number for h in services.search(dotted(RESTO), user)] == [RESTO]
+    assert [h.number for h in services.search(RESTO[1:], user)] == [RESTO]  # 9 chiffres
+    assert services.search("ab", user) == []
+
+
+def test_search_does_not_link_to_private_clients(full_import, user):
+    from apps.core.testing.factories import PortfolioFactory
+
+    ClientFactory(enterprise_number=RESTO, portfolio=PortfolioFactory(is_private=True))
+    hit = services.search("bistrot", user)[0]
+    assert hit.registered and hit.client_id is None
+
+
+def test_full_import_resyncs_clients_out_of_date(
+    full_import, tmp_path, django_capture_on_commit_callbacks
+):
+    client = ClientFactory(enterprise_number=RESTO, bce_status="AC", bce_juridical_situation="")
+    gone = ClientFactory(enterprise_number=ASBL, bce_status="AC")
+    tables = company_rows(RESTO, "Le Bistrot Fictif", situation="012")
+    with django_capture_on_commit_callbacks(execute=True):
+        run = import_archive(build(tmp_path / "f2.zip", kind="full", number=141, tables=tables))
+    assert run.changed_enterprises == 2
+    client.refresh_from_db()
+    gone.refresh_from_db()
+    assert client.bce_juridical_situation == "Ouverture de faillite"
+    assert gone.bce_status == "absent"
+    history_count = client.history.count()
+    services.sync_public_fields(client, services.lookup(RESTO))
+    assert client.history.count() == history_count  # rien n'a changé : pas d'historique
 
 
 def test_new_client_is_completed_without_overwriting(

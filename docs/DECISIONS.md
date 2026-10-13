@@ -65,3 +65,20 @@ Les vraies données vont directement dans l'outil hébergé par le cabinet.
 Cloud Run ne facture que le temps d'exécution : pas de worker permanent. Les traitements
 courts s'exécutent juste après la requête (`JOBS_MODE=eager`) ; `run_jobs`, lancé toutes les
 5 minutes par Cloud Scheduler, retraite les échecs et vide la file.
+
+## D-016 — Recherche par numéro national séparée et journalisée
+La recherche générale ne cherche jamais dans les numéros nationaux (sinon, la date de
+naissance étant visible, on pourrait deviner un numéro en une centaine d'essais). Une
+recherche dédiée, réservée au droit « données sensibles », passe par POST (le numéro
+n'apparaît ni dans l'adresse ni dans les journaux du serveur) et chaque essai est journalisé.
+
+## D-017 — Aucun écran de connexion sans second facteur
+L'écran de connexion propre à l'administration Django est remplacé par une redirection vers
+la connexion de l'application. L'historique de l'administration n'est pas activé sur les
+fiches clients (il montrerait le numéro national en clair) : l'historique se consulte dans
+l'application, masqué.
+
+## D-018 — Fiches d'un portefeuille privé masquées partout
+Les calculs (UBO) tiennent compte de toutes les fiches, mais celles que l'utilisateur ne peut
+pas voir sont affichées sans nom ni lien ; recherche BCE, relations et administration
+appliquent la même règle.

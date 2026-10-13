@@ -208,3 +208,99 @@ def test_demo_command_creates_fictional_data_once():
     assert Client.objects.filter(reference="D001").exists()
     with pytest.raises(CommandError):
         call_command("demo")
+
+
+def test_national_number_lookup_is_restricted_logged_and_not_in_url(web, make_user, client):
+    number = national_number(21)
+    person = PersonFactory(national_number=number)
+    url = reverse("clients:nn_lookup")
+    assert web.post(url, {"numero": number}).status_code == 403
+
+    manager = make_user(capabilities=["clients.sensitive"])
+    client.force_login(manager)
+    response = client.post(url, {"numero": number})
+    assert response.url == person.get_absolute_url()
+    entry = AccessLog.objects.get(details__recherche="numéro national")
+    assert entry.user == manager and number not in str(entry.details)
+    # Numéro d'une fiche invisible : même réponse que « inconnu », et tentative journalisée.
+    hidden = PersonFactory(
+        national_number=national_number(22), portfolio=PortfolioFactory(is_private=True)
+    )
+    response = client.post(url, {"numero": hidden.national_number})
+    assert response.url == reverse("clients:list")
+    assert AccessLog.objects.filter(details__résultat=False).count() == 1
+
+
+def test_export_log_masks_a_national_number_typed_in_search(make_user, client):
+    exporter = make_user(capabilities=["data.export"])
+    client.force_login(exporter)
+    client.get(reverse("clients:export"), {"q": national_number(23)})
+    entry = AccessLog.objects.get(action=AccessLog.Action.EXPORT)
+    assert national_number(23) not in str(entry.details)
+
+
+def test_ubo_section_masks_private_shareholders(web):
+    company = ClientFactory()
+    secret = PersonFactory(name="Secret", portfolio=PortfolioFactory(is_private=True))
+    Relation.objects.create(entity=company, person=secret, role="shareholder", share_percentage=60)
+    html = web.get(reverse("clients:detail", args=[company.pk])).content.decode()
+    assert "Secret" not in html
+    assert "portefeuille privé" in html
+
+
+def test_relation_with_hidden_side_cannot_be_edited_or_deleted(web):
+    company = ClientFactory()
+    secret = PersonFactory(portfolio=PortfolioFactory(is_private=True))
+    relation = Relation.objects.create(entity=company, person=secret, role="manager")
+    edit_url = reverse("clients:relation_edit", args=[company.pk, relation.pk])
+    delete_url = reverse("clients:relation_delete", args=[company.pk, relation.pk])
+    assert web.get(edit_url).status_code == 404
+    assert web.post(delete_url).status_code == 404
+    assert Relation.objects.filter(pk=relation.pk).exists()
+
+
+def test_duplicate_contact_is_a_form_error_not_a_crash(web):
+    company = ClientFactory()
+    url = reverse("clients:contact_add", args=[company.pk])
+    web.post(url, {"kind": "email", "value": "a@fictif.test"})
+    response = web.post(url, {"kind": "email", "value": "A@fictif.test"}, follow=True)
+    assert response.status_code == 200
+    assert "déjà enregistrée" in response.content.decode()
+    assert company.contacts.count() == 1
+
+
+def test_admin_shows_no_national_number_history(make_user, client):
+    admin_user = make_user(is_staff=True, is_superuser=True)
+    person = PersonFactory(national_number=national_number(24))
+    person.national_number = national_number(25)
+    person.save()
+    client.force_login(admin_user)
+    for url in (
+        reverse("admin:clients_client_change", args=[person.pk]),
+        reverse("admin:clients_client_history", args=[person.pk]),
+    ):
+        html = client.get(url).content.decode()
+        assert national_number(24) not in html and national_number(25) not in html
+
+
+def test_vies_check_requires_edit_right(make_user, client):
+    reader = make_user()
+    client.force_login(reader)
+    company = ClientFactory()
+    assert client.post(reverse("clients:vies_check", args=[company.pk])).status_code == 403
+
+
+@pytest.mark.parametrize(
+    ("value", "expected"),
+    [
+        ("www.fictif.test", "https://www.fictif.test"),
+        ("http://fictif.test", "http://fictif.test"),
+        ("javascript:alert(1)", "https://javascript:alert(1)"),
+        ("ftp://fictif.test", ""),
+        ("a b", ""),
+    ],
+)
+def test_external_url_filter(value, expected):
+    from apps.core.templatetags.app_tags import external_url
+
+    assert external_url(value) == expected

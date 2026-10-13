@@ -9,6 +9,7 @@ urlpatterns = [
     path("export/", views.client_export, name="export"),
     path("nouveau/", views.client_create, name="create"),
     path("choisir/", views.client_picker, name="picker"),
+    path("numero-national/", views.national_number_lookup, name="nn_lookup"),
     path("<int:pk>/", views.client_detail, name="detail"),
     path("<int:pk>/modifier/", views.client_edit, name="edit"),
     path("<int:pk>/numero-national/", views.reveal_national_number, name="reveal_nn"),

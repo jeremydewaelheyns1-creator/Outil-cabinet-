@@ -477,7 +477,11 @@ class _Importer:
         if existing is None:
             self.report.created += 1
             events.emit(
-                "client.created", subject=client, actor=self.actor, payload={"source": SOURCE}
+                "client.created",
+                subject=client,
+                actor=self.actor,
+                payload={"source": SOURCE},
+                process_now=False,  # complétion BCE en arrière-plan : import de masse
             )
         elif changed:
             self.report.updated += 1

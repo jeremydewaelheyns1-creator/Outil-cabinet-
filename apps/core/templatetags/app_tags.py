@@ -29,3 +29,15 @@ def event_label(event_type: str) -> str:
     from apps.core.event_labels import event_label as label
 
     return label(event_type)
+
+
+@register.filter
+def external_url(value: str) -> str:
+    """Adresse web cliquable sans risque : http(s) uniquement, « https:// » ajouté si absent."""
+    value = (value or "").strip()
+    if not value or any(c.isspace() for c in value):
+        return ""
+    if "://" not in value:
+        value = f"https://{value}"
+    scheme = value.split("://", 1)[0].lower()
+    return value if scheme in ("http", "https") else ""

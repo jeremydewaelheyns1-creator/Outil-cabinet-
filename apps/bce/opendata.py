@@ -281,9 +281,10 @@ def _copy(table: Table, rows: Iterable[Row]) -> int:
     return count
 
 
-def _truncate(model: type[models.Model]) -> None:
-    with connection.cursor() as cursor:
-        cursor.execute(f"TRUNCATE {_table_name(model)}")
+def _empty(model: type[models.Model]) -> None:
+    """Vide une table sans la verrouiller : pendant l'import, les écrans continuent de lire
+    l'ancienne copie (DELETE transactionnel, contrairement à TRUNCATE)."""
+    model._default_manager.all()._raw_delete(connection.alias)
 
 
 def _delete_keys(table: Table, keys: set[str]) -> None:
@@ -365,8 +366,13 @@ def import_archive(path: Path) -> ImportRun:
         run.finished_at = timezone.now()
         run.save()
 
-    from .services import notify_changed_clients
+    from .services import notify_changed_clients, out_of_sync_numbers
 
+    if kind == ImportRun.Kind.FULL:
+        # L'export complet ne dit pas ce qui a changé : on compare chaque client à la copie.
+        changed = out_of_sync_numbers()
+        ImportRun.objects.filter(pk=run.pk).update(changed_enterprises=len(changed))
+        run.changed_enterprises = len(changed)
     notify_changed_clients(run, changed)
     return run
 
@@ -376,7 +382,7 @@ def _import_full(archive: Archive) -> dict[str, int]:
     for table in (*TABLES, CODE_TABLE):
         if not archive.has(table.csv_name):
             raise OpenDataError(f"Fichier {table.csv_name}.csv absent de l'export complet.")
-        _truncate(table.model)
+        _empty(table.model)
         counts[table.csv_name] = _copy(table, archive.rows(table.csv_name))
         logger.info("BCE %s : %s lignes", table.csv_name, counts[table.csv_name])
     return counts
@@ -406,6 +412,6 @@ def _import_update(archive: Archive) -> tuple[dict[str, int], set[str]]:
             )
             changed |= inserted
     if archive.has("code"):
-        _truncate(Code)
+        _empty(Code)
         counts["code"] = _copy(CODE_TABLE, archive.rows("code"))
     return counts, changed
