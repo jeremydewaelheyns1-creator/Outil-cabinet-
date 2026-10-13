@@ -5,6 +5,7 @@ from typing import Any
 from django.http import HttpRequest
 
 from . import dossier
+from .models import Client
 
 
 def current_dossier(request: HttpRequest) -> dict[str, Any]:
@@ -24,7 +25,7 @@ def current_dossier(request: HttpRequest) -> dict[str, Any]:
     }
 
 
-def _overdue(client: object) -> int:
+def _overdue(client: Client) -> int:
     from apps.tasks.models import Task  # le module échéances dépend des clients
 
     return Task.objects.filter(client=client).overdue().count()
