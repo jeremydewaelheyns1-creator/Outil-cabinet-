@@ -31,11 +31,10 @@ son critère de fin est vérifié par des tests et sur l'environnement d'essai.
 
 ## Prochaines étapes immédiates
 
-1. Mettre le code sur GitHub (dépôt privé `outil-cabinet`) dès que Jeremy l'a créé et relié.
-2. Recevoir la **structure** (en-têtes + lignes inventées) de l'export clients FID-Manager et
+1. Recevoir la **structure** (en-têtes + lignes inventées) de l'export clients FID-Manager et
    compléter `config/reprise/clients.yaml`.
-3. Épique 4 : moteur de tâches et d'échéances (règles en données).
-4. Déploiement de l'environnement d'essai sur le Google Cloud du cabinet.
+2. Épique 4 : moteur de tâches et d'échéances (règles en données).
+3. Déploiement de l'environnement d'essai sur le Google Cloud du cabinet.
 
 ## Dette connue
 

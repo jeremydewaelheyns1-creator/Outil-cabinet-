@@ -37,8 +37,9 @@ menu du dossier (synthèse, identité, relations, bénéficiaires, équipe, BCE/
 modules à venir grisés), changement de client en gardant la rubrique, synthèse avec points
 d'attention, historique avec les consultations du dossier pour l'AMLCO.
 
+Code poussé sur GitHub : `jeremydewaelheyns1-creator/Outil-cabinet-` (privé), branche `main`.
+
 **Reste à faire / en attente**
-- Dépôt GitHub privé (action de Jeremy), puis pousser le code.
 - Structure réelle de l'export clients FID-Manager (en-têtes uniquement + lignes inventées).
 - Déploiement de l'environnement d'essai sur le Google Cloud du cabinet.
 - Page d'accueil (quand aucun dossier n'est ouvert) : à définir avec Jeremy.
