@@ -18,10 +18,22 @@ def test_opening_a_client_makes_it_the_active_dossier_everywhere(web):
     client = ClientFactory(name="Dossier Actif Fictif")
     web.get(reverse("clients:detail", args=[client.pk]))
     assert web.session[SESSION_CURRENT] == client.pk
-    # Sur un écran général, le dossier reste affiché en haut et son menu à gauche.
+    # Sur l'accueil, le dossier reste choisi dans le sélecteur du haut, sans ses onglets.
     html = web.get(reverse("core:home")).content.decode()
     assert "Dossier Actif Fictif" in html
+    assert 'class="tabs"' not in html
+
+
+def test_inside_a_dossier_only_the_dossier_is_shown(web):
+    client = ClientFactory()
+    html = web.get(reverse("clients:identity", args=[client.pk])).content.decode()
+    assert 'class="sidebar"' not in html  # pas de menu du cabinet
+    assert "⌂ Accueil" in html
+    for label in ("Synthèse", "Fiche", "Travail", "Documents", "Conformité", "Facturation"):
+        assert label in html
+    # Sous-onglets de « Fiche ».
     assert reverse("clients:relations", args=[client.pk]) in html
+    assert reverse("clients:public_data", args=[client.pk]) in html
 
 
 @pytest.mark.parametrize("section", SECTIONS)

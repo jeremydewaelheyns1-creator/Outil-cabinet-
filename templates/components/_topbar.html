@@ -1,0 +1,11 @@
+  <header class="topbar">
+    <a class="brand" href="{% url 'core:home' %}">{{ CABINET_NAME }}</a>
+    {% include "clients/_switcher.html" %}
+    <div class="topbar-user">
+      <span class="topbar-user-name">{{ user.get_full_name|default:user.email }}</span>
+      <a href="{% url 'mfa_index' %}">Sécurité</a>
+      <form class="inline" method="post" action="{% url 'account_logout' %}">
+        {% csrf_token %}<button type="submit" class="link-button">Se déconnecter</button>
+      </form>
+    </div>
+  </header>

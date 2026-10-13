@@ -1,4 +1,4 @@
-{% extends "layouts/app.html" %}
+{% extends client|yesno:"layouts/dossier.html,layouts/app.html" %}
 {% block head_title %}{% if client %}Modifier {{ client.display_name }}{% else %}Nouveau client{% endif %}{% endblock %}
 {% block page_title %}{% if client %}Modifier la fiche{% else %}Nouveau client{% endif %}{% endblock %}
 {% block page_subtitle %}{% if client %}<div class="subtitle">{{ client.display_name }}</div>{% endif %}{% endblock %}

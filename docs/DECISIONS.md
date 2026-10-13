@@ -99,3 +99,11 @@ l'équipe, check-list. La génération est idempotente (clé client + règle + p
 changements de fiche via les événements et tourne une fois par jour via `run_jobs`. Une tâche
 déjà travaillée n'est jamais modifiée ni supprimée automatiquement. Les délais sont les délais
 légaux usuels, à valider par le cabinet ; la date IPP est à renseigner chaque année.
+
+## D-021 — Dossier en onglets stables, sans menu du cabinet
+Remplace la partie « menu de gauche » de D-019 (demande de Jeremy : un onglet par fonction
+deviendrait illisible). Dans un dossier : en-tête fixe du client, six onglets stables
+(Synthèse, Fiche, Travail, Documents, Conformité, Facturation) avec sous-onglets, un onglet
+« Accueil » pour revenir, l'historique en lien discret. Aucune nouvelle fonction ne crée
+d'onglet : elle devient un sous-onglet (`TABS` dans `apps/clients/dossier.py`). Le menu de
+gauche n'existe que sur les écrans du cabinet (accueil, échéancier, clients, paramétrage).

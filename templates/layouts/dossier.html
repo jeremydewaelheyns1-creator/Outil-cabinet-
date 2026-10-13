@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% load static %}
+{# Écrans d'un dossier client : rien d'autre que le dossier (en-tête, onglets, sous-onglets). #}
+{% block body %}
+<div class="app app-dossier">
+  {% include "components/_topbar.html" %}
+  {% with c=current_client %}
+  <main class="main dossier-main" id="contenu">
+    <header class="dossier-head">
+      <div class="dossier-id">
+        <h1 class="dossier-name">{{ c.display_name }}</h1>
+        <div class="meta">
+          <span class="badge">{{ c.get_kind_display }}</span>
+          {% if c.status == "active" %}<span class="badge badge-success">Client</span>{% elif c.status == "prospect" %}<span class="badge badge-primary">Prospect</span>{% else %}<span class="badge">Ancien client</span>{% endif %}
+          {% if c.bce_juridical_situation %}<span class="badge badge-danger">{{ c.bce_juridical_situation }}</span>{% endif %}
+          {% if c.bce_status == "absent" %}<span class="badge badge-warning">Absent de la BCE</span>{% endif %}
+          {% if dossier_overdue %}<a class="badge badge-danger" href="{% url 'clients:tasks' c.pk %}">{{ dossier_overdue }} en retard</a>{% endif %}
+          {% if c.enterprise_number %}<span class="mono">{{ c.enterprise_number_display }}</span>{% endif %}
+          {% if c.reference %}<span>réf. {{ c.reference }}</span>{% endif %}
+          <span>{{ c.portfolio.name }}</span>
+          {% for a in c.assignments.all %}{% if a.role == "manager" %}<span>Responsable : {{ a.user.get_short_name }}</span>{% endif %}{% endfor %}
+        </div>
+      </div>
+      <div class="actions">
+        {% if user|can:"clients.edit" %}<a class="button button-secondary button-small" href="{% url 'clients:edit' c.pk %}">Modifier la fiche</a>{% endif %}
+      </div>
+    </header>
+
+    <nav class="tabs" aria-label="Onglets du dossier">
+      <a class="tab tab-home" href="{% url 'core:home' %}">⌂ Accueil</a>
+      {% for t in dossier_tabs %}
+        {% if t.first %}
+          <a class="tab" href="{% url 'clients:'|add:t.first.url_name c.pk %}"{% if current_tab.key == t.key %} aria-current="page"{% endif %}>{{ t.label }}{% if t.key == "travail" and dossier_overdue %} <span class="tab-count">{{ dossier_overdue }}</span>{% endif %}</a>
+        {% else %}
+          <span class="tab tab-disabled" title="Bientôt disponible">{{ t.label }}</span>
+        {% endif %}
+      {% endfor %}
+      <a class="tab tab-end" href="{% url 'clients:history' c.pk %}"{% if current_section == "history" %} aria-current="page"{% endif %}>Historique</a>
+    </nav>
+
+    {% if current_tab and current_tab.sections|length > 1 or current_tab.upcoming %}
+      <nav class="subtabs" aria-label="{{ current_tab.label }}">
+        {% for s in current_tab.sections %}
+          <a href="{% url 'clients:'|add:s.url_name c.pk %}"{% if current_section == s.url_name %} aria-current="page"{% endif %}>{{ s.label }}</a>
+        {% endfor %}
+        {% for label in current_tab.upcoming %}<span class="subtab-disabled" title="Bientôt disponible">{{ label }}</span>{% endfor %}
+      </nav>
+    {% endif %}
+
+    {% include "components/_messages.html" %}
+    {% block page %}
+      <div class="section-bar">
+        <h2 class="section-title">{% block page_title %}{% endblock %}</h2>
+        <div class="actions">{% block page_actions %}{% endblock %}</div>
+      </div>
+      {% block content %}{% endblock %}
+    {% endblock %}
+  </main>
+  {% endwith %}
+</div>
+{% endblock %}
+{% block extra_body %}
+<script src="{% static 'js/app.js' %}" defer></script>
+{% endblock %}

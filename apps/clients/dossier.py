@@ -1,9 +1,10 @@
 """Dossier actif : le client choisi en haut de l'écran.
 
 Comme dans un logiciel comptable par dossier, on choisit un client une fois ; il reste
-affiché en haut de chaque écran et le menu de gauche présente ses rubriques. Changer de
-client garde la rubrique ouverte (on passe de « Relations » d'un client à « Relations »
-d'un autre).
+affiché en haut de l'écran. Dans un dossier, l'écran ne montre que lui : un en-tête fixe, des
+onglets (Synthèse, Fiche, Travail, Documents, Conformité, Facturation) et leurs
+sous-onglets ; un onglet « Accueil » ramène aux écrans du cabinet. Changer de client garde
+la rubrique ouverte (on passe des « Relations » d'un client à celles d'un autre).
 
 Le dossier actif et les derniers dossiers ouverts sont gardés dans la session (identifiants
 seulement) ; la visibilité est revérifiée à chaque lecture.
@@ -32,29 +33,76 @@ class Section:
     for_entities: bool = True
 
 
-# Rubriques du dossier, dans l'ordre du menu. Le nom d'URL est dans l'espace « clients ».
-SECTIONS: tuple[Section, ...] = (
-    Section("detail", "Synthèse"),
-    Section("tasks", "Échéances"),
-    Section("identity", "Identité et coordonnées"),
-    Section("relations", "Relations"),
-    Section("ubo", "Bénéficiaires effectifs", for_persons=False),
-    Section("team", "Équipe du cabinet"),
-    Section("public_data", "BCE et TVA", for_persons=False),
-    Section("history", "Historique"),
-)
-SECTION_NAMES = {s.url_name for s in SECTIONS}
+# Organisation du dossier : quelques grands onglets stables, des sous-onglets dedans. Chaque
+# nouvelle fonction vient se ranger dans l'onglet qui lui correspond (pas de nouvel onglet).
+DETAIL = Section("detail", "Synthèse")
+HISTORY = Section("history", "Historique")
 
-# Rubriques prévues, affichées grisées pour donner la structure du dossier.
-UPCOMING = (
-    "Documents",
-    "Anti-blanchiment",
-    "Facturation",
+
+@dataclass(frozen=True)
+class Tab:
+    key: str
+    label: str
+    sections: tuple[Section, ...] = ()
+    upcoming: tuple[str, ...] = ()  # sous-onglets prévus, affichés grisés
+
+
+TABS: tuple[Tab, ...] = (
+    Tab("synthese", "Synthèse", (DETAIL,)),
+    Tab(
+        "fiche",
+        "Fiche",
+        (
+            Section("identity", "Identité et coordonnées"),
+            Section("relations", "Relations"),
+            Section("ubo", "Bénéficiaires effectifs", for_persons=False),
+            Section("public_data", "BCE et TVA", for_persons=False),
+            Section("team", "Équipe du cabinet"),
+        ),
+    ),
+    Tab("travail", "Travail", (Section("tasks", "Échéances"),), ("Prestations",)),
+    Tab("documents", "Documents", (), ("Pièces", "Courriers et e-mails", "Signatures")),
+    Tab(
+        "conformite",
+        "Conformité",
+        (),
+        ("Anti-blanchiment", "Pièces d'identité", "Déclarations UBO"),
+    ),
+    Tab("facturation", "Facturation", (), ("Honoraires", "Factures")),
 )
+
+SECTIONS: tuple[Section, ...] = (*(s for t in TABS for s in t.sections), HISTORY)
+SECTION_NAMES = {s.url_name for s in SECTIONS}
+TAB_OF = {s.url_name: t.key for t in TABS for s in t.sections}
+
+
+def _allowed(section: Section, client: Client) -> bool:
+    return section.for_persons if client.is_person else section.for_entities
 
 
 def sections_for(client: Client) -> list[Section]:
-    return [s for s in SECTIONS if (s.for_persons if client.is_person else s.for_entities)]
+    return [s for s in SECTIONS if _allowed(s, client)]
+
+
+@dataclass(frozen=True)
+class TabView:
+    """Onglet tel qu'affiché pour un client donné."""
+
+    key: str
+    label: str
+    sections: list[Section]
+    upcoming: tuple[str, ...]
+
+    @property
+    def first(self) -> Section | None:
+        return self.sections[0] if self.sections else None
+
+
+def tabs_for(client: Client) -> list[TabView]:
+    return [
+        TabView(t.key, t.label, [s for s in t.sections if _allowed(s, client)], t.upcoming)
+        for t in TABS
+    ]
 
 
 def activate(request: HttpRequest, client: Client) -> None:

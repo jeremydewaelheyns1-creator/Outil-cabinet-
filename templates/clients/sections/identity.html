@@ -1,6 +1,6 @@
 {% extends "clients/sections/_base.html" %}
 {% block head_title %}Identité et coordonnées · {{ client.display_name }}{% endblock %}
-{% block heading %}Identité et coordonnées{% endblock %}
+{% block page_title %}Identité et coordonnées{% endblock %}
 {% block page_actions %}{% if can_edit %}<a class="button" href="{% url 'clients:edit' client.pk %}">Modifier</a>{% endif %}{% endblock %}
 {% block content %}
 <div class="grid grid-2">

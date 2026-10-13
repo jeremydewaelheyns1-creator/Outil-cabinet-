@@ -3,6 +3,16 @@
 Ce qui a été ajouté à l'outil, du plus récent au plus ancien. Toutes les données de la démo
 sont inventées.
 
+## 13 octobre 2026 — Dossier client réorganisé en onglets
+
+- Dans un client, l'écran ne montre plus que le dossier : un en-tête toujours visible (nom,
+  numéro, responsable, retards) et un onglet « Accueil » pour revenir aux écrans du cabinet.
+- Six grands onglets qui ne bougeront plus : Synthèse, Fiche, Travail, Documents,
+  Conformité, Facturation. Les nouvelles fonctions viendront se ranger dedans, en sous-onglets.
+- Fiche : identité, relations, bénéficiaires effectifs, BCE et TVA, équipe.
+- Travail : échéances (avec le nombre de retards sur l'onglet).
+- Les sous-onglets prévus sont déjà visibles en grisé.
+
 ## 13 octobre 2026 — Démo en ligne
 
 - Cette démo se met à jour toute seule à chaque fois qu'une étape est terminée.

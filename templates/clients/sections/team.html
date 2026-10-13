@@ -1,6 +1,6 @@
 {% extends "clients/sections/_base.html" %}
 {% block head_title %}Équipe du cabinet · {{ client.display_name }}{% endblock %}
-{% block heading %}Équipe du cabinet{% endblock %}
+{% block page_title %}Équipe du cabinet{% endblock %}
 {% block page_actions %}{% if can_edit %}<a class="button" href="{% url 'clients:assignments' client.pk %}">Modifier l'équipe</a>{% endif %}{% endblock %}
 {% block content %}
 <div style="max-width: 640px">

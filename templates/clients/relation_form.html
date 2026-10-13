@@ -1,4 +1,4 @@
-{% extends "layouts/app.html" %}
+{% extends "layouts/dossier.html" %}
 {% block head_title %}Relation · {{ client.display_name }}{% endblock %}
 {% block page_title %}{% if relation %}Modifier la relation{% elif as_person %}Ajouter un mandat ou une participation{% else %}Ajouter un dirigeant ou un actionnaire{% endif %}{% endblock %}
 {% block page_subtitle %}<div class="subtitle"><a href="{{ client.get_absolute_url }}">{{ client.display_name }}</a></div>{% endblock %}

@@ -1,21 +1,2 @@
-{% extends "layouts/app.html" %}
-{# Gabarit commun aux rubriques d'un dossier client. #}
-{% block page %}
-<div class="page-header dossier-header">
-  <div>
-    <h1>{% block heading %}{% endblock %}</h1>
-    <div class="meta">
-      {% if section != "detail" %}<strong>{{ client.display_name }}</strong>{% endif %}
-      <span class="badge">{{ client.get_kind_display }}</span>
-      {% if client.status == "active" %}<span class="badge badge-success">Client</span>{% elif client.status == "prospect" %}<span class="badge badge-primary">Prospect</span>{% else %}<span class="badge">Ancien client</span>{% endif %}
-      {% if client.bce_juridical_situation %}<span class="badge badge-danger">{{ client.bce_juridical_situation }}</span>{% endif %}
-      {% if client.bce_status == "absent" %}<span class="badge badge-warning">Absent de la BCE</span>{% endif %}
-      {% if client.enterprise_number %}<span class="mono">{{ client.enterprise_number_display }}</span>{% endif %}
-      {% if client.reference %}<span>réf. {{ client.reference }}</span>{% endif %}
-      <span>{{ client.portfolio.name }}</span>
-    </div>
-  </div>
-  <div class="actions">{% block page_actions %}{% endblock %}</div>
-</div>
-{% block content %}{% endblock %}
-{% endblock %}
+{% extends "layouts/dossier.html" %}
+{# Rubriques d'un dossier : le titre de la rubrique s'écrit dans le bloc « page_title ». #}

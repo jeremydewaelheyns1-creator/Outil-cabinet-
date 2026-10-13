@@ -1,7 +1,7 @@
 {% extends "clients/sections/_base.html" %}
 {% block head_title %}{{ client.display_name }}{% endblock %}
-{% block heading %}{{ client.display_name }}{% endblock %}
-{% block page_actions %}{% if can_edit %}<a class="button" href="{% url 'clients:edit' client.pk %}">Modifier la fiche</a>{% endif %}{% endblock %}
+{% block page_title %}Synthèse{% endblock %}
+{% block page_actions %}{% endblock %}
 {% block content %}
 <section class="card">
   <div class="card-header"><h2>Points d'attention</h2>{% if alerts %}<span class="badge">{{ alerts|length }}</span>{% endif %}</div>
