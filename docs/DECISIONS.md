@@ -161,3 +161,12 @@ anticipés, Documents. Time sheet retiré pour l'instant ; on en reparlera.
 Remplace la règle de D-019 « changer de client garde la rubrique ouverte » (demande de
 Jeremy) : quel que soit le chemin (liste, sélecteur du haut, relation cliquée), ouvrir un
 dossier affiche Identité et coordonnées.
+
+## D-029 — Fiche allégée : BCE, Moniteur et équipe sans page propre
+Demande de Jeremy. Les sous-onglets « BCE et TVA », « Moniteur belge » et « Équipe du cabinet »
+sont supprimés. Les différences avec la BCE (à reprendre en cochant) et les publications
+récentes au Moniteur s'affichent sur Identité et coordonnées, seulement quand il y en a ; les
+administrateurs publiés à la BCE sont sur la page Mandataires (« Ajouter aux mandataires »).
+VIES : un simple lien vers le site officiel, comme FID-Manager (la vérification intégrée est
+retirée de l'écran). Pas de fenêtre d'aperçu des sites officiels : les boutons ouvrent le site
+sur la bonne société.

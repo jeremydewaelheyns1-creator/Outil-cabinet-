@@ -36,11 +36,11 @@ def dossier_alerts(client: Client, ubo: UboAnalysis | None) -> list[Alert]:
 
     if client.bce_juridical_situation:
         alerts.append(
-            Alert("danger", f"Situation à la BCE : {client.bce_juridical_situation}", "public_data")
+            Alert("danger", f"Situation à la BCE : {client.bce_juridical_situation}", "identity")
         )
     if client.bce_status == "absent":
         alerts.append(
-            Alert("warning", "Numéro absent de la BCE (entreprise arrêtée ?)", "public_data")
+            Alert("warning", "Numéro absent de la BCE (entreprise arrêtée ?)", "identity")
         )
     latest_check = client.vat_checks.first()
     if (
@@ -52,7 +52,7 @@ def dossier_alerts(client: Client, ubo: UboAnalysis | None) -> list[Alert]:
             Alert(
                 "warning",
                 "VIES : numéro de TVA non actif alors que le client est assujetti",
-                "public_data",
+                "identity",
             )
         )
 
@@ -97,7 +97,7 @@ def dossier_alerts(client: Client, ubo: UboAnalysis | None) -> list[Alert]:
     if entity and client.kind == Client.Kind.COMPANY and not client.fiscal_year_end_month:
         alerts.append(Alert("info", "Date de clôture de l'exercice non renseignée", "identity"))
     if not client.assignments.exists():
-        alerts.append(Alert("info", "Aucun collaborateur affecté au dossier", "team"))
+        alerts.append(Alert("info", "Aucun collaborateur affecté au dossier", "identity"))
     return alerts
 
 
@@ -122,7 +122,7 @@ def _official_alerts(client: Client) -> list[Alert]:
                     "warning",
                     f"Publication récente au Moniteur belge : {subject.lower()} "
                     f"({day[8:10]}/{day[5:7]}/{day[:4]})",
-                    "moniteur",
+                    "identity",
                 )
             )
     kbo = official.latest(client, OfficialSnapshot.Source.KBO, ok_only=True)
@@ -132,7 +132,7 @@ def _official_alerts(client: Client) -> list[Alert]:
             Alert(
                 "warning",
                 f"Dirigeants publiés à la BCE absents des relations ({len(missing)})",
-                "public_data",
+                "mandates",
             )
         )
     return alerts

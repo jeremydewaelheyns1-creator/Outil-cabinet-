@@ -187,17 +187,17 @@ FUNCTION = {"role": "Gérant", "name": "Fictif", "first_name": "Albert", "since"
 def test_bce_functions_are_compared_to_relations(web):
     client = company()
     snapshot(client, Source.KBO, [FUNCTION])
-    html = web.get(reverse("clients:public_data", args=[client.pk])).content.decode()
-    assert "Ajouter aux relations" in html
+    html = web.get(reverse("clients:mandates", args=[client.pk])).content.decode()
+    assert "Ajouter aux mandataires" in html
     assert any("absents des relations" in a.message for a in dossier_alerts(client, None))
 
     person = PersonFactory(name="Fictif", first_name="Albert")
     Relation.objects.create(entity=client, person=person, role="shareholder")
-    html = web.get(reverse("clients:public_data", args=[client.pk])).content.decode()
-    assert "Ajouter aux relations" in html  # actionnaire, pas encore gérant
+    html = web.get(reverse("clients:mandates", args=[client.pk])).content.decode()
+    assert "Ajouter aux mandataires" in html  # actionnaire, pas encore gérant
     Relation.objects.create(entity=client, person=person, role="manager")
-    html = web.get(reverse("clients:public_data", args=[client.pk])).content.decode()
-    assert "✓ dans les relations" in html
+    html = web.get(reverse("clients:mandates", args=[client.pk])).content.decode()
+    assert "✓ encodé" in html
 
 
 def test_adding_a_bce_function_creates_the_relation(web):
@@ -237,16 +237,15 @@ def test_adding_requires_edit_right(client, make_user):
     assert not Relation.objects.exists()
 
 
-def test_moniteur_tab_lists_publications_and_alerts_recent_ones(web):
+def test_identity_shows_recent_moniteur_publications(web):
     client = company()
     snapshot(client, Source.MONITEUR, [
         {"published_on": recent_day(), "number": "0123456", "subject": "DEMISSIONS, NOMINATIONS",
          "tags": ["Démission", "Nomination"], "pdf_url": "https://moniteur.invalid/a.pdf"},
     ])  # fmt: skip
-    html = web.get(reverse("clients:moniteur", args=[client.pk])).content.decode()
-    assert "DEMISSIONS, NOMINATIONS" in html
+    html = web.get(reverse("clients:identity", args=[client.pk])).content.decode()
+    assert "Publication au Moniteur belge le" in html and "démission, nomination" in html
     assert "https://moniteur.invalid/a.pdf" in html
-    assert "Ouvrir au Moniteur belge" in html
     messages = [a.message for a in dossier_alerts(client, None)]
     assert any(m.startswith("Publication récente au Moniteur belge") for m in messages)
 
@@ -273,7 +272,11 @@ def test_refresh_button_goes_back_to_the_tab(web, settings):
 def test_persons_have_no_official_tabs(web):
     person = PersonFactory()
     html = web.get(reverse("clients:identity", args=[person.pk])).content.decode()
-    assert reverse("clients:moniteur", args=[person.pk]) not in html
+    assert reverse("clients:annual_accounts", args=[person.pk]) not in html
+    assert (
+        "Publiés à la BCE"
+        not in web.get(reverse("clients:mandates", args=[person.pk])).content.decode()
+    )
 
 
 def test_adding_reuses_the_existing_person_record(web):

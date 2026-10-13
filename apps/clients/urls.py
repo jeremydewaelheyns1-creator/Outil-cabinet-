@@ -24,9 +24,6 @@ urlpatterns = [
     path("<int:pk>/actionnaires/", views.client_shareholders, name="shareholders"),
     path("<int:pk>/autres-relations/", views.client_other_relations, name="other_relations"),
     path("<int:pk>/beneficiaires/", views.client_ubo, name="ubo"),
-    path("<int:pk>/equipe/", views.client_team, name="team"),
-    path("<int:pk>/bce-tva/", views.client_public_data, name="public_data"),
-    path("<int:pk>/moniteur/", views.client_moniteur, name="moniteur"),
     path("<int:pk>/comptes-annuels/", views.client_annual_accounts, name="annual_accounts"),
     path("<int:pk>/echeances/", task_views.client_tasks, name="tasks"),
     path("<int:pk>/historique/", views.client_history, name="history"),
@@ -64,5 +61,4 @@ urlpatterns = [
     ),
     path("<int:pk>/bce/appliquer/", views.bce_apply, name="bce_apply"),
     path("<int:pk>/bce/actualiser/", views.bce_refresh, name="bce_refresh"),
-    path("<int:pk>/vies/", views.vies_check, name="vies_check"),
 ]

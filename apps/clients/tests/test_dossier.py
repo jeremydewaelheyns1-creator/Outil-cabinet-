@@ -12,8 +12,8 @@ from apps.core.testing.factories import ClientFactory, PersonFactory, PortfolioF
 pytestmark = pytest.mark.django_db
 
 SECTIONS = [
-    "identity", "mandates", "shareholders", "other_relations", "ubo", "team", "public_data",
-    "moniteur", "annual_accounts", "history",
+    "identity", "mandates", "shareholders", "other_relations", "ubo", "annual_accounts",
+    "history",
 ]  # fmt: skip
 
 
@@ -40,7 +40,7 @@ def test_inside_a_dossier_only_the_dossier_is_shown(web):
     assert positions == sorted(positions)  # ordre voulu par Jeremy
     assert "time-sheet" not in html
     # À gauche : la paperasse, chaque page à un clic.
-    for name in ("identity", "public_data", "moniteur", "mandates", "shareholders", "ubo",
+    for name in ("identity", "mandates", "shareholders", "ubo",
                  "other_relations", "tasks", "history"):  # fmt: skip
         assert reverse(f"clients:{name}", args=[client.pk]) in html
 

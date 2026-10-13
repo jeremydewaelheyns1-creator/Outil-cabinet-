@@ -3,6 +3,17 @@
 Ce qui a été ajouté à l'outil, du plus récent au plus ancien. Toutes les données de la démo
 sont inventées.
 
+## 13 octobre 2026 — Fiche allégée
+
+- Les pages « BCE et TVA », « Moniteur belge » et « Équipe du cabinet » disparaissent du panneau
+  de gauche.
+- Sur **Identité et coordonnées** : un bandeau signale une publication récente au Moniteur
+  (avec le PDF), et un encadré propose de reprendre ce qui diffère de la BCE (nom, adresse…).
+  Rien ne s'affiche quand tout est en ordre.
+- Sur **Mandataires** : les administrateurs et gérants publiés à la BCE, avec un bouton
+  « Ajouter aux mandataires » pour ceux qui manquent.
+- **VIES** devient un simple lien vers le site officiel, comme dans FID.
+
 ## 13 octobre 2026 — Un dossier s'ouvre sur « Identité et coordonnées »
 
 - Quand on ouvre un client (depuis la liste, le sélecteur du haut ou une relation), on arrive

@@ -283,11 +283,16 @@ def test_admin_shows_no_national_number_history(make_user, client):
         assert national_number(24) not in html and national_number(25) not in html
 
 
-def test_vies_check_requires_edit_right(make_user, client):
-    reader = make_user()
-    client.force_login(reader)
+def test_removed_pages_no_longer_exist(web):
     company = ClientFactory()
-    assert client.post(reverse("clients:vies_check", args=[company.pk])).status_code == 403
+    for path in ("bce-tva", "moniteur", "equipe", "vies"):
+        assert web.get(f"/clients/{company.pk}/{path}/").status_code == 404
+
+
+def test_identity_links_to_vies_like_fid(web):
+    company = ClientFactory()
+    html = web.get(reverse("clients:identity", args=[company.pk])).content.decode()
+    assert "ec.europa.eu/taxation_customs/vies" in html
 
 
 @pytest.mark.parametrize(
@@ -304,3 +309,18 @@ def test_external_url_filter(value, expected):
     from apps.core.templatetags.app_tags import external_url
 
     assert external_url(value) == expected
+
+
+def test_identity_offers_bce_differences_to_take_over(web, monkeypatch):
+    from apps.bce import services as bce
+
+    company = ClientFactory(city="Namur")
+    monkeypatch.setattr(bce, "lookup", lambda number: object())
+    monkeypatch.setattr(
+        bce,
+        "differences",
+        lambda client, record: [bce.Difference("city", "ville", "Namur", "Jambes")],
+    )
+    html = web.get(reverse("clients:identity", args=[company.pk])).content.decode()
+    assert "La BCE indique d" in html and "Jambes" in html
+    assert reverse("clients:bce_apply", args=[company.pk]) in html

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import io
 from collections.abc import Callable
+from datetime import timedelta
 from typing import Any
 
 from django.contrib import messages
@@ -24,8 +25,8 @@ from apps.core.capabilities import Capability
 from apps.core.http import AppRequest
 from apps.core.models import AccessLog, Portfolio, events_for
 from apps.core.permissions import require_capability
-from apps.integrations import official, vies
-from apps.integrations.models import OfficialSnapshot, VatCheck
+from apps.integrations import official
+from apps.integrations.models import OfficialSnapshot
 
 from . import dossier
 from .forms import AssignmentForm, ClientForm, ContactPointForm, RelationForm
@@ -291,8 +292,28 @@ def client_identity(request: AppRequest, pk: int) -> HttpResponse:
             "assignments": client.assignments.select_related("user"),
             "last_change": client.history.select_related("history_user").first(),
             "external_links": _external_links(client),
+            **_bce_and_moniteur(client),
         },
     )
+
+
+RECENT_PUBLICATION_DAYS = 45
+
+
+def _bce_and_moniteur(client: Client) -> dict[str, Any]:
+    """Différences avec la BCE (à reprendre en cochant) et publication récente au Moniteur."""
+    if client.is_person or not client.enterprise_number:
+        return {}
+    record = bce.lookup(client.enterprise_number)
+    moniteur = official.latest(client, OfficialSnapshot.Source.MONITEUR, ok_only=True)
+    since = (timezone.localdate() - timedelta(days=RECENT_PUBLICATION_DAYS)).isoformat()
+    recent = [
+        p for p in (moniteur.items if moniteur else []) if str(p.get("published_on")) >= since
+    ]
+    return {
+        "bce_differences": bce.differences(client, record) if record else [],
+        "recent_publications": recent[:3],
+    }
 
 
 def _external_links(client: Client) -> list[tuple[str, str]]:
@@ -300,20 +321,13 @@ def _external_links(client: Client) -> list[tuple[str, str]]:
     number = client.enterprise_number
     if not number:
         return []
+    urls = official.public_urls(number)
     return [
-        (
-            "BCE",
-            f"https://kbopub.economie.fgov.be/kbopub/toonondernemingps.html?ondernemingsnummer={number}&lang=fr",
-        ),
-        (
-            "Banque Nationale (comptes annuels)",
-            f"https://consult.cbso.nbb.be/consult-enterprise/{number}",
-        ),
-        (
-            "Moniteur belge",
-            f"https://www.ejustice.just.fgov.be/cgi_tsv/list.pl?language=fr&btw={number}",
-        ),
+        ("BCE", urls[OfficialSnapshot.Source.KBO]),
+        ("Banque Nationale (comptes annuels)", urls[OfficialSnapshot.Source.NBB]),
+        ("Moniteur belge", urls[OfficialSnapshot.Source.MONITEUR]),
         ("Companyweb", f"https://www.companyweb.be/fr/{number}"),
+        ("VIES", "https://ec.europa.eu/taxation_customs/vies/#/vat-validation"),
     ]
 
 
@@ -351,9 +365,20 @@ def _relation_page(request: AppRequest, pk: int, page: str) -> HttpResponse:
             "incoming": incoming if not client.is_person or page == "other_relations" else None,
             "outgoing": outgoing if client.is_person else None,
             "default_role": roles[0],
+            **(_bce_functions(client) if page == "mandates" and not client.is_person else {}),
         }
 
     return render_section(request, pk, page, "clients/sections/relations.html", build)
+
+
+def _bce_functions(client: Client) -> dict[str, Any]:
+    """Administrateurs et gérants publiés à la BCE, comparés aux mandataires encodés."""
+    return {
+        **_official(client, OfficialSnapshot.Source.KBO),
+        "function_checks": official.compare_functions(
+            client, official.latest(client, OfficialSnapshot.Source.KBO, ok_only=True)
+        ),
+    }
 
 
 def client_mandates(request: AppRequest, pk: int) -> HttpResponse:
@@ -378,33 +403,6 @@ def client_ubo(request: AppRequest, pk: int) -> HttpResponse:
     )
 
 
-def client_team(request: AppRequest, pk: int) -> HttpResponse:
-    return render_section(
-        request,
-        pk,
-        "team",
-        "clients/sections/team.html",
-        lambda client: {"assignments": client.assignments.select_related("user")},
-    )
-
-
-def client_public_data(request: AppRequest, pk: int) -> HttpResponse:
-    def build(client: Client) -> dict[str, Any]:
-        record = bce.lookup(client.enterprise_number) if client.enterprise_number else None
-        return {
-            "bce_record": record,
-            "bce_differences": bce.differences(client, record) if record else [],
-            "bce_has_data": bce.has_data(),
-            "vat_checks": client.vat_checks.select_related("checked_by")[:10],
-            **_official(client, OfficialSnapshot.Source.KBO),
-            "function_checks": official.compare_functions(
-                client, official.latest(client, OfficialSnapshot.Source.KBO, ok_only=True)
-            ),
-        }
-
-    return render_section(request, pk, "public_data", "clients/sections/public_data.html", build)
-
-
 def _official(client: Client, source: str) -> dict[str, Any]:
     """Dernier relevé d'un site officiel (et le dernier réussi, s'il est plus ancien)."""
     last = official.latest(client, source)
@@ -416,17 +414,6 @@ def _official(client: Client, source: str) -> dict[str, Any]:
         "snapshot": good,
         "official_url": urls.get(source, ""),
     }
-
-
-def client_moniteur(request: AppRequest, pk: int) -> HttpResponse:
-    """Publications de la société aux annexes du Moniteur belge."""
-    return render_section(
-        request,
-        pk,
-        "moniteur",
-        "clients/sections/moniteur.html",
-        lambda client: _official(client, OfficialSnapshot.Source.MONITEUR),
-    )
 
 
 def client_annual_accounts(request: AppRequest, pk: int) -> HttpResponse:
@@ -723,7 +710,7 @@ def assignments_edit(request: AppRequest, pk: int) -> HttpResponse:
         log_access(request, AccessLog.Action.UPDATE, client, details={"écran": "équipe"})
         events.emit("client.team_changed", subject=client, actor=request.user)
         messages.success(request, "Équipe mise à jour.")
-        return redirect("clients:team", pk=client.pk)
+        return redirect("clients:identity", pk=client.pk)
     return render(request, "clients/assignments_form.html", {"client": client, "form": form})
 
 
@@ -742,7 +729,7 @@ def bce_apply(request: AppRequest, pk: int) -> HttpResponse:
         messages.success(request, "Données de la BCE appliquées.")
     else:
         messages.info(request, "Aucune donnée sélectionnée.")
-    return redirect("clients:public_data", pk=client.pk)
+    return redirect("clients:identity", pk=client.pk)
 
 
 @require_POST
@@ -756,24 +743,12 @@ def bce_refresh(request: AppRequest, pk: int) -> HttpResponse:
     else:
         log_access(request, AccessLog.Action.UPDATE, client, details={"source": "BCE"})
         messages.success(request, "Fiche complétée avec la BCE.")
-    return redirect("clients:public_data", pk=client.pk)
-
-
-@require_POST
-@require_capability(Capability.CLIENTS_EDIT)
-def vies_check(request: AppRequest, pk: int) -> HttpResponse:
-    client = _get_client(request, pk)
-    check: VatCheck | None = None
-    if client.enterprise_number:
-        check = vies.check("BE", client.enterprise_number, client=client, user=request.user)
-    if request.htmx:
-        return render(request, "clients/_vies_result.html", {"check": check, "client": client})
-    return redirect("clients:public_data", pk=client.pk)
+    return redirect("clients:identity", pk=client.pk)
 
 
 SOURCE_SECTIONS: dict[str, str] = {
-    OfficialSnapshot.Source.KBO: "clients:public_data",
-    OfficialSnapshot.Source.MONITEUR: "clients:moniteur",
+    OfficialSnapshot.Source.KBO: "clients:mandates",
+    OfficialSnapshot.Source.MONITEUR: "clients:identity",
     OfficialSnapshot.Source.NBB: "clients:annual_accounts",
 }
 
@@ -811,12 +786,12 @@ def official_function_add(request: AppRequest, pk: int, index: int) -> HttpRespo
         raise Http404
     if check.matched:
         messages.info(request, "Cette fonction figure déjà dans les relations.")
-        return redirect("clients:public_data", pk=client.pk)
+        return redirect("clients:mandates", pk=client.pk)
     function = check.function
     with transaction.atomic():
         other, created = _client_for_function(request, client, function)
         if other is None:
-            return redirect("clients:public_data", pk=client.pk)
+            return redirect("clients:mandates", pk=client.pk)
         relation = Relation.objects.create(
             entity=client,
             person=other,
@@ -839,7 +814,7 @@ def official_function_add(request: AppRequest, pk: int, index: int) -> HttpRespo
         f"{other.display_name} ajouté aux relations ({relation.get_role_display().lower()})"
         f"{' — nouvelle fiche créée' if created else ''}.",
     )
-    return redirect("clients:public_data", pk=client.pk)
+    return redirect("clients:mandates", pk=client.pk)
 
 
 def _client_for_function(

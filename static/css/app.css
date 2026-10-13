@@ -658,3 +658,5 @@ a.badge:hover { text-decoration: none; filter: brightness(0.95); }
   .dossier-body { grid-template-columns: minmax(0, 1fr); }
   .dossier-side { position: static; }
 }
+
+.identity-notice { margin-bottom: 1rem; }

@@ -44,12 +44,11 @@
 <div style="max-width: 900px">
   <section class="card">
     <div class="card-header"><h2>Registre UBO (SPF Finances)</h2></div>
-    <p class="small" style="margin-top:0">Les bénéficiaires effectifs ne sont pas publiés à la BCE : ils figurent dans le registre UBO, que le cabinet consulte dans MyMinfin (chaque consultation y est tracée). La loi anti-blanchiment demande de ne pas se fier au seul registre : comparez-le au calcul ci-dessus, construit à partir des relations (elles-mêmes vérifiables à la BCE et au Moniteur).</p>
+    <p class="small" style="margin-top:0">Les bénéficiaires effectifs ne sont pas publiés à la BCE : ils figurent dans le registre UBO, que le cabinet consulte dans MyMinfin (chaque consultation y est tracée). La loi anti-blanchiment demande de ne pas se fier au seul registre : comparez-le au calcul ci-dessus, construit à partir des relations (dirigeants vérifiables à la BCE).</p>
     <p class="small">Une fois vérifié, encodez chaque personne déclarée comme relation « Bénéficiaire effectif déclaré » : l'outil signale alors tout écart avec le calcul.</p>
     <div class="official-links">
       <a class="button button-small" href="https://eservices.minfin.fgov.be/myminfin-web/" target="_blank" rel="noopener noreferrer">Ouvrir MyMinfin (registre UBO) ↗</a>
-      <a class="button button-secondary button-small" href="{% url 'clients:public_data' client.pk %}">Dirigeants à la BCE</a>
-      <a class="button button-secondary button-small" href="{% url 'clients:moniteur' client.pk %}">Publications au Moniteur</a>
+      <a class="button button-secondary button-small" href="{% url 'clients:mandates' client.pk %}">Mandataires (BCE)</a>
     </div>
   </section>
 </div>

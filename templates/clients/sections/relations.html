@@ -3,7 +3,6 @@
 {% block page_title %}{{ title }}{% endblock %}
 {% block page_actions %}
   {% if can_edit %}<a class="button button-small" href="{% url 'clients:relation_add' client.pk %}?role={{ default_role }}{% if client.is_person and page != "other_relations" %}&amp;sens=mandat{% endif %}">+ Ajouter</a>{% endif %}
-  {% if page == "mandates" and not client.is_person %}<a class="button button-secondary button-small" href="{% url 'clients:public_data' client.pk %}">Importer de la BCE</a>{% endif %}
 {% endblock %}
 {% block content %}
 <section class="card">
@@ -28,4 +27,35 @@
     {% endif %}
   {% endif %}
 </section>
+
+{% if page == "mandates" and not client.is_person and client.enterprise_number %}
+<section class="card">
+  <div class="card-header"><h2>Publiés à la BCE</h2></div>
+  {% include "clients/official/_status.html" with official_label="Ouvrir à la BCE" %}
+  {% if function_checks %}
+    <table class="table">
+      <thead><tr><th>Fonction</th><th>Nom</th><th>Depuis</th><th></th></tr></thead>
+      <tbody>
+      {% for c in function_checks %}
+        <tr>
+          <td class="small">{{ c.function.role }}</td>
+          <td>{{ c.function.display_name }}{% if c.function.enterprise_number %} <span class="mono small muted">{{ c.function.enterprise_number }}</span>{% endif %}</td>
+          <td class="nowrap small">{{ c.function.since|iso_date }}</td>
+          <td class="nowrap">
+            {% if c.matched %}<span class="badge badge-success">✓ encodé</span>
+            {% elif can_edit %}
+              <form class="inline" method="post" action="{% url 'clients:official_function_add' client.pk c.index %}">{% csrf_token %}<button type="submit" class="small">Ajouter aux mandataires</button></form>
+            {% else %}<span class="badge badge-warning">non encodé</span>{% endif %}
+          </td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  {% elif snapshot %}
+    <p class="empty">Aucune fonction publiée à la BCE.</p>
+  {% else %}
+    <p class="empty">Les administrateurs et gérants publiés à la BCE s'afficheront ici après la première consultation.</p>
+  {% endif %}
+</section>
+{% endif %}
 {% endblock %}

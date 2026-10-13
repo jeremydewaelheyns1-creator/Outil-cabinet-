@@ -67,10 +67,7 @@ SIDE: tuple[Group, ...] = (
         "Fiche",
         (
             Section("identity", "Identité et coordonnées"),
-            Section("public_data", "BCE et TVA", for_persons=False),
-            Section("moniteur", "Moniteur belge", for_persons=False),
             Section("annual_accounts", "Comptes annuels", for_persons=False),
-            Section("team", "Équipe du cabinet"),
         ),
     ),
     Group(
@@ -186,8 +183,10 @@ DEFAULT_SECTION = "identity"
 ACTION_SECTIONS = {
     "detail": DEFAULT_SECTION,  # ancienne adresse de la Synthèse : ouvre la Fiche
     "edit": "identity",
-    "assignments": "team",
-    "official_function_add": "public_data",
+    "assignments": "identity",
+    "bce_apply": "identity",
+    "bce_refresh": "identity",
+    "official_function_add": "mandates",
 }
 
 

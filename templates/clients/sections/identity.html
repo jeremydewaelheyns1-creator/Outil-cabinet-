@@ -3,6 +3,31 @@
 {% block page_title %}Identité et coordonnées{% endblock %}
 
 {% block content %}
+{% if recent_publications %}
+  <div class="alert alert-warning small identity-notice">
+    {% for p in recent_publications %}
+      <div>Publication au Moniteur belge le <strong>{{ p.published_on|iso_date }}</strong> : {{ p.tags|join:", "|default:p.subject|lower }}{% if p.pdf_url %} · <a href="{{ p.pdf_url }}" target="_blank" rel="noopener noreferrer">lire le PDF ↗</a>{% endif %}</div>
+    {% endfor %}
+  </div>
+{% endif %}
+{% if bce_differences %}
+  <form method="post" action="{% url 'clients:bce_apply' client.pk %}" class="card identity-notice">
+    {% csrf_token %}
+    <p class="small" style="margin-top:0"><strong>La BCE indique d'autres informations que la fiche.</strong>{% if can_edit %} Cochez ce qu'il faut reprendre :{% endif %}</p>
+    <table class="table">
+      <thead><tr><th></th><th>Champ</th><th>Fiche</th><th>BCE</th></tr></thead>
+      <tbody>
+      {% for d in bce_differences %}
+        <tr>
+          <td>{% if can_edit %}<input type="checkbox" name="champs" value="{{ d.field }}" aria-label="Reprendre {{ d.label }}">{% endif %}</td>
+          <td class="small">{{ d.label|capfirst }}</td><td>{{ d.current|default:"—" }}</td><td>{{ d.proposed|default:"—" }}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    {% if can_edit %}<button type="submit" class="small" style="margin-top: .5rem">Reprendre la sélection</button>{% endif %}
+  </form>
+{% endif %}
 <div class="identity-layout">
   <section class="card identity-main">
     <div class="identity-columns">
@@ -92,7 +117,6 @@
   {% if external_links %}
     <div class="ext-links">
       {% for label, url in external_links %}<a class="button button-secondary button-small" href="{{ url }}" target="_blank" rel="noopener noreferrer">{{ label }} ↗</a>{% endfor %}
-      <a class="button button-secondary button-small" href="{% url 'clients:public_data' client.pk %}">VIES</a>
     </div>
   {% endif %}
 </div>
