@@ -556,3 +556,5 @@ a.badge:hover { text-decoration: none; filter: brightness(0.95); }
 
 .section-bar { display: flex; justify-content: space-between; align-items: center; gap: 1rem; margin-bottom: 0.75rem; }
 .section-title { margin: 0; font-size: 1.1rem; color: var(--text-muted); font-weight: 600; }
+
+.sidebar .nav-bottom { margin-top: auto; border-top: 1px solid var(--border); padding-top: 0.5rem; }

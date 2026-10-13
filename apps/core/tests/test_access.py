@@ -103,3 +103,12 @@ def test_staff_reaches_admin_through_application_login(client):
     client.force_login(staff)
     assert client.get(reverse("admin:index")).status_code == 200
     assert client.get(reverse("admin:login")).status_code == 302
+
+
+def test_settings_page_only_for_admin_tools(web, make_user, client):
+    assert web.get(reverse("core:settings")).status_code == 403
+    assert "Paramètres" not in web.get(reverse("core:home")).content.decode()
+    auditor = make_user(capabilities=["audit.view"])
+    client.force_login(auditor)
+    html = client.get(reverse("core:settings")).content.decode()
+    assert "Journal des consultations" in html and "Reprise FID-Manager" not in html

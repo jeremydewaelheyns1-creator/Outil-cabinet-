@@ -1,5 +1,6 @@
 """Accueil et journal des consultations (la sonde de santé est dans `health.py`)."""
 
+from django.core.exceptions import PermissionDenied
 from django.core.paginator import Paginator
 from django.http import HttpResponse
 from django.shortcuts import render
@@ -61,3 +62,37 @@ def access_log(request: AppRequest) -> HttpResponse:
             "filters": {"action": action, "qui": who, "objet": what},
         },
     )
+
+
+def settings_page(request: AppRequest) -> HttpResponse:
+    """Outils d'administration, regroupés hors du menu quotidien."""
+    tools = [
+        (
+            "Reprise FID-Manager",
+            "Importer les clients depuis l'export Excel de FID-Manager (au démarrage).",
+            "reprise:index",
+            request.user.has_capability(Capability.REPRISE_IMPORT),
+        ),
+        (
+            "Données BCE",
+            "Suivi des mises à jour des données publiques des entreprises.",
+            "bce:imports",
+            request.user.has_capability(Capability.BCE_IMPORT),
+        ),
+        (
+            "Journal des consultations",
+            "Qui a ouvert, modifié ou exporté quoi (obligation anti-blanchiment et RGPD).",
+            "core:access_log",
+            request.user.has_capability(Capability.AUDIT_VIEW),
+        ),
+        (
+            "Comptes et droits",
+            "Créer les comptes des collègues, leurs profils et les portefeuilles.",
+            "admin:index",
+            request.user.is_staff,
+        ),
+    ]
+    allowed = [(title, text, url) for title, text, url, ok in tools if ok]
+    if not allowed:
+        raise PermissionDenied
+    return render(request, "core/settings.html", {"tools": allowed})
