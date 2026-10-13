@@ -34,8 +34,8 @@ def test_dossier_section_groups_tasks(web):
     html = web.get(reverse("clients:tasks", args=[client.pk])).content.decode()
     assert "En retard" in html and "en retard de 3 j" in html
     assert "Tâche à venir" in html and "Plus tard (1)" in html
-    summary = web.get(reverse("clients:detail", args=[client.pk])).content.decode()
-    assert "1 échéance en retard" in summary
+    fiche = web.get(reverse("clients:identity", args=[client.pk])).content.decode()
+    assert "1 en retard" in fiche  # pastille de l'en-tête du dossier
 
 
 def test_complete_and_reopen_task(web, user):

@@ -132,3 +132,10 @@ existante réutilisée, sinon fiche « prospect » créée). Les bénéficiaires
 publiés à la BCE : le registre UBO (SPF Finances) se consulte dans MyMinfin, sans accès
 automatique, et la loi interdit de s'y fier seul ; l'outil compare le calcul UBO aux
 déclarations encodées.
+
+## D-025 — Plus d'onglet Synthèse : un dossier s'ouvre sur la Fiche
+Demande de Jeremy : la Synthèse montrait un peu de tout sans rien montrer vraiment. Elle est
+supprimée ; ouvrir un client mène à Fiche › Identité et coordonnées (comme FID-Manager), page
+qui sera retravaillée. Quatre onglets : Fiche, Travail, Documents et conformité, Facturation.
+L'adresse `/clients/<n>/` reste valable et affiche la Fiche. Les points d'attention
+(`services/alerts.py`) ne sont plus affichés : leur place est à décider avec Jeremy.

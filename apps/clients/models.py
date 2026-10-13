@@ -216,7 +216,7 @@ class Client(models.Model):
         super().save(*args, **kwargs)
 
     def get_absolute_url(self) -> str:
-        return reverse("clients:detail", args=[self.pk])
+        return reverse("clients:identity", args=[self.pk])
 
     def clean(self) -> None:
         errors: dict[str, str] = {}

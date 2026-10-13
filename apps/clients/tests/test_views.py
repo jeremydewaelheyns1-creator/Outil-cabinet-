@@ -243,7 +243,7 @@ def test_ubo_section_masks_private_shareholders(web):
     company = ClientFactory()
     secret = PersonFactory(name="Secret", portfolio=PortfolioFactory(is_private=True))
     Relation.objects.create(entity=company, person=secret, role="shareholder", share_percentage=60)
-    html = web.get(reverse("clients:detail", args=[company.pk])).content.decode()
+    html = web.get(reverse("clients:ubo", args=[company.pk])).content.decode()
     assert "Secret" not in html
     assert "portefeuille privé" in html
 

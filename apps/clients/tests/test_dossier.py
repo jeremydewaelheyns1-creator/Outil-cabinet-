@@ -12,7 +12,7 @@ from apps.core.testing.factories import ClientFactory, PersonFactory, PortfolioF
 pytestmark = pytest.mark.django_db
 
 SECTIONS = [
-    "detail", "identity", "relations", "ubo", "team", "public_data", "moniteur",
+    "identity", "relations", "ubo", "team", "public_data", "moniteur",
     "annual_accounts", "history",
 ]  # fmt: skip
 
@@ -32,8 +32,9 @@ def test_inside_a_dossier_only_the_dossier_is_shown(web):
     html = web.get(reverse("clients:identity", args=[client.pk])).content.decode()
     assert 'class="sidebar"' not in html  # pas de menu du cabinet
     assert "⌂ Accueil" in html
-    for label in ("Synthèse", "Fiche", "Travail", "Documents et conformité", "Facturation"):
+    for label in ("Fiche", "Travail", "Documents et conformité", "Facturation"):
         assert label in html
+    assert "Synthèse" not in html  # supprimée (D-025)
     # Sous-onglets de « Fiche ».
     assert reverse("clients:relations", args=[client.pk]) in html
     assert reverse("clients:public_data", args=[client.pk]) in html
@@ -60,12 +61,12 @@ def test_switching_client_keeps_the_section(web):
     web.get(reverse("clients:relations", args=[first.pk]))
     response = web.get(reverse("clients:open", args=[second.pk]), {"rubrique": "relations"})
     assert response.url == reverse("clients:relations", args=[second.pk])
-    # Une rubrique inexistante pour ce type de client renvoie à la synthèse.
+    # Une rubrique inexistante pour ce type de client renvoie à la Fiche.
     person = PersonFactory()
     response = web.get(reverse("clients:open", args=[person.pk]), {"rubrique": "ubo"})
-    assert response.url == reverse("clients:detail", args=[person.pk])
+    assert response.url == reverse("clients:identity", args=[person.pk])
     response = web.get(reverse("clients:open", args=[person.pk]), {"rubrique": "../admin"})
-    assert response.url == reverse("clients:detail", args=[person.pk])
+    assert response.url == reverse("clients:identity", args=[person.pk])
 
 
 def test_switcher_shows_recent_dossiers_then_search_results(web):
@@ -106,12 +107,20 @@ def test_closing_the_dossier(web):
     assert "Choisir un client" in web.get(reverse("core:home")).content.decode()
 
 
-def test_summary_lists_points_of_attention(web):
+def test_opening_a_dossier_lands_on_the_fiche(web):
+    company = ClientFactory()
+    response = web.get(reverse("clients:detail", args=[company.pk]))
+    html = response.content.decode()
+    assert "Identité et coordonnées" in html
+    assert AccessLog.objects.get(action=AccessLog.Action.VIEW).details["rubrique"] == "identity"
+    assert company.get_absolute_url() == reverse("clients:identity", args=[company.pk])
+
+
+def test_points_of_attention_are_still_computed():
     company = ClientFactory(vat_status="", bce_juridical_situation="Ouverture de faillite")
-    html = web.get(reverse("clients:detail", args=[company.pk])).content.decode()
-    assert "Situation à la BCE : Ouverture de faillite" in html
-    assert "Statut TVA non renseigné" in html
-    assert reverse("clients:public_data", args=[company.pk]) in html
+    messages = {a.message for a in dossier_alerts(company, None)}
+    assert "Situation à la BCE : Ouverture de faillite" in messages
+    assert "Statut TVA non renseigné" in messages
 
 
 def test_alert_rules():
@@ -128,8 +137,8 @@ def test_alert_rules():
 def test_relation_links_open_the_other_dossier(web):
     company, manager = ClientFactory(), PersonFactory(name="Gérante")
     Relation.objects.create(entity=company, person=manager, role="manager")
-    html = web.get(reverse("clients:detail", args=[company.pk])).content.decode()
-    assert reverse("clients:detail", args=[manager.pk]) in html
+    html = web.get(reverse("clients:relations", args=[company.pk])).content.decode()
+    assert reverse("clients:identity", args=[manager.pk]) in html
 
 
 def test_upcoming_tab_describes_what_is_coming(web):

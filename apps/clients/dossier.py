@@ -2,7 +2,7 @@
 
 Comme dans un logiciel comptable par dossier, on choisit un client une fois ; il reste
 affiché en haut de l'écran. Dans un dossier, l'écran ne montre que lui : un en-tête fixe, des
-onglets (Synthèse, Fiche, Travail, Documents, Conformité, Facturation) et leurs
+onglets (Fiche, Travail, Documents et conformité, Facturation) et leurs
 sous-onglets ; un onglet « Accueil » ramène aux écrans du cabinet. Changer de client garde
 la rubrique ouverte (on passe des « Relations » d'un client à celles d'un autre).
 
@@ -35,7 +35,6 @@ class Section:
 
 # Organisation du dossier : quelques grands onglets stables, des sous-onglets dedans. Chaque
 # nouvelle fonction vient se ranger dans l'onglet qui lui correspond (pas de nouvel onglet).
-DETAIL = Section("detail", "Synthèse")
 HISTORY = Section("history", "Historique")
 
 
@@ -48,7 +47,6 @@ class Tab:
 
 
 TABS: tuple[Tab, ...] = (
-    Tab("synthese", "Synthèse", (DETAIL,)),
     Tab(
         "fiche",
         "Fiche",
@@ -170,7 +168,11 @@ def recent(request: HttpRequest, exclude: Client | None = None) -> list[Client]:
 
 
 # Écrans d'action rattachés à une rubrique (pour la surligner dans le menu).
+# Rubrique d'arrivée à l'ouverture d'un dossier (D-025 : plus de Synthèse).
+DEFAULT_SECTION = "identity"
+
 ACTION_SECTIONS = {
+    "detail": DEFAULT_SECTION,  # ancienne adresse de la Synthèse : ouvre la Fiche
     "edit": "identity",
     "relation_add": "relations",
     "relation_edit": "relations",
@@ -184,12 +186,12 @@ def section_of(request: HttpRequest) -> str:
     """Rubrique affichée, pour la garder en changeant de client."""
     match = request.resolver_match
     if match is None or match.namespace != "clients" or not match.url_name:
-        return "detail"
+        return DEFAULT_SECTION
     if match.url_name in SECTION_NAMES:
         return match.url_name
     if match.url_name == UPCOMING_SECTION:
         return f"{UPCOMING_SECTION}:{match.kwargs.get('tab', '')}"
-    return ACTION_SECTIONS.get(match.url_name, "detail")
+    return ACTION_SECTIONS.get(match.url_name, DEFAULT_SECTION)
 
 
 @dataclass(frozen=True)

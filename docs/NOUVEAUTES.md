@@ -3,6 +3,12 @@
 Ce qui a été ajouté à l'outil, du plus récent au plus ancien. Toutes les données de la démo
 sont inventées.
 
+## 13 octobre 2026 — Plus d'onglet « Synthèse »
+
+- L'onglet « Synthèse » est supprimé. Quand on ouvre un client, on arrive directement sur sa
+  **Fiche** (identité et coordonnées). Il reste quatre onglets : Fiche, Travail, Documents et
+  conformité, Facturation.
+
 ## 13 octobre 2026 — Les sites officiels dans le dossier (BCE, Moniteur belge, Banque Nationale)
 
 - Dans l'onglet **Fiche** d'une société, deux nouveaux sous-onglets : **Moniteur belge**

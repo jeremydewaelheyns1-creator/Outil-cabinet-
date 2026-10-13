@@ -32,7 +32,6 @@ from .forms import AssignmentForm, ClientForm, ContactPointForm, RelationForm
 from .identifiers import format_enterprise_number, normalize_national_number
 from .models import Client, ClientQuerySet, ContactPoint, Relation
 from .services import ubo
-from .services.alerts import dossier_alerts
 
 PAGE_SIZE = 50
 STATUS_FILTERS = {
@@ -276,41 +275,8 @@ def _ubo(request: AppRequest, client: Client) -> ubo.UboAnalysis | None:
 
 
 def client_detail(request: AppRequest, pk: int) -> HttpResponse:
-    """Synthèse du dossier : l'essentiel et les points d'attention."""
-
-    def build(client: Client) -> dict[str, Any]:
-        analysis = _ubo(request, client)
-        relations = _split_relations(
-            request, client.relations_as_entity.select_related("person"), "person"
-        )
-        return {
-            "alerts": dossier_alerts(client, analysis),
-            "ubo": analysis,
-            "managers": [r for r in relations["current"] if r.role in Relation.MANAGEMENT_ROLES],
-            "mandates": [
-                r
-                for r in _split_relations(
-                    request, client.relations_as_person.select_related("entity"), "entity"
-                )["current"]
-                if r.role in Relation.MANAGEMENT_ROLES
-            ],
-            "primary_contacts": _primary_contacts(client),
-            "next_tasks": client.tasks.filter(
-                status__in=["todo", "in_progress", "waiting"]
-            ).order_by("due_date")[:5],
-            "assignments": client.assignments.select_related("user"),
-            "events": events_for(client).select_related("actor")[:8],
-        }
-
-    return render_section(request, pk, "detail", "clients/sections/summary.html", build)
-
-
-def _primary_contacts(client: Client) -> list[ContactPoint]:
-    """Une coordonnée par type : la principale, à défaut la première."""
-    chosen: dict[str, ContactPoint] = {}
-    for contact in client.contacts.order_by("kind", "-is_primary", "value"):
-        chosen.setdefault(contact.kind, contact)
-    return list(chosen.values())
+    """Ouverture d'un dossier : la Fiche (identité et coordonnées), comme dans FID-Manager."""
+    return client_identity(request, pk)
 
 
 def client_identity(request: AppRequest, pk: int) -> HttpResponse:
@@ -461,7 +427,7 @@ def client_upcoming(request: AppRequest, pk: int, tab: str) -> HttpResponse:
 def dossier_switcher(request: AppRequest) -> HttpResponse:
     """Résultats du sélecteur de client (en haut de l'écran) : recherche ou derniers dossiers."""
     query = request.GET.get("q", "").strip()
-    section = request.GET.get("rubrique", "detail")
+    section = request.GET.get("rubrique", dossier.DEFAULT_SECTION)
     current = dossier.current(request)
     if len(query) >= 2:
         results = list(_visible_clients(request).search(query).select_related("portfolio")[:12])
@@ -479,9 +445,11 @@ def dossier_switcher(request: AppRequest) -> HttpResponse:
 def dossier_open(request: AppRequest, pk: int) -> HttpResponse:
     """Change de dossier en restant, si possible, sur la même rubrique."""
     client = open_dossier(request, pk)
-    section = request.GET.get("rubrique", "detail")
+    section = request.GET.get("rubrique", dossier.DEFAULT_SECTION)
     allowed = {s.url_name for s in dossier.sections_for(client)}
-    return redirect(f"clients:{section if section in allowed else 'detail'}", pk=client.pk)
+    return redirect(
+        f"clients:{section if section in allowed else dossier.DEFAULT_SECTION}", pk=client.pk
+    )
 
 
 @require_POST
