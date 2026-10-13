@@ -3,6 +3,11 @@
 Ce qui a été ajouté à l'outil, du plus récent au plus ancien. Toutes les données de la démo
 sont inventées.
 
+## 13 octobre 2026 — Onglets du haut réordonnés
+
+- Nouvel ordre : Clôture, Déclaration TVA, Versements anticipés, Documents.
+- L'onglet Time sheet est retiré pour l'instant.
+
 ## 13 octobre 2026 — Nouvelle organisation du dossier (comme FID-Manager)
 
 - **En haut**, sous le nom du client, les onglets du travail de tous les jours : Documents,

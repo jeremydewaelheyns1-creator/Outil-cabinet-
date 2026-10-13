@@ -152,3 +152,7 @@ de FID-Manager : Fiche (identité, BCE et TVA, Moniteur, comptes annuels, équip
 « Relations » est découpée en Mandataires / Actionnaires / Autres relations ; pour une
 société on n'y montre plus ses participations dans d'autres sociétés (visibles chez celles-ci).
 Ajouter une entrée : dans `TOP` ou `SIDE` (`apps/clients/dossier.py`), jamais ailleurs.
+
+## D-027 — Ordre des onglets du haut
+Précise D-026 (demande de Jeremy) : Clôture, Déclaration TVA (si assujetti), Versements
+anticipés, Documents. Time sheet retiré pour l'instant ; on en reparlera.

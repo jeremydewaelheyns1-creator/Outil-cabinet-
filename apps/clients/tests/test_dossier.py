@@ -28,14 +28,17 @@ def test_opening_a_client_makes_it_the_active_dossier_everywhere(web):
 
 
 def test_inside_a_dossier_only_the_dossier_is_shown(web):
-    client = ClientFactory()
+    client = ClientFactory(vat_status="subject")
     html = web.get(reverse("clients:identity", args=[client.pk])).content.decode()
     assert 'class="sidebar"' not in html  # pas de menu du cabinet
     assert "⌂ Accueil" in html
     assert "Synthèse" not in html  # supprimée (D-025)
     # En haut : le travail fréquent (D-026).
-    for slug in ("documents", "cloture", "versements-anticipes", "time-sheet"):
-        assert reverse("clients:work", args=[client.pk, slug]) in html
+    urls = [reverse("clients:work", args=[client.pk, slug])
+            for slug in ("cloture", "tva", "versements-anticipes", "documents")]  # fmt: skip
+    positions = [html.index(u) for u in urls]
+    assert positions == sorted(positions)  # ordre voulu par Jeremy
+    assert "time-sheet" not in html
     # À gauche : la paperasse, chaque page à un clic.
     for name in ("identity", "public_data", "moniteur", "mandates", "shareholders", "ubo",
                  "other_relations", "tasks", "history"):  # fmt: skip

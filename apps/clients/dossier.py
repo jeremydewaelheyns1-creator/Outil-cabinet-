@@ -2,8 +2,8 @@
 
 Comme dans un logiciel comptable par dossier, on choisit un client une fois ; il reste
 affiché en haut de l'écran. Dans un dossier, l'écran ne montre que lui (D-026) : un en-tête
-fixe, en haut les onglets du travail fréquent (Documents, Clôture, Versements anticipés,
-TVA, Time sheet), à gauche un panneau « paperasse » comme FID-Manager (Fiche, Organisation,
+fixe, en haut les onglets du travail fréquent (Clôture, Déclaration TVA, Versements
+anticipés, Documents), à gauche un panneau « paperasse » comme FID-Manager (Fiche, Organisation,
 Suivi, Conformité, Facturation), chaque page à un clic. Changer de client garde la rubrique
 ouverte (on passe des « Mandataires » d'un client à ceux d'un autre).
 
@@ -55,11 +55,10 @@ HISTORY = Section("history", "Historique")
 
 # D-026 — En haut : le travail le plus fréquent. Contenu défini un par un avec Jeremy.
 TOP: tuple[Section, ...] = (
-    Section(WORK, "Documents", slug="documents"),
     Section(WORK, "Clôture", slug="cloture"),
-    Section(WORK, "Versements anticipés", slug="versements-anticipes"),
     Section(WORK, "Déclaration TVA", slug="tva", vat_only=True),
-    Section(WORK, "Time sheet", slug="time-sheet"),
+    Section(WORK, "Versements anticipés", slug="versements-anticipes"),
+    Section(WORK, "Documents", slug="documents"),
 )
 
 # À gauche : la « paperasse », comme le panneau latéral de FID-Manager.
