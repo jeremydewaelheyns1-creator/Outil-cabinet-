@@ -2,18 +2,16 @@
 {% block head_title %}Documents · {{ client.display_name }}{% endblock %}
 {% block page_title %}Documents{% endblock %}
 {% block content %}
-<section class="card doc-list">
-  <table class="table">
-    <thead><tr><th class="doc-state-col"></th><th>Sujet</th><th>Situation</th></tr></thead>
-    <tbody>
-    {% for case, status in cases %}
-      <tr class="doc-row{% if status.level == 'off' %} doc-row-off{% endif %}">
-        <td class="doc-state-col">{% include "clients/_case_icon.html" %}</td>
-        <td><a href="{% if case.url_name == 'ubo' %}{% url 'clients:ubo' client.pk %}{% else %}{% url 'clients:document_case' client.pk case.slug %}{% endif %}">{{ case.label }}</a></td>
-        <td class="small">{{ status.text }}</td>
-      </tr>
-    {% endfor %}
-    </tbody>
-  </table>
-</section>
+<div class="grid grid-2 doc-cases">
+  {% for case, status in cases %}
+    <section class="card{% if status.level == 'off' %} soon-card{% endif %}">
+      <div class="card-header">
+        <h2><a href="{% if case.url_name == 'ubo' %}{% url 'clients:ubo' client.pk %}{% else %}{% url 'clients:document_case' client.pk case.slug %}{% endif %}">{{ case.label }}</a></h2>
+        {% include "clients/_case_badge.html" %}
+      </div>
+      <p class="small" style="margin:0 0 .35rem">{{ case.description }}</p>
+      {% if status.level != "off" %}<p class="small muted" style="margin:0">{{ status.text }}</p>{% endif %}
+    </section>
+  {% endfor %}
+</div>
 {% endblock %}

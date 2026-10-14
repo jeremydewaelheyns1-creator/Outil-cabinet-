@@ -280,11 +280,11 @@ def test_documents_tab_shows_cases_with_status(web):
     for label in ("À recevoir", "Pièces d", "Bénéficiaires effectifs", "Anti-blanchiment",
                   "Lettre de mission"):  # fmt: skip
         assert label in html
-    assert "case-danger" in html  # aucun UBO calculé : rouge
+    assert "badge-danger" in html and "problème" in html  # aucun UBO calculé : rouge
     owner = PersonFactory()
     Relation.objects.create(entity=company, person=owner, role="shareholder", share_percentage=100)
     html = web.get(reverse("clients:documents", args=[company.pk])).content.decode()
-    assert "case-warning" in html  # calculé, pas encore comparé au registre
+    assert "à confirmer" in html  # calculé, pas encore comparé au registre
     # La case UBO s'ouvre sous l'onglet Documents.
     ubo_page = web.get(reverse("clients:ubo", args=[company.pk])).content.decode()
     assert 'aria-current="page">Documents<' in ubo_page

@@ -3,7 +3,8 @@
 {% block page_title %}<a href="{% url 'clients:documents' client.pk %}" class="muted">Documents</a> › {{ case.label }}{% endblock %}
 {% block content %}
 <section class="card">
-  <div class="case-head">{% include "clients/_case_icon.html" %}<span>{{ status.text }}</span></div>
+  <div class="card-header"><h2>{{ case.label }}</h2>{% include "clients/_case_badge.html" %}</div>
+  <p class="small">{{ case.description }}</p>
   {% if case.slug == "a-recevoir" %}
     <p class="empty" style="margin-bottom:0">Les demandes envoyées au client (carte d'identité, confirmation UBO, document à signer…) s'afficheront ici jusqu'à leur réception.</p>
   {% else %}

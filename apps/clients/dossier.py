@@ -112,16 +112,42 @@ ARCHIVE_FOLDERS = {s.slug: s for s in SECTIONS if s.url_name == ARCHIVE}
 class DocumentCase:
     slug: str
     label: str
+    description: str
     for_persons: bool = True
     url_name: str = "document_case"  # page dédiée si elle existe déjà (UBO)
 
 
 DOCUMENT_CASES: tuple[DocumentCase, ...] = (
-    DocumentCase("a-recevoir", "À recevoir"),
-    DocumentCase("pieces-identite", "Pièces d'identité"),
-    DocumentCase("ubo", "Bénéficiaires effectifs (UBO)", for_persons=False, url_name="ubo"),
-    DocumentCase("anti-blanchiment", "Anti-blanchiment"),
-    DocumentCase("lettre-de-mission", "Lettre de mission"),
+    DocumentCase(
+        "a-recevoir",
+        "À recevoir",
+        "Les demandes envoyées au client (carte d'identité, confirmation UBO, document à "
+        "signer…), jusqu'à leur réception, avec les relances.",
+    ),
+    DocumentCase(
+        "pieces-identite",
+        "Pièces d'identité",
+        "Les cartes des mandataires et des bénéficiaires effectifs, avec alerte avant "
+        "expiration et demande automatique de la nouvelle carte.",
+    ),
+    DocumentCase(
+        "ubo",
+        "Bénéficiaires effectifs (UBO)",
+        "Calculés à partir des actionnaires et des mandataires, comparés aux déclarations du "
+        "registre UBO.",
+        for_persons=False,
+        url_name="ubo",
+    ),
+    DocumentCase(
+        "anti-blanchiment",
+        "Anti-blanchiment",
+        "Le dossier KYC : niveau de risque, vérifications, revue périodique.",
+    ),
+    DocumentCase(
+        "lettre-de-mission",
+        "Lettre de mission",
+        "La lettre de mission signée avec le client, et quand la revoir.",
+    ),
 )
 DOCUMENT_CASE_SLUGS = {c.slug: c for c in DOCUMENT_CASES}
 
