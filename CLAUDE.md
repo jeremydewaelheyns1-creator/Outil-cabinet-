@@ -15,6 +15,11 @@ technique. Parler en français, simplement, sans jargon.
 
 ## Règles non négociables
 
+- **La sécurité des données est d'une extrême importance (demande de Jeremy).** Pour toute
+  fonctionnalité, se demander d'abord : qui peut voir quoi, où va la donnée, combien de temps
+  elle est gardée, est-ce tracé ? Aucune donnée sensible dans un e-mail, un lien partageable,
+  un journal ou un message d'erreur ; tout service externe (IA comprise) en Europe, sans
+  conservation ni entraînement ; le moindre doute se signale à Jeremy avant de construire.
 - **Aucune donnée réelle de client** dans le dépôt, les tests, les exemples ou la
   conversation. Données fictives uniquement (`apps/core/testing`, commande `demo`). Les vraies
   données sont importées par le cabinet directement dans l'outil hébergé chez lui.
