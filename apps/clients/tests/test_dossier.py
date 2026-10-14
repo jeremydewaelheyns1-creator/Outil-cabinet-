@@ -35,12 +35,13 @@ def test_inside_a_dossier_only_the_dossier_is_shown(web):
     assert "Synthèse" not in html  # supprimée (D-025)
     # En haut : le travail fréquent (D-026).
     urls = [reverse("clients:work", args=[client.pk, slug])
-            for slug in ("cloture", "tva", "versements-anticipes", "documents")]  # fmt: skip
+            for slug in ("cloture", "tva", "versements-anticipes")]  # fmt: skip
+    urls.append(reverse("clients:documents", args=[client.pk]))
     positions = [html.index(u) for u in urls]
     assert positions == sorted(positions)  # ordre voulu par Jeremy
     assert "time-sheet" not in html
     # À gauche : la paperasse, chaque page à un clic.
-    for name in ("identity", "mandates", "shareholders", "ubo",
+    for name in ("identity", "mandates", "shareholders", "documents",
                  "tasks", "history"):  # fmt: skip
         assert reverse(f"clients:{name}", args=[client.pk]) in html
 
@@ -271,3 +272,26 @@ def test_moniteur_archive_lists_publications(web):
     html = web.get(reverse("clients:archive", args=[company.pk, "moniteur"])).content.decode()
     assert "20/06/2022" in html and "SIEGE SOCIAL" in html
     assert OfficialSnapshot.objects.count() == 1
+
+
+def test_documents_tab_shows_cases_with_status(web):
+    company = ClientFactory()
+    html = web.get(reverse("clients:documents", args=[company.pk])).content.decode()
+    for label in ("À recevoir", "Pièces d", "Bénéficiaires effectifs", "Anti-blanchiment",
+                  "Lettre de mission"):  # fmt: skip
+        assert label in html
+    assert "case-danger" in html  # aucun UBO calculé : rouge
+    owner = PersonFactory()
+    Relation.objects.create(entity=company, person=owner, role="shareholder", share_percentage=100)
+    html = web.get(reverse("clients:documents", args=[company.pk])).content.decode()
+    assert "case-warning" in html  # calculé, pas encore comparé au registre
+    # La case UBO s'ouvre sous l'onglet Documents.
+    ubo_page = web.get(reverse("clients:ubo", args=[company.pk])).content.decode()
+    assert 'aria-current="page">Documents<' in ubo_page
+    case = web.get(reverse("clients:document_case", args=[company.pk, "pieces-identite"]))
+    assert case.status_code == 200
+    assert web.get(reverse("clients:document_case", args=[company.pk, "ubo"])).status_code == 404
+    # Une personne : pas de case UBO.
+    person = PersonFactory()
+    html = web.get(reverse("clients:documents", args=[person.pk])).content.decode()
+    assert "Bénéficiaires effectifs" not in html

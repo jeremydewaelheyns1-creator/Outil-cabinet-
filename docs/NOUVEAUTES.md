@@ -3,6 +3,14 @@
 Ce qui a été ajouté à l'outil, du plus récent au plus ancien. Toutes les données de la démo
 sont inventées.
 
+## 14 octobre 2026 — Onglet Documents
+
+- L'onglet **Documents** montre une case par sujet : À recevoir, Pièces d'identité,
+  Bénéficiaires effectifs (UBO), Anti-blanchiment, Lettre de mission.
+- Chaque case a une pastille : 🟢 tout va bien, 🟠 à confirmer, 🔴 problème (gris : pas encore
+  en place).
+- Les **Bénéficiaires effectifs** sont maintenant dans leur case (ils quittent la gauche).
+
 ## 14 octobre 2026 — Archives
 
 - À gauche, un nouveau groupe **Archives**, comme dans FID : Légal et statuts, Moniteur belge,

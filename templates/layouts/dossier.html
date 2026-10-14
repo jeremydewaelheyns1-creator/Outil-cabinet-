@@ -39,7 +39,7 @@
     <nav class="tabs" aria-label="Travail sur le dossier">
       <a class="tab tab-home" href="{% url 'core:home' %}">⌂ Accueil</a>
       {% for s in dossier_top %}
-        <a class="tab" href="{% url 'clients:work' c.pk s.slug %}"{% if current_section == s.key %} aria-current="page"{% endif %}>{{ s.label }}</a>
+        <a class="tab" href="{% if s.slug %}{% url 'clients:work' c.pk s.slug %}{% else %}{% url 'clients:'|add:s.url_name c.pk %}{% endif %}"{% if current_section == s.key %} aria-current="page"{% endif %}>{{ s.label }}</a>
       {% endfor %}
     </nav>
 

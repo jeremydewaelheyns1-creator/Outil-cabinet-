@@ -1,0 +1,14 @@
+{% extends "clients/sections/_base.html" %}
+{% block head_title %}Documents · {{ client.display_name }}{% endblock %}
+{% block page_title %}Documents{% endblock %}
+{% block content %}
+<div class="case-grid">
+  {% for case, status in cases %}
+    <a class="card case-card{% if status.level == 'off' %} case-card-off{% endif %}" href="{% if case.url_name == 'ubo' %}{% url 'clients:ubo' client.pk %}{% else %}{% url 'clients:document_case' client.pk case.slug %}{% endif %}">
+      <div class="case-head">{% include "clients/_case_icon.html" %}<strong>{{ case.label }}</strong></div>
+      <div class="small muted">{{ status.text }}</div>
+    </a>
+  {% endfor %}
+</div>
+<p class="muted small" style="margin-top:1rem">🟢 tout va bien · 🟠 à confirmer · 🔴 problème. Ce qui est terminé est rangé dans les Archives (à gauche).</p>
+{% endblock %}

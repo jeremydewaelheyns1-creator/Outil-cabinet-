@@ -63,7 +63,7 @@ TOP: tuple[Section, ...] = (
     Section(WORK, "Clôture", slug="cloture"),
     Section(WORK, "Déclaration TVA", slug="tva", vat_only=True),
     Section(WORK, "Versements anticipés", slug="versements-anticipes"),
-    Section(WORK, "Documents", slug="documents"),
+    Section("documents", "Documents"),
 )
 
 # À gauche : la « paperasse », comme le panneau latéral de FID-Manager.
@@ -74,8 +74,6 @@ SIDE: tuple[Group, ...] = (
         (
             Section("mandates", "Mandataires", count="mandates"),
             Section("shareholders", "Actionnaires", count="shareholders"),
-            # Provisoire : rejoindra l'onglet Documents quand il sera construit.
-            Section("ubo", "Bénéficiaires effectifs (UBO)", for_persons=False, count="ubo"),
         ),
     ),
     # D-031 — Archives : ce qui est terminé et rangé, comme les Archives de FID-Manager.
@@ -109,6 +107,29 @@ ARCHIVE_FOLDERS = {s.slug: s for s in SECTIONS if s.url_name == ARCHIVE}
 
 
 # Pages « Organisation » : quels rôles de relation chacune montre.
+# D-033 — Cases de l'onglet Documents (ce qui est en cours ; le passé va aux Archives).
+@dataclass(frozen=True)
+class DocumentCase:
+    slug: str
+    label: str
+    for_persons: bool = True
+    url_name: str = "document_case"  # page dédiée si elle existe déjà (UBO)
+
+
+DOCUMENT_CASES: tuple[DocumentCase, ...] = (
+    DocumentCase("a-recevoir", "À recevoir"),
+    DocumentCase("pieces-identite", "Pièces d'identité"),
+    DocumentCase("ubo", "Bénéficiaires effectifs (UBO)", for_persons=False, url_name="ubo"),
+    DocumentCase("anti-blanchiment", "Anti-blanchiment"),
+    DocumentCase("lettre-de-mission", "Lettre de mission"),
+)
+DOCUMENT_CASE_SLUGS = {c.slug: c for c in DOCUMENT_CASES}
+
+
+def document_cases_for(client: Client) -> list[DocumentCase]:
+    return [c for c in DOCUMENT_CASES if c.for_persons or not client.is_person]
+
+
 RELATION_PAGES: dict[str, tuple[str, ...]] = {
     "mandates": (*Relation.MANAGEMENT_ROLES, Relation.Role.PERMANENT_REPRESENTATIVE),
     "shareholders": (Relation.Role.SHAREHOLDER,),
@@ -189,6 +210,9 @@ ACTION_SECTIONS = {
     "bce_apply": "identity",
     "bce_refresh": "identity",
     "official_function_add": "mandates",
+    # Onglet Documents (D-033) : les cases s'ouvrent sous l'onglet.
+    "document_case": "documents",
+    "ubo": "documents",
 }
 
 

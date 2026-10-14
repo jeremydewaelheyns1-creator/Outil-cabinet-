@@ -1,6 +1,6 @@
 {% extends "clients/sections/_base.html" %}
 {% block head_title %}Bénéficiaires effectifs · {{ client.display_name }}{% endblock %}
-{% block page_title %}Bénéficiaires effectifs{% endblock %}
+{% block page_title %}<a href="{% url 'clients:documents' client.pk %}" class="muted">Documents</a> › Bénéficiaires effectifs (UBO){% endblock %}
 {% block page_actions %}{% if can_edit %}<a class="button button-secondary" href="{% url 'clients:shareholders' client.pk %}">Encoder les actionnaires</a>{% endif %}{% endblock %}
 {% block content %}
 <div style="max-width: 900px">

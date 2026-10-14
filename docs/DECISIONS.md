@@ -193,3 +193,14 @@ lisible et complet, contrôles de lecture réussis). Au moindre doute, le docume
 « À confirmer ». Garde-fous obligatoires : liste « Classé automatiquement », bouton « Annuler »
 pendant quelques jours, tout est tracé. On commence par des cas précis (date d'expiration
 d'une carte d'identité) et on élargit cas par cas.
+
+## D-033 — Onglet Documents : des cases avec un état en couleur
+Demande de Jeremy. L'onglet Documents montre une case par sujet en cours : À recevoir, Pièces
+d'identité, Bénéficiaires effectifs (UBO), Anti-blanchiment, Lettre de mission. Chaque case a
+une icône : vert (tout va bien), orange (à confirmer : document reçu lu sans certitude,
+expiration proche…), rouge (problème : expiré, manquant, relance sans réponse), gris (pas
+encore en place). Pas de case « À confirmer » séparée : une réponse à une demande va toujours
+dans la case de son sujet (on sait ce qu'on a demandé) ; en cas de doute, la case passe en
+orange. « À recevoir » liste les demandes envoyées au client jusqu'à leur réception. Les
+documents signés sont des pièces « à recevoir » comme les autres. Les Bénéficiaires effectifs
+quittent le panneau de gauche pour leur case.

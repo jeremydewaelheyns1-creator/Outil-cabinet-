@@ -53,7 +53,10 @@ hebdomadaire automatique, points d'attention ; carte « Registre UBO » sur la p
 bénéficiaires effectifs.
 
 **Reste à faire / en attente**
-- **Prochaine session : onglet Documents** (en haut). Pour Jeremy, c'est là que doit se jouer la
+- **Onglet Documents (D-033)** : cases en place. Suite prévue : base commune (stockage sécurisé
+  des documents, demandes « À recevoir », rangement aux Archives), puis la chaîne complète
+  « Pièces d'identité » (D-032). Messagerie du cabinet à connaître.
+- Ancienne note — onglet Documents (en haut). Pour Jeremy, c'est là que doit se jouer la
   plus-value sur FID-Manager : le développer au maximum pour tout automatiser. Tout ce qui
   touche aux UBO doit s'y retrouver (calcul, registre UBO, déclarations, justificatifs,
   confirmation annuelle, questionnaire client) ; la page « Bénéficiaires effectifs » du panneau

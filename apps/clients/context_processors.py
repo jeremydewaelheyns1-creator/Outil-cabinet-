@@ -38,8 +38,6 @@ def _overdue(client: Client) -> int:
 
 def _relation_counts(client: Client, user: User) -> dict[str, int]:
     """Compteurs du panneau « Organisation » (relations en cours, fiches visibles)."""
-    from .services import ubo
-
     visible = Client.objects.visible_to(user)
     current = Relation.objects.current()
     if client.is_person:
@@ -52,6 +50,4 @@ def _relation_counts(client: Client, user: User) -> dict[str, int]:
         "mandates": base.filter(role__in=dossier.RELATION_PAGES["mandates"]).count(),
         "shareholders": base.filter(role__in=dossier.RELATION_PAGES["shareholders"]).count(),
     }
-    if not client.is_person:
-        counts["ubo"] = len(ubo.analyse(client).candidates)
     return counts

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import io
 from collections.abc import Callable
+from dataclasses import dataclass
 from datetime import timedelta
 from typing import Any
 
@@ -386,6 +387,58 @@ def client_mandates(request: AppRequest, pk: int) -> HttpResponse:
 
 def client_shareholders(request: AppRequest, pk: int) -> HttpResponse:
     return _relation_page(request, pk, "shareholders")
+
+
+# --- Onglet Documents (D-033) ---------------------------------------------------------------
+
+
+@dataclass(frozen=True)
+class CaseStatus:
+    """État d'une case : vert (tout va bien), orange (à confirmer), rouge (problème),
+    gris (pas encore en place)."""
+
+    level: str  # "ok", "warning", "danger", "off"
+    text: str
+
+
+def _case_status(client: Client, case: dossier.DocumentCase, request: AppRequest) -> CaseStatus:
+    if case.slug == "ubo":
+        analysis = _ubo(request, client)
+        if analysis is None or not analysis.candidates:
+            return CaseStatus(
+                "danger", "Aucun bénéficiaire effectif calculé : actionnaires à encoder"
+            )
+        if not analysis.declared:
+            return CaseStatus("warning", "Calculés, pas encore comparés au registre")
+        if not analysis.is_consistent:
+            return CaseStatus("warning", "Différents de ce qui est déclaré")
+        return CaseStatus("ok", "Conformes aux déclarations")
+    if case.slug == "a-recevoir":
+        return CaseStatus("ok", "Aucune demande en attente")
+    return CaseStatus("off", "Bientôt disponible")
+
+
+def client_documents(request: AppRequest, pk: int) -> HttpResponse:
+    """Onglet Documents : une case par sujet, avec son état (D-033)."""
+
+    def build(client: Client) -> dict[str, Any]:
+        cases = [(c, _case_status(client, c, request)) for c in dossier.document_cases_for(client)]
+        return {"cases": cases}
+
+    return render_section(request, pk, "documents", "clients/sections/documents.html", build)
+
+
+def client_document_case(request: AppRequest, pk: int, slug: str) -> HttpResponse:
+    case = dossier.DOCUMENT_CASE_SLUGS.get(slug)
+    if case is None or case.url_name != "document_case":
+        raise Http404
+
+    def build(client: Client) -> dict[str, Any]:
+        return {"case": case, "status": _case_status(client, case, request)}
+
+    return render_section(
+        request, pk, f"documents:{slug}", "clients/sections/document_case.html", build
+    )
 
 
 def client_ubo(request: AppRequest, pk: int) -> HttpResponse:

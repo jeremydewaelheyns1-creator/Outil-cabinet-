@@ -662,3 +662,15 @@ a.badge:hover { text-decoration: none; filter: brightness(0.95); }
 .identity-notice { margin-bottom: 1rem; }
 
 .side-folder > span::before { content: "\1F4C1"; margin-right: 0.45rem; font-size: 0.85rem; }
+
+/* --- Onglet Documents (D-033) --------------------------------------------------------------- */
+.case-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 1rem; }
+.case-grid .card + .card { margin-top: 0; }
+.case-card { display: grid; gap: 0.4rem; color: var(--text); padding: 1rem 1.1rem; }
+.case-card:hover { text-decoration: none; border-color: var(--primary); }
+.case-card-off { opacity: 0.65; }
+.case-head { display: flex; align-items: center; gap: 0.55rem; }
+.case-icon { width: 0.85rem; height: 0.85rem; border-radius: 50%; flex-shrink: 0; background: #b8c0cc; }
+.case-ok { background: #2e9e5b; }
+.case-warning { background: #e8912d; }
+.case-danger { background: #d0453a; }
