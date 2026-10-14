@@ -5,10 +5,10 @@ sont inventées.
 
 ## 14 octobre 2026 — Onglet Documents
 
-- L'onglet **Documents** montre une case par sujet : À recevoir, Pièces d'identité,
+- L'onglet **Documents** montre une ligne par sujet : À recevoir, Pièces d'identité,
   Bénéficiaires effectifs (UBO), Anti-blanchiment, Lettre de mission.
-- Chaque case a une pastille : 🟢 tout va bien, 🟠 à confirmer, 🔴 problème (gris : pas encore
-  en place).
+- Chaque sujet a un petit carré de couleur : vert (tout va bien), orange (à confirmer), rouge
+  (problème), gris (pas encore en place). Présentation en liste sobre, comme le reste.
 - Les **Bénéficiaires effectifs** sont maintenant dans leur case (ils quittent la gauche).
 
 ## 14 octobre 2026 — Archives

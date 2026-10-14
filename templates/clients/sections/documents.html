@@ -2,13 +2,18 @@
 {% block head_title %}Documents · {{ client.display_name }}{% endblock %}
 {% block page_title %}Documents{% endblock %}
 {% block content %}
-<div class="case-grid">
-  {% for case, status in cases %}
-    <a class="card case-card{% if status.level == 'off' %} case-card-off{% endif %}" href="{% if case.url_name == 'ubo' %}{% url 'clients:ubo' client.pk %}{% else %}{% url 'clients:document_case' client.pk case.slug %}{% endif %}">
-      <div class="case-head">{% include "clients/_case_icon.html" %}<strong>{{ case.label }}</strong></div>
-      <div class="small muted">{{ status.text }}</div>
-    </a>
-  {% endfor %}
-</div>
-<p class="muted small" style="margin-top:1rem">🟢 tout va bien · 🟠 à confirmer · 🔴 problème. Ce qui est terminé est rangé dans les Archives (à gauche).</p>
+<section class="card doc-list">
+  <table class="table">
+    <thead><tr><th class="doc-state-col"></th><th>Sujet</th><th>Situation</th></tr></thead>
+    <tbody>
+    {% for case, status in cases %}
+      <tr class="doc-row{% if status.level == 'off' %} doc-row-off{% endif %}">
+        <td class="doc-state-col">{% include "clients/_case_icon.html" %}</td>
+        <td><a href="{% if case.url_name == 'ubo' %}{% url 'clients:ubo' client.pk %}{% else %}{% url 'clients:document_case' client.pk case.slug %}{% endif %}">{{ case.label }}</a></td>
+        <td class="small">{{ status.text }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</section>
 {% endblock %}

@@ -664,13 +664,14 @@ a.badge:hover { text-decoration: none; filter: brightness(0.95); }
 .side-folder > span::before { content: "\1F4C1"; margin-right: 0.45rem; font-size: 0.85rem; }
 
 /* --- Onglet Documents (D-033) --------------------------------------------------------------- */
-.case-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 1rem; }
-.case-grid .card + .card { margin-top: 0; }
-.case-card { display: grid; gap: 0.4rem; color: var(--text); padding: 1rem 1.1rem; }
-.case-card:hover { text-decoration: none; border-color: var(--primary); }
-.case-card-off { opacity: 0.65; }
+.doc-list { padding: 0.25rem 0.75rem; }
+.doc-list .table td, .doc-list .table th { padding-top: 0.55rem; padding-bottom: 0.55rem; }
+.doc-state-col { width: 1.6rem; }
+.doc-row a { font-weight: 600; color: var(--text); }
+.doc-row a:hover { color: var(--primary); }
+.doc-row-off a, .doc-row-off td { color: var(--text-muted); font-weight: 400; }
 .case-head { display: flex; align-items: center; gap: 0.55rem; }
-.case-icon { width: 0.85rem; height: 0.85rem; border-radius: 50%; flex-shrink: 0; background: #b8c0cc; }
-.case-ok { background: #2e9e5b; }
-.case-warning { background: #e8912d; }
-.case-danger { background: #d0453a; }
+.case-icon { display: inline-block; width: 0.7rem; height: 0.7rem; border-radius: 2px; vertical-align: -1px; background: #c3c9d2; }
+.case-ok { background: #2e8b57; }
+.case-warning { background: #d9822b; }
+.case-danger { background: #c0392b; }
