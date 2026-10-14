@@ -175,3 +175,11 @@ sur la bonne société.
 Demande de Jeremy : la page est supprimée. Les liens existants (conjoint, autres) restent
 enregistrés et visibles sous le nom du client. Les bénéficiaires effectifs déclarés se gèrent
 depuis la page Bénéficiaires effectifs.
+
+## D-031 — Archives à gauche, Documents en haut pour ce qui est en cours
+Demande de Jeremy. À gauche, un groupe « Archives » comme celui de FID-Manager : dossiers du
+passé rangés (Légal et statuts, Moniteur belge, Comptes annuels (BNB), ISOC ou IPP, TVA,
+Administratif, Courriels). L'onglet Documents (en haut) ne montrera que ce qui est en cours ;
+un document traité y sera rangé automatiquement dans le bon dossier d'archives. Le contenu de
+Documents est à définir avec Jeremy ; Anti-blanchiment et Pièces d'identité quittent la
+gauche pour y aller, les Bénéficiaires effectifs y iront aussi (encore à gauche en attendant).

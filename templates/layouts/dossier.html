@@ -49,10 +49,12 @@
         <div class="side-group">
           <div class="side-group-title">{{ g.label }}</div>
           {% for s in g.sections %}
-            {% if s.slug %}
+            {% if s.is_folder %}
+              <a class="side-link side-folder" href="{% url 'clients:archive' c.pk s.slug %}"{% if current_section == s.key %} aria-current="page"{% endif %}><span>{{ s.label }}</span></a>
+            {% elif s.slug %}
               <a class="side-link side-soon" href="{% url 'clients:work' c.pk s.slug %}"{% if current_section == s.key %} aria-current="page"{% endif %}>{{ s.label }}</a>
             {% else %}
-              <a class="side-link" href="{% url 'clients:'|add:s.url_name c.pk %}"{% if current_section == s.key %} aria-current="page"{% endif %}>
+              <a class="side-link{% if g.label == "Archives" %} side-folder{% endif %}" href="{% url 'clients:'|add:s.url_name c.pk %}"{% if current_section == s.key %} aria-current="page"{% endif %}>
                 <span>{{ s.label }}</span>
                 {% if s.count %}{% with n=dossier_counts|get_item:s.count %}{% if s.count == "overdue" %}{% if n %}<span class="side-count side-count-danger" title="en retard">{{ n }}</span>{% endif %}{% else %}<span class="side-count{% if not n %} side-count-zero{% endif %}">{{ n|default:0 }}</span>{% endif %}{% endwith %}{% endif %}
               </a>

@@ -35,13 +35,17 @@ class Section:
     for_persons: bool = True
     for_entities: bool = True
     vat_only: bool = False  # seulement pour un client assujetti à la TVA
-    slug: str = ""  # page « à construire » (url_name == WORK)
+    slug: str = ""  # page générique : à construire (WORK) ou dossier d'archives (ARCHIVE)
     count: str = ""  # compteur affiché à côté (clé de `counts`)
 
     @property
     def key(self) -> str:
-        """Identifiant de la page affichée (nom d'URL, ou « work:<slug> »)."""
-        return f"{WORK}:{self.slug}" if self.slug else self.url_name
+        """Identifiant de la page affichée (nom d'URL, ou « work:<slug> », « archive:<slug> »)."""
+        return f"{self.url_name}:{self.slug}" if self.slug else self.url_name
+
+    @property
+    def is_folder(self) -> bool:
+        return self.url_name == ARCHIVE
 
 
 @dataclass(frozen=True)
@@ -51,6 +55,7 @@ class Group:
 
 
 WORK = "work"  # page « à construire » (onglets du haut, entrées prévues à gauche)
+ARCHIVE = "archive"  # dossier d'archives (documents du passé, D-031)
 HISTORY = Section("history", "Historique")
 
 # D-026 — En haut : le travail le plus fréquent. Contenu défini un par un avec Jeremy.
@@ -63,32 +68,31 @@ TOP: tuple[Section, ...] = (
 
 # À gauche : la « paperasse », comme le panneau latéral de FID-Manager.
 SIDE: tuple[Group, ...] = (
-    Group(
-        "Fiche",
-        (
-            Section("identity", "Identité et coordonnées"),
-            Section("annual_accounts", "Comptes annuels", for_persons=False),
-        ),
-    ),
+    Group("Fiche", (Section("identity", "Identité et coordonnées"),)),
     Group(
         "Organisation",
         (
             Section("mandates", "Mandataires", count="mandates"),
             Section("shareholders", "Actionnaires", count="shareholders"),
+            # Provisoire : rejoindra l'onglet Documents quand il sera construit.
             Section("ubo", "Bénéficiaires effectifs (UBO)", for_persons=False, count="ubo"),
         ),
     ),
+    # D-031 — Archives : ce qui est terminé et rangé, comme les Archives de FID-Manager.
     Group(
-        "Suivi",
-        (Section("tasks", "Échéances", count="overdue"), HISTORY),
-    ),
-    Group(
-        "Conformité",
+        "Archives",
         (
-            Section(WORK, "Anti-blanchiment", slug="anti-blanchiment"),
-            Section(WORK, "Pièces d'identité", slug="pieces-identite"),
+            Section(ARCHIVE, "Légal et statuts", slug="legal", for_persons=False),
+            Section(ARCHIVE, "Moniteur belge", slug="moniteur", for_persons=False),
+            Section("annual_accounts", "Comptes annuels (BNB)", for_persons=False),
+            Section(ARCHIVE, "ISOC", slug="isoc", for_persons=False),
+            Section(ARCHIVE, "IPP", slug="ipp", for_entities=False),
+            Section(ARCHIVE, "TVA", slug="tva"),
+            Section(ARCHIVE, "Administratif", slug="administratif"),
+            Section(ARCHIVE, "Courriels", slug="courriels"),
         ),
     ),
+    Group("Suivi", (Section("tasks", "Échéances", count="overdue"), HISTORY)),
     Group(
         "Facturation",
         (
@@ -99,8 +103,9 @@ SIDE: tuple[Group, ...] = (
 )
 
 SECTIONS: tuple[Section, ...] = (*TOP, *(s for g in SIDE for s in g.sections))
-SECTION_NAMES = {s.url_name for s in SECTIONS if s.url_name != WORK}
-WORK_PAGES = {s.slug: s for s in SECTIONS if s.slug}
+SECTION_NAMES = {s.url_name for s in SECTIONS if not s.slug}
+WORK_PAGES = {s.slug: s for s in SECTIONS if s.url_name == WORK}
+ARCHIVE_FOLDERS = {s.slug: s for s in SECTIONS if s.url_name == ARCHIVE}
 
 
 # Pages « Organisation » : quels rôles de relation chacune montre.
@@ -194,8 +199,8 @@ def section_of(request: HttpRequest) -> str:
         return DEFAULT_SECTION
     if match.url_name in SECTION_NAMES:
         return match.url_name
-    if match.url_name == WORK:
-        return f"{WORK}:{match.kwargs.get('slug', '')}"
+    if match.url_name in (WORK, ARCHIVE):
+        return f"{match.url_name}:{match.kwargs.get('slug', '')}"
     if match.url_name == "relation_add":
         return page_for_role(str(request.GET.get("role", "")))
     if match.url_name == "relation_edit":

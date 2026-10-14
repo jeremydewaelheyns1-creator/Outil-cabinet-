@@ -422,6 +422,22 @@ def client_annual_accounts(request: AppRequest, pk: int) -> HttpResponse:
     )
 
 
+def client_archive(request: AppRequest, pk: int, slug: str) -> HttpResponse:
+    """Dossier d'archives (D-031). Le Moniteur se remplit seul ; les autres, avec l'onglet
+    Documents (les documents traités y seront rangés automatiquement)."""
+    found = dossier.ARCHIVE_FOLDERS.get(slug)
+    if found is None:
+        raise Http404
+
+    def build(client: Client) -> dict[str, Any]:
+        context: dict[str, Any] = {"folder": found}
+        if slug == "moniteur" and client.enterprise_number:
+            context.update(_official(client, OfficialSnapshot.Source.MONITEUR))
+        return context
+
+    return render_section(request, pk, found.key, "clients/sections/archive.html", build)
+
+
 def client_work(request: AppRequest, pk: int, slug: str) -> HttpResponse:
     """Page pas encore construite : son contenu sera défini avec Jeremy (D-026)."""
     found = dossier.WORK_PAGES.get(slug)
@@ -743,7 +759,7 @@ def bce_refresh(request: AppRequest, pk: int) -> HttpResponse:
 
 SOURCE_SECTIONS: dict[str, str] = {
     OfficialSnapshot.Source.KBO: "clients:mandates",
-    OfficialSnapshot.Source.MONITEUR: "clients:identity",
+    OfficialSnapshot.Source.MONITEUR: "clients:identity",  # voir aussi Archives › Moniteur
     OfficialSnapshot.Source.NBB: "clients:annual_accounts",
 }
 

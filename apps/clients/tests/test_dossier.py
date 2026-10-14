@@ -241,3 +241,33 @@ def test_identity_page_links_to_public_sites(web):
     person = PersonFactory()
     html = web.get(reverse("clients:identity", args=[person.pk])).content.decode()
     assert "kbopub" not in html
+
+
+def test_archives_folders_on_the_left(web):
+    company, person = ClientFactory(), PersonFactory()
+    html = web.get(reverse("clients:identity", args=[company.pk])).content.decode()
+    for slug in ("legal", "moniteur", "isoc", "tva", "administratif", "courriels"):
+        assert reverse("clients:archive", args=[company.pk, slug]) in html
+    assert reverse("clients:annual_accounts", args=[company.pk]) in html
+    assert "Anti-blanchiment" not in html  # ira dans l'onglet Documents
+    page = web.get(reverse("clients:archive", args=[company.pk, "isoc"]))
+    assert page.status_code == 200 and "Aucun document archivé" in page.content.decode()
+    # Une personne : dossier IPP, pas d'ISOC ni de statuts.
+    html = web.get(reverse("clients:identity", args=[person.pk])).content.decode()
+    assert reverse("clients:archive", args=[person.pk, "ipp"]) in html
+    assert reverse("clients:archive", args=[person.pk, "isoc"]) not in html
+    assert web.get(reverse("clients:archive", args=[company.pk, "inconnu"])).status_code == 404
+
+
+def test_moniteur_archive_lists_publications(web):
+    from apps.integrations.models import OfficialSnapshot
+
+    company = ClientFactory()
+    OfficialSnapshot.objects.create(
+        client=company, source="moniteur", status="ok",
+        items=[{"published_on": "2022-06-20", "number": "1", "subject": "SIEGE SOCIAL",
+                "tags": ["Siège"], "pdf_url": ""}],
+    )  # fmt: skip
+    html = web.get(reverse("clients:archive", args=[company.pk, "moniteur"])).content.decode()
+    assert "20/06/2022" in html and "SIEGE SOCIAL" in html
+    assert OfficialSnapshot.objects.count() == 1

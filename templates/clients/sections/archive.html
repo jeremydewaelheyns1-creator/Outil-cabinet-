@@ -1,0 +1,28 @@
+{% extends "clients/sections/_base.html" %}
+{% block head_title %}Archives · {{ folder.label }} · {{ client.display_name }}{% endblock %}
+{% block page_title %}Archives · {{ folder.label }}{% endblock %}
+{% block content %}
+<section class="card">
+  {% if folder.slug == "moniteur" %}
+    {% include "clients/official/_status.html" with official_label="Ouvrir au Moniteur belge" %}
+    {% if snapshot.items %}
+      <table class="table">
+        <thead><tr><th class="nowrap">Publié le</th><th>Objet</th><th></th></tr></thead>
+        <tbody>
+        {% for p in snapshot.items %}
+          <tr>
+            <td class="nowrap">{{ p.published_on|iso_date }}</td>
+            <td>{% for t in p.tags %}<span class="badge">{{ t }}</span> {% endfor %}<span class="small">{{ p.subject|default:"—" }}</span></td>
+            <td class="nowrap">{% if p.pdf_url %}<a href="{{ p.pdf_url }}" target="_blank" rel="noopener noreferrer">PDF ↗</a>{% endif %}</td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <p class="empty">Aucune publication lue pour l'instant.</p>
+    {% endif %}
+  {% else %}
+    <p class="empty" style="margin:0">Aucun document archivé pour l'instant. Les documents traités dans l'onglet Documents seront rangés ici automatiquement.</p>
+  {% endif %}
+</section>
+{% endblock %}

@@ -660,3 +660,5 @@ a.badge:hover { text-decoration: none; filter: brightness(0.95); }
 }
 
 .identity-notice { margin-bottom: 1rem; }
+
+.side-folder > span::before { content: "\1F4C1"; margin-right: 0.45rem; font-size: 0.85rem; }

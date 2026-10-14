@@ -3,6 +3,14 @@
 Ce qui a été ajouté à l'outil, du plus récent au plus ancien. Toutes les données de la démo
 sont inventées.
 
+## 14 octobre 2026 — Archives
+
+- À gauche, un nouveau groupe **Archives**, comme dans FID : Légal et statuts, Moniteur belge,
+  Comptes annuels (BNB), ISOC (ou IPP pour une personne), TVA, Administratif, Courriels.
+- Le dossier **Moniteur belge** liste déjà les publications de la société. Les autres se
+  rempliront avec l'onglet Documents.
+- Anti-blanchiment et Pièces d'identité quittent la gauche : ils iront dans l'onglet Documents.
+
 ## 13 octobre 2026 — « Autres relations » supprimé
 
 - La page « Autres relations » disparaît du panneau de gauche. Le conjoint reste visible sous le
