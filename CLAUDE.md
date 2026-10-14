@@ -25,7 +25,9 @@ technique. Parler en français, simplement, sans jargon.
 - Le numéro national n'apparaît jamais en clair sans action explicite journalisée
   (`reveal`), jamais dans un journal, un rapport ou un message d'erreur.
 - L'IA propose, l'humain décide : un automatisme qui modifie une donnée saisie par le
-  cabinet passe par une proposition validée (voir BCE : différences à cocher).
+  cabinet passe par une proposition validée (voir BCE : différences à cocher), SAUF dans les
+  cas listés par D-032 où toutes les vérifications sont vertes (alors : appliqué, listé dans
+  « Classé automatiquement », annulable, tracé).
 - Un fait métier = `events.emit(...)` ; un automatisme = `@events.on(...)`, idempotent.
 - Interface centrée sur le dossier client (D-019, D-026) : tout écran propre à un client est
   une entrée de `TOP` (onglets du haut, travail fréquent) ou de `SIDE` (panneau de gauche,

@@ -183,3 +183,13 @@ Administratif, Courriels). L'onglet Documents (en haut) ne montrera que ce qui e
 un document traité y sera rangé automatiquement dans le bon dossier d'archives. Le contenu de
 Documents est à définir avec Jeremy ; Anti-blanchiment et Pièces d'identité quittent la
 gauche pour y aller, les Bénéficiaires effectifs y iront aussi (encore à gauche en attendant).
+
+## D-032 — Automatique sans confirmation quand toutes les vérifications sont vertes
+Demande de Jeremy (option B). Précise la règle « l'IA propose, l'humain décide » : un
+automatisme peut ranger un document ET mettre à jour la fiche sans confirmation si toutes les
+vérifications concrètes sont vertes (réponse à une demande de l'outil, type de document
+attendu, données lues identiques au dossier — numéro d'entreprise ou national, nom —, document
+lisible et complet, contrôles de lecture réussis). Au moindre doute, le document va dans
+« À confirmer ». Garde-fous obligatoires : liste « Classé automatiquement », bouton « Annuler »
+pendant quelques jours, tout est tracé. On commence par des cas précis (date d'expiration
+d'une carte d'identité) et on élargit cas par cas.
