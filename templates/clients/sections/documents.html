@@ -3,11 +3,26 @@
 {% block page_title %}Documents{% endblock %}
 {% block content %}
 <div class="grid grid-2 doc-cases">
-  {% for case, status in cases %}
+  {% for case, status, docs in cases %}
     <section class="card{% if status.level == 'empty' %} soon-card{% endif %}">
       <div class="card-header">
         <h2><a href="{% if case.url_name == 'ubo' %}{% url 'clients:ubo' client.pk %}{% else %}{% url 'clients:document_case' client.pk case.slug %}{% endif %}">{{ case.label }}</a></h2>
-        {% include "clients/_case_badge.html" %}
+        <div class="case-tools">
+          {% if docs %}
+            <details class="doc-peek">
+              <summary title="Voir les documents" aria-label="Voir les documents ({{ docs|length }})">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h6"/></svg>
+                <span>{{ docs|length }}</span>
+              </summary>
+              <div class="doc-peek-menu">
+                {% for d in docs %}
+                  <a href="{% url 'clients:document_file' client.pk d.pk %}" target="_blank" rel="noopener">{{ d.title }}<span class="muted small">{{ d.uploaded_at|date:"d/m/Y" }}{% if d.person %} · {{ d.person.display_name }}{% endif %}</span></a>
+                {% endfor %}
+              </div>
+            </details>
+          {% endif %}
+          {% include "clients/_case_badge.html" %}
+        </div>
       </div>
       <p class="small" style="margin:0 0 .35rem">{{ case.description }}</p>
       <p class="small muted" style="margin:0">{{ status.text }}</p>

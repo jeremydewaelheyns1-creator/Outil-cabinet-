@@ -3,6 +3,12 @@
 Ce qui a été ajouté à l'outil, du plus récent au plus ancien. Toutes les données de la démo
 sont inventées.
 
+## 15 octobre 2026 — Accès direct aux documents
+
+- Dans l'onglet **Documents**, une petite icône à côté de l'état (« à jour », « vide »…)
+  indique le nombre de documents de la case. Un clic affiche la liste ; un clic sur un document
+  l'ouvre directement.
+
 ## 15 octobre 2026 — Pièces d'identité automatiques
 
 - La case **Pièces d'identité** liste chaque personne du dossier (gérants, administrateurs,

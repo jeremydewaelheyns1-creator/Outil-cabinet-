@@ -295,3 +295,18 @@ def test_documents_tab_shows_cases_with_status(web):
     person = PersonFactory()
     html = web.get(reverse("clients:documents", args=[person.pk])).content.decode()
     assert "Bénéficiaires effectifs" not in html
+
+
+def test_documents_tab_gives_direct_access_to_documents(web):
+    from django.core.files.uploadedfile import SimpleUploadedFile
+
+    from apps.documents import services
+
+    company = ClientFactory()
+    doc = services.store(
+        company, SimpleUploadedFile("l.pdf", b"%PDF-1.4 fictif"), title="Lettre de mission 2026",
+        case="lettre-de-mission",
+    )  # fmt: skip
+    html = web.get(reverse("clients:documents", args=[company.pk])).content.decode()
+    assert "doc-peek" in html and "Lettre de mission 2026" in html
+    assert reverse("clients:document_file", args=[company.pk, doc.pk]) in html

@@ -448,8 +448,13 @@ def case_status(client: Client, case: dossier.DocumentCase, request: AppRequest)
 def client_documents(request: AppRequest, pk: int) -> HttpResponse:
     """Onglet Documents : une case par sujet, avec son état (D-033)."""
 
+    from apps.documents import services as documents
+
     def build(client: Client) -> dict[str, Any]:
-        cases = [(c, case_status(client, c, request)) for c in dossier.document_cases_for(client)]
+        cases = [
+            (c, case_status(client, c, request), documents.current_documents(client, c.slug))
+            for c in dossier.document_cases_for(client)
+        ]
         return {"cases": cases}
 
     return render_section(request, pk, "documents", "clients/sections/documents.html", build)

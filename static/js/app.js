@@ -1,3 +1,10 @@
+// Petite liste de documents (onglet Documents) : se ferme quand on clique ailleurs.
+document.addEventListener("click", function (event) {
+  document.querySelectorAll("details.doc-peek[open]").forEach(function (menu) {
+    if (!menu.contains(event.target)) menu.removeAttribute("open");
+  });
+});
+
 // Bouton « copier » (numéros, e-mails) : fonctionne sur toutes les pages.
 document.addEventListener("click", function (event) {
   var button = event.target.closest && event.target.closest("button.copy[data-copy]");
