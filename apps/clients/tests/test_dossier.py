@@ -284,7 +284,7 @@ def test_documents_tab_shows_cases_with_status(web):
     owner = PersonFactory()
     Relation.objects.create(entity=company, person=owner, role="shareholder", share_percentage=100)
     html = web.get(reverse("clients:documents", args=[company.pk])).content.decode()
-    assert "à confirmer" in html  # calculé, pas encore comparé au registre
+    assert "Déclaration des bénéficiaires effectifs : manquant" in html  # document exigé
     # La case UBO s'ouvre sous l'onglet Documents.
     ubo_page = web.get(reverse("clients:ubo", args=[company.pk])).content.decode()
     assert 'aria-current="page">Documents<' in ubo_page

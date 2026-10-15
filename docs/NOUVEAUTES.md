@@ -3,6 +3,22 @@
 Ce qui a été ajouté à l'outil, du plus récent au plus ancien. Toutes les données de la démo
 sont inventées.
 
+## 15 octobre 2026 — Documents anti-blanchiment (comme FID)
+
+- Les cases **Anti-blanchiment**, **Bénéficiaires effectifs** et **Lettre de mission** listent
+  chaque document exigé, une ligne par document (et une par mandataire quand il en faut une
+  par personne) : identification du client, identification des mandataires, fiche de
+  détermination du niveau de risque, procuration, déclaration des bénéficiaires effectifs,
+  extrait du registre UBO, lettre de mission.
+- Chaque ligne montre le document, sa date et sa date d'expiration. Elle est **surlignée en
+  orange** si le document expire dans les deux mois ou si sa date d'expiration est indéfinie,
+  **en rouge** s'il manque ou est expiré.
+- L'état de chaque case suit automatiquement et dit quel est le problème (par exemple « Fiche
+  de détermination du niveau de risque : expire dans 44 jours »).
+- **« Demander au client »** sur une ligne envoie la demande ; quand le document arrive, il se
+  range tout seul à la bonne ligne. Un nouveau document remplace l'ancien, qui part aux
+  Archives.
+
 ## 15 octobre 2026 — Visualiseur de documents
 
 - Un clic sur un document l'ouvre **en grand, par-dessus la page**, comme dans FID : on ne

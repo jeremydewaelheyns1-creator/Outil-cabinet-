@@ -243,3 +243,18 @@ fabriquées sur le serveur (pdftoppm) : le navigateur n'affiche jamais le PDF lu
 contenu actif ne peut s'exécuter, et le rendu est le même partout. Word et Excel : pas
 d'aperçu, téléchargement. L'ouverture est journalisée. Sans JavaScript, le même visualiseur
 s'ouvre en page entière.
+
+## D-037 — Documents exigés par la loi anti-blanchiment : un catalogue de types
+Inspiré de la rubrique « Loi anti-blanchiment » de FID-Manager. Un catalogue
+(`apps/documents/types.py`) décrit chaque document exigé : sa case (Lettre de mission ;
+Anti-blanchiment : identification du client, identification de chaque mandataire, fiche de
+détermination du niveau de risque, procuration ; UBO : déclaration des bénéficiaires effectifs,
+extrait du registre UBO ; les cartes d'identité gardent leur suivi D-035), s'il est
+obligatoire, s'il expire, qui le fournit et où l'ancien part aux archives quand un nouveau le
+remplace. Chaque case affiche une ligne par type (et par mandataire) : document, date,
+expiration, surligné orange (expire dans 60 jours, date indéfinie) ou rouge (manquant,
+expiré) ; l'état de la case suit la pire ligne et nomme le premier problème. Les documents
+fournis par le client se demandent en un clic depuis leur ligne (demande « À recevoir »
+typée : à la réception, le document va dans la bonne case avec son type). Ce qui reste à
+automatiser (fiches d'identification et fiche de risque produites par l'outil à partir des
+données du dossier, lettre de mission pré-remplie, rappels de revue) sera proposé à Jeremy.

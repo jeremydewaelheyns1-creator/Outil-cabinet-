@@ -1,13 +1,15 @@
 {# Dépôt manuel d'un document dans une case ou un dossier d'archives. #}
 {% if can_edit %}
-<details class="doc-upload">
+<details class="doc-upload" id="ajouter"{% if request.GET.type %} open{% endif %}>
   <summary class="small">+ Ajouter un document</summary>
   <form method="post" action="{% url 'clients:document_upload' client.pk %}" enctype="multipart/form-data">
     {% csrf_token %}
     <input type="hidden" name="retour" value="{{ request.path }}">
     {{ upload_form.case }}{{ upload_form.folder }}
+    {% if with_type %}{{ upload_form.doc_type.as_field_group }}{% endif %}
     {{ upload_form.title.as_field_group }}
     {% if with_person %}{{ upload_form.person.as_field_group }}{% endif %}
+    {% if with_type %}{{ upload_form.expires_on.as_field_group }}{% endif %}
     {{ upload_form.file.as_field_group }}
     <p class="muted small" style="margin:.25rem 0 .5rem">PDF, JPG, PNG, Word ou Excel · 20 Mo maximum.</p>
     <button type="submit" class="small">Ajouter</button>

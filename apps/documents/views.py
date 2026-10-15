@@ -24,11 +24,18 @@ from apps.core.http import AppRequest
 from apps.core.models import AccessLog
 from apps.core.permissions import require_capability
 
-from . import services
+from . import services, types
 from .models import Document, DocumentRequest
 
 
+def _concerned_ids(client: Client) -> list[int]:
+    """Personnes et sociétés liées au dossier (choix « personne concernée »)."""
+    people = [*services.people_concerned(client), *types.mandataires(client)]
+    return [p.pk for p in people]
+
+
 class UploadForm(forms.Form):
+    doc_type = forms.ChoiceField(label="Type de document", required=False, choices=())
     title = forms.CharField(label="Titre", max_length=200)
     file = forms.FileField(label="Fichier")
     case = forms.CharField(required=False, widget=forms.HiddenInput)
@@ -36,16 +43,28 @@ class UploadForm(forms.Form):
     person = forms.ModelChoiceField(
         queryset=Client.objects.none(), required=False, label="Personne concernée"
     )
+    expires_on = forms.DateField(
+        label="Date d'expiration",
+        required=False,
+        widget=forms.DateInput(attrs={"type": "date"}),
+    )
 
     def __init__(self, *args: Any, client: Client, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
-        people = services.people_concerned(client)
         cast(
             "forms.ModelChoiceField[Client]", self.fields["person"]
-        ).queryset = Client.objects.filter(pk__in=[p.pk for p in people])
+        ).queryset = Client.objects.filter(pk__in=_concerned_ids(client))
+        case = (self.data.get("case") if self.is_bound else self.initial.get("case")) or ""
+        cast("forms.ChoiceField", self.fields["doc_type"]).choices = [
+            (t.slug, t.label)
+            for t in [*types.types_for_case(str(case), client), types.BY_SLUG["autre"]]
+        ]
 
     def clean(self) -> dict[str, Any]:
         data = super().clean() or {}
+        doc_type = types.BY_SLUG.get(data.get("doc_type") or "")
+        if doc_type is not None and doc_type.per and not data.get("person"):
+            raise ValidationError("Indiquez le mandataire concerné.")
         case, folder = data.get("case") or "", data.get("folder") or ""
         if case and case not in dossier.DOCUMENT_CASE_SLUGS:
             raise ValidationError("Case inconnue.")
@@ -58,6 +77,7 @@ class UploadForm(forms.Form):
 
 class RequestForm(forms.Form):
     kind = forms.ChoiceField(label="Pièce demandée", choices=DocumentRequest.Kind.choices)
+    doc_type = forms.CharField(required=False, widget=forms.HiddenInput)
     person = forms.ModelChoiceField(
         queryset=Client.objects.none(), required=False, label="Personne concernée"
     )
@@ -67,10 +87,13 @@ class RequestForm(forms.Form):
         super().__init__(*args, **kwargs)
         cast(
             "forms.ModelChoiceField[Client]", self.fields["person"]
-        ).queryset = Client.objects.filter(pk__in=[p.pk for p in services.people_concerned(client)])
+        ).queryset = Client.objects.filter(pk__in=_concerned_ids(client))
 
     def clean(self) -> dict[str, Any]:
         data = super().clean() or {}
+        doc_type = data.get("doc_type") or ""
+        if doc_type and (doc_type not in types.BY_SLUG or not types.BY_SLUG[doc_type].from_client):
+            raise ValidationError("Ce document ne se demande pas au client.")
         if data.get("kind") == DocumentRequest.Kind.IDENTITY_CARD and not data.get("person"):
             raise ValidationError("Indiquez de qui on demande la carte d'identité.")
         return data
@@ -91,6 +114,15 @@ def _form_errors(request: AppRequest, form: forms.Form) -> None:
     for errors in form.errors.values():
         for error in errors:
             messages.error(request, str(error))
+
+
+def rows_with_requests(client: Client, case: str) -> list[tuple[types.Row, bool]]:
+    """Lignes de la case, avec « déjà demandé au client » pour chacune."""
+    pending = {(r.doc_type, r.person_id) for r in services.pending_requests(client) if r.doc_type}
+    return [
+        (row, (row.doc_type.slug, row.person.pk if row.person else None) in pending)
+        for row in types.rows(client, case)
+    ]
 
 
 def _back(request: AppRequest, client: Client) -> HttpResponse:
@@ -123,6 +155,16 @@ def case_page(request: AppRequest, pk: int, slug: str) -> HttpResponse:
             context["people"] = identity.people_cards(client, services.people_concerned(client))
             context["to_confirm"] = identity.documents_to_confirm(client)
             context["confirm_form"] = ConfirmCardForm()
+        if slug in ("anti-blanchiment", "lettre-de-mission"):
+            context["rows"] = rows_with_requests(client, slug)
+            context["upload_form"] = UploadForm(
+                client=client,
+                initial={
+                    "case": slug,
+                    "doc_type": request.GET.get("type", ""),
+                    "person": request.GET.get("personne") or None,
+                },
+            )
         if slug == "a-recevoir":
             context["requests"] = services.pending_requests(client)
             context["request_form"] = RequestForm(client=client)
@@ -266,6 +308,8 @@ def upload(request: AppRequest, pk: int) -> HttpResponse:
             folder=form.cleaned_data["folder"],
             person=form.cleaned_data["person"],
             user=request.user,
+            doc_type=form.cleaned_data["doc_type"] or "",
+            expires_on=form.cleaned_data["expires_on"],
         )
     except ValidationError as error:
         messages.error(request, " ".join(error.messages))
@@ -289,6 +333,7 @@ def request_create(request: AppRequest, pk: int) -> HttpResponse:
         person=form.cleaned_data["person"],
         label=form.cleaned_data["label"],
         user=request.user,
+        doc_type=form.cleaned_data["doc_type"],
     )
     log_access(request, AccessLog.Action.CREATE, created, details={"client": client.pk})
     if created.recipient:

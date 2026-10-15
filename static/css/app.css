@@ -716,3 +716,17 @@ a.badge:hover { text-decoration: none; filter: brightness(0.95); }
 .viewer-nav a, .viewer-nav span.off { display: inline-grid; place-items: center; width: 1.8rem; height: 1.8rem; border: 1px solid var(--border); border-radius: 6px; color: var(--text); font-size: 1.05rem; }
 .viewer-nav a:hover { border-color: var(--primary); color: var(--primary); text-decoration: none; }
 .viewer-nav span.off { opacity: 0.35; }
+
+/* --- Lignes des documents exigés (D-037) ---------------------------------------------------- */
+.doc-rows th { width: 34%; text-align: right; font-weight: 500; color: var(--text-muted); vertical-align: top; padding-right: 1.2rem; }
+.doc-rows td { vertical-align: top; }
+.doc-rows tr.doc-row-warning td:nth-child(2), .doc-rows tr.doc-row-danger td:nth-child(2) { border-radius: 6px; }
+.doc-rows tr.doc-row-warning td:nth-child(2) { background: repeating-linear-gradient(135deg, #fff7e8 0 10px, #fff1d6 10px 20px); box-shadow: inset 0 0 0 1px #f0b04a; }
+.doc-rows tr.doc-row-danger td:nth-child(2) { background: #fdecea; box-shadow: inset 0 0 0 1px #e0796d; }
+.doc-link { display: inline-flex; align-items: center; gap: 0.3rem; font-weight: 600; }
+.doc-expiry { margin-left: 0.5rem; color: var(--text-muted); }
+.doc-state { margin-left: 0.5rem; font-weight: 600; }
+.doc-row-danger .doc-state { color: #b3261e; }
+.doc-row-warning .doc-state { color: #9a5b13; }
+.doc-row-actions { text-align: right; }
+.doc-row-actions > * + * { margin-left: 0.6rem; }

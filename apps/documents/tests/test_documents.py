@@ -206,9 +206,11 @@ def test_documents_tab_reflects_the_situation(web):
     html = web.get(reverse("clients:documents", args=[company.pk])).content.decode()
     assert "Aucune demande en attente" in html
     services.create_request(company, "identity_card", person=manager)
-    services.store(company, pdf(), title="Lettre", case="lettre-de-mission")
+    services.store(
+        company, pdf(), title="Lettre", case="lettre-de-mission", doc_type="lettre_mission"
+    )
     html = web.get(reverse("clients:documents", args=[company.pk])).content.decode()
-    assert "1 demande en attente" in html and "1 document" in html
+    assert "1 demande en attente" in html and "Tout est en ordre" in html
 
 
 def test_archive_folder_lists_and_accepts_documents(web):

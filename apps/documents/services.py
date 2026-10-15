@@ -25,6 +25,7 @@ from apps.clients.models import Client, ContactPoint, Relation
 from apps.core import events
 from apps.core.models import User
 
+from . import types
 from .models import Document, DocumentRequest, OutgoingEmail
 
 
@@ -82,7 +83,6 @@ DESTINATIONS: dict[str, tuple[str, str]] = {
     DocumentRequest.Kind.OTHER: ("", "administratif"),
 }
 # Quand une pièce en remplace une autre, l'ancienne part dans ce dossier d'archives.
-REPLACED_GO_TO = {"pieces-identite": "administratif", "lettre-de-mission": "legal"}
 
 
 def store(
@@ -95,6 +95,8 @@ def store(
     person: Client | None = None,
     request: DocumentRequest | None = None,
     user: User | None = None,
+    doc_type: str = "",
+    expires_on: date | None = None,
 ) -> Document:
     """Vérifie et enregistre un document (dans une case, ou directement aux archives)."""
     if not case and not folder:
@@ -109,9 +111,11 @@ def store(
     for chunk in upload.chunks():
         digest.update(chunk)
     upload.seek(0)
+    if case == "pieces-identite":
+        doc_type = doc_type or types.CARD
     with transaction.atomic():
-        if case in REPLACED_GO_TO:
-            _archive_replaced(client, case, person)
+        if case:
+            _archive_replaced(client, case, doc_type, person)
         document = Document(
             client=client,
             title=title.strip()[:200] or "Document",
@@ -126,6 +130,8 @@ def store(
             sha256=digest.hexdigest(),
             uploaded_by=user,
             archived_at=timezone.now() if folder and not case else None,
+            doc_type=doc_type,
+            expires_on=expires_on,
         )
         document.file.save("document", upload, save=False)
         document.save()
@@ -138,11 +144,21 @@ def store(
     return document
 
 
-def _archive_replaced(client: Client, case: str, person: Client | None) -> None:
-    current = Document.objects.filter(client=client, case=case, archived_at__isnull=True)
-    if case == "pieces-identite":
+def _archive_replaced(client: Client, case: str, doc_type: str, person: Client | None) -> None:
+    """Le nouveau document remplace l'ancien du même type (et de la même personne) : l'ancien
+    part aux archives."""
+    if doc_type == types.CARD:
+        folder = "administratif"
+    elif doc_type in types.BY_SLUG and doc_type != "autre":
+        folder = types.BY_SLUG[doc_type].archive_folder
+    else:
+        return
+    current = Document.objects.filter(
+        client=client, case=case, doc_type=doc_type, archived_at__isnull=True
+    )
+    if doc_type == types.CARD or (doc_type in types.BY_SLUG and types.BY_SLUG[doc_type].per):
         current = current.filter(person=person)
-    current.update(case="", folder=REPLACED_GO_TO[case], archived_at=timezone.now())
+    current.update(case="", folder=folder, archived_at=timezone.now())
 
 
 def current_documents(client: Client, case: str) -> list[Document]:
@@ -183,9 +199,12 @@ def _recipient(client: Client) -> str:
     return primary.value if primary else ""
 
 
-def _title(kind: str, person: Client | None, label: str) -> str:
+def _title(kind: str, person: Client | None, label: str, doc_type: str = "") -> str:
     if label.strip():
         return label.strip()[:200]
+    if doc_type in types.BY_SLUG:
+        base = types.BY_SLUG[doc_type].label
+        return f"{base} — {person.display_name}" if person is not None else base
     base = DocumentRequest.Kind(kind).label
     if kind == DocumentRequest.Kind.IDENTITY_CARD and person is not None:
         return f"{base} de {person.display_name}"
@@ -227,13 +246,15 @@ def create_request(
     person: Client | None = None,
     label: str = "",
     user: User | None = None,
+    doc_type: str = "",
 ) -> DocumentRequest:
     with transaction.atomic():
         request = DocumentRequest.objects.create(
             client=client,
             kind=kind,
             person=person,
-            title=_title(kind, person, label),
+            doc_type=doc_type,
+            title=_title(kind, person, label, doc_type),
             recipient=_recipient(client),
             created_by=user,
             next_reminder_on=timezone.localdate() + timedelta(days=settings.REQUEST_REMINDER_DAYS),
@@ -255,6 +276,9 @@ def receive(
     if request.status != DocumentRequest.Status.PENDING:
         raise ValidationError("Cette demande n'est plus en attente.")
     case, folder = DESTINATIONS.get(request.kind, ("", "administratif"))
+    expected = types.BY_SLUG.get(request.doc_type)
+    if expected is not None:
+        case, folder = (expected.case, "") if expected.case else ("", expected.archive_folder)
     with transaction.atomic():
         document = store(
             request.client,
@@ -265,6 +289,7 @@ def receive(
             person=request.person,
             request=request,
             user=user,
+            doc_type=request.doc_type,
         )
         request.status = DocumentRequest.Status.RECEIVED
         request.closed_at = timezone.now()

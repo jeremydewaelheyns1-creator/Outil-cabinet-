@@ -104,6 +104,9 @@
         </form>
       </details>
     {% endif %}
+  {% elif rows is not None %}
+    {% include "documents/_rows.html" %}
+    {% include "documents/_upload.html" with with_type=True with_person=True %}
   {% else %}
     {% include "documents/_list.html" %}
     {% include "documents/_upload.html" %}

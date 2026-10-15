@@ -242,7 +242,32 @@ class Command(BaseCommand):
         sophie, marc = persons[0], persons[1]
         services.store(
             bakery, fake_pdf("lettre de mission"), title="Lettre de mission signée (2024)",
-            case="lettre-de-mission", user=user,
+            case="lettre-de-mission", doc_type="lettre_mission", user=user,
+        )  # fmt: skip
+        today0 = timezone.localdate()
+        aml = [
+            ("identification_client", "Identification du client", None, None),
+            ("identification_mandataire", "Identification du mandataire", sophie, None),
+            ("fiche_risque", "Fiche de détermination du niveau de risque", None,
+             today0 + timedelta(days=44)),
+        ]  # fmt: skip
+        for doc_type, title, who, expires in aml:
+            services.store(
+                bakery, fake_pdf(title), title=title, case="anti-blanchiment",
+                doc_type=doc_type, person=who, expires_on=expires, user=user,
+            )  # fmt: skip
+        services.store(
+            bakery, fake_pdf("declaration UBO"), title="Déclaration des bénéficiaires effectifs",
+            case="ubo", doc_type="declaration_ubo", user=user,
+        )  # fmt: skip
+        services.store(
+            bakery, fake_pdf("extrait registre UBO"), title="Extrait du registre UBO",
+            case="ubo", doc_type="extrait_ubo", user=user,
+        )  # fmt: skip
+        services.store(
+            garage, fake_pdf("fiche de risque"), title="Fiche de détermination du niveau de risque",
+            case="anti-blanchiment", doc_type="fiche_risque",
+            expires_on=today0 - timedelta(days=12), user=user,
         )  # fmt: skip
         services.store(
             bakery, fake_pdf("statuts"), title="Statuts coordonnés", folder="legal", user=user

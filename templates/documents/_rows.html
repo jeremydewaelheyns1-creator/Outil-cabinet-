@@ -1,0 +1,30 @@
+{# Une ligne par type de document exigé (et par mandataire), comme FID-Manager (D-037). #}
+<table class="table doc-rows">
+  <tbody>
+  {% for row, pending in rows %}
+    <tr class="doc-row-{{ row.level }}">
+      <th scope="row">{{ row.doc_type.label }}{% if row.person %}<div class="small">{% client_icon row.person %} {{ row.person.display_name }}</div>{% endif %}</th>
+      <td>
+        {% if row.document %}
+          {% with d=row.document %}{% include "documents/_open.html" with link_class="doc-link" %}<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/></svg> {{ d.uploaded_at|date:"d/m/Y" }}</a>{% endwith %}
+          {% if row.doc_type.expires %}<span class="small doc-expiry">(expire le <strong>{{ row.document.expires_on|date:"d/m/Y"|default:"indéfini" }}</strong>{% if row.level == "ok" and row.days_left is not None %} · dans {{ row.days_left }} jour{{ row.days_left|pluralize }}{% endif %})</span>{% endif %}
+        {% endif %}
+        {% if row.text %}<span class="small doc-state">{{ row.text }}</span>{% endif %}
+      </td>
+      <td class="nowrap doc-row-actions">
+        {% if can_edit %}
+          {% if row.doc_type.from_client and row.level != "ok" %}
+            {% if pending %}<span class="small muted">demandé au client</span>{% else %}
+            <form class="inline" method="post" action="{% url 'clients:request_create' client.pk %}">{% csrf_token %}
+              <input type="hidden" name="kind" value="other"><input type="hidden" name="doc_type" value="{{ row.doc_type.slug }}">
+              {% if row.person %}<input type="hidden" name="person" value="{{ row.person.pk }}">{% endif %}
+              <button type="submit" class="link-button small">Demander au client</button></form>
+            {% endif %}
+          {% endif %}
+          <a class="small" href="?type={{ row.doc_type.slug }}{% if row.person %}&amp;personne={{ row.person.pk }}{% endif %}#ajouter">{% if row.document %}Remplacer{% else %}Ajouter{% endif %}</a>
+        {% endif %}
+      </td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>

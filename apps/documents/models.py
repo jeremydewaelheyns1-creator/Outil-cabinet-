@@ -58,6 +58,8 @@ class DocumentRequest(models.Model):
         related_name="+",
     )
     title = models.CharField("objet", max_length=200)
+    # Type du document attendu (D-037) : décide où il sera rangé à sa réception.
+    doc_type = models.CharField("type de document", max_length=40, blank=True)
     recipient = models.EmailField("destinataire", blank=True)
     status = models.CharField(
         "état", max_length=20, choices=Status.choices, default=Status.PENDING, db_index=True
@@ -119,6 +121,9 @@ class Document(models.Model):
         User, on_delete=models.SET_NULL, null=True, blank=True, related_name="+"
     )
     archived_at = models.DateTimeField("archivé le", null=True, blank=True)
+    # Type de document (D-037, voir types.py) et date d'expiration éventuelle.
+    doc_type = models.CharField("type", max_length=40, blank=True, db_index=True)
+    expires_on = models.DateField("expire le", null=True, blank=True)
     # Lecture automatique (D-035) : si un contrôle coince, le document est « à confirmer ».
     review_needed = models.BooleanField("à confirmer", default=False)
     review_reason = models.CharField("raison", max_length=200, blank=True)
