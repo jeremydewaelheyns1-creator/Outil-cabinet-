@@ -238,6 +238,7 @@ ACTION_SECTIONS = {
     "official_function_add": "mandates",
     # Onglet Documents (D-033) : les cases s'ouvrent sous l'onglet.
     "document_case": "documents",
+    "document_viewer_page": "documents",
     "ubo": "documents",
 }
 

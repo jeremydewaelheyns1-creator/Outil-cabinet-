@@ -16,7 +16,7 @@
               </summary>
               <div class="doc-peek-menu">
                 {% for d in docs %}
-                  <a href="{% url 'clients:document_file' client.pk d.pk %}" target="_blank" rel="noopener">{{ d.title }}<span class="muted small">{{ d.uploaded_at|date:"d/m/Y" }}{% if d.person %} · {{ d.person.display_name }}{% endif %}</span></a>
+                  {% include "documents/_open.html" %}{{ d.title }}<span class="muted small">{{ d.uploaded_at|date:"d/m/Y" }}{% if d.person %} · {{ d.person.display_name }}{% endif %}</span></a>
                 {% endfor %}
               </div>
             </details>

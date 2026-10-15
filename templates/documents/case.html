@@ -12,7 +12,7 @@
         <h3 class="small" style="margin:0 0 .5rem">À confirmer</h3>
         {% for d in to_confirm %}
           <div class="review-line">
-            <div><a href="{% url 'clients:document_file' client.pk d.pk %}" target="_blank" rel="noopener">{{ d.title }}</a>
+            <div>{% include "documents/_open.html" %}{{ d.title }}</a>
               <div class="muted small">{{ d.review_reason }}</div></div>
             {% if can_edit %}
               <form method="post" action="{% url 'clients:identity_confirm' client.pk d.pk %}" class="review-form">

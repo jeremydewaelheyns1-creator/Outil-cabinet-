@@ -1,0 +1,67 @@
+{# Visualiseur de document (D-036) : s'affiche par-dessus la page, sans la quitter. #}
+<div class="viewer">
+  <header class="viewer-head">
+    <div class="viewer-title">
+      <h2>{{ document.title }}{% if extension %}<span class="muted">.{{ extension }}</span>{% endif %}
+        {% if document.auto_filed %}<span class="badge badge-primary">classé automatiquement</span>{% endif %}
+        {% if document.review_needed %}<span class="badge badge-warning">à confirmer</span>{% endif %}
+      </h2>
+      <div class="viewer-meta">
+        <span><span class="muted">Date</span> {{ document.uploaded_at|date:"d/m/Y" }}</span>
+        <span><span class="muted">Classement</span> {{ place }}</span>
+        {% if document.person %}<span><span class="muted">Personne</span> {{ document.person.display_name }}</span>{% endif %}
+      </div>
+    </div>
+    <div class="viewer-actions">
+      {% if pages %}<button type="button" class="button-secondary small" data-viewer-print>Imprimer</button>{% endif %}
+      <a class="button button-small" href="{% url 'clients:document_file' client.pk document.pk %}?telecharger=1">Télécharger</a>
+      <button type="button" class="viewer-close" data-viewer-close aria-label="Fermer">×</button>
+    </div>
+  </header>
+
+  <nav class="viewer-tabs" role="tablist">
+    <button type="button" role="tab" aria-selected="true" data-viewer-tab="apercu">Aperçu</button>
+    <button type="button" role="tab" aria-selected="false" data-viewer-tab="infos">Informations</button>
+    {% if cards %}<button type="button" role="tab" aria-selected="false" data-viewer-tab="lu">Données lues</button>{% endif %}
+  </nav>
+
+  <div class="viewer-body">
+    <section data-viewer-panel="apercu" class="viewer-pages">
+      {% for n in pages %}
+        <img src="{% url 'clients:document_page' client.pk document.pk n %}" alt="Page {{ n }}" loading="lazy">
+      {% empty %}
+        <div class="viewer-empty">
+          <p>Pas d'aperçu pour ce format ({{ document.original_name }}).</p>
+          <a class="button button-small" href="{% url 'clients:document_file' client.pk document.pk %}?telecharger=1">Télécharger le fichier</a>
+        </div>
+      {% endfor %}
+    </section>
+    <section data-viewer-panel="infos" hidden>
+      <dl class="fields fields-wide">
+        <dt>Titre</dt><dd>{{ document.title }}</dd>
+        <dt>Fichier</dt><dd>{{ document.original_name }} · {{ document.size|filesizeformat }}</dd>
+        <dt>Classement</dt><dd>{{ place }}</dd>
+        {% if document.person %}<dt>Personne concernée</dt><dd>{{ document.person.display_name }}</dd>{% endif %}
+        <dt>Ajouté le</dt><dd>{{ document.uploaded_at|date:"d/m/Y H:i" }}{% if document.uploaded_by %} par {{ document.uploaded_by }}{% endif %}</dd>
+        <dt>Origine</dt><dd>{{ document.get_source_display }}{% if document.request %} (réf. {{ document.request.reference }}){% endif %}</dd>
+        {% if document.archived_at %}<dt>Archivé le</dt><dd>{{ document.archived_at|date:"d/m/Y" }}</dd>{% endif %}
+        {% if document.review_needed %}<dt>À confirmer</dt><dd>{{ document.review_reason }}</dd>{% endif %}
+        <dt>Empreinte</dt><dd class="mono small" title="Preuve que le fichier n'a pas été modifié">{{ document.sha256|slice:":16" }}…</dd>
+      </dl>
+    </section>
+    {% if cards %}
+    <section data-viewer-panel="lu" hidden>
+      {% for card in cards %}
+        <dl class="fields fields-wide">
+          <dt>Carte d'identité de</dt><dd>{{ card.person.display_name }}</dd>
+          <dt>Numéro de carte</dt><dd class="mono">{{ card.masked_number|default:"—" }}</dd>
+          <dt>Valable jusqu'au</dt><dd>{{ card.valid_until|date:"d/m/Y" }}</dd>
+          <dt>Enregistrée</dt><dd>{{ card.get_source_display }}{% if card.auto_applied %} — toutes les vérifications étaient vertes{% endif %}</dd>
+        </dl>
+      {% endfor %}
+    </section>
+    {% endif %}
+  </div>
+
+  <footer class="viewer-foot"><button type="button" class="button-secondary" data-viewer-close>Fermer</button></footer>
+</div>

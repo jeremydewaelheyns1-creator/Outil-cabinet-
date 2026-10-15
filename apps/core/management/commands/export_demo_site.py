@@ -128,6 +128,17 @@ class Command(BaseCommand):
                 if link not in seen and not link.startswith(SKIP_PREFIXES):
                     seen.add(link)
                     queue.append(link)
+            # Visualiseur de documents : fenêtre chargée en HTMX et images des pages.
+            for link in re.findall(r'\shx-get="(/clients/[^"]*/apercu/[^"]*/fenetre/)"', html):
+                if link not in seen:
+                    seen.add(link)
+                    fragment = browser.get(link)
+                    if fragment.status_code == 200:
+                        self._write(out, link, self._rewrite(fragment.content.decode(), base))
+                        for image in re.findall(
+                            r'\ssrc="(/clients/[^"]*\.png)"', fragment.content.decode()
+                        ):
+                            self._write_binary(out, image, browser.get(image))
             html = self._rewrite(html, base).replace("<body", "<body data-demo", 1)
             html = re.sub(r"(<body[^>]*>)", r"\1" + banner.replace("\\", "\\\\"), html, count=1)
             self._write(out, path, html)
@@ -144,6 +155,13 @@ class Command(BaseCommand):
             return f'{attribute}="{base}{url.lstrip("/")}"'
 
         return ATTRIBUTE.sub(fix, html)
+
+    @staticmethod
+    def _write_binary(out: Path, path: str, response: Any) -> None:
+        if response.status_code == 200:
+            target = out / path.strip("/")
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_bytes(response.content)
 
     @staticmethod
     def _write(out: Path, path: str, html: str) -> None:

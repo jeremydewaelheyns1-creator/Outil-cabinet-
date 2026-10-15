@@ -12,7 +12,7 @@ from django import forms
 from django.contrib import messages
 from django.core.exceptions import ValidationError
 from django.http import FileResponse, Http404, HttpResponse
-from django.shortcuts import get_object_or_404, redirect
+from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_GET, require_POST
 
 from apps.clients import dossier
@@ -134,6 +134,84 @@ def case_page(request: AppRequest, pk: int, slug: str) -> HttpResponse:
     return render_section(request, pk, f"documents:{slug}", "documents/case.html", build)
 
 
+SAFE_HEADERS = {
+    # Le fichier vient de l'extérieur : le navigateur ne doit rien y exécuter.
+    "Content-Security-Policy": (
+        "sandbox; default-src 'none'; img-src 'self'; style-src 'unsafe-inline'"
+    ),
+    "X-Content-Type-Options": "nosniff",
+    "Cache-Control": "private, no-store",
+}
+
+
+def _place_label(document: Document) -> str:
+    if document.case:
+        case = dossier.DOCUMENT_CASE_SLUGS.get(document.case)
+        return f"Documents › {case.label}" if case else "Documents"
+    folder = dossier.ARCHIVE_FOLDERS.get(document.folder)
+    return f"Archives › {folder.label}" if folder else "Archives"
+
+
+def _viewer_context(request: AppRequest, client: Client, document: Document) -> dict[str, Any]:
+    from . import preview
+
+    log_access(
+        request,
+        AccessLog.Action.VIEW,
+        document,
+        details={"client": client.pk, "case": document.case, "dossier": document.folder},
+    )
+    pages = preview.page_count(document)
+    return {
+        "client": client,
+        "document": document,
+        "place": _place_label(document),
+        "pages": range(1, pages + 1),
+        "cards": list(document.identity_cards.all()),
+        "extension": (document.original_name.rsplit(".", 1)[-1].lower()
+                      if "." in document.original_name else ""),
+    }  # fmt: skip
+
+
+@require_GET
+def document_viewer(request: AppRequest, pk: int, document_id: str) -> HttpResponse:
+    """Visualiseur (fenêtre au-dessus de la page) : renvoie le contenu de la fenêtre."""
+    client = _get_client(request, pk)
+    document = get_object_or_404(Document, pk=document_id, client=client)
+    return render(request, "documents/_viewer.html", _viewer_context(request, client, document))
+
+
+@require_GET
+def document_viewer_page(request: AppRequest, pk: int, document_id: str) -> HttpResponse:
+    """Même visualiseur en page entière (lien ouvert sans JavaScript)."""
+    client = _get_client(request, pk)
+    document = get_object_or_404(Document, pk=document_id, client=client)
+    return render_section(
+        request,
+        pk,
+        "documents",
+        "documents/viewer_page.html",
+        lambda c: _viewer_context(request, c, document),
+    )
+
+
+@require_GET
+def document_page(request: AppRequest, pk: int, document_id: str, number: int) -> HttpResponse:
+    """Image d'une page pour l'aperçu (la consultation est journalisée à l'ouverture)."""
+    from . import preview
+
+    client = _get_client(request, pk)
+    document = get_object_or_404(Document, pk=document_id, client=client)
+    rendered = preview.render_page(document, number)
+    if rendered is None:
+        raise Http404
+    content, content_type = rendered
+    response = HttpResponse(content, content_type=content_type)
+    for header, value in SAFE_HEADERS.items():
+        response[header] = value
+    return response
+
+
 @require_GET
 def document_file(request: AppRequest, pk: int, document_id: str) -> FileResponse:
     client = _get_client(request, pk)
@@ -144,19 +222,15 @@ def document_file(request: AppRequest, pk: int, document_id: str) -> FileRespons
         document,
         details={"client": client.pk, "case": document.case, "dossier": document.folder},
     )
-    inline = services.inline_allowed(document)
+    inline = services.inline_allowed(document) and not request.GET.get("telecharger")
     response = FileResponse(
         document.file.open("rb"),
         content_type=document.content_type,
         as_attachment=not inline,
         filename=document.original_name,
     )
-    # Le fichier vient de l'extérieur : le navigateur ne doit rien y exécuter.
-    response["Content-Security-Policy"] = (
-        "sandbox; default-src 'none'; img-src 'self'; style-src 'unsafe-inline'"
-    )
-    response["X-Content-Type-Options"] = "nosniff"
-    response["Cache-Control"] = "private, no-store"
+    for header, value in SAFE_HEADERS.items():
+        response[header] = value
     return response
 
 

@@ -233,3 +233,13 @@ affiché ; le numéro de carte est affiché masqué. Chaque jour, `run_jobs` dem
 carte 30 jours avant expiration (une seule demande en cours par personne). Plus tard, une
 lecture par IA (cloud du cabinet, Europe) pourra remplacer ou compléter l'OCR local
 (`identity.READER`).
+
+## D-036 — Visualiseur de documents au-dessus de la page
+Demande de Jeremy (comme FID-Manager). Un clic sur un document ouvre une fenêtre au-dessus de
+la page (sans la quitter) : titre, date, classement, personne ; boutons Imprimer et
+Télécharger ; onglets Aperçu, Informations (fichier, origine, empreinte) et, pour une carte
+d'identité, Données lues (numéro masqué, validité). L'aperçu montre les pages en images
+fabriquées sur le serveur (pdftoppm) : le navigateur n'affiche jamais le PDF lui-même, aucun
+contenu actif ne peut s'exécuter, et le rendu est le même partout. Word et Excel : pas
+d'aperçu, téléchargement. L'ouverture est journalisée. Sans JavaScript, le même visualiseur
+s'ouvre en page entière.

@@ -1,0 +1,4 @@
+{% extends "clients/sections/_base.html" %}
+{% block head_title %}{{ document.title }} · {{ client.display_name }}{% endblock %}
+{% block page_title %}<a href="{% url 'clients:documents' client.pk %}" class="muted">Documents</a> › {{ document.title }}{% endblock %}
+{% block content %}<div class="card viewer-inline">{% include "documents/_viewer.html" %}</div>{% endblock %}

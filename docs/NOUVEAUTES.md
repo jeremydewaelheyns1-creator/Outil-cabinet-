@@ -3,6 +3,16 @@
 Ce qui a été ajouté à l'outil, du plus récent au plus ancien. Toutes les données de la démo
 sont inventées.
 
+## 15 octobre 2026 — Visualiseur de documents
+
+- Un clic sur un document l'ouvre **en grand, par-dessus la page**, comme dans FID : on ne
+  quitte pas l'écran où l'on était, « Fermer » y ramène.
+- En haut : le titre, la date, où il est rangé, la personne concernée, et les boutons
+  **Imprimer** et **Télécharger**.
+- Onglets : **Aperçu** (les pages du document), **Informations** (fichier, origine, date,
+  empreinte) et, pour une carte d'identité, **Données lues**.
+- Dans la démo : onglet Documents de la Boulangerie, icône à côté de « Lettre de mission ».
+
 ## 15 octobre 2026 — Accès direct aux documents
 
 - Dans l'onglet **Documents**, une petite icône à côté de l'état (« à jour », « vide »…)

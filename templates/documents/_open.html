@@ -1,0 +1,1 @@
+{# Lien qui ouvre un document dans le visualiseur (page entière sans JavaScript). #}<a href="{% url 'clients:document_viewer_page' client.pk d.pk %}" hx-get="{% url 'clients:document_viewer' client.pk d.pk %}" hx-target="#doc-viewer-content" hx-swap="innerHTML" class="{{ link_class|default:'' }}">

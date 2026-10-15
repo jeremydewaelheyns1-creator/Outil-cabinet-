@@ -1,3 +1,44 @@
+// Visualiseur de documents (D-036) : fenêtre au-dessus de la page.
+(function () {
+  function viewer() { return document.getElementById("doc-viewer"); }
+  document.addEventListener("htmx:afterSwap", function (event) {
+    var dialog = viewer();
+    if (dialog && event.detail.target.id === "doc-viewer-content" && !dialog.open) {
+      document.querySelectorAll("details.doc-peek[open]").forEach(function (m) { m.removeAttribute("open"); });
+      dialog.showModal();
+    }
+  });
+  document.addEventListener("click", function (event) {
+    var dialog = viewer();
+    var target = event.target.closest ? event.target : null;
+    if (!target) return;
+    if (target.closest("[data-viewer-close]")) {
+      if (dialog && dialog.open) dialog.close(); else history.back();
+      return;
+    }
+    if (dialog && event.target === dialog) { dialog.close(); return; } // clic à côté
+    var tab = target.closest("[data-viewer-tab]");
+    if (tab) {
+      var box = tab.closest(".viewer");
+      box.querySelectorAll("[data-viewer-tab]").forEach(function (t) {
+        t.setAttribute("aria-selected", t === tab ? "true" : "false");
+      });
+      box.querySelectorAll("[data-viewer-panel]").forEach(function (panel) {
+        panel.hidden = panel.dataset.viewerPanel !== tab.dataset.viewerTab;
+      });
+      return;
+    }
+    if (target.closest("[data-viewer-print]")) {
+      document.body.classList.add("printing-document");
+      window.print();
+      document.body.classList.remove("printing-document");
+    }
+  });
+  document.addEventListener("close", function (event) {
+    if (event.target.id === "doc-viewer") document.getElementById("doc-viewer-content").innerHTML = "";
+  }, true);
+})();
+
 // Petite liste de documents (onglet Documents) : se ferme quand on clique ailleurs.
 document.addEventListener("click", function (event) {
   document.querySelectorAll("details.doc-peek[open]").forEach(function (menu) {

@@ -5,7 +5,7 @@
   <tbody>
   {% for d in documents %}
     <tr>
-      <td><a href="{% url 'clients:document_file' client.pk d.pk %}" target="_blank" rel="noopener">{{ d.title }}</a>
+      <td>{% include "documents/_open.html" %}{{ d.title }}</a>
         <div class="muted small">{{ d.original_name }} · {{ d.size|filesizeformat }}</div></td>
       <td class="small">{% if d.person %}{{ d.person.display_name }}{% else %}—{% endif %}</td>
       <td class="small nowrap">{{ d.uploaded_at|date:"d/m/Y" }}{% if d.archived_at and d.case == "" and d.archived_at != d.uploaded_at %}<div class="muted">archivé le {{ d.archived_at|date:"d/m/Y" }}</div>{% endif %}</td>

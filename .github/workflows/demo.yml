@@ -43,6 +43,8 @@ jobs:
         with:
           version: "0.11.32"
       - run: uv sync --frozen
+      - name: Aperçu des documents (poppler, comme en production)
+        run: sudo apt-get update -q && sudo apt-get install -y -q poppler-utils tesseract-ocr
       - name: Base de démonstration (données fictives)
         run: uv run python manage.py migrate -v0 && uv run python manage.py demo
       - name: Export des pages

@@ -36,6 +36,21 @@ urlpatterns = [
         document_views.document_file,
         name="document_file",
     ),
+    path(
+        "<int:pk>/documents/apercu/<uuid:document_id>/",
+        document_views.document_viewer_page,
+        name="document_viewer_page",
+    ),
+    path(
+        "<int:pk>/documents/apercu/<uuid:document_id>/fenetre/",
+        document_views.document_viewer,
+        name="document_viewer",
+    ),
+    path(
+        "<int:pk>/documents/apercu/<uuid:document_id>/page-<int:number>.png",
+        document_views.document_page,
+        name="document_page",
+    ),
     path("<int:pk>/documents/demander/", document_views.request_create, name="request_create"),
     path(
         "<int:pk>/documents/demande/<uuid:request_id>/recue/",

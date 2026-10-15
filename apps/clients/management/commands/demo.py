@@ -54,8 +54,9 @@ class Command(BaseCommand):
         if options["vider"]:
             if not settings.DEBUG:
                 raise CommandError("--vider n'est permis qu'en développement (DEBUG).")
-            from apps.documents.models import Document, DocumentRequest
+            from apps.documents.models import Document, DocumentRequest, IdentityCard
 
+            IdentityCard.objects.all().delete()
             Document.objects.all().delete()
             DocumentRequest.objects.all().delete()
             Relation.objects.all().delete()
@@ -235,8 +236,7 @@ class Command(BaseCommand):
         from apps.documents.models import DocumentRequest
 
         def fake_pdf(label: str) -> SimpleUploadedFile:
-            content = f"%PDF-1.4\n% Document fictif de démonstration : {label}\n".encode()
-            return SimpleUploadedFile("demo.pdf", content, content_type="application/pdf")
+            return SimpleUploadedFile("demo.pdf", demo_pdf(label), content_type="application/pdf")
 
         bakery, garage = companies[0], companies[1]
         sophie, marc = persons[0], persons[1]
@@ -277,3 +277,40 @@ class Command(BaseCommand):
         services.send_due_reminders(today + timedelta(days=14))
         DocumentRequest.objects.filter(pk=late.pk).update(next_reminder_on=today)
         services.create_request(bakery, "identity_card", person=marc, user=user)
+
+
+def demo_pdf(title: str) -> bytes:
+    """Petit PDF valide d'une page, clairement marqué comme fictif (démonstration)."""
+    lines = [
+        ("F1", 22, 72, 760, title.upper()),
+        ("F2", 12, 72, 730, "DOCUMENT FICTIF - DEMONSTRATION"),
+        ("F2", 11, 72, 690, "Ce document a ete genere automatiquement pour la demo de l'outil."),
+        ("F2", 11, 72, 672, "Il ne contient aucune donnee reelle."),
+    ]
+    text = "".join(
+        f"BT /{font} {size} Tf {x} {y} Td ({line.replace('(', '').replace(')', '')}) Tj ET\n"
+        for font, size, x, y, line in lines
+    )
+    stream = text.encode("latin-1", "replace")
+    objects = [
+        b"<< /Type /Catalog /Pages 2 0 R >>",
+        b"<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+        b"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Contents 4 0 R "
+        b"/Resources << /Font << /F1 5 0 R /F2 6 0 R >> >> >>",
+        b"<< /Length " + str(len(stream)).encode() + b" >>\nstream\n" + stream + b"endstream",
+        b"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>",
+        b"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>",
+    ]
+    out = bytearray(b"%PDF-1.4\n")
+    offsets = []
+    for number, body in enumerate(objects, start=1):
+        offsets.append(len(out))
+        out += f"{number} 0 obj\n".encode() + body + b"\nendobj\n"
+    xref = len(out)
+    out += f"xref\n0 {len(objects) + 1}\n0000000000 65535 f \n".encode()
+    for offset in offsets:
+        out += f"{offset:010d} 00000 n \n".encode()
+    out += (
+        f"trailer\n<< /Size {len(objects) + 1} /Root 1 0 R >>\nstartxref\n{xref}\n%%EOF\n".encode()
+    )
+    return bytes(out)
