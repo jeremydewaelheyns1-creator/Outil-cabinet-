@@ -17,9 +17,8 @@ sont inventées.
 
 ## 15 octobre 2026 — Accès direct aux documents
 
-- Dans l'onglet **Documents**, une petite icône à côté de l'état (« à jour », « vide »…)
-  indique le nombre de documents de la case. Un clic affiche la liste ; un clic sur un document
-  l'ouvre directement.
+- Dans l'onglet **Documents**, une petite icône apparaît à côté de l'état quand la case contient
+  un document ; un clic l'ouvre directement. Pas de document, pas d'icône.
 
 ## 15 octobre 2026 — Pièces d'identité automatiques
 

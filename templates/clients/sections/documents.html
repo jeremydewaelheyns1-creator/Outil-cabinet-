@@ -11,7 +11,7 @@
           {% if docs %}
             {% with d=docs.0 %}{% include "documents/_open.html" with link_class="doc-open" %}
               <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h6"/></svg>
-              <span>{{ docs|length }}</span><span class="visually-hidden"> document{{ docs|length|pluralize }} : ouvrir</span></a>{% endwith %}
+              <span class="visually-hidden">Ouvrir le document</span></a>{% endwith %}
           {% endif %}
           {% include "clients/_case_badge.html" %}
         </div>
