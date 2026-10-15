@@ -162,7 +162,19 @@ def _viewer_context(request: AppRequest, client: Client, document: Document) -> 
         details={"client": client.pk, "case": document.case, "dossier": document.folder},
     )
     pages = preview.page_count(document)
+    # Les autres documents du même endroit, pour passer de l'un à l'autre (‹ ›).
+    siblings = (
+        services.current_documents(client, document.case)
+        if document.case
+        else services.archived_documents(client, document.folder)
+    )
+    ids = [d.pk for d in siblings]
+    position = ids.index(document.pk) if document.pk in ids else -1
     return {
+        "position": position + 1,
+        "total": len(ids),
+        "previous": siblings[position - 1] if position > 0 else None,
+        "next": siblings[position + 1] if 0 <= position < len(ids) - 1 else None,
         "client": client,
         "document": document,
         "place": _place_label(document),

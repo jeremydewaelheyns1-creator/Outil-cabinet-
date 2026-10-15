@@ -308,5 +308,5 @@ def test_documents_tab_gives_direct_access_to_documents(web):
         case="lettre-de-mission",
     )  # fmt: skip
     html = web.get(reverse("clients:documents", args=[company.pk])).content.decode()
-    assert "doc-peek" in html and "Lettre de mission 2026" in html
+    assert "doc-open" in html
     assert reverse("clients:document_viewer", args=[company.pk, doc.pk]) in html

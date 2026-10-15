@@ -11,6 +11,8 @@ sont inventées.
   **Imprimer** et **Télécharger**.
 - Onglets : **Aperçu** (les pages du document), **Informations** (fichier, origine, date,
   empreinte) et, pour une carte d'identité, **Données lues**.
+- Un seul clic sur l'icône d'un rectangle ouvre directement le document (le plus récent) ;
+  s'il y en a plusieurs, les flèches ‹ › du visualiseur passent de l'un à l'autre.
 - Dans la démo : onglet Documents de la Boulangerie, icône à côté de « Lettre de mission ».
 
 ## 15 octobre 2026 — Accès direct aux documents

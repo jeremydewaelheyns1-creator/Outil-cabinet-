@@ -9,17 +9,9 @@
         <h2><a href="{% if case.url_name == 'ubo' %}{% url 'clients:ubo' client.pk %}{% else %}{% url 'clients:document_case' client.pk case.slug %}{% endif %}">{{ case.label }}</a></h2>
         <div class="case-tools">
           {% if docs %}
-            <details class="doc-peek">
-              <summary title="Voir les documents" aria-label="Voir les documents ({{ docs|length }})">
-                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h6"/></svg>
-                <span>{{ docs|length }}</span>
-              </summary>
-              <div class="doc-peek-menu">
-                {% for d in docs %}
-                  {% include "documents/_open.html" %}{{ d.title }}<span class="muted small">{{ d.uploaded_at|date:"d/m/Y" }}{% if d.person %} · {{ d.person.display_name }}{% endif %}</span></a>
-                {% endfor %}
-              </div>
-            </details>
+            {% with d=docs.0 %}{% include "documents/_open.html" with link_class="doc-open" %}
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h6"/></svg>
+              <span>{{ docs|length }}</span><span class="visually-hidden"> document{{ docs|length|pluralize }} : ouvrir</span></a>{% endwith %}
           {% endif %}
           {% include "clients/_case_badge.html" %}
         </div>

@@ -81,3 +81,12 @@ def test_viewer_respects_private_portfolios(web):
         assert web.get(reverse(f"clients:{name}", args=[hidden.pk, document.pk])).status_code == 404
     page = reverse("clients:document_page", args=[hidden.pk, document.pk, 1])
     assert web.get(page).status_code == 404
+
+
+def test_viewer_moves_between_documents_of_the_same_place(web):
+    company = ClientFactory()
+    first = stored(company, case="anti-blanchiment")
+    second = stored(company, case="anti-blanchiment")  # le plus récent en premier
+    html = web.get(reverse("clients:document_viewer", args=[company.pk, second.pk])).content
+    assert "1 / 2" in html.decode()
+    assert reverse("clients:document_viewer", args=[company.pk, first.pk]) in html.decode()

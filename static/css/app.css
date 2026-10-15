@@ -676,13 +676,6 @@ a.badge:hover { text-decoration: none; filter: brightness(0.95); }
 .review-form { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; }
 .review-form input { width: auto; }
 .case-tools { display: flex; align-items: center; gap: 0.5rem; }
-.doc-peek { position: relative; }
-.doc-peek > summary { list-style: none; display: inline-flex; align-items: center; gap: 0.2rem; cursor: pointer; color: var(--text-muted); font-size: 0.8rem; font-weight: 600; padding: 0.1rem 0.35rem; border-radius: 6px; border: 1px solid var(--border); background: var(--surface); }
-.doc-peek > summary::-webkit-details-marker { display: none; }
-.doc-peek > summary:hover, .doc-peek[open] > summary { color: var(--primary); border-color: var(--primary); }
-.doc-peek-menu { position: absolute; right: 0; top: calc(100% + 4px); z-index: 20; min-width: 260px; max-width: 360px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; box-shadow: 0 6px 18px rgba(20, 36, 59, 0.12); padding: 0.3rem; }
-.doc-peek-menu a { display: grid; gap: 0.1rem; padding: 0.4rem 0.55rem; border-radius: 6px; color: var(--text); font-size: 0.9rem; }
-.doc-peek-menu a:hover { background: var(--surface-muted); text-decoration: none; }
 
 /* --- Visualiseur de documents (D-036) ------------------------------------------------------- */
 .doc-viewer { width: min(1100px, 94vw); height: 92vh; max-height: 92vh; padding: 0; border: none; border-radius: 10px; box-shadow: 0 20px 60px rgba(10, 20, 35, 0.35); }
@@ -716,3 +709,10 @@ a.badge:hover { text-decoration: none; filter: brightness(0.95); }
   body.printing-document .viewer-pages img { width: 100%; box-shadow: none; page-break-after: always; }
 }
 [data-viewer-panel][hidden] { display: none !important; }
+.doc-open { display: inline-flex; align-items: center; gap: 0.2rem; color: var(--text-muted); font-size: 0.8rem; font-weight: 600; padding: 0.1rem 0.35rem; border-radius: 6px; border: 1px solid var(--border); background: var(--surface); }
+.doc-open:hover { color: var(--primary); border-color: var(--primary); text-decoration: none; }
+.visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.viewer-nav { display: inline-flex; align-items: center; gap: 0.25rem; margin-right: 0.5rem; font-size: 0.85rem; color: var(--text-muted); }
+.viewer-nav a, .viewer-nav span.off { display: inline-grid; place-items: center; width: 1.8rem; height: 1.8rem; border: 1px solid var(--border); border-radius: 6px; color: var(--text); font-size: 1.05rem; }
+.viewer-nav a:hover { border-color: var(--primary); color: var(--primary); text-decoration: none; }
+.viewer-nav span.off { opacity: 0.35; }

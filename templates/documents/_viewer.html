@@ -13,6 +13,13 @@
       </div>
     </div>
     <div class="viewer-actions">
+      {% if total > 1 %}
+        <span class="viewer-nav" aria-label="Autres documents">
+          {% if previous %}<a href="{% url 'clients:document_viewer_page' client.pk previous.pk %}" hx-get="{% url 'clients:document_viewer' client.pk previous.pk %}" hx-target="#doc-viewer-content" hx-swap="innerHTML" title="Document précédent : {{ previous.title }}">‹</a>{% else %}<span class="off">‹</span>{% endif %}
+          {{ position }} / {{ total }}
+          {% if next %}<a href="{% url 'clients:document_viewer_page' client.pk next.pk %}" hx-get="{% url 'clients:document_viewer' client.pk next.pk %}" hx-target="#doc-viewer-content" hx-swap="innerHTML" title="Document suivant : {{ next.title }}">›</a>{% else %}<span class="off">›</span>{% endif %}
+        </span>
+      {% endif %}
       {% if pages %}<button type="button" class="button-secondary small" data-viewer-print>Imprimer</button>{% endif %}
       <a class="button button-small" href="{% url 'clients:document_file' client.pk document.pk %}?telecharger=1">Télécharger</a>
       <button type="button" class="viewer-close" data-viewer-close aria-label="Fermer">×</button>

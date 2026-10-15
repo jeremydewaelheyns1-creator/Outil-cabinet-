@@ -4,7 +4,6 @@
   document.addEventListener("htmx:afterSwap", function (event) {
     var dialog = viewer();
     if (dialog && event.detail.target.id === "doc-viewer-content" && !dialog.open) {
-      document.querySelectorAll("details.doc-peek[open]").forEach(function (m) { m.removeAttribute("open"); });
       dialog.showModal();
     }
   });
@@ -38,13 +37,6 @@
     if (event.target.id === "doc-viewer") document.getElementById("doc-viewer-content").innerHTML = "";
   }, true);
 })();
-
-// Petite liste de documents (onglet Documents) : se ferme quand on clique ailleurs.
-document.addEventListener("click", function (event) {
-  document.querySelectorAll("details.doc-peek[open]").forEach(function (menu) {
-    if (!menu.contains(event.target)) menu.removeAttribute("open");
-  });
-});
 
 // Bouton « copier » (numéros, e-mails) : fonctionne sur toutes les pages.
 document.addEventListener("click", function (event) {
