@@ -10,7 +10,7 @@ sont inventées.
   Déclaration des bénéficiaires effectifs, Identification du client, Identification des
   mandataires, Procuration, Fiche de détermination du niveau de risque, UBO.
 - Chaque rectangle a son état (à jour, à confirmer, problème, vide) et l'icône pour ouvrir le
-  document en un clic.
+  document en un clic. Présentation sur deux colonnes, comme avant.
 
 ## 15 octobre 2026 — Documents anti-blanchiment (comme FID)
 
