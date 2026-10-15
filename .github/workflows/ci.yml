@@ -44,4 +44,5 @@ jobs:
           DJANGO_SECRET_KEY: verification-ci-uniquement-0123456789-abcdefghijklmnopqrstuvwxyz
           DJANGO_ALLOWED_HOSTS: outil.example.be
           DJANGO_CSRF_TRUSTED_ORIGINS: https://outil.example.be
+          GS_DOCUMENTS_BUCKET: verification-ci
         run: uv run python manage.py check --deploy --fail-level WARNING --settings=config.settings.prod

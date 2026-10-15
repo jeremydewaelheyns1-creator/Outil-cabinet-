@@ -1,0 +1,159 @@
+"""Documents des clients et demandes « À recevoir » (D-033, D-034).
+
+Un document est soit « en cours » (rangé dans une case de l'onglet Documents), soit archivé
+(dans un dossier des Archives). Le fichier est stocké dans un espace privé (`documents`) : il
+n'a jamais d'adresse publique et ne se lit que par une vue qui vérifie les droits et
+journalise. Son nom de stockage est aléatoire (aucun nom de client dans les chemins).
+"""
+
+from __future__ import annotations
+
+import secrets
+import uuid
+from typing import ClassVar
+
+from django.core.files.storage import Storage, storages
+from django.db import models
+from django.utils import timezone
+
+from apps.clients.models import Client
+from apps.core.models import User
+
+
+def documents_storage() -> Storage:
+    return storages["documents"]
+
+
+def new_reference() -> str:
+    return secrets.token_hex(5).upper()
+
+
+def _storage_name(instance: Document, filename: str) -> str:
+    return f"{timezone.now():%Y/%m}/{uuid.uuid4().hex}"
+
+
+class DocumentRequest(models.Model):
+    """Pièce demandée au client, en attente de réception (case « À recevoir »)."""
+
+    class Kind(models.TextChoices):
+        IDENTITY_CARD = "identity_card", "Carte d'identité"
+        UBO = "ubo", "Confirmation des bénéficiaires effectifs"
+        SIGNATURE = "signature", "Document à signer"
+        OTHER = "other", "Autre pièce"
+
+    class Status(models.TextChoices):
+        PENDING = "pending", "En attente"
+        RECEIVED = "received", "Reçue"
+        CANCELLED = "cancelled", "Annulée"
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    client = models.ForeignKey(Client, on_delete=models.PROTECT, related_name="document_requests")
+    kind = models.CharField("type", max_length=20, choices=Kind.choices)
+    person = models.ForeignKey(
+        Client,
+        verbose_name="personne concernée",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="+",
+    )
+    title = models.CharField("objet", max_length=200)
+    recipient = models.EmailField("destinataire", blank=True)
+    status = models.CharField(
+        "état", max_length=20, choices=Status.choices, default=Status.PENDING, db_index=True
+    )
+    # Référence glissée dans l'e-mail : permettra de rattacher la réponse à la demande.
+    reference = models.CharField("référence", max_length=20, unique=True, default=new_reference)
+    reminders_sent = models.PositiveSmallIntegerField("relances envoyées", default=0)
+    next_reminder_on = models.DateField("prochaine relance", null=True, blank=True)
+    created_at = models.DateTimeField("demandée le", default=timezone.now)
+    created_by = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True, related_name="+"
+    )
+    closed_at = models.DateTimeField("clôturée le", null=True, blank=True)
+
+    class Meta:
+        verbose_name = "demande de document"
+        verbose_name_plural = "demandes de documents"
+        ordering: ClassVar = ["-created_at"]
+
+    def __str__(self) -> str:
+        return self.title
+
+
+class Document(models.Model):
+    class Source(models.TextChoices):
+        UPLOAD = "upload", "Déposé à la main"
+        REQUEST = "request", "Reçu en réponse à une demande"
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    client = models.ForeignKey(Client, on_delete=models.PROTECT, related_name="documents")
+    title = models.CharField("titre", max_length=200)
+    # Où il se trouve : une case de l'onglet Documents (en cours) ou un dossier d'archives.
+    case = models.CharField("case", max_length=40, blank=True, db_index=True)
+    folder = models.CharField("dossier d'archives", max_length=40, blank=True, db_index=True)
+    person = models.ForeignKey(
+        Client,
+        verbose_name="personne concernée",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="+",
+    )
+    request = models.ForeignKey(
+        DocumentRequest,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="documents",
+    )
+    source = models.CharField(max_length=20, choices=Source.choices, default=Source.UPLOAD)
+    auto_filed = models.BooleanField("classé automatiquement", default=False)
+    file = models.FileField(storage=documents_storage, upload_to=_storage_name, max_length=200)
+    original_name = models.CharField("nom du fichier", max_length=255)
+    content_type = models.CharField(max_length=100)
+    size = models.PositiveIntegerField("taille")
+    sha256 = models.CharField(max_length=64)
+    uploaded_at = models.DateTimeField("ajouté le", default=timezone.now)
+    uploaded_by = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True, related_name="+"
+    )
+    archived_at = models.DateTimeField("archivé le", null=True, blank=True)
+
+    class Meta:
+        verbose_name = "document"
+        verbose_name_plural = "documents"
+        ordering: ClassVar = ["-uploaded_at"]
+        constraints: ClassVar = [
+            models.CheckConstraint(
+                condition=~models.Q(case="", folder=""), name="document_has_place"
+            )
+        ]
+
+    def __str__(self) -> str:
+        return self.title
+
+
+class OutgoingEmail(models.Model):
+    """E-mail envoyé (ou préparé) au client pour une demande. Tant que la messagerie du cabinet
+    n'est pas branchée, il est seulement enregistré et affiché (`delivered` = faux)."""
+
+    class Kind(models.TextChoices):
+        REQUEST = "request", "Demande"
+        REMINDER = "reminder", "Relance"
+
+    request = models.ForeignKey(DocumentRequest, on_delete=models.CASCADE, related_name="emails")
+    kind = models.CharField(max_length=20, choices=Kind.choices)
+    to = models.EmailField("à", blank=True)
+    subject = models.CharField("objet", max_length=255)
+    body = models.TextField("message")
+    created_at = models.DateTimeField(default=timezone.now)
+    delivered = models.BooleanField("envoyé", default=False)
+
+    class Meta:
+        verbose_name = "e-mail sortant"
+        verbose_name_plural = "e-mails sortants"
+        ordering: ClassVar = ["created_at"]
+
+    def __str__(self) -> str:
+        return self.subject

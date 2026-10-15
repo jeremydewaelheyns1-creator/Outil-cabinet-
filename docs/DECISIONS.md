@@ -204,3 +204,17 @@ dans la case de son sujet (on sait ce qu'on a demandé) ; en cas de doute, la ca
 orange. « À recevoir » liste les demandes envoyées au client jusqu'à leur réception. Les
 documents signés sont des pièces « à recevoir » comme les autres. Les Bénéficiaires effectifs
 quittent le panneau de gauche pour leur case.
+
+## D-034 — Documents : stockage privé, lecture contrôlée, demandes et relances
+Base commune de l'onglet Documents (application `apps/documents`). Les fichiers sont stockés
+dans un espace privé dédié (`STORAGES["documents"]` : seau Cloud Storage privé en Belgique en
+production, dossier local non publié ailleurs), sous un nom aléatoire, avec leur empreinte
+SHA-256. Seuls PDF, JPG, PNG, Word et Excel sont acceptés, reconnus par leur contenu ; 20 Mo
+maximum. Un fichier ne se lit que par une vue qui vérifie que le client est visible, journalise
+la consultation et interdit au navigateur d'exécuter quoi que ce soit (sandbox, nosniff, pas de
+cache). Les demandes « À recevoir » préparent un e-mail neutre (objet de la demande + référence,
+aucune donnée sensible ni pièce jointe) ; tant que la messagerie du cabinet n'est pas branchée,
+l'e-mail est seulement affiché. Relances automatiques (7 jours, 2 fois par défaut) par
+`run_jobs` ; ensuite la case passe en rouge. À la réception, la pièce va dans sa case (carte
+d'identité → Pièces d'identité, en archivant l'ancienne carte de la même personne) ou dans les
+archives (document signé → Légal, autre → Administratif).

@@ -28,6 +28,18 @@ X_FRAME_OPTIONS = "DENY"
 STORAGES = {
     "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
     "staticfiles": {"BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage"},
+    # Documents des clients : seau Cloud Storage privé en Belgique (europe-west1), accès
+    # uniforme, chiffré par Google ; l'application y accède avec son compte de service.
+    "documents": {
+        "BACKEND": "storages.backends.gcloud.GoogleCloudStorage",
+        "OPTIONS": {
+            "bucket_name": env("GS_DOCUMENTS_BUCKET"),
+            "default_acl": None,
+            "file_overwrite": False,
+            "querystring_auth": True,
+            "expiration": 60,
+        },
+    },
 }
 
 LOGGING["handlers"]["console"]["formatter"] = "json"

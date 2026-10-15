@@ -1,0 +1,19 @@
+{# Liste de documents (case en cours ou dossier d'archives). #}
+{% if documents %}
+<table class="table">
+  <thead><tr><th>Document</th><th>Personne</th><th>Ajouté le</th><th>Origine</th></tr></thead>
+  <tbody>
+  {% for d in documents %}
+    <tr>
+      <td><a href="{% url 'clients:document_file' client.pk d.pk %}" target="_blank" rel="noopener">{{ d.title }}</a>
+        <div class="muted small">{{ d.original_name }} · {{ d.size|filesizeformat }}</div></td>
+      <td class="small">{% if d.person %}{{ d.person.display_name }}{% else %}—{% endif %}</td>
+      <td class="small nowrap">{{ d.uploaded_at|date:"d/m/Y" }}{% if d.archived_at and d.case == "" and d.archived_at != d.uploaded_at %}<div class="muted">archivé le {{ d.archived_at|date:"d/m/Y" }}</div>{% endif %}</td>
+      <td class="small">{% if d.auto_filed %}<span class="badge badge-primary">classé automatiquement</span>{% else %}{{ d.get_source_display }}{% if d.uploaded_by %} · {{ d.uploaded_by.get_short_name }}{% endif %}{% endif %}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<p class="empty">{{ empty_text|default:"Aucun document." }}</p>
+{% endif %}

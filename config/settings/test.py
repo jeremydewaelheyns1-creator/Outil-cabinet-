@@ -12,6 +12,7 @@ JOBS_MODE = "eager"
 STORAGES = {
     "default": {"BACKEND": "django.core.files.storage.InMemoryStorage"},
     "staticfiles": {"BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"},
+    "documents": {"BACKEND": "django.core.files.storage.InMemoryStorage"},
 }
 # Aucune requête réseau réelle en test : les clients HTTP sont simulés.
 VIES_API_URL = "https://vies.invalid/check-vat-number"

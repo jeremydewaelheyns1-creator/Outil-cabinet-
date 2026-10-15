@@ -54,6 +54,10 @@ class Command(BaseCommand):
         if options["vider"]:
             if not settings.DEBUG:
                 raise CommandError("--vider n'est permis qu'en développement (DEBUG).")
+            from apps.documents.models import Document, DocumentRequest
+
+            Document.objects.all().delete()
+            DocumentRequest.objects.all().delete()
             Relation.objects.all().delete()
             Client.objects.all().delete()
         elif Client.objects.exists():
@@ -150,6 +154,7 @@ class Command(BaseCommand):
                 start_date=date(2018, 1, 1),
             )
         self._official_snapshots(companies, persons)
+        self._documents(companies, persons, user)
         from apps.tasks.generator import generate_all
 
         run = generate_all()
@@ -217,3 +222,46 @@ class Command(BaseCommand):
                 OfficialSnapshot.objects.create(
                     client=company, source=source, status=OfficialSnapshot.Status.OK, items=items
                 )
+
+    @staticmethod
+    def _documents(companies: list[Client], persons: list[Client], user: User) -> None:
+        """Documents et demandes fictifs (petits PDF générés, aucun contenu réel)."""
+        from datetime import timedelta
+
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        from django.utils import timezone
+
+        from apps.documents import services
+        from apps.documents.models import DocumentRequest
+
+        def fake_pdf(label: str) -> SimpleUploadedFile:
+            content = f"%PDF-1.4\n% Document fictif de démonstration : {label}\n".encode()
+            return SimpleUploadedFile("demo.pdf", content, content_type="application/pdf")
+
+        bakery, garage = companies[0], companies[1]
+        sophie, marc = persons[0], persons[1]
+        services.store(
+            bakery, fake_pdf("lettre de mission"), title="Lettre de mission signée (2024)",
+            case="lettre-de-mission", user=user,
+        )  # fmt: skip
+        services.store(
+            bakery, fake_pdf("statuts"), title="Statuts coordonnés", folder="legal", user=user
+        )
+        services.store(
+            bakery, fake_pdf("isoc"), title="Déclaration ISOC exercice 2024", folder="isoc",
+            user=user,
+        )  # fmt: skip
+        services.store(
+            bakery, fake_pdf("carte"), title="Carte d'identité de Lambert Sophie",
+            case="pieces-identite", person=sophie, user=user,
+        )  # fmt: skip
+        late = services.create_request(garage, "identity_card", person=marc, user=user)
+        # Une demande plus ancienne, déjà relancée deux fois sans réponse (case en rouge).
+        DocumentRequest.objects.filter(pk=late.pk).update(
+            created_at=timezone.now() - timedelta(days=21)
+        )
+        today = timezone.localdate()
+        services.send_due_reminders(today + timedelta(days=7))
+        services.send_due_reminders(today + timedelta(days=14))
+        DocumentRequest.objects.filter(pk=late.pk).update(next_reminder_on=today)
+        services.create_request(bakery, "identity_card", person=marc, user=user)

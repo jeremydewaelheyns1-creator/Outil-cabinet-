@@ -667,3 +667,6 @@ a.badge:hover { text-decoration: none; filter: brightness(0.95); }
 .doc-cases > .card + .card { margin-top: 0; }
 .doc-cases h2 a { color: inherit; }
 .doc-cases h2 a:hover { color: var(--primary); }
+.doc-upload { margin-top: 0.75rem; }
+.doc-upload form { margin-top: 0.5rem; max-width: 480px; }
+.email-preview { border-left: 3px solid var(--border); padding: 0.35rem 0.75rem; margin: 0.5rem 0; background: var(--surface-muted); }

@@ -10,6 +10,7 @@ dependencies = [
     "django-environ>=0.14,<0.15",
     "django-htmx>=1.29,<2",
     "django-simple-history>=3.13,<4",
+    "django-storages[google]>=1.14,<2",
     "django-stubs-ext>=6.1,<6.2",
     "gunicorn>=26,<27",
     "httpx>=0.28,<0.29",

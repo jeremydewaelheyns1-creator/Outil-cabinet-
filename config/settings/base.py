@@ -50,6 +50,7 @@ INSTALLED_APPS = [
     "apps.integrations",
     "apps.reprise",
     "apps.tasks",
+    "apps.documents",
 ]
 
 MIDDLEWARE = [
@@ -170,7 +171,17 @@ MEDIA_ROOT = BASE_DIR / "media"
 STORAGES = {
     "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
     "staticfiles": {"BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"},
+    # Documents des clients (D-034) : jamais servis directement, toujours par une vue qui
+    # vérifie les droits et journalise. Hors de MEDIA_ROOT, qui n'est pas publié non plus.
+    "documents": {
+        "BACKEND": "django.core.files.storage.FileSystemStorage",
+        "OPTIONS": {"location": str(BASE_DIR / "var" / "documents")},
+    },
 }
+DOCUMENT_MAX_BYTES = 20 * 1024 * 1024
+# Relances automatiques d'une demande « À recevoir » : après N jours, au plus N fois.
+REQUEST_REMINDER_DAYS = env.int("REQUEST_REMINDER_DAYS", default=7)
+REQUEST_MAX_REMINDERS = env.int("REQUEST_MAX_REMINDERS", default=2)
 
 DATA_UPLOAD_MAX_MEMORY_SIZE = 25 * 1024 * 1024
 FILE_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024

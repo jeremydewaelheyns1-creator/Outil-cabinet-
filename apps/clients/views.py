@@ -397,11 +397,13 @@ class CaseStatus:
     """État d'une case : vert (tout va bien), orange (à confirmer), rouge (problème),
     gris (pas encore en place)."""
 
-    level: str  # "ok", "warning", "danger", "off"
+    level: str  # "ok", "warning", "danger", "empty"
     text: str
 
 
-def _case_status(client: Client, case: dossier.DocumentCase, request: AppRequest) -> CaseStatus:
+def case_status(client: Client, case: dossier.DocumentCase, request: AppRequest) -> CaseStatus:
+    from apps.documents import services as documents
+
     if case.slug == "ubo":
         analysis = _ubo(request, client)
         if analysis is None or not analysis.candidates:
@@ -414,31 +416,27 @@ def _case_status(client: Client, case: dossier.DocumentCase, request: AppRequest
             return CaseStatus("warning", "Différents de ce qui est déclaré")
         return CaseStatus("ok", "Conformes aux déclarations")
     if case.slug == "a-recevoir":
+        overdue = documents.overdue_requests(client)
+        if overdue:
+            return CaseStatus("danger", f"Sans réponse après relances : {len(overdue)}")
+        pending = len(documents.pending_requests(client))
+        if pending:
+            return CaseStatus("ok", f"{pending} demande{'s' if pending > 1 else ''} en attente")
         return CaseStatus("ok", "Aucune demande en attente")
-    return CaseStatus("off", "Bientôt disponible")
+    count = len(documents.current_documents(client, case.slug))
+    if not count:
+        return CaseStatus("empty", "Aucun document")
+    return CaseStatus("ok", f"{count} document{'s' if count > 1 else ''}")
 
 
 def client_documents(request: AppRequest, pk: int) -> HttpResponse:
     """Onglet Documents : une case par sujet, avec son état (D-033)."""
 
     def build(client: Client) -> dict[str, Any]:
-        cases = [(c, _case_status(client, c, request)) for c in dossier.document_cases_for(client)]
+        cases = [(c, case_status(client, c, request)) for c in dossier.document_cases_for(client)]
         return {"cases": cases}
 
     return render_section(request, pk, "documents", "clients/sections/documents.html", build)
-
-
-def client_document_case(request: AppRequest, pk: int, slug: str) -> HttpResponse:
-    case = dossier.DOCUMENT_CASE_SLUGS.get(slug)
-    if case is None or case.url_name != "document_case":
-        raise Http404
-
-    def build(client: Client) -> dict[str, Any]:
-        return {"case": case, "status": _case_status(client, case, request)}
-
-    return render_section(
-        request, pk, f"documents:{slug}", "clients/sections/document_case.html", build
-    )
 
 
 def client_ubo(request: AppRequest, pk: int) -> HttpResponse:
@@ -447,7 +445,7 @@ def client_ubo(request: AppRequest, pk: int) -> HttpResponse:
         pk,
         "ubo",
         "clients/sections/ubo.html",
-        lambda client: {"ubo": _ubo(request, client)},
+        lambda client: {"ubo": _ubo(request, client), **_documents_block(client, case="ubo")},
     )
 
 
@@ -475,6 +473,19 @@ def client_annual_accounts(request: AppRequest, pk: int) -> HttpResponse:
     )
 
 
+def _documents_block(client: Client, *, case: str = "", folder: str = "") -> dict[str, Any]:
+    """Liste des documents d'une case ou d'un dossier, avec le formulaire de dépôt."""
+    from apps.documents import services as documents
+    from apps.documents.views import UploadForm
+
+    return {
+        "documents": documents.current_documents(client, case)
+        if case
+        else documents.archived_documents(client, folder),
+        "upload_form": UploadForm(client=client, initial={"case": case, "folder": folder}),
+    }
+
+
 def client_archive(request: AppRequest, pk: int, slug: str) -> HttpResponse:
     """Dossier d'archives (D-031). Le Moniteur se remplit seul ; les autres, avec l'onglet
     Documents (les documents traités y seront rangés automatiquement)."""
@@ -483,7 +494,7 @@ def client_archive(request: AppRequest, pk: int, slug: str) -> HttpResponse:
         raise Http404
 
     def build(client: Client) -> dict[str, Any]:
-        context: dict[str, Any] = {"folder": found}
+        context: dict[str, Any] = {"folder": found, **_documents_block(client, folder=slug)}
         if slug == "moniteur" and client.enterprise_number:
             context.update(_official(client, OfficialSnapshot.Source.MONITEUR))
         return context

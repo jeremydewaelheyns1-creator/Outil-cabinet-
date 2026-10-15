@@ -1,5 +1,6 @@
 from django.urls import path
 
+from apps.documents import views as document_views
 from apps.tasks import views as task_views
 
 from . import views
@@ -29,7 +30,24 @@ urlpatterns = [
     path("<int:pk>/travail/<slug:slug>/", views.client_work, name="work"),
     path("<int:pk>/archives/<slug:slug>/", views.client_archive, name="archive"),
     path("<int:pk>/documents/", views.client_documents, name="documents"),
-    path("<int:pk>/documents/<slug:slug>/", views.client_document_case, name="document_case"),
+    path("<int:pk>/documents/ajouter/", document_views.upload, name="document_upload"),
+    path(
+        "<int:pk>/documents/fichier/<uuid:document_id>/",
+        document_views.document_file,
+        name="document_file",
+    ),
+    path("<int:pk>/documents/demander/", document_views.request_create, name="request_create"),
+    path(
+        "<int:pk>/documents/demande/<uuid:request_id>/recue/",
+        document_views.request_receive,
+        name="request_receive",
+    ),
+    path(
+        "<int:pk>/documents/demande/<uuid:request_id>/annuler/",
+        document_views.request_cancel,
+        name="request_cancel",
+    ),
+    path("<int:pk>/documents/<slug:slug>/", document_views.case_page, name="document_case"),
     # Actions
     path("<int:pk>/modifier/", views.client_edit, name="edit"),
     path("<int:pk>/numero-national/", views.reveal_national_number, name="reveal_nn"),

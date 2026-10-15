@@ -1,0 +1,65 @@
+{% extends "clients/sections/_base.html" %}
+{% block head_title %}{{ case.label }} · {{ client.display_name }}{% endblock %}
+{% block page_title %}<a href="{% url 'clients:documents' client.pk %}" class="muted">Documents</a> › {{ case.label }}{% endblock %}
+{% block content %}
+<section class="card">
+  <div class="card-header"><h2>{{ case.label }}</h2>{% include "clients/_case_badge.html" %}</div>
+  <p class="small muted" style="margin-top:0">{{ case.description }}</p>
+
+  {% if case.slug == "a-recevoir" %}
+    {% if requests %}
+      <table class="table">
+        <thead><tr><th>Demande</th><th>Envoyée le</th><th>Relances</th><th></th></tr></thead>
+        <tbody>
+        {% for r in requests %}
+          <tr>
+            <td><strong>{{ r.title }}</strong>
+              <div class="muted small">à {{ r.recipient|default:"— (pas d'adresse e-mail)" }} · réf. {{ r.reference }}</div>
+              <details class="small"><summary>Voir les e-mails ({{ r.emails.all|length }})</summary>
+                {% for e in r.emails.all %}
+                  <div class="email-preview">
+                    <div><strong>{{ e.subject }}</strong></div>
+                    <div class="muted">{{ e.created_at|date:"d/m/Y H:i" }} · {% if e.delivered %}envoyé{% else %}préparé — pas encore envoyé (messagerie du cabinet à brancher){% endif %}</div>
+                    <div style="white-space: pre-line; margin-top:.35rem">{{ e.body }}</div>
+                  </div>
+                {% endfor %}
+              </details>
+            </td>
+            <td class="small nowrap">{{ r.created_at|date:"d/m/Y" }}</td>
+            <td class="small nowrap">{{ r.reminders_sent }}{% if r.next_reminder_on %}<div class="muted">prochaine le {{ r.next_reminder_on|date:"d/m" }}</div>{% endif %}</td>
+            <td class="nowrap">
+              {% if can_edit %}
+                <details class="small"><summary>Reçu</summary>
+                  <form method="post" action="{% url 'clients:request_receive' client.pk r.pk %}" enctype="multipart/form-data" style="margin-top:.35rem">
+                    {% csrf_token %}{{ receive_form.file }}
+                    <button type="submit" class="small" style="margin-top:.35rem">Ranger le document</button>
+                  </form>
+                </details>
+                <form class="inline" method="post" action="{% url 'clients:request_cancel' client.pk r.pk %}">{% csrf_token %}<button type="submit" class="link-button small">Annuler</button></form>
+              {% endif %}
+            </td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <p class="empty">Aucune demande en attente.</p>
+    {% endif %}
+    {% if can_edit %}
+      <details class="doc-upload" {% if not requests %}open{% endif %}>
+        <summary class="small">+ Nouvelle demande au client</summary>
+        <form method="post" action="{% url 'clients:request_create' client.pk %}">
+          {% csrf_token %}
+          {{ request_form.kind.as_field_group }}
+          {{ request_form.person.as_field_group }}
+          {{ request_form.label.as_field_group }}
+          <button type="submit" class="small">Préparer la demande</button>
+        </form>
+      </details>
+    {% endif %}
+  {% else %}
+    {% include "documents/_list.html" %}
+    {% if case.slug == "pieces-identite" %}{% include "documents/_upload.html" with with_person=True %}{% else %}{% include "documents/_upload.html" %}{% endif %}
+  {% endif %}
+</section>
+{% endblock %}

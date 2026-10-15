@@ -3,6 +3,22 @@
 Ce qui a été ajouté à l'outil, du plus récent au plus ancien. Toutes les données de la démo
 sont inventées.
 
+## 15 octobre 2026 — Documents : dépôt, demandes au client et relances
+
+- On peut **déposer un document** dans chaque case de l'onglet Documents et dans chaque dossier
+  des Archives (PDF, photo, Word, Excel). Il est rangé en sécurité ; chaque ouverture est
+  enregistrée dans le journal.
+- **À recevoir** : on demande une pièce au client (par exemple la carte d'identité d'un gérant).
+  L'outil prépare l'e-mail et le **relance tout seul** après 7 jours, deux fois. Sans réponse
+  ensuite, la case passe en rouge (« problème »).
+- Quand la pièce arrive, un clic sur « Reçu » la range au bon endroit : une carte d'identité va
+  dans Pièces d'identité et l'ancienne carte part aux Archives.
+- Les e-mails ne sont **pas encore réellement envoyés** : ils sont affichés dans l'outil en
+  attendant de brancher la messagerie du cabinet.
+- Dans la démo : la Boulangerie a une demande en attente, le Garage une demande restée sans
+  réponse (case rouge). Les documents de la démo sont fictifs ; on ne peut pas les ouvrir dans
+  la démo en ligne.
+
 ## 14 octobre 2026 — Onglet Documents
 
 - L'onglet **Documents** montre un rectangle par sujet : À recevoir, Pièces d'identité,

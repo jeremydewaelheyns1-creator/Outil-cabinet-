@@ -4,13 +4,13 @@
 {% block content %}
 <div class="grid grid-2 doc-cases">
   {% for case, status in cases %}
-    <section class="card{% if status.level == 'off' %} soon-card{% endif %}">
+    <section class="card{% if status.level == 'empty' %} soon-card{% endif %}">
       <div class="card-header">
         <h2><a href="{% if case.url_name == 'ubo' %}{% url 'clients:ubo' client.pk %}{% else %}{% url 'clients:document_case' client.pk case.slug %}{% endif %}">{{ case.label }}</a></h2>
         {% include "clients/_case_badge.html" %}
       </div>
       <p class="small" style="margin:0 0 .35rem">{{ case.description }}</p>
-      {% if status.level != "off" %}<p class="small muted" style="margin:0">{{ status.text }}</p>{% endif %}
+      <p class="small muted" style="margin:0">{{ status.text }}</p>
     </section>
   {% endfor %}
 </div>

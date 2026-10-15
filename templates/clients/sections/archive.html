@@ -2,8 +2,8 @@
 {% block head_title %}Archives · {{ folder.label }} · {{ client.display_name }}{% endblock %}
 {% block page_title %}Archives · {{ folder.label }}{% endblock %}
 {% block content %}
+{% if folder.slug == "moniteur" %}
 <section class="card">
-  {% if folder.slug == "moniteur" %}
     {% include "clients/official/_status.html" with official_label="Ouvrir au Moniteur belge" %}
     {% if snapshot.items %}
       <table class="table">
@@ -21,8 +21,11 @@
     {% else %}
       <p class="empty">Aucune publication lue pour l'instant.</p>
     {% endif %}
-  {% else %}
-    <p class="empty" style="margin:0">Aucun document archivé pour l'instant. Les documents traités dans l'onglet Documents seront rangés ici automatiquement.</p>
   {% endif %}
+</section>
+<section class="card">
+  {% if folder.slug == "moniteur" %}<div class="card-header"><h2>Autres documents</h2></div>{% endif %}
+  {% include "documents/_list.html" with empty_text="Aucun document archivé pour l'instant. Les documents traités dans l'onglet Documents seront rangés ici automatiquement." %}
+  {% include "documents/_upload.html" %}
 </section>
 {% endblock %}

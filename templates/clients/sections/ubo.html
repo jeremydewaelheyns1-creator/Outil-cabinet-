@@ -52,4 +52,11 @@
     </div>
   </section>
 </div>
+<div style="max-width: 900px">
+  <section class="card">
+    <div class="card-header"><h2>Justificatifs</h2></div>
+    {% include "documents/_list.html" with empty_text="Aucun justificatif (registre des parts, extrait du registre UBO…)." %}
+    {% include "documents/_upload.html" %}
+  </section>
+</div>
 {% endblock %}
