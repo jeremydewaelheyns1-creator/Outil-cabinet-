@@ -155,13 +155,14 @@ def case_page(request: AppRequest, pk: int, slug: str) -> HttpResponse:
             context["people"] = identity.people_cards(client, services.people_concerned(client))
             context["to_confirm"] = identity.documents_to_confirm(client)
             context["confirm_form"] = ConfirmCardForm()
-        if slug in ("anti-blanchiment", "lettre-de-mission"):
+        if slug in types.TYPED_CASES:
             context["rows"] = rows_with_requests(client, slug)
             context["upload_form"] = UploadForm(
                 client=client,
                 initial={
                     "case": slug,
-                    "doc_type": request.GET.get("type", ""),
+                    "doc_type": request.GET.get("type", "")
+                    or next((t.slug for t in types.types_for_case(slug)), ""),
                     "person": request.GET.get("personne") or None,
                 },
             )

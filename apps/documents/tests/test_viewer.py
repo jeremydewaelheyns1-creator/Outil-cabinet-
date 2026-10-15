@@ -85,8 +85,8 @@ def test_viewer_respects_private_portfolios(web):
 
 def test_viewer_moves_between_documents_of_the_same_place(web):
     company = ClientFactory()
-    first = stored(company, case="anti-blanchiment")
-    second = stored(company, case="anti-blanchiment")  # le plus récent en premier
+    first = stored(company, case="procuration")
+    second = stored(company, case="procuration")  # le plus récent en premier
     html = web.get(reverse("clients:document_viewer", args=[company.pk, second.pk])).content
     assert "1 / 2" in html.decode()
     assert reverse("clients:document_viewer", args=[company.pk, first.pk]) in html.decode()

@@ -445,9 +445,9 @@ def case_status(client: Client, case: dossier.DocumentCase, request: AppRequest)
         if orange:
             return CaseStatus("warning", f"{len(orange)} carte(s) expirent bientôt")
         return CaseStatus("ok", "Toutes les cartes sont valables")
-    if case.slug in ("anti-blanchiment", "lettre-de-mission"):
-        from apps.documents import types
+    from apps.documents import types
 
+    if case.slug in types.TYPED_CASES:
         doc_rows = types.rows(client, case.slug)
         level = types.worst([r.level for r in doc_rows])
         problems = [r for r in doc_rows if r.level in ("danger", "warning")]
@@ -458,9 +458,11 @@ def case_status(client: Client, case: dossier.DocumentCase, request: AppRequest)
                 else CaseStatus("empty", "Aucun document")
             )
         first = problems[0]
-        who = f" ({first.person.display_name})" if first.person else ""
         more = f" + {len(problems) - 1} autre(s)" if len(problems) > 1 else ""
-        return CaseStatus(level, f"{first.doc_type.label}{who} : {first.text.lower()}{more}")
+        if len(types.types_for_case(case.slug)) > 1:
+            return CaseStatus(level, f"{first.doc_type.label} : {first.text.lower()}{more}")
+        who = f"{first.person.display_name} : " if first.person else ""
+        return CaseStatus(level, f"{who}{first.text}{more}")
     count = len(documents.current_documents(client, case.slug))
     if not count:
         return CaseStatus("empty", "Aucun document")

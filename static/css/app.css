@@ -664,6 +664,7 @@ a.badge:hover { text-decoration: none; filter: brightness(0.95); }
 .side-folder > span::before { content: "\1F4C1"; margin-right: 0.45rem; font-size: 0.85rem; }
 
 /* --- Onglet Documents (D-033) --------------------------------------------------------------- */
+.doc-cases { display: grid; grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); gap: 1rem; }
 .doc-cases > .card + .card { margin-top: 0; }
 .doc-cases h2 a { color: inherit; }
 .doc-cases h2 a:hover { color: var(--primary); }

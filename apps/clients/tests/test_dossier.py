@@ -274,27 +274,26 @@ def test_moniteur_archive_lists_publications(web):
     assert OfficialSnapshot.objects.count() == 1
 
 
-def test_documents_tab_shows_cases_with_status(web):
+def test_documents_tab_has_one_rectangle_per_fid_line(web):
     company = ClientFactory()
     html = web.get(reverse("clients:documents", args=[company.pk])).content.decode()
-    for label in ("À recevoir", "Pièces d", "Bénéficiaires effectifs", "Anti-blanchiment",
-                  "Lettre de mission"):  # fmt: skip
-        assert label in html
+    labels = ("À recevoir", "Lettre de mission", "Cartes d", "Déclaration des bénéficiaires",
+              "Identification du client", "Identification des mandataires", "Procuration",
+              "Fiche de détermination du niveau de risque", ">UBO<")  # fmt: skip
+    positions = [html.index(label) for label in labels]
+    assert positions == sorted(positions)  # dans l'ordre de FID
     assert "badge-danger" in html and "problème" in html  # aucun UBO calculé : rouge
-    owner = PersonFactory()
-    Relation.objects.create(entity=company, person=owner, role="shareholder", share_percentage=100)
-    html = web.get(reverse("clients:documents", args=[company.pk])).content.decode()
-    assert "Déclaration des bénéficiaires effectifs : manquant" in html  # document exigé
     # La case UBO s'ouvre sous l'onglet Documents.
     ubo_page = web.get(reverse("clients:ubo", args=[company.pk])).content.decode()
     assert 'aria-current="page">Documents<' in ubo_page
-    case = web.get(reverse("clients:document_case", args=[company.pk, "pieces-identite"]))
-    assert case.status_code == 200
+    case = web.get(reverse("clients:document_case", args=[company.pk, "fiche-risque"]))
+    assert case.status_code == 200 and "Manquant" in case.content.decode()
     assert web.get(reverse("clients:document_case", args=[company.pk, "ubo"])).status_code == 404
-    # Une personne : pas de case UBO.
+    # Une personne : ni UBO, ni déclaration, ni mandataires.
     person = PersonFactory()
     html = web.get(reverse("clients:documents", args=[person.pk])).content.decode()
-    assert "Bénéficiaires effectifs" not in html
+    assert "Déclaration des bénéficiaires" not in html and ">UBO<" not in html
+    assert "Identification des mandataires" not in html
 
 
 def test_documents_tab_gives_direct_access_to_documents(web):

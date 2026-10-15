@@ -2,7 +2,7 @@
 {% block head_title %}Documents · {{ client.display_name }}{% endblock %}
 {% block page_title %}Documents{% endblock %}
 {% block content %}
-<div class="grid grid-2 doc-cases">
+<div class="doc-cases">
   {% for case, status, docs in cases %}
     <section class="card{% if status.level == 'empty' %} soon-card{% endif %}">
       <div class="card-header">

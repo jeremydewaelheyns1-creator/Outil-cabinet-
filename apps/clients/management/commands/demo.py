@@ -251,14 +251,16 @@ class Command(BaseCommand):
             ("fiche_risque", "Fiche de détermination du niveau de risque", None,
              today0 + timedelta(days=44)),
         ]  # fmt: skip
+        from apps.documents import types as doc_types
+
         for doc_type, title, who, expires in aml:
             services.store(
-                bakery, fake_pdf(title), title=title, case="anti-blanchiment",
+                bakery, fake_pdf(title), title=title, case=doc_types.BY_SLUG[doc_type].case,
                 doc_type=doc_type, person=who, expires_on=expires, user=user,
             )  # fmt: skip
         services.store(
             bakery, fake_pdf("declaration UBO"), title="Déclaration des bénéficiaires effectifs",
-            case="ubo", doc_type="declaration_ubo", user=user,
+            case="declaration-ubo", doc_type="declaration_ubo", user=user,
         )  # fmt: skip
         services.store(
             bakery, fake_pdf("extrait registre UBO"), title="Extrait du registre UBO",
@@ -266,7 +268,7 @@ class Command(BaseCommand):
         )  # fmt: skip
         services.store(
             garage, fake_pdf("fiche de risque"), title="Fiche de détermination du niveau de risque",
-            case="anti-blanchiment", doc_type="fiche_risque",
+            case="fiche-risque", doc_type="fiche_risque",
             expires_on=today0 - timedelta(days=12), user=user,
         )  # fmt: skip
         services.store(

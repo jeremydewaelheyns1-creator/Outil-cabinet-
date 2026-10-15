@@ -258,3 +258,11 @@ fournis par le client se demandent en un clic depuis leur ligne (demande « À r
 typée : à la réception, le document va dans la bonne case avec son type). Ce qui reste à
 automatiser (fiches d'identification et fiche de risque produites par l'outil à partir des
 données du dossier, lettre de mission pré-remplie, rappels de revue) sera proposé à Jeremy.
+
+## D-038 — Un rectangle par ligne de FID dans l'onglet Documents
+Demande de Jeremy (« 90 % des documents iront dans l'onglet Documents »). Précise D-033 et
+D-037 : une case par type de document, dans l'ordre de la rubrique anti-blanchiment de
+FID-Manager : À recevoir, Lettre de mission, Cartes d'identité, Déclaration des bénéficiaires
+effectifs, Identification du client, Identification des mandataires (une ligne par mandataire),
+Procuration, Fiche de détermination du niveau de risque, UBO (calcul + extrait du registre).
+La case « Anti-blanchiment » disparaît (ses documents sont répartis, migration 0004).

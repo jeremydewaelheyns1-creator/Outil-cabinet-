@@ -36,44 +36,41 @@ class DocType:
 TYPES: tuple[DocType, ...] = (
     DocType("lettre_mission", "Lettre de mission", "lettre-de-mission", "legal", from_client=True),
     DocType(
-        "identification_client", "Identification du client", "anti-blanchiment", "administratif"
-    ),
-    DocType(
-        "identification_mandataire",
-        "Identification des mandataires",
-        "anti-blanchiment",
-        "administratif",
-        per="mandataire",
-        for_persons=False,
-    ),
-    DocType(
-        "fiche_risque",
-        "Fiche de détermination du niveau de risque",
-        "anti-blanchiment",
-        "administratif",
-        expires=True,
-    ),
-    DocType(
-        "procuration", "Procuration", "anti-blanchiment", "legal", required=False, from_client=True
-    ),
-    DocType(
         "declaration_ubo",
         "Déclaration des bénéficiaires effectifs",
-        "ubo",
+        "declaration-ubo",
         "legal",
         from_client=True,
         for_persons=False,
     ),
     DocType(
-        "extrait_ubo",
-        "Extrait du registre UBO",
-        "ubo",
-        "legal",
-        expires=True,
+        "identification_client",
+        "Identification du client",
+        "identification-client",
+        "administratif",
+    ),
+    DocType(
+        "identification_mandataire",
+        "Identification des mandataires",
+        "identification-mandataires",
+        "administratif",
+        per="mandataire",
         for_persons=False,
+    ),
+    DocType("procuration", "Procuration", "procuration", "legal", required=False, from_client=True),
+    DocType(
+        "fiche_risque",
+        "Fiche de détermination du niveau de risque",
+        "fiche-risque",
+        "administratif",
+        expires=True,
+    ),
+    DocType(
+        "extrait_ubo", "Extrait du registre UBO", "ubo", "legal", expires=True, for_persons=False
     ),
     DocType("autre", "Autre document", "", "administratif", required=False),
 )
+TYPED_CASES = {t.case for t in TYPES if t.case}
 BY_SLUG = {t.slug: t for t in TYPES}
 CARD = "carte_identite"  # les cartes d'identité ont leur propre suivi (identity.py)
 

@@ -117,36 +117,53 @@ class DocumentCase:
     url_name: str = "document_case"  # page dédiée si elle existe déjà (UBO)
 
 
+# Une case par ligne de la rubrique « Loi anti-blanchiment » de FID-Manager (D-038).
 DOCUMENT_CASES: tuple[DocumentCase, ...] = (
     DocumentCase(
         "a-recevoir",
         "À recevoir",
-        "Les demandes envoyées au client (carte d'identité, confirmation UBO, document à "
-        "signer…), jusqu'à leur réception, avec les relances.",
-    ),
-    DocumentCase(
-        "pieces-identite",
-        "Pièces d'identité",
-        "Les cartes des mandataires et des bénéficiaires effectifs, avec alerte avant "
-        "expiration et demande automatique de la nouvelle carte.",
-    ),
-    DocumentCase(
-        "ubo",
-        "Bénéficiaires effectifs (UBO)",
-        "Calculés à partir des actionnaires et des mandataires, comparés aux déclarations du "
-        "registre UBO.",
-        for_persons=False,
-        url_name="ubo",
-    ),
-    DocumentCase(
-        "anti-blanchiment",
-        "Anti-blanchiment",
-        "Le dossier KYC : niveau de risque, vérifications, revue périodique.",
+        "Les demandes envoyées au client, jusqu'à leur réception, avec les relances.",
     ),
     DocumentCase(
         "lettre-de-mission",
         "Lettre de mission",
-        "La lettre de mission signée avec le client, et quand la revoir.",
+        "La lettre de mission signée avec le client.",
+    ),
+    DocumentCase(
+        "pieces-identite",
+        "Cartes d'identité",
+        "Les cartes des mandataires et des actionnaires, avec alerte avant expiration et "
+        "demande automatique de la nouvelle carte.",
+    ),
+    DocumentCase(
+        "declaration-ubo",
+        "Déclaration des bénéficiaires effectifs",
+        "La déclaration signée par le client.",
+        for_persons=False,
+    ),
+    DocumentCase(
+        "identification-client",
+        "Identification du client",
+        "La fiche d'identification du client.",
+    ),
+    DocumentCase(
+        "identification-mandataires",
+        "Identification des mandataires",
+        "Une fiche d'identification par mandataire (personne ou société).",
+        for_persons=False,
+    ),
+    DocumentCase("procuration", "Procuration", "La procuration donnée au cabinet."),
+    DocumentCase(
+        "fiche-risque",
+        "Fiche de détermination du niveau de risque",
+        "Le niveau de risque du client et sa date de revue.",
+    ),
+    DocumentCase(
+        "ubo",
+        "UBO",
+        "Les bénéficiaires effectifs calculés et l'extrait du registre UBO.",
+        for_persons=False,
+        url_name="ubo",
     ),
 )
 DOCUMENT_CASE_SLUGS = {c.slug: c for c in DOCUMENT_CASES}

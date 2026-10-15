@@ -3,6 +3,15 @@
 Ce qui a été ajouté à l'outil, du plus récent au plus ancien. Toutes les données de la démo
 sont inventées.
 
+## 15 octobre 2026 — Un rectangle par document, comme la liste de FID
+
+- L'onglet **Documents** a maintenant un rectangle pour chaque ligne de la rubrique
+  « Loi anti-blanchiment » de FID : À recevoir, Lettre de mission, Cartes d'identité,
+  Déclaration des bénéficiaires effectifs, Identification du client, Identification des
+  mandataires, Procuration, Fiche de détermination du niveau de risque, UBO.
+- Chaque rectangle a son état (à jour, à confirmer, problème, vide) et l'icône pour ouvrir le
+  document en un clic.
+
 ## 15 octobre 2026 — Documents anti-blanchiment (comme FID)
 
 - Les cases **Anti-blanchiment**, **Bénéficiaires effectifs** et **Lettre de mission** listent

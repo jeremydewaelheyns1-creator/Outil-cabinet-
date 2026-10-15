@@ -34,11 +34,11 @@ def by_label(rows):
 
 def test_missing_required_documents_are_red_and_one_line_per_mandataire():
     company, anne, holding = company_with_managers()
-    rows = by_label(types.rows(company, "anti-blanchiment"))
-    assert rows[("identification_client", None)].level == "danger"
+    assert types.rows(company, "identification-client")[0].level == "danger"
+    rows = by_label(types.rows(company, "identification-mandataires"))
     assert ("identification_mandataire", anne.pk) in rows
     assert ("identification_mandataire", holding.pk) in rows  # une société mandataire aussi
-    assert rows[("procuration", None)].level == "empty"  # facultative
+    assert types.rows(company, "procuration")[0].level == "empty"  # facultative
 
 
 def test_expiry_states():
@@ -46,9 +46,9 @@ def test_expiry_states():
     today = timezone.localdate()
 
     def store_risk(expires):
-        services.store(company, pdf(), title="Fiche", case="anti-blanchiment",
+        services.store(company, pdf(), title="Fiche", case="fiche-risque",
                        doc_type="fiche_risque", expires_on=expires)  # fmt: skip
-        return by_label(types.rows(company, "anti-blanchiment"))[("fiche_risque", None)]
+        return types.rows(company, "fiche-risque")[0]
 
     assert store_risk(None).text == "Date d'expiration indéfinie"
     assert store_risk(today + timedelta(days=44)).text == "Expire dans 44 jours"
@@ -62,7 +62,7 @@ def test_expiry_states():
 def test_replacement_is_per_mandataire():
     company, anne, holding = company_with_managers()
     for person in (anne, holding):
-        services.store(company, pdf(), title="Identification", case="anti-blanchiment",
+        services.store(company, pdf(), title="Identification", case="identification-mandataires",
                        doc_type="identification_mandataire", person=person)  # fmt: skip
     current = Document.objects.filter(
         doc_type="identification_mandataire", archived_at__isnull=True
@@ -73,7 +73,7 @@ def test_replacement_is_per_mandataire():
 def test_case_status_names_the_first_problem(web):
     company, _, _ = company_with_managers()
     html = web.get(reverse("clients:documents", args=[company.pk])).content.decode()
-    assert "Identification du client : manquant" in html
+    assert "Manquant" in html
 
 
 def test_request_from_a_row_files_the_document_with_its_type(web):
@@ -84,11 +84,11 @@ def test_request_from_a_row_files_the_document_with_its_type(web):
     )
     request = DocumentRequest.objects.get()
     assert request.title == "Procuration" and request.doc_type == "procuration"
-    page = web.get(reverse("clients:document_case", args=[company.pk, "anti-blanchiment"]))
+    page = web.get(reverse("clients:document_case", args=[company.pk, "procuration"]))
     assert "demandé au client" in page.content.decode()
     web.post(reverse("clients:request_receive", args=[company.pk, request.pk]), {"file": pdf()})
     document = Document.objects.get()
-    assert (document.case, document.doc_type) == ("anti-blanchiment", "procuration")
+    assert (document.case, document.doc_type) == ("procuration", "procuration")
 
 
 def test_cabinet_documents_cannot_be_requested_from_the_client(web):
@@ -104,7 +104,7 @@ def test_upload_with_type_and_expiry(web):
     company, _, _ = company_with_managers()
     web.post(
         reverse("clients:document_upload", args=[company.pk]),
-        {"title": "Fiche de risque 2026", "case": "anti-blanchiment", "doc_type": "fiche_risque",
+        {"title": "Fiche de risque 2026", "case": "fiche-risque", "doc_type": "fiche_risque",
          "expires_on": "2028-01-31", "file": pdf()},
     )  # fmt: skip
     document = Document.objects.get()
@@ -115,13 +115,13 @@ def test_mandataire_documents_need_the_person(web):
     company, _, _ = company_with_managers()
     web.post(
         reverse("clients:document_upload", args=[company.pk]),
-        {"title": "Id", "case": "anti-blanchiment", "doc_type": "identification_mandataire",
-         "file": pdf()},
+        {"title": "Id", "case": "identification-mandataires",
+         "doc_type": "identification_mandataire", "file": pdf()},
     )  # fmt: skip
     assert not Document.objects.exists()
 
 
 def test_persons_have_no_mandataire_or_ubo_lines():
     person = PersonFactory()
-    slugs = {r.doc_type.slug for r in types.rows(person, "anti-blanchiment")}
-    assert "identification_mandataire" not in slugs and "identification_client" in slugs
+    assert types.rows(person, "identification-mandataires") == []
+    assert types.rows(person, "identification-client")[0].doc_type.slug == "identification_client"
