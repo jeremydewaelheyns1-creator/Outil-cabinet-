@@ -15,6 +15,7 @@ from django.core.management import call_command
 from django.core.management.base import BaseCommand
 
 from apps.core import events
+from apps.documents import identity
 from apps.documents import services as documents
 from apps.integrations import official
 from apps.reprise.models import purge_stale_uploads
@@ -32,5 +33,6 @@ class Command(BaseCommand):
         if run is not None:
             self.stdout.write(f"Échéances : {run.created} créées, {run.removed} retirées")
         self.stdout.write(f"Relances préparées : {documents.send_due_reminders()}")
+        self.stdout.write(f"Cartes d'identité demandées : {identity.request_renewals()}")
         self.stdout.write(f"Sites officiels consultés : {official.refresh_due()} sociétés")
         call_command("procrastinate", "worker", "--one-shot")

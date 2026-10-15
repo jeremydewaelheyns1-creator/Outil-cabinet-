@@ -182,6 +182,10 @@ DOCUMENT_MAX_BYTES = 20 * 1024 * 1024
 # Relances automatiques d'une demande « À recevoir » : après N jours, au plus N fois.
 REQUEST_REMINDER_DAYS = env.int("REQUEST_REMINDER_DAYS", default=7)
 REQUEST_MAX_REMINDERS = env.int("REQUEST_MAX_REMINDERS", default=2)
+# Pièces d'identité (D-035) : lecture locale des lignes « machine » (Tesseract, sur le serveur
+# du cabinet) et demande de la nouvelle carte N jours avant expiration.
+IDENTITY_OCR_ENABLED = env.bool("IDENTITY_OCR_ENABLED", default=True)
+IDENTITY_RENEWAL_DAYS = env.int("IDENTITY_RENEWAL_DAYS", default=30)
 
 DATA_UPLOAD_MAX_MEMORY_SIZE = 25 * 1024 * 1024
 FILE_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024

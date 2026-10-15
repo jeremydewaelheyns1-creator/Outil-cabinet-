@@ -13,6 +13,8 @@ EVENT_LABELS = {
     "document_request.created": "Document demandé au client",
     "document_request.received": "Document demandé reçu",
     "document_request.cancelled": "Demande de document annulée",
+    "identity_card.applied": "Carte d'identité enregistrée",
+    "identity_card.undone": "Classement d'une carte annulé",
     "client.team_changed": "Équipe modifiée",
     "task.completed": "Échéance terminée",
     "task.reopened": "Échéance rouverte",

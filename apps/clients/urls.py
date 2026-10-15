@@ -47,6 +47,16 @@ urlpatterns = [
         document_views.request_cancel,
         name="request_cancel",
     ),
+    path(
+        "<int:pk>/documents/carte/<uuid:document_id>/confirmer/",
+        document_views.identity_confirm,
+        name="identity_confirm",
+    ),
+    path(
+        "<int:pk>/documents/carte/<int:card_id>/annuler/",
+        document_views.identity_undo,
+        name="identity_undo",
+    ),
     path("<int:pk>/documents/<slug:slug>/", document_views.case_page, name="document_case"),
     # Actions
     path("<int:pk>/modifier/", views.client_edit, name="edit"),

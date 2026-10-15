@@ -31,6 +31,8 @@ jobs:
           version: "0.11.32"
       - name: Installer Python et les dépendances
         run: uv sync --frozen
+      - name: Lecture des cartes (Tesseract, comme en production)
+        run: sudo apt-get update -q && sudo apt-get install -y -q tesseract-ocr poppler-utils
       - name: Style (ruff)
         run: uv run ruff format --check . && uv run ruff check .
       - name: Typage (mypy)

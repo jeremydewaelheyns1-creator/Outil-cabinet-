@@ -670,3 +670,8 @@ a.badge:hover { text-decoration: none; filter: brightness(0.95); }
 .doc-upload { margin-top: 0.75rem; }
 .doc-upload form { margin-top: 0.5rem; max-width: 480px; }
 .email-preview { border-left: 3px solid var(--border); padding: 0.35rem 0.75rem; margin: 0.5rem 0; background: var(--surface-muted); }
+.identity-review { border: 1px solid #f1d79b; background: #fff8e6; border-radius: 8px; padding: 0.75rem 1rem; margin-bottom: 1rem; }
+.review-line { display: flex; flex-wrap: wrap; gap: 0.75rem 1.5rem; justify-content: space-between; align-items: center; padding: 0.35rem 0; }
+.review-line + .review-line { border-top: 1px solid #f1d79b; }
+.review-form { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; }
+.review-form input { width: auto; }

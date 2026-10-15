@@ -11,6 +11,11 @@ COPY --from=ghcr.io/astral-sh/uv:0.11.32 /uv /usr/local/bin/uv
 
 WORKDIR /app
 
+# Lecture des cartes d'identité sur le serveur (D-035) : OCR local, aucun service extérieur.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends tesseract-ocr poppler-utils \
+    && rm -rf /var/lib/apt/lists/*
+
 # Dépendances d'abord : cette couche n'est reconstruite que si elles changent.
 COPY pyproject.toml uv.lock ./
 RUN uv sync --frozen --no-dev --no-install-project
@@ -21,6 +26,7 @@ RUN DJANGO_SETTINGS_MODULE=config.settings.prod \
     DJANGO_SECRET_KEY=construction-uniquement \
     DJANGO_ALLOWED_HOSTS=localhost \
     DJANGO_CSRF_TRUSTED_ORIGINS=https://localhost \
+    GS_DOCUMENTS_BUCKET=construction \
     .venv/bin/python manage.py collectstatic --noinput
 
 RUN useradd --uid 10001 --no-create-home application

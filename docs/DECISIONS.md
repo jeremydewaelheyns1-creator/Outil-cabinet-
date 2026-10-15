@@ -218,3 +218,18 @@ l'e-mail est seulement affiché. Relances automatiques (7 jours, 2 fois par déf
 `run_jobs` ; ensuite la case passe en rouge. À la réception, la pièce va dans sa case (carte
 d'identité → Pièces d'identité, en archivant l'ancienne carte de la même personne) ou dans les
 archives (document signé → Légal, autre → Administratif).
+
+## D-035 — Pièces d'identité : lecture locale des lignes « machine », application automatique
+Les cartes des personnes (mandataires, actionnaires, client IPP) sont suivies avec leur date
+de validité : rouge si absente ou expirée, orange si elle expire dans les 60 jours ou si une
+carte reçue est à confirmer, vert sinon. La carte reçue est lue sur le serveur du cabinet par
+Tesseract (OCR local, aucun service extérieur) : on cherche les 3 lignes MRZ au dos et on
+recalcule tous les chiffres de contrôle (norme OACI 9303). Elle est appliquée sans confirmation
+(D-032) seulement si : contrôles exacts, carte d'identité, nom identique à la fiche, numéro
+national identique (ou, à défaut, date de naissance identique), carte non expirée. Sinon :
+« à confirmer » avec la raison, et le gestionnaire encode la date de validité. Un classement
+automatique est annulable 7 jours. Le numéro national lu n'est ni conservé, ni journalisé, ni
+affiché ; le numéro de carte est affiché masqué. Chaque jour, `run_jobs` demande la nouvelle
+carte 30 jours avant expiration (une seule demande en cours par personne). Plus tard, une
+lecture par IA (cloud du cabinet, Europe) pourra remplacer ou compléter l'OCR local
+(`identity.READER`).

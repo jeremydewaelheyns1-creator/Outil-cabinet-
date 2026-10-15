@@ -76,6 +76,13 @@ class RequestForm(forms.Form):
         return data
 
 
+class ConfirmCardForm(forms.Form):
+    valid_until = forms.DateField(
+        label="Valable jusqu'au", widget=forms.DateInput(attrs={"type": "date"})
+    )
+    card_number = forms.CharField(label="Numéro de carte", max_length=20, required=False)
+
+
 class ReceiveForm(forms.Form):
     file = forms.FileField(label="Document reçu")
 
@@ -110,6 +117,12 @@ def case_page(request: AppRequest, pk: int, slug: str) -> HttpResponse:
             "status": case_status(client, case, request),
             "upload_form": UploadForm(client=client, initial={"case": slug}),
         }
+        if slug == "pieces-identite":
+            from . import identity
+
+            context["people"] = identity.people_cards(client, services.people_concerned(client))
+            context["to_confirm"] = identity.documents_to_confirm(client)
+            context["confirm_form"] = ConfirmCardForm()
         if slug == "a-recevoir":
             context["requests"] = services.pending_requests(client)
             context["request_form"] = RequestForm(client=client)
@@ -234,3 +247,46 @@ def request_cancel(request: AppRequest, pk: int, request_id: str) -> HttpRespons
     log_access(request, AccessLog.Action.UPDATE, pending, details={"annulée": True})
     messages.success(request, f"Demande « {pending.title} » annulée.")
     return redirect("clients:document_case", pk=client.pk, slug="a-recevoir")
+
+
+@require_POST
+@require_capability(Capability.CLIENTS_EDIT)
+def identity_confirm(request: AppRequest, pk: int, document_id: str) -> HttpResponse:
+    """Le gestionnaire confirme une carte que l'outil n'a pas pu appliquer seul."""
+    from . import identity
+
+    client = _get_client(request, pk)
+    document = get_object_or_404(
+        Document, pk=document_id, client=client, case=identity.CASE, review_needed=True
+    )
+    form = ConfirmCardForm(request.POST)
+    if not form.is_valid():
+        _form_errors(request, form)
+    else:
+        card = identity.confirm(
+            document,
+            valid_until=form.cleaned_data["valid_until"],
+            card_number=form.cleaned_data["card_number"],
+            user=request.user,
+        )
+        log_access(request, AccessLog.Action.UPDATE, card, details={"client": client.pk})
+        messages.success(request, "Carte confirmée.")
+    return redirect("clients:document_case", pk=client.pk, slug=identity.CASE)
+
+
+@require_POST
+@require_capability(Capability.CLIENTS_EDIT)
+def identity_undo(request: AppRequest, pk: int, card_id: int) -> HttpResponse:
+    """Annule un classement automatique (7 jours)."""
+    from . import identity
+    from .models import IdentityCard
+
+    client = _get_client(request, pk)
+    card = get_object_or_404(IdentityCard, pk=card_id, document__client=client)
+    if identity.can_undo(card):
+        log_access(request, AccessLog.Action.DELETE, card, details={"annulation": True})
+        identity.undo(card, user=request.user)
+        messages.success(request, "Classement annulé : la carte est à confirmer.")
+    else:
+        messages.error(request, "Ce classement ne peut plus être annulé.")
+    return redirect("clients:document_case", pk=client.pk, slug=identity.CASE)

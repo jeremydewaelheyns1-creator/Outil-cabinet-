@@ -6,7 +6,54 @@
   <div class="card-header"><h2>{{ case.label }}</h2>{% include "clients/_case_badge.html" %}</div>
   <p class="small muted" style="margin-top:0">{{ case.description }}</p>
 
-  {% if case.slug == "a-recevoir" %}
+  {% if case.slug == "pieces-identite" %}
+    {% if to_confirm %}
+      <div class="identity-review">
+        <h3 class="small" style="margin:0 0 .5rem">À confirmer</h3>
+        {% for d in to_confirm %}
+          <div class="review-line">
+            <div><a href="{% url 'clients:document_file' client.pk d.pk %}" target="_blank" rel="noopener">{{ d.title }}</a>
+              <div class="muted small">{{ d.review_reason }}</div></div>
+            {% if can_edit %}
+              <form method="post" action="{% url 'clients:identity_confirm' client.pk d.pk %}" class="review-form">
+                {% csrf_token %}
+                <label class="small">Valable jusqu'au {{ confirm_form.valid_until }}</label>
+                <label class="small">N° de carte {{ confirm_form.card_number }}</label>
+                <button type="submit" class="small">Confirmer</button>
+              </form>
+            {% endif %}
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+    {% if people %}
+      <table class="table">
+        <thead><tr><th>Personne</th><th>Carte</th><th>Situation</th><th></th></tr></thead>
+        <tbody>
+        {% for row in people %}
+          <tr>
+            <td><a href="{{ row.person.get_absolute_url }}">{% client_icon row.person %} {{ row.person.display_name }}</a></td>
+            <td class="small mono">{% if row.card %}{{ row.card.masked_number|default:"—" }}{% if row.card.auto_applied %} <span class="badge badge-primary">classé automatiquement</span>{% endif %}{% else %}—{% endif %}</td>
+            <td class="small">{% if row.level == "ok" %}<span class="badge badge-success">{{ row.text }}</span>{% elif row.level == "warning" %}<span class="badge badge-warning">{{ row.text }}</span>{% else %}<span class="badge badge-danger">{{ row.text }}</span>{% endif %}
+              {% if row.pending %}<div class="muted">demandée le {{ row.pending.created_at|date:"d/m/Y" }}</div>{% endif %}</td>
+            <td class="nowrap">
+              {% if can_edit %}
+                {% if row.undoable %}<form class="inline" method="post" action="{% url 'clients:identity_undo' client.pk row.card.pk %}">{% csrf_token %}<button type="submit" class="link-button small">Annuler le classement</button></form>{% endif %}
+                {% if not row.pending and row.level != "ok" %}
+                  <form class="inline" method="post" action="{% url 'clients:request_create' client.pk %}">{% csrf_token %}<input type="hidden" name="kind" value="identity_card"><input type="hidden" name="person" value="{{ row.person.pk }}"><button type="submit" class="small">Demander la carte</button></form>
+                {% endif %}
+              {% endif %}
+            </td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <p class="empty">Aucune personne concernée : encodez les mandataires et actionnaires.</p>
+    {% endif %}
+    {% if documents %}<details class="small" style="margin-top:.5rem"><summary>Cartes enregistrées ({{ documents|length }})</summary>{% include "documents/_list.html" %}</details>{% endif %}
+    {% include "documents/_upload.html" with with_person=True %}
+  {% elif case.slug == "a-recevoir" %}
     {% if requests %}
       <table class="table">
         <thead><tr><th>Demande</th><th>Envoyée le</th><th>Relances</th><th></th></tr></thead>
@@ -59,7 +106,7 @@
     {% endif %}
   {% else %}
     {% include "documents/_list.html" %}
-    {% if case.slug == "pieces-identite" %}{% include "documents/_upload.html" with with_person=True %}{% else %}{% include "documents/_upload.html" %}{% endif %}
+    {% include "documents/_upload.html" %}
   {% endif %}
 </section>
 {% endblock %}

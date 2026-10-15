@@ -1,0 +1,327 @@
+"""Pièces d'identité : lecture de la carte reçue, vérifications, mise à jour, relances (D-035).
+
+Chaîne complète :
+1. une carte arrive (dépôt ou réponse à une demande) dans la case « Pièces d'identité » ;
+2. l'outil lit les lignes « machine » au dos (OCR local, aucun service extérieur) ;
+3. il vérifie tout : chiffres de contrôle, type de document, nom, numéro national (ou date de
+   naissance), validité ;
+4. tout est vert → la carte est enregistrée sans confirmation (D-032), visible dans « Classé
+   automatiquement » et annulable 7 jours ; sinon → le document est « à confirmer » ;
+5. chaque jour, `request_renewals` demande la nouvelle carte avant expiration.
+
+Le texte lu et le numéro national qu'il contient ne sont ni conservés, ni journalisés, ni
+affichés.
+"""
+
+from __future__ import annotations
+
+import logging
+import shutil
+import subprocess
+import tempfile
+from collections.abc import Callable
+from dataclasses import dataclass
+from datetime import date, timedelta
+from pathlib import Path
+
+from django.conf import settings
+from django.db import transaction
+from django.utils import timezone
+
+from apps.clients.models import Client, ContactPoint, Relation
+from apps.core import events
+from apps.core.models import Event, User
+from apps.integrations.official_parsers import normalize
+
+from . import mrz
+from .models import Document, DocumentRequest, IdentityCard
+
+logger = logging.getLogger(__name__)
+CASE = "pieces-identite"
+UNDO_DAYS = 7
+WARN_DAYS = 60  # orange quand la carte expire dans moins de 60 jours
+WHITELIST = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789<"
+
+
+# --- Lecture (OCR local) ---------------------------------------------------------------------
+
+
+def _run(command: list[str], timeout: int = 60) -> str:
+    result = subprocess.run(  # noqa: S603 (commande fixe, aucun texte venant de l'utilisateur)
+        command, capture_output=True, text=True, timeout=timeout, check=False
+    )
+    return result.stdout
+
+
+def ocr_text(document: Document) -> str | None:
+    """Texte lu par Tesseract sur l'image (ou les 2 premières pages du PDF). Tout se passe sur
+    le serveur du cabinet ; les fichiers temporaires sont effacés aussitôt."""
+    if not settings.IDENTITY_OCR_ENABLED or not shutil.which("tesseract"):
+        return None
+    if document.content_type not in ("image/jpeg", "image/png", "application/pdf"):
+        return None
+    with tempfile.TemporaryDirectory(prefix="lecture-") as folder:
+        source = Path(folder) / "source"
+        with document.file.open("rb") as handle:
+            source.write_bytes(handle.read())
+        images = [source]
+        if document.content_type == "application/pdf":
+            if not shutil.which("pdftoppm"):
+                return None
+            _run(
+                [
+                    "pdftoppm",
+                    "-r",
+                    "300",
+                    "-png",
+                    "-f",
+                    "1",
+                    "-l",
+                    "2",
+                    str(source),
+                    f"{folder}/page",
+                ]
+            )
+            images = sorted(Path(folder).glob("page*.png"))
+        texts = []
+        for image in images:
+            config = ["--psm", "6", "-c", f"tessedit_char_whitelist={WHITELIST}"]
+            texts.append(_run(["tesseract", str(image), "-", *config]))
+        return "\n".join(texts)
+
+
+# Point d'entrée remplaçable (tests ; plus tard, lecture par IA dans le cloud du cabinet).
+READER: Callable[[Document], str | None] = ocr_text
+
+
+# --- Vérifications ---------------------------------------------------------------------------
+
+
+def problems(result: mrz.MrzResult | None, person: Client, today: date) -> list[str]:
+    """Ce qui empêche d'appliquer la carte sans confirmation (liste vide = tout est vert)."""
+    if result is None:
+        return ["Lignes « machine » illisibles (photo du dos de la carte nette et entière ?)"]
+    issues = []
+    if not result.valid:
+        issues.append("Contrôle de lecture échoué : " + ", ".join(result.failed_checks))
+    if not result.document_code.startswith("I"):
+        issues.append("Ce document n'est pas une carte d'identité")
+    read_names = set(normalize(f"{result.surname} {result.given_names}").split())
+    file_names = set(normalize(f"{person.name} {person.first_name}").split())
+    if not file_names or not file_names <= read_names:
+        issues.append("Le nom lu ne correspond pas à la fiche")
+    if person.national_number:
+        if result.national_number != person.national_number:
+            issues.append("Le numéro national ne correspond pas à la fiche")
+    elif person.birth_date:
+        if result.birth_date != person.birth_date:
+            issues.append("La date de naissance ne correspond pas à la fiche")
+    else:
+        issues.append("Fiche sans numéro national ni date de naissance : vérification impossible")
+    if result.expiry_date is None or result.expiry_date < today:
+        issues.append("Carte expirée")
+    return issues
+
+
+def process(document: Document, *, user: User | None = None) -> IdentityCard | None:
+    """Lit la carte reçue et l'applique si tout est vert ; sinon la marque « à confirmer »."""
+    person = document.person
+    if person is None:
+        _to_confirm(document, "Personne concernée non indiquée")
+        return None
+    text = READER(document)
+    result = mrz.read(text) if text else None
+    del text  # le texte lu (avec le numéro national) ne quitte pas cette fonction
+    issues = problems(result, person, timezone.localdate())
+    if issues or result is None or result.expiry_date is None:
+        _to_confirm(document, issues[0] if issues else "Lecture incomplète")
+        return None
+    with transaction.atomic():
+        card = IdentityCard.objects.create(
+            person=person,
+            document=document,
+            card_number=result.document_number,
+            valid_until=result.expiry_date,
+            source=IdentityCard.Source.READ,
+            auto_applied=True,
+            created_by=user,
+        )
+        document.auto_filed = True
+        document.review_needed = False
+        document.review_reason = ""
+        document.save(update_fields=["auto_filed", "review_needed", "review_reason"])
+    events.emit(
+        "identity_card.applied",
+        subject=document.client,
+        actor=user,
+        payload={"document": str(document.pk), "person": person.pk, "automatique": True},
+    )
+    return card
+
+
+def _to_confirm(document: Document, reason: str) -> None:
+    document.review_needed = True
+    document.review_reason = reason[:200]
+    document.auto_filed = False
+    document.save(update_fields=["review_needed", "review_reason", "auto_filed"])
+
+
+@events.on("document.added")
+def read_new_identity_card(event: Event) -> None:
+    document_id = str((event.payload or {}).get("document") or "")
+    if not document_id:
+        return
+    document = Document.objects.filter(pk=document_id, case=CASE).first()
+    if document is not None and not document.identity_cards.exists():
+        process(document)
+
+
+def confirm(
+    document: Document, *, valid_until: date, card_number: str, user: User | None = None
+) -> IdentityCard:
+    """Le gestionnaire confirme à la main une carte que l'outil n'a pas pu appliquer seul."""
+    if document.person is None:
+        raise ValueError("Personne concernée manquante.")
+    with transaction.atomic():
+        card = IdentityCard.objects.create(
+            person=document.person,
+            document=document,
+            card_number=card_number.strip()[:20],
+            valid_until=valid_until,
+            source=IdentityCard.Source.MANUAL,
+            created_by=user,
+        )
+        document.review_needed = False
+        document.review_reason = ""
+        document.save(update_fields=["review_needed", "review_reason"])
+    events.emit(
+        "identity_card.applied",
+        subject=document.client,
+        actor=user,
+        payload={"document": str(document.pk), "person": document.person_id, "automatique": False},
+    )
+    return card
+
+
+def can_undo(card: IdentityCard) -> bool:
+    return card.auto_applied and card.created_at >= timezone.now() - timedelta(days=UNDO_DAYS)
+
+
+def undo(card: IdentityCard, *, user: User | None = None) -> None:
+    """Annule un classement automatique : la carte redevient « à confirmer »."""
+    if not can_undo(card):
+        raise ValueError("Ce classement ne peut plus être annulé.")
+    document = card.document
+    with transaction.atomic():
+        card.delete()
+        if document is not None:
+            _to_confirm(document, "Classement automatique annulé")
+    events.emit(
+        "identity_card.undone",
+        subject=document.client if document else None,
+        actor=user,
+        payload={"document": str(document.pk) if document else ""},
+    )
+
+
+# --- Situation par personne ------------------------------------------------------------------
+
+
+@dataclass(frozen=True)
+class PersonCard:
+    person: Client
+    card: IdentityCard | None
+    level: str  # ok / warning / danger
+    text: str
+    pending: DocumentRequest | None
+
+    @property
+    def undoable(self) -> bool:
+        return self.card is not None and can_undo(self.card)
+
+
+def situation(person: Client, today: date | None = None) -> tuple[IdentityCard | None, str, str]:
+    today = today or timezone.localdate()
+    card = person.identity_cards.order_by("-valid_until", "-created_at").first()
+    if card is None:
+        return None, "danger", "Aucune carte enregistrée"
+    if card.valid_until < today:
+        return card, "danger", f"Expirée depuis le {card.valid_until:%d/%m/%Y}"
+    if card.valid_until <= today + timedelta(days=WARN_DAYS):
+        return card, "warning", f"Expire le {card.valid_until:%d/%m/%Y}"
+    return card, "ok", f"Valable jusqu'au {card.valid_until:%d/%m/%Y}"
+
+
+def people_cards(client: Client, people: list[Client]) -> list[PersonCard]:
+    pending = {
+        r.person_id: r
+        for r in DocumentRequest.objects.filter(
+            kind=DocumentRequest.Kind.IDENTITY_CARD,
+            status=DocumentRequest.Status.PENDING,
+            person__in=people,
+        )
+    }
+    waiting = set(
+        Document.objects.filter(
+            client=client, case=CASE, archived_at__isnull=True, review_needed=True
+        ).values_list("person_id", flat=True)
+    )
+    rows = []
+    for person in people:
+        card, level, text = situation(person)
+        if person.pk in waiting and level != "ok":
+            level, text = "warning", "Nouvelle carte reçue, à confirmer"
+        rows.append(PersonCard(person, card, level, text, pending.get(person.pk)))
+    return rows
+
+
+def documents_to_confirm(client: Client) -> list[Document]:
+    return list(
+        Document.objects.filter(
+            client=client, case=CASE, archived_at__isnull=True, review_needed=True
+        ).select_related("person")
+    )
+
+
+# --- Demandes automatiques avant expiration -------------------------------------------------
+
+
+def _dossier_for(person: Client) -> Client | None:
+    """Dossier où envoyer la demande : celui de la personne si elle est cliente avec une
+    adresse e-mail, sinon une société dont elle est mandataire ou actionnaire."""
+    candidates = [person]
+    company_ids = (
+        Relation.objects.current().filter(person=person).values_list("entity_id", flat=True)
+    )
+    candidates += list(Client.objects.filter(pk__in=company_ids, status=Client.Status.ACTIVE))
+    for candidate in candidates:
+        if candidate.contacts.filter(kind=ContactPoint.Kind.EMAIL).exists():
+            return candidate
+    return None
+
+
+def request_renewals(today: date | None = None) -> int:
+    """Demande la nouvelle carte de chaque personne dont la carte expire dans les
+    IDENTITY_RENEWAL_DAYS jours (une seule demande en cours par personne)."""
+    from . import services
+
+    today = today or timezone.localdate()
+    limit = today + timedelta(days=settings.IDENTITY_RENEWAL_DAYS)
+    latest: dict[int, IdentityCard] = {}
+    for card in IdentityCard.objects.select_related("person").order_by("valid_until"):
+        latest[card.person_id] = card
+    already = set(
+        DocumentRequest.objects.filter(
+            kind=DocumentRequest.Kind.IDENTITY_CARD, status=DocumentRequest.Status.PENDING
+        ).values_list("person_id", flat=True)
+    )
+    count = 0
+    for person_id, card in latest.items():
+        if card.valid_until > limit or person_id in already:
+            continue
+        dossier = _dossier_for(card.person)
+        if dossier is None:
+            continue
+        services.create_request(dossier, DocumentRequest.Kind.IDENTITY_CARD, person=card.person)
+        count += 1
+    return count

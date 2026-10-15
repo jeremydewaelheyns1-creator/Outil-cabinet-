@@ -3,6 +3,22 @@
 Ce qui a été ajouté à l'outil, du plus récent au plus ancien. Toutes les données de la démo
 sont inventées.
 
+## 15 octobre 2026 — Pièces d'identité automatiques
+
+- La case **Pièces d'identité** liste chaque personne du dossier (gérants, administrateurs,
+  actionnaires) avec sa carte : vert si elle est valable, orange si elle expire dans les deux
+  mois, rouge si elle manque ou est expirée.
+- **30 jours avant l'expiration**, l'outil demande tout seul la nouvelle carte au client (elle
+  apparaît dans « À recevoir », avec les relances).
+- Quand la carte arrive, l'outil **lit les lignes codées au dos** et vérifie tout (chiffres de
+  contrôle, nom, numéro national, validité). Si tout concorde, la fiche est mise à jour sans
+  rien demander ; la ligne indique « classé automatiquement » et peut être annulée pendant
+  7 jours. Au moindre doute, la carte est « à confirmer », avec la raison.
+- La lecture se fait sur le serveur du cabinet : la carte n'est envoyée nulle part. Le numéro
+  national lu n'est jamais affiché ni conservé ; le numéro de carte est masqué.
+- Dans la démo : à la Boulangerie, la carte de Lambert Sophie est valable, celle de Dubois Marc
+  expire bientôt et a déjà été redemandée.
+
 ## 15 octobre 2026 — Documents : dépôt, demandes au client et relances
 
 - On peut **déposer un document** dans chaque case de l'onglet Documents et dans chaque dossier

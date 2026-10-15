@@ -251,9 +251,21 @@ class Command(BaseCommand):
             bakery, fake_pdf("isoc"), title="Déclaration ISOC exercice 2024", folder="isoc",
             user=user,
         )  # fmt: skip
-        services.store(
+        card_doc = services.store(
             bakery, fake_pdf("carte"), title="Carte d'identité de Lambert Sophie",
             case="pieces-identite", person=sophie, user=user,
+        )  # fmt: skip
+        from apps.documents.models import IdentityCard
+
+        today_ = timezone.localdate()
+        IdentityCard.objects.create(
+            person=sophie, document=card_doc, card_number="592000000017",
+            valid_until=today_ + timedelta(days=4 * 365), source="manual", created_by=user,
+        )  # fmt: skip
+        # Marc : carte qui expire bientôt (orange), nouvelle carte déjà demandée.
+        IdentityCard.objects.create(
+            person=marc, card_number="592000000025", valid_until=today_ + timedelta(days=20),
+            source="manual", created_by=user,
         )  # fmt: skip
         late = services.create_request(garage, "identity_card", person=marc, user=user)
         # Une demande plus ancienne, déjà relancée deux fois sans réponse (case en rouge).

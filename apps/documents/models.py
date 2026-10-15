@@ -119,6 +119,9 @@ class Document(models.Model):
         User, on_delete=models.SET_NULL, null=True, blank=True, related_name="+"
     )
     archived_at = models.DateTimeField("archivé le", null=True, blank=True)
+    # Lecture automatique (D-035) : si un contrôle coince, le document est « à confirmer ».
+    review_needed = models.BooleanField("à confirmer", default=False)
+    review_reason = models.CharField("raison", max_length=200, blank=True)
 
     class Meta:
         verbose_name = "document"
@@ -157,3 +160,41 @@ class OutgoingEmail(models.Model):
 
     def __str__(self) -> str:
         return self.subject
+
+
+class IdentityCard(models.Model):
+    """Carte d'identité d'une personne (mandataire, actionnaire, client IPP) — D-035.
+
+    Le numéro national lu sur la carte n'est jamais conservé ici : il sert seulement à vérifier
+    que la carte correspond à la fiche.
+    """
+
+    class Source(models.TextChoices):
+        READ = "read", "Lue automatiquement"
+        MANUAL = "manual", "Encodée à la main"
+
+    person = models.ForeignKey(Client, on_delete=models.PROTECT, related_name="identity_cards")
+    document = models.ForeignKey(
+        Document, on_delete=models.SET_NULL, null=True, blank=True, related_name="identity_cards"
+    )
+    card_number = models.CharField("numéro de carte", max_length=20, blank=True)
+    valid_until = models.DateField("valable jusqu'au")
+    source = models.CharField(max_length=20, choices=Source.choices)
+    auto_applied = models.BooleanField("appliqué automatiquement", default=False)
+    created_at = models.DateTimeField(default=timezone.now)
+    created_by = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True, related_name="+"
+    )
+
+    class Meta:
+        verbose_name = "carte d'identité"
+        verbose_name_plural = "cartes d'identité"
+        ordering: ClassVar = ["-valid_until", "-created_at"]
+
+    def __str__(self) -> str:
+        return f"Carte de {self.person} (jusqu'au {self.valid_until:%d/%m/%Y})"
+
+    @property
+    def masked_number(self) -> str:
+        digits = self.card_number
+        return f"•••• {digits[-4:]}" if len(digits) > 4 else digits

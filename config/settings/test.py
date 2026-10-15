@@ -21,4 +21,5 @@ MONITEUR_URL = "https://moniteur.invalid/list.pl"
 NBB_CBSO_API_URL = "https://nbb.invalid"
 NBB_CBSO_KEY = ""
 OFFICIAL_AUTO_REFRESH = False
+IDENTITY_OCR_ENABLED = False  # les tests fournissent le texte lu
 LOGGING["root"]["level"] = "WARNING"

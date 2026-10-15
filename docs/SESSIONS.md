@@ -54,9 +54,11 @@ bénéficiaires effectifs.
 
 **Reste à faire / en attente**
 - **Onglet Documents (D-033, D-034)** : cases et base commune faites (stockage privé, dépôt,
-  lecture journalisée, demandes « À recevoir », relances, rangement). Suite : étape 2, la chaîne
-  complète « Pièces d'identité » (cartes des personnes, alertes d'expiration, demande
-  automatique, lecture de la carte reçue, D-032). Puis étape 3 : messagerie du cabinet (à
+  lecture journalisée, demandes « À recevoir », relances, rangement) et chaîne « Pièces
+  d'identité » (D-035 : OCR local Tesseract, contrôles MRZ, application automatique,
+  annulation, demandes avant expiration). À vérifier sur de vraies photos de cartes dans
+  l'environnement du cabinet (Jeremy propose de tester avec ses propres données, là-bas
+  seulement). Puis étape 3 : messagerie du cabinet (à
   connaître) et IA de lecture dans le Google Cloud du cabinet (projet à créer, seau
   `GS_DOCUMENTS_BUCKET` à prévoir).
 - Ancienne note — onglet Documents (en haut). Pour Jeremy, c'est là que doit se jouer la

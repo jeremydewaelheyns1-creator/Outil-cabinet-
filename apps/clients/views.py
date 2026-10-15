@@ -423,6 +423,22 @@ def case_status(client: Client, case: dossier.DocumentCase, request: AppRequest)
         if pending:
             return CaseStatus("ok", f"{pending} demande{'s' if pending > 1 else ''} en attente")
         return CaseStatus("ok", "Aucune demande en attente")
+    if case.slug == "pieces-identite":
+        from apps.documents import identity
+
+        rows = identity.people_cards(client, documents.people_concerned(client))
+        to_confirm = identity.documents_to_confirm(client)
+        if not rows and not to_confirm:
+            return CaseStatus("empty", "Aucune personne concernée")
+        red = [r for r in rows if r.level == "danger"]
+        orange = [r for r in rows if r.level == "warning"]
+        if red:
+            return CaseStatus("danger", f"{len(red)} carte(s) manquante(s) ou expirée(s)")
+        if to_confirm:
+            return CaseStatus("warning", f"{len(to_confirm)} carte(s) reçue(s) à confirmer")
+        if orange:
+            return CaseStatus("warning", f"{len(orange)} carte(s) expirent bientôt")
+        return CaseStatus("ok", "Toutes les cartes sont valables")
     count = len(documents.current_documents(client, case.slug))
     if not count:
         return CaseStatus("empty", "Aucun document")
