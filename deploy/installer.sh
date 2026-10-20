@@ -117,9 +117,20 @@ for optional in OUTLOOK_TENANT_ID OUTLOOK_CLIENT_ID OUTLOOK_CLIENT_SECRET; do
     SECRETS="${SECRETS},${optional}=${optional}:latest"
   fi
 done
-URL="$(gcloud run services describe "$SERVICE" --region="$REGION" --format='value(status.url)' 2>/dev/null || true)"
-HOST="${URL#https://}"
-ENV_VARS="GS_DOCUMENTS_BUCKET=${BUCKET},DJANGO_ALLOWED_HOSTS=${HOST:-localhost},DJANGO_CSRF_TRUSTED_ORIGINS=${URL:-https://localhost}"
+# Google donne deux adresses au service (…-ew.a.run.app et …europe-west1.run.app) :
+# l'outil accepte les deux. Séparateur « @ » car les listes contiennent des virgules.
+service_urls() {
+  gcloud run services describe "$SERVICE" --region="$REGION" \
+    --format='value(metadata.annotations."run.googleapis.com/urls")' 2>/dev/null \
+    | python3 -c 'import json,sys; t=sys.stdin.read().strip(); print(",".join(json.loads(t)) if t else "")'
+}
+env_vars() {  # env_vars ADRESSES (séparées par des virgules)
+  local urls="${1:-https://localhost}"
+  local hosts; hosts="$(printf '%s' "$urls" | sed 's#https://##g')"
+  echo "^@^GS_DOCUMENTS_BUCKET=${BUCKET}@DJANGO_ALLOWED_HOSTS=${hosts}@DJANGO_CSRF_TRUSTED_ORIGINS=${urls}"
+}
+URLS="$(service_urls || true)"
+ENV_VARS="$(env_vars "$URLS")"
 
 job() {  # job NOM COMMANDE... : crée ou met à jour une tâche Cloud Run avec la même image
   local name="$1"; shift
@@ -142,11 +153,12 @@ gcloud run deploy "$SERVICE" --region="$REGION" --image="$IMAGE" --service-accou
   --add-cloudsql-instances="$CONNECTION" --set-secrets="$SECRETS" --set-env-vars="$ENV_VARS" \
   --memory=1Gi --cpu=1 --min-instances=0 --max-instances=3 --allow-unauthenticated --quiet >/dev/null
 URL="$(gcloud run services describe "$SERVICE" --region="$REGION" --format='value(status.url)')"
-HOST="${URL#https://}"
-if [[ "$ENV_VARS" != *"DJANGO_ALLOWED_HOSTS=${HOST},"* ]]; then
-  # Première installation : l'adresse n'est connue qu'après la mise en ligne.
-  ENV_VARS="GS_DOCUMENTS_BUCKET=${BUCKET},DJANGO_ALLOWED_HOSTS=${HOST},DJANGO_CSRF_TRUSTED_ORIGINS=${URL}"
-  gcloud run services update "$SERVICE" --region="$REGION" --update-env-vars="$ENV_VARS" --quiet >/dev/null
+NEW_URLS="$(service_urls || true)"
+NEW_URLS="${NEW_URLS:-$URL}"
+if [[ "$NEW_URLS" != "$URLS" ]]; then
+  # Première installation : les adresses ne sont connues qu'après la mise en ligne.
+  ENV_VARS="$(env_vars "$NEW_URLS")"
+  gcloud run services update "$SERVICE" --region="$REGION" --set-env-vars="$ENV_VARS" --quiet >/dev/null
   job outil-migrations migrate --noinput
 fi
 ok "En ligne : ${URL}"
