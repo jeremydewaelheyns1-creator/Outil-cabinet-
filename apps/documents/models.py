@@ -215,3 +215,33 @@ class IdentityCard(models.Model):
     def masked_number(self) -> str:
         digits = self.card_number
         return f"•••• {digits[-4:]}" if len(digits) > 4 else digits
+
+
+def _inbox_name(instance: InboxItem, filename: str) -> str:
+    return f"depot/{timezone.now():%Y/%m}/{uuid.uuid4().hex}"
+
+
+class InboxItem(models.Model):
+    """Fichier déposé dans le dépôt unique que l'outil n'a pas su classer seul (D-041).
+
+    Il n'appartient encore à aucun dossier : seule la personne qui l'a déposé le voit, et il
+    est effacé s'il n'est pas classé dans les `INBOX_RETENTION_DAYS` jours.
+    """
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    file = models.FileField(storage=documents_storage, upload_to=_inbox_name, max_length=200)
+    original_name = models.CharField("nom du fichier", max_length=255)
+    content_type = models.CharField(max_length=100)
+    size = models.PositiveIntegerField("taille")
+    sha256 = models.CharField(max_length=64)
+    reason = models.CharField("pourquoi il n'a pas été classé", max_length=200, blank=True)
+    uploaded_by = models.ForeignKey(User, on_delete=models.PROTECT, related_name="+")
+    uploaded_at = models.DateTimeField("déposé le", default=timezone.now, db_index=True)
+
+    class Meta:
+        verbose_name = "document à classer"
+        verbose_name_plural = "documents à classer"
+        ordering: ClassVar = ["-uploaded_at"]
+
+    def __str__(self) -> str:
+        return self.original_name

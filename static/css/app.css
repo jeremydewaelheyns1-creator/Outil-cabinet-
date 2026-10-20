@@ -787,3 +787,21 @@ a.badge:hover { text-decoration: none; filter: brightness(0.95); }
 .vat-choice.vat-warning { background: #f08c2e; color: #fff; }
 .vat-choice.is-current { box-shadow: inset 0 0 0 2px rgba(0, 0, 0, .35); }
 @media (max-width: 900px) { .vat-wrap { overflow-x: auto; } }
+
+/* --- Dépôt unique de documents (D-041) ----------------------------------------------------- */
+.topbar-drop { display: inline-flex; align-items: center; gap: .4rem; margin-left: 1rem; padding: .35rem .75rem; border-radius: 8px; background: rgba(255, 255, 255, .12); color: #fff; font-size: .9rem; font-weight: 600; text-decoration: none; white-space: nowrap; }
+.topbar-drop:hover { background: rgba(255, 255, 255, .22); }
+.depot-drop { margin-bottom: 1rem; }
+.depot-zone { position: relative; display: flex; flex-direction: column; align-items: center; gap: .3rem; padding: 1.8rem 1rem; border: 2px dashed var(--border); border-radius: 12px; text-align: center; color: var(--primary); cursor: pointer; }
+.depot-zone strong { color: var(--text); }
+.depot-zone.is-over, .depot-zone:hover { border-color: var(--primary); background: var(--primary-soft); }
+.depot-zone input[type="file"] { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
+.depot-chosen:empty { display: none; }
+.depot-actions { display: flex; gap: .8rem; align-items: center; margin-top: .8rem; }
+.depot-known { margin-top: 1rem; }
+.depot-known ul { margin: .2rem 0 .4rem; padding-left: 1.2rem; }
+.depot-item { display: flex; gap: 1rem; align-items: flex-start; flex-wrap: wrap; padding: .7rem 0; border-top: 1px solid var(--border); }
+.depot-item-name { flex: 1 1 16rem; min-width: 0; overflow-wrap: anywhere; }
+.depot-classify { display: flex; flex-direction: column; gap: .4rem; flex: 1 1 18rem; }
+.vat-drop-hint { margin: 0 0 .8rem; }
+@media (max-width: 760px) { .topbar-drop { margin-left: .4rem; font-size: 0; gap: 0; padding: .4rem; } }

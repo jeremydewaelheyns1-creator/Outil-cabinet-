@@ -1,0 +1,25 @@
+{% extends "layouts/app.html" %}
+{% block head_title %}Classer un document{% endblock %}
+{% block page_title %}Classer « {{ item.original_name }} »{% endblock %}
+{% block content %}
+<section class="card" style="max-width:40rem">
+  <p>Dossier : {% client_icon client %} <strong>{{ client.display_name }}</strong></p>
+  <form method="post" action="{% url 'depot:classify' item.pk %}">{% csrf_token %}
+    <input type="hidden" name="client" value="{{ client.pk }}">
+    <div class="field">
+      <label for="place">Endroit</label>
+      <select id="place" name="place" required>
+        {% for value, label in places %}<option value="{{ value }}">{{ label }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="field">
+      <label for="title">Titre du document</label>
+      <input id="title" name="title" maxlength="200" value="{{ item.original_name }}">
+    </div>
+    <div class="depot-actions">
+      <button type="submit">Ranger</button>
+      <a href="{% url 'depot:index' %}">Annuler</a>
+    </div>
+  </form>
+</section>
+{% endblock %}

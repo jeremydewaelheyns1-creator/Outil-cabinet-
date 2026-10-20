@@ -169,10 +169,15 @@ def test_cell_view_requires_edit_right_and_returns_the_row(web, client, make_use
     company = vat_client()
     filing = services.filing_for(company, services.period(2026, quarter=3))
     url = reverse("clients:vat_cell", args=[company.pk, filing.pk, "docs"])
-    response = web.post(url, {"status": "waiting", "comment": "relancé"}, HTTP_HX_REQUEST="true")
+    response = web.post(url, {"status": "warning", "comment": "relancé"}, HTTP_HX_REQUEST="true")
     assert response.status_code == 200 and f'id="vat-{filing.pk}"' in response.content.decode()
     cell = VatCell.objects.get(filing=filing, column="docs")
-    assert (cell.status, cell.comment) == ("waiting", "relancé")
+    assert (cell.status, cell.comment) == ("warning", "relancé")
+    web.post(url, {"status": "todo"})  # recliquer sur l'état en cours vide la case
+    cell.refresh_from_db()
+    assert cell.status == "todo" and cell.on is None
+    web.post(url, {"status": "never"})  # état qui n'est plus proposé : ignoré
+    assert not VatNever.objects.exists()
     assert AccessLog.objects.filter(action="update", details__rubrique="tva").exists()
     client.force_login(make_user())  # lecture seule
     assert client.post(url, {"status": "done"}).status_code == 403
@@ -204,8 +209,9 @@ def test_grid_page_shows_rows_and_statuses(web):
     Assignment.objects.create(client=company, user=web_user(web), role="manager")
     generate_for_client(company, TODAY)
     html = web.get(reverse("clients:vat", args=[company.pk])).content.decode()
-    assert "Importer des déclarations" in html
-    assert "Jamais nécessaire pour ce client" in html and "Avertissement" in html
+    assert "Déposer des documents" in html
+    assert "Avertissement" in html and "Pas nécessaire pour cette période" in html
+    assert "Jamais nécessaire" not in html and "En attente" not in html
 
 
 def web_user(web):
@@ -225,7 +231,7 @@ def test_xml_and_pdf_are_classified_in_the_right_dossier(web):
         upload("declaration.xml", vat_xml(f"BE{number}")),
         upload("declaration.pdf", pdf_with(f"Déclaration TVA BE{number} — 3e trimestre 2026")),
     ]
-    response = web.post(reverse("clients:vat_import", args=[here.pk]), {"files": files})
+    response = web.post(reverse("depot:index"), {"files": files})
     assert response.status_code == 302
     filing = VatFiling.objects.get(client=other, period_key="2026-T3")
     assert filing.balance == ("71", Decimal("4272.44"))
@@ -288,12 +294,12 @@ def test_pdf_alone_waits_for_confirmation(web):
     company = vat_client()
     number = company.enterprise_number
     services.filing_for(company, services.period(2026, quarter=3))
-    web.post(reverse("clients:vat_import", args=[company.pk]),
-             {"files": [upload("d.pdf", pdf_with(f"TVA BE{number}"))]})  # fmt: skip
+    web.post(reverse("depot:index"),
+             {"files": [upload("d.pdf", pdf_with(f"Déclaration TVA BE{number}"))]})  # fmt: skip
     pending = VatPending.objects.get()
     assert pending.document.client == company and pending.period_key == ""
     filing = VatFiling.objects.get(client=company)
-    html = web.get(reverse("clients:vat", args=[company.pk])).content.decode()
+    html = web.get(reverse("depot:index")).content.decode()
     assert "À confirmer" in html
     web.post(reverse("clients:vat_confirm", args=[company.pk, pending.pk]),
              {"filing": filing.pk, "kind": "vat"})  # fmt: skip

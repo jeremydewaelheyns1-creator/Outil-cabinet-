@@ -3,6 +3,17 @@
 Ce qui a été ajouté à l'outil, du plus récent au plus ancien. Toutes les données de la démo
 sont inventées.
 
+## 20 octobre 2026 — Un seul endroit pour déposer les documents
+
+- Nouveau bouton **Déposer des documents** en haut de l'écran : on y glisse n'importe quel
+  fichier, de n'importe quel client. L'outil trouve seul le dossier et la place.
+- Reconnus pour l'instant : les déclarations TVA et listings IC d'Intervat (XML et PDF) et les
+  cartes d'identité. Le reste va dans **À classer** (visible par vous seul, effacé après 30
+  jours), à ranger en deux clics.
+- Onglet TVA : quatre choix par case (**Fini, Travail en cours, Avertissement, Pas
+  nécessaire**). Recliquer sur le choix en cours vide la case. Dans cette démo, on peut cocher
+  pour essayer (rien n'est enregistré).
+
 ## 20 octobre 2026 — Onglet Déclaration TVA, comme FID
 
 - Une ligne par trimestre (ou par mois) avec les cases **Doc. reçus, Fini, Déposée, IC,

@@ -31,7 +31,6 @@ urlpatterns = [
     path("<int:pk>/travail/<slug:slug>/", views.client_work, name="work"),
     # Déclaration TVA (D-040)
     path("<int:pk>/tva/", vat_views.vat_grid, name="vat"),
-    path("<int:pk>/tva/importer/", vat_views.vat_import, name="vat_import"),
     path("<int:pk>/tva/<int:filing_id>/case/<slug:column>/", vat_views.vat_cell, name="vat_cell"),
     path("<int:pk>/tva/<int:filing_id>/montants/", vat_views.vat_amounts, name="vat_amounts"),
     path("<int:pk>/tva/a-confirmer/<int:pending_id>/", vat_views.vat_confirm, name="vat_confirm"),

@@ -92,7 +92,7 @@ def _apply(filing: VatFiling, declaration: Declaration, user: User | None) -> No
     )
 
 
-def _import_xml(
+def import_xml(
     upload: UploadedFile[bytes],
     clients: QuerySet[Client],
     user: User | None,
@@ -158,14 +158,15 @@ def attach_pdf(filing: VatFiling, document: Document, kind: str, user: User | No
         set_status(filing, column, Status.DONE, user=user)
 
 
-def _import_pdf(
+def import_pdf(
     upload: UploadedFile[bytes],
     clients: QuerySet[Client],
     user: User | None,
     classified: list[tuple[Declaration, VatFiling]],
+    clues: intervat.PdfClues | None = None,
 ) -> Outcome:
     name = upload.name or "fichier.pdf"
-    clues = intervat.read_pdf(_read(upload))
+    clues = clues or intervat.read_pdf(_read(upload))
     wanted = (clues.year, clues.month, clues.quarter)
     # 1. Il accompagne un XML du même envoi (même client, même sorte, même période si lue).
     partners = [
@@ -229,9 +230,9 @@ def import_files(
                                     "d'Intervat sont acceptés ici."))  # fmt: skip
     classified: list[tuple[Declaration, VatFiling]] = []
     for upload in xmls:
-        outcomes.append(_import_xml(upload, clients, user, classified))
+        outcomes.append(import_xml(upload, clients, user, classified))
     for upload in pdfs:
-        outcomes.append(_import_pdf(upload, clients, user, classified))
+        outcomes.append(import_pdf(upload, clients, user, classified))
     return outcomes
 
 

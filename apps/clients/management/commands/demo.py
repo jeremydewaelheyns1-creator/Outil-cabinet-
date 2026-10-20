@@ -216,7 +216,7 @@ class Command(BaseCommand):
         vat.set_status(t3, Column.IC, Status.NOT_NEEDED, user=user)
         t4 = vat.filing_for(company, vat.period(2026, quarter=4))
         vat.set_status(
-            t4, Column.DOCS, Status.WAITING, user=user, comment="Ventes d'octobre reçues"
+            t4, Column.DOCS, Status.IN_PROGRESS, user=user, comment="Ventes d'octobre reçues"
         )
 
     @staticmethod

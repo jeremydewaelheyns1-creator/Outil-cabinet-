@@ -14,7 +14,7 @@
       {% endif %}
       <form method="post" action="{% url 'clients:vat_cell' client.pk row.filing.pk cell.column %}" hx-post="{% url 'clients:vat_cell' client.pk row.filing.pk cell.column %}" hx-target="closest tr" hx-swap="outerHTML">{% csrf_token %}
         <div class="vat-choices">
-          {% for value, label in statuses %}<button type="submit" name="status" value="{{ value }}" class="vat-choice vat-{{ value }}{% if value == cell.css %} is-current{% endif %}">{{ label }}</button>{% endfor %}
+          {% for value, label in statuses %}<button type="submit" name="status" value="{% if value == cell.css %}todo{% else %}{{ value }}{% endif %}" class="vat-choice vat-{{ value }}{% if value == cell.css %} is-current{% endif %}" data-status="{{ value }}"{% if value == cell.css %} title="Cliquer à nouveau pour vider la case"{% endif %}>{{ label }}{% if value == cell.css %} ✓{% endif %}</button>{% endfor %}
         </div>
         <label class="small">Remarque<input name="comment" value="{{ cell.comment }}" maxlength="300"></label>
         <button type="submit" name="status" value="" class="link-button small">Enregistrer la remarque seule</button>

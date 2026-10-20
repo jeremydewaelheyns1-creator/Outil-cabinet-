@@ -53,35 +53,22 @@ def _run(command: list[str], timeout: int = 60) -> str:
     return result.stdout
 
 
-def ocr_text(document: Document) -> str | None:
+def ocr_bytes(content: bytes, content_type: str) -> str | None:
     """Texte lu par Tesseract sur l'image (ou les 2 premières pages du PDF). Tout se passe sur
     le serveur du cabinet ; les fichiers temporaires sont effacés aussitôt."""
     if not settings.IDENTITY_OCR_ENABLED or not shutil.which("tesseract"):
         return None
-    if document.content_type not in ("image/jpeg", "image/png", "application/pdf"):
+    if content_type not in ("image/jpeg", "image/png", "application/pdf"):
         return None
     with tempfile.TemporaryDirectory(prefix="lecture-") as folder:
         source = Path(folder) / "source"
-        with document.file.open("rb") as handle:
-            source.write_bytes(handle.read())
+        source.write_bytes(content)
         images = [source]
-        if document.content_type == "application/pdf":
+        if content_type == "application/pdf":
             if not shutil.which("pdftoppm"):
                 return None
-            _run(
-                [
-                    "pdftoppm",
-                    "-r",
-                    "300",
-                    "-png",
-                    "-f",
-                    "1",
-                    "-l",
-                    "2",
-                    str(source),
-                    f"{folder}/page",
-                ]
-            )
+            _run(["pdftoppm", "-r", "300", "-png", "-f", "1", "-l", "2", str(source),
+                  f"{folder}/page"])  # fmt: skip
             images = sorted(Path(folder).glob("page*.png"))
         texts = []
         for image in images:
@@ -90,7 +77,13 @@ def ocr_text(document: Document) -> str | None:
         return "\n".join(texts)
 
 
-# Point d'entrée remplaçable (tests ; plus tard, lecture par IA dans le cloud du cabinet).
+def ocr_text(document: Document) -> str | None:
+    with document.file.open("rb") as handle:
+        return CARD_READER(handle.read(), document.content_type)
+
+
+# Points d'entrée remplaçables (tests ; plus tard, lecture par IA dans le cloud du cabinet).
+CARD_READER: Callable[[bytes, str], str | None] = ocr_bytes
 READER: Callable[[Document], str | None] = ocr_text
 
 
@@ -172,8 +165,10 @@ def read_new_identity_card(event: Event) -> None:
     if not document_id:
         return
     document = Document.objects.filter(pk=document_id, case=CASE).first()
-    if document is not None and not document.identity_cards.exists():
-        process(document)
+    # Déjà lue (dépôt unique, D-041) : on ne la relit pas.
+    if document is None or document.review_needed or document.identity_cards.exists():
+        return
+    process(document)
 
 
 def confirm(

@@ -49,12 +49,40 @@ BANNER = """
   font:14px system-ui,sans-serif;z-index:101">Démo : cette action est désactivée.</div>
 <script>
 (function () {
-  function toast() {
+  function toast(text) {
     var t = document.getElementById("demo-toast");
+    t.textContent = text || "Démo : cette action est désactivée.";
     t.style.display = "block";
     clearTimeout(window.__demoToast);
     window.__demoToast = setTimeout(function () { t.style.display = "none"; }, 2200);
   }
+  // Grille TVA : on peut cocher les cases pour essayer (rien n'est enregistré).
+  var STATES = ["never", "todo", "in_progress", "done", "na", "waiting", "warning"];
+  document.addEventListener("click", function (e) {
+    var b = e.target.closest && e.target.closest(".vat-choice");
+    if (!b) return;
+    e.preventDefault(); e.stopPropagation();
+    var td = b.closest("td.vat-cell"), status = b.value;
+    STATES.forEach(function (s) { td.classList.remove("vat-" + s); });
+    td.classList.add("vat-" + status);
+    var now = new Date(), date = td.querySelector(".vat-date");
+    if (date) date.textContent = status === "todo" ? " " :
+      ("0" + now.getDate()).slice(-2) + "/" + ("0" + (now.getMonth() + 1)).slice(-2);
+    td.querySelectorAll(".vat-choice").forEach(function (o) {
+      var current = o === b && status !== "todo";
+      o.classList.toggle("is-current", current);
+      o.value = current ? "todo" : o.dataset.status;
+      o.textContent = o.textContent.replace(" ✓", "") + (current ? " ✓" : "");
+    });
+    var menu = td.querySelector("details"); if (menu) menu.removeAttribute("open");
+    var row = td.closest("tr"), done = true;
+    row.querySelectorAll("td.vat-cell").forEach(function (c) {
+      if (!(c.classList.contains("vat-done") || c.classList.contains("vat-na") ||
+            c.classList.contains("vat-never"))) done = false;
+    });
+    row.classList.toggle("vat-complete", done);
+    toast("Démo : case cochée sur cette page seulement (rien n'est enregistré).");
+  }, true);
   document.addEventListener("submit", function (e) {
     if ((e.target.method || "get").toLowerCase() !== "get") { e.preventDefault(); toast(); }
   }, true);
@@ -73,7 +101,7 @@ class Command(BaseCommand):
     def add_arguments(self, parser: CommandParser) -> None:
         parser.add_argument("dossier", type=Path)
         parser.add_argument("--base", default="/", help="Chemin du site, ex. /Outil-cabinet-/")
-        parser.add_argument("--max-pages", type=int, default=400)
+        parser.add_argument("--max-pages", type=int, default=1500)
 
     def handle(self, *args: Any, **options: Any) -> None:
         out: Path = options["dossier"]

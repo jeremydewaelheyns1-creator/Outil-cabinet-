@@ -309,3 +309,22 @@ Demande de Jeremy, sur le modèle de FID-Manager (application `apps/vat`).
   seuls les dossiers visibles par l'utilisateur sont cherchés ; chaque import est journalisé.
 - Format XML repris du format publié par le SPF Finances (VATConsignment / IntraConsignment),
   à vérifier sur un vrai fichier du cabinet.
+- Mise à jour (même jour, demande de Jeremy) : seuls quatre états sont proposés au clic —
+  Fini, Travail en cours, Avertissement, Pas nécessaire pour cette période. Recliquer sur
+  l'état en cours vide la case. Dans la démo en ligne, on peut cocher pour essayer (rien
+  n'est enregistré).
+
+## D-041 — Un seul endroit pour déposer les documents, l'outil les classe
+Demande de Jeremy : le dépôt ne se fait pas dans un dossier client mais à un seul endroit
+pour tout l'outil (« Déposer des documents », barre du haut). L'outil trouve seul le dossier
+et la place (`apps/documents/inbox.py`) :
+- XML/PDF d'Intervat → grille TVA du dossier (D-040) ; un PDF n'est pris pour une déclaration
+  que si son texte parle de TVA et de déclaration/listing ;
+- carte d'identité (photo du dos ou PDF) → lignes codées lues sur le serveur, personne
+  retrouvée par son numéro national parmi les fiches visibles → case « Cartes d'identité »
+  de son dossier (le sien s'il est client, sinon une société liée), vérifiée aussitôt (D-035) ;
+- sinon → « À classer » (`InboxItem`) : visible seulement par la personne qui l'a déposé,
+  effacé après 30 jours (`INBOX_RETENTION_DAYS`, `run_jobs`), classé à la main en deux étapes
+  (dossier, puis endroit).
+- La liste « À confirmer » (PDF TVA sans période sûre, cartes à vérifier) est sur la même page.
+  La zone d'import de l'onglet TVA est retirée.

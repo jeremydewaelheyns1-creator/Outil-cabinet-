@@ -20,23 +20,22 @@ from apps.core.models import AccessLog
 from apps.core.permissions import require_capability
 
 from . import importer, services
-from .intervat import IC, KIND_LABELS, VAT
 from .models import COLUMN_HEADERS, Column, Status, VatFiling, VatPending
 
-STATUS_CHOICES = list(Status.choices)
+# Choix proposés en cliquant sur une case (demande de Jeremy). Recliquer sur l'état en cours
+# vide la case.
+OFFERED = (Status.DONE, Status.IN_PROGRESS, Status.WARNING, Status.NOT_NEEDED)
+STATUS_CHOICES = [(s.value, s.label) for s in OFFERED]
+ACCEPTED = {*(s.value for s in OFFERED), Status.TODO.value}
 
 
 def _context(client: Client) -> dict[str, Any]:
     rows = services.grid(client)
-    pending = VatPending.objects.filter(document__client=client).select_related("document")
-    filings = list(client.vat_filings.order_by("-period_start"))
     return {
         "rows": rows,
         "headers": [(c.value, c.label, COLUMN_HEADERS[c]) for c in Column],
         "statuses": STATUS_CHOICES,
         "quarterly": any(r.filing.periodicity == VatFiling.Periodicity.QUARTERLY for r in rows),
-        "pending": [(p, KIND_LABELS.get(p.kind, ""), filings) for p in pending],
-        "kinds": [(VAT, KIND_LABELS[VAT]), (IC, KIND_LABELS[IC])],
     }
 
 
@@ -75,6 +74,8 @@ def _row_response(request: AppRequest, filing: VatFiling) -> HttpResponse:
 def vat_cell(request: AppRequest, pk: int, filing_id: int, column: str) -> HttpResponse:
     filing = _filing(request, pk, filing_id)
     status = request.POST.get("status", "")
+    if status and status not in ACCEPTED:
+        status = ""
     try:
         if status:
             on = request.POST.get("on") or ""
@@ -134,42 +135,13 @@ def vat_amounts(request: AppRequest, pk: int, filing_id: int) -> HttpResponse:
 
 @require_POST
 @require_capability(Capability.CLIENTS_EDIT)
-def vat_import(request: AppRequest, pk: int) -> HttpResponse:
-    """Dépôt des fichiers Intervat : chacun va dans son dossier, quel que soit l'onglet ouvert."""
-    from apps.clients.views import _visible_clients
-
-    client = _get_client(request, pk)
-    uploads = request.FILES.getlist("files")[:50]
-    if not uploads:
-        messages.error(request, "Aucun fichier choisi.")
-        return redirect("clients:vat", pk=client.pk)
-    outcomes = importer.import_files(uploads, clients=_visible_clients(request), user=request.user)
-    for outcome in outcomes:
-        if outcome.client is not None:
-            log_access(request, AccessLog.Action.IMPORT, outcome.client,
-                       details={"rubrique": "tva", "niveau": outcome.level})  # fmt: skip
-        where = ""
-        if outcome.client is not None and outcome.client.pk != client.pk:
-            where = f" → dossier {outcome.client.display_name}"
-        text = f"{outcome.name} : {outcome.message}{where}"
-        if outcome.level == importer.ERROR:
-            messages.error(request, text)
-        elif outcome.level == importer.DOUBT:
-            messages.warning(request, text)
-        else:
-            messages.success(request, text)
-    return redirect("clients:vat", pk=client.pk)
-
-
-@require_POST
-@require_capability(Capability.CLIENTS_EDIT)
 def vat_confirm(request: AppRequest, pk: int, pending_id: int) -> HttpResponse:
     client = _get_client(request, pk)
     pending = get_object_or_404(VatPending, pk=pending_id, document__client=client)
     if request.POST.get("action") == "laisser":
         pending.delete()
         messages.success(request, "PDF laissé dans les archives TVA.")
-        return redirect("clients:vat", pk=client.pk)
+        return redirect("depot:index")
     filing = get_object_or_404(VatFiling, pk=request.POST.get("filing") or 0, client=client)
     try:
         importer.confirm(pending, filing, request.POST.get("kind", ""), request.user)
@@ -179,4 +151,4 @@ def vat_confirm(request: AppRequest, pk: int, pending_id: int) -> HttpResponse:
         log_access(request, AccessLog.Action.UPDATE, client,
                    details={"rubrique": "tva", "periode": filing.period_key})  # fmt: skip
         messages.success(request, f"PDF rangé : {filing.short_label}.")
-    return redirect("clients:vat", pk=client.pk)
+    return redirect("depot:index")

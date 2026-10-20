@@ -1,6 +1,11 @@
   <header class="topbar">
     <a class="brand" href="{% url 'core:home' %}">{{ CABINET_NAME }}</a>
     {% include "clients/_switcher.html" %}
+    {% if user|can:"clients.edit" %}
+      <a class="topbar-drop" href="{% url 'depot:index' %}" title="Déposer des documents : l'outil les classe seul">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V4M7 9l5-5 5 5"/><path d="M4 15v4a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-4"/></svg>
+        Déposer des documents</a>
+    {% endif %}
     <div class="topbar-user">
       <span class="topbar-user-name">{{ user.get_full_name|default:user.email }}</span>
       <a href="{% url 'mfa_index' %}">Sécurité</a>

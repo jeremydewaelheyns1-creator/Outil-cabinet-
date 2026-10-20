@@ -22,6 +22,7 @@ EVENT_LABELS = {
     "task.reopened": "Échéance rouverte",
     "vat.cell_changed": "Suivi TVA modifié",
     "vat.return_imported": "Déclaration TVA importée",
+    "inbox.filed": "Document déposé et classé automatiquement",
 }
 
 

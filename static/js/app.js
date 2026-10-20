@@ -129,3 +129,26 @@ document.addEventListener("click", function (event) {
     if (event.key === "Escape") closeMenus(null);
   });
 })();
+
+// Dépôt unique : noms des fichiers choisis et zone qui s'éclaire quand on glisse dessus.
+(function () {
+  document.addEventListener("change", function (event) {
+    var input = event.target;
+    if (!input.matches || !input.matches(".depot-zone input[type=file]")) return;
+    var out = input.closest(".depot-zone").querySelector("[data-depot-chosen]");
+    var names = Array.prototype.map.call(input.files, function (f) { return f.name; });
+    if (out) out.textContent = names.length ? names.length + " fichier(s) : " + names.join(", ") : "";
+  });
+  ["dragenter", "dragover"].forEach(function (type) {
+    document.addEventListener(type, function (event) {
+      var zone = event.target.closest && event.target.closest(".depot-zone");
+      if (zone) zone.classList.add("is-over");
+    });
+  });
+  ["dragleave", "drop"].forEach(function (type) {
+    document.addEventListener(type, function (event) {
+      var zone = event.target.closest && event.target.closest(".depot-zone");
+      if (zone) zone.classList.remove("is-over");
+    });
+  });
+})();

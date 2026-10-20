@@ -187,6 +187,8 @@ REQUEST_MAX_REMINDERS = env.int("REQUEST_MAX_REMINDERS", default=2)
 # du cabinet) et demande de la nouvelle carte N jours avant expiration.
 IDENTITY_OCR_ENABLED = env.bool("IDENTITY_OCR_ENABLED", default=True)
 IDENTITY_RENEWAL_DAYS = env.int("IDENTITY_RENEWAL_DAYS", default=30)
+# D-041 : un fichier du dépôt unique non classé est effacé après ce délai.
+INBOX_RETENTION_DAYS = env.int("INBOX_RETENTION_DAYS", default=30)
 
 DATA_UPLOAD_MAX_MEMORY_SIZE = 25 * 1024 * 1024
 FILE_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024

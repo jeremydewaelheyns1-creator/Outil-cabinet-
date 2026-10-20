@@ -30,5 +30,6 @@ urlpatterns = [
     path("bce/", include("apps.bce.urls")),
     path("reprise/", include("apps.reprise.urls")),
     path("echeances/", include("apps.tasks.urls")),
+    path("deposer/", include("apps.documents.inbox_urls")),
     path("", include("apps.core.urls")),
 ]

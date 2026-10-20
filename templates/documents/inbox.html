@@ -1,0 +1,79 @@
+{% extends "layouts/app.html" %}
+{% block head_title %}Déposer des documents{% endblock %}
+{% block page_title %}Déposer des documents{% endblock %}
+{% block page_subtitle %}<p class="muted" style="margin:.2rem 0 0">Un seul endroit pour tout l'outil : déposez, l'outil trouve le dossier et la place.</p>{% endblock %}
+{% block content %}
+<section class="card depot-drop">
+  <form method="post" action="{% url 'depot:index' %}" enctype="multipart/form-data">{% csrf_token %}
+    <label class="depot-zone" for="depot-files">
+      <svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 16V4M7 9l5-5 5 5"/><path d="M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3"/></svg>
+      <strong>Glissez vos fichiers ici, ou cliquez pour les choisir</strong>
+      <span class="small muted">Plusieurs fichiers et plusieurs dossiers à la fois ({{ max_files }} au maximum).</span>
+      <span class="small muted depot-chosen" data-depot-chosen></span>
+      <input id="depot-files" type="file" name="files" multiple required>
+    </label>
+    <div class="depot-actions"><button type="submit">Déposer et classer</button></div>
+  </form>
+  <div class="depot-known">
+    <p class="small"><strong>Reconnus et classés seuls :</strong></p>
+    <ul class="small">
+      <li>déclarations TVA et listings intracommunautaires d'Intervat (XML et PDF) → onglet Déclaration TVA du dossier ;</li>
+      <li>cartes d'identité (photo du dos ou PDF) → case Cartes d'identité du dossier, après vérification.</li>
+    </ul>
+    <p class="small muted">Le reste va dans « À classer » ci-dessous : visible par vous seul, effacé après {{ retention }} jours s'il n'est pas classé.</p>
+  </div>
+</section>
+
+{% if vat_pending or cards %}
+  <section class="card">
+    <h2>À confirmer</h2>
+    <p class="small muted">Rangés dans le bon dossier, mais un détail demande votre accord.</p>
+    {% for p, label, filings in vat_pending %}
+      {% with client=p.document.client d=p.document %}
+        <div class="depot-item">
+          <div class="depot-item-name">{% include "documents/_open.html" %}{{ d.original_name }}</a>
+            <div class="small muted">{{ client.display_name }} · {{ label }} : période à confirmer</div></div>
+          <form method="post" action="{% url 'clients:vat_confirm' client.pk p.pk %}" class="inline">{% csrf_token %}
+            <input type="hidden" name="next" value="depot">
+            <select name="kind" aria-label="Sorte de document">{% for value, text in kinds %}<option value="{{ value }}"{% if value == p.kind %} selected{% endif %}>{{ text }}</option>{% endfor %}</select>
+            <select name="filing" aria-label="Période">{% for f in filings %}<option value="{{ f.pk }}"{% if f.period_key == p.period_key %} selected{% endif %}>{{ f.short_label }}</option>{% endfor %}</select>
+            <button type="submit">Confirmer</button>
+            <button type="submit" name="action" value="laisser" class="link-button small">Laisser aux archives</button>
+          </form>
+        </div>
+      {% endwith %}
+    {% endfor %}
+    {% for d in cards %}
+      <div class="depot-item">
+        <div class="depot-item-name">{{ d.title }}
+          <div class="small muted">{{ d.client.display_name }} · {{ d.review_reason }}</div></div>
+        <a class="button button-secondary button-small" href="{% url 'clients:document_case' d.client.pk 'pieces-identite' %}">Vérifier</a>
+      </div>
+    {% endfor %}
+  </section>
+{% endif %}
+
+<section class="card">
+  <h2>À classer <span class="muted small">({{ items|length }})</span></h2>
+  {% for item in items %}
+    <div class="depot-item">
+      <div class="depot-item-name">
+        <a href="{% url 'depot:file' item.pk %}" target="_blank" rel="noopener">{{ item.original_name }}</a>
+        <div class="small muted">Déposé le {{ item.uploaded_at|date:"d/m/Y H:i" }}{% if item.reason %} · {{ item.reason }}{% endif %}</div>
+      </div>
+      <form method="post" action="{% url 'depot:classify' item.pk %}" class="depot-classify">{% csrf_token %}
+        <input type="search" autocomplete="off" placeholder="Dossier : nom, n° d'entreprise…" aria-label="Dossier"
+               name="q" hx-get="{% url 'clients:picker' %}?champ=client" hx-trigger="input changed delay:300ms"
+               hx-target="#picker-{{ item.pk }}">
+        <div id="picker-{{ item.pk }}"></div>
+        <button type="submit">Choisir l'endroit…</button>
+      </form>
+      <form method="post" action="{% url 'depot:delete' item.pk %}" class="inline">{% csrf_token %}
+        <button type="submit" class="link-button small">Supprimer</button>
+      </form>
+    </div>
+  {% empty %}
+    <p class="muted small" style="margin:0">Rien à classer.</p>
+  {% endfor %}
+</section>
+{% endblock %}

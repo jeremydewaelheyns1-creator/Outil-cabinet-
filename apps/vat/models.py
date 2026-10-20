@@ -46,7 +46,7 @@ class Status(models.TextChoices):
     NEVER = "never", "Jamais nécessaire pour ce client"
     TODO = "todo", "Non commencé"
     IN_PROGRESS = "in_progress", "Travail en cours"
-    DONE = "done", "Fait"
+    DONE = "done", "Fini"
     NOT_NEEDED = "na", "Pas nécessaire pour cette période"
     WAITING = "waiting", "En attente"
     WARNING = "warning", "Avertissement"

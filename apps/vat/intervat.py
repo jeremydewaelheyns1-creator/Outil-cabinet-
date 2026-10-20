@@ -141,6 +141,7 @@ class PdfClues:
     year: int | None = None
     month: int | None = None
     quarter: int | None = None
+    looks_like_vat: bool = False  # le texte parle bien d'une déclaration ou d'un listing TVA
 
 
 NUMBER = re.compile(r"(?<!\d)([01]\d{3}[.\s]?\d{3}[.\s]?\d{3})(?!\d)")
@@ -175,6 +176,9 @@ def read_pdf(content: bytes) -> PdfClues:
     text = pdf_text(content)
     lowered = text.lower()
     kind = IC if "intracommunautaire" in lowered or "intracommunautair" in lowered else VAT
+    looks = bool(re.search(r"\b(tva|btw)\b", lowered)) and bool(
+        re.search(r"d[ée]claration|aangifte|listing|opgave", lowered)
+    )
     numbers = tuple(
         dict.fromkeys(n for n in (normalize_number(m) for m in NUMBER.findall(text)) if n)
     )
@@ -182,10 +186,10 @@ def read_pdf(content: bytes) -> PdfClues:
         found = {(int(m[1]), int(m[0])) for m in pattern.findall(text)}
         if len(found) == 1:
             year, quarter = found.pop()
-            return PdfClues(kind, numbers, year=year, quarter=quarter)
+            return PdfClues(kind, numbers, year=year, quarter=quarter, looks_like_vat=looks)
     for pattern in MONTH:
         found = {(int(m[1]), int(m[0])) for m in pattern.findall(text)}
         if len(found) == 1:
             year, month = found.pop()
-            return PdfClues(kind, numbers, year=year, month=month)
-    return PdfClues(kind, numbers)
+            return PdfClues(kind, numbers, year=year, month=month, looks_like_vat=looks)
+    return PdfClues(kind, numbers, looks_like_vat=looks)
