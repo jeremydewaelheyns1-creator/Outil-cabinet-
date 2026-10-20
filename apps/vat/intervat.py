@@ -23,6 +23,7 @@ from xml.etree.ElementTree import Element
 
 from defusedxml import ElementTree as SafeET
 from defusedxml.common import DefusedXmlException
+from stdnum import iban
 from stdnum.be import vat as be_vat
 
 VAT = "vat"  # déclaration périodique
@@ -193,3 +194,40 @@ def read_pdf(content: bytes) -> PdfClues:
             year, month = found.pop()
             return PdfClues(kind, numbers, year=year, month=month, looks_like_vat=looks)
     return PdfClues(kind, numbers, looks_like_vat=looks)
+
+
+# --- Données de paiement lues sur le PDF (D-043) ---------------------------------------------
+
+STRUCTURED = re.compile(
+    r"(?:\+\+\+|\*\*\*)\s*(\d{3})\s*/\s*(\d{4})\s*/\s*(\d{5})\s*(?:\+\+\+|\*\*\*)"
+)
+IBAN = re.compile(r"\bBE\d{2}(?:\s?\d{4}){3}\b")
+PAY_WORDS = ("paiement", "payer", "verser", "versement", "virement", "betaling", "betalen")
+REFUND_WORDS = ("restitution", "rembours", "terugbetaling", "teruggave")
+
+
+def _structured_ok(digits: str) -> bool:
+    """Chiffres de contrôle d'une communication structurée belge (modulo 97)."""
+    check = int(digits[:10]) % 97 or 97
+    return check == int(digits[10:])
+
+
+def payment_details(text: str) -> tuple[str, str]:
+    """(compte, communication structurée) lus sur la déclaration, seulement s'ils sont sûrs :
+    chiffres de contrôle corrects, un seul candidat, et le compte doit être sur une ligne qui
+    parle de paiement (jamais le compte du client pour une restitution). Sinon : vides."""
+    references = {
+        f"+++{a}/{b}/{c}+++" for a, b, c in STRUCTURED.findall(text) if _structured_ok(a + b + c)
+    }
+    accounts = set()
+    for line in text.splitlines():
+        lowered = line.lower()
+        if not any(w in lowered for w in PAY_WORDS) or any(w in lowered for w in REFUND_WORDS):
+            continue
+        for found in IBAN.findall(line):
+            compact = found.replace(" ", "")
+            if iban.is_valid(compact):
+                accounts.add(iban.format(compact))
+    account = accounts.pop() if len(accounts) == 1 else ""
+    reference = references.pop() if len(references) == 1 else ""
+    return account, reference

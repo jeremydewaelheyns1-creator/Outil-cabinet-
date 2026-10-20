@@ -36,7 +36,8 @@ def recipient(filing: VatFiling) -> str:
 def compose(filing: VatFiling, user: User | None) -> tuple[str, str]:
     """Objet et texte proposés."""
     subject = f"Votre déclaration TVA — {filing.period_label}"
-    lines = ["Bonjour,", "", f"Nous avons déposé votre déclaration TVA du {filing.period_label}."]
+    lines = [filing.client.greeting, ""]
+    lines.append(f"Nous avons déposé votre déclaration TVA du {filing.period_label}.")
     lines.append("")
     if filing.grid_72:
         lines.append(f"Montant de la déclaration : {euros(filing.grid_72)} à récupérer.")
@@ -57,10 +58,19 @@ def compose(filing: VatFiling, user: User | None) -> tuple[str, str]:
             label = "Reste à payer" if advances else "À payer"
             lines.append(f"{label} : {euros(remaining)}{due}.")
             lines.append("")
-            lines.append(
-                "Le paiement se fait sur le compte TVA du SPF Finances, avec votre "
-                "communication structurée habituelle."
-            )
+            if filing.payment_iban and filing.payment_reference:
+                lines += [
+                    "Pour le paiement (à copier-coller dans votre banque) :",
+                    f"Compte : {filing.payment_iban}",
+                    "Bénéficiaire : SPF Finances",
+                    f"Montant : {euros(remaining)}",
+                    f"Communication structurée : {filing.payment_reference}",
+                ]
+            else:
+                lines.append(
+                    "Le paiement se fait sur le compte TVA du SPF Finances, avec votre "
+                    "communication structurée habituelle."
+                )
         elif remaining < 0:
             lines.append(f"Montant en votre faveur : {euros(-remaining)}.")
         else:

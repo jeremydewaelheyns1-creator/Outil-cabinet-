@@ -63,6 +63,8 @@ class ClientForm(forms.ModelForm[Client]):
             "fiscal_year_end_day",
             "client_since",
             "client_until",
+            "contact_title",
+            "contact_name",
             "notes",
         ]
         widgets: ClassVar = {

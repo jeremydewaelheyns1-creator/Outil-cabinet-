@@ -115,6 +115,7 @@ urlpatterns = [
     ),
     path("<int:pk>/equipe/modifier/", views.assignments_edit, name="assignments"),
     path("<int:pk>/coordonnees/ajouter/", views.contact_add, name="contact_add"),
+    path("<int:pk>/coordonnees/contact/", views.contact_person, name="contact_person"),
     path(
         "<int:pk>/coordonnees/<int:contact_pk>/supprimer/",
         views.contact_delete,

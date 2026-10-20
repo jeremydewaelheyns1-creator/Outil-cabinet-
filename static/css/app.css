@@ -818,3 +818,5 @@ a.badge:hover { text-decoration: none; filter: brightness(0.95); }
 .vat-mailed { display: inline-block; margin-left: .2rem; }
 .vat-rest { display: block; font-size: .78rem; font-weight: 600; color: var(--text); }
 .vat-advances { white-space: nowrap; }
+.contact-person-form { display: grid; gap: .3rem; margin-top: .4rem; }
+.contact-person-form button { justify-self: start; margin-top: .3rem; }

@@ -150,9 +150,14 @@ def import_xml(
 def attach_pdf(filing: VatFiling, document: Document, kind: str, user: User | None) -> None:
     if kind == VAT:
         filing.pdf = document
+        # Compte et communication de paiement, s'ils sont sur la déclaration (D-043).
+        with document.file.open("rb") as handle:
+            account, reference = intervat.payment_details(intervat.pdf_text(handle.read()))
+        filing.payment_iban = account or filing.payment_iban
+        filing.payment_reference = reference or filing.payment_reference
     else:
         filing.ic_pdf = document
-    filing.save(update_fields=["pdf", "ic_pdf"])
+    filing.save(update_fields=["pdf", "ic_pdf", "payment_iban", "payment_reference"])
     column = Column.FILED if kind == VAT else Column.IC
     if not filing.cells.filter(column=column, status=Status.DONE).exists():
         set_status(filing, column, Status.DONE, user=user)

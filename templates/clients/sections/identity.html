@@ -70,6 +70,27 @@
 
   <div class="identity-side">
     <section class="card side-box">
+      <div class="side-title">Personne de contact</div>
+      {% if client.contact_display %}<div><strong>{{ client.contact_display }}</strong></div>
+        <div class="small muted">Les e-mails commencent par « {{ client.greeting }} »</div>
+      {% else %}<p class="empty small" style="margin:0">Non renseignée : les e-mails commencent par « Bonjour, ».</p>{% endif %}
+      {% if can_edit %}
+        <details style="margin-top: .5rem">
+          <summary class="small">{% if client.contact_display %}Modifier{% else %}+ Ajouter{% endif %}</summary>
+          <form method="post" action="{% url 'clients:contact_person' client.pk %}" class="contact-person-form">{% csrf_token %}
+            <label class="small" for="contact-title">Civilité</label>
+            <select id="contact-title" name="contact_title">
+              {% for value, label in contact_titles %}<option value="{{ value }}"{% if value == client.contact_title %} selected{% endif %}>{{ label }}</option>{% endfor %}
+            </select>
+            <label class="small" for="contact-name">Nom</label>
+            <input id="contact-name" type="text" name="contact_name" value="{{ client.contact_name }}" maxlength="150" placeholder="Ex. : Dupont">
+            <button type="submit" class="small">Enregistrer</button>
+          </form>
+        </details>
+      {% endif %}
+    </section>
+
+    <section class="card side-box">
       <div class="side-title">Adresses e-mail et téléphones</div>
       {% for contact in contacts %}
         <div class="contact-line">

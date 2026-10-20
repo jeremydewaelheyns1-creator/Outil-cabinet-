@@ -98,6 +98,9 @@ class VatFiling(models.Model):
         related_name="+",
     )  # fmt: skip
     remark = models.TextField("remarque", blank=True)
+    # Lus sur le PDF de la déclaration quand ils y sont (D-043), repris dans l'e-mail au client.
+    payment_iban = models.CharField("compte de paiement", max_length=42, blank=True)
+    payment_reference = models.CharField("communication structurée", max_length=24, blank=True)
     xml = models.ForeignKey(
         Document, verbose_name="déclaration (XML)", on_delete=models.SET_NULL, null=True,
         blank=True, related_name="+",

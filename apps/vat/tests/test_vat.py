@@ -426,3 +426,66 @@ def test_read_only_user_cannot_prepare_or_send(client, make_user, user):
     url = reverse("clients:vat_mail", args=[company.pk, filing.pk])
     assert client.get(url).status_code == 403
     assert client.post(url, {"action": "send"}).status_code == 403
+
+
+# --- Personnalisation de l'e-mail (D-043) -----------------------------------------------------
+
+
+def fictive_reference(base: int = 1234567890) -> str:
+    digits = f"{base:010d}{(base % 97) or 97:02d}"
+    return f"+++{digits[:3]}/{digits[3:7]}/{digits[7:]}+++"
+
+
+def fictive_iban(account: int = 6790000000) -> str:
+    from stdnum import iban
+
+    bban = f"{account:010d}{(account % 97) or 97:02d}"
+    for check in range(100):
+        candidate = f"BE{check:02d}{bban}"
+        if iban.is_valid(candidate):
+            return iban.format(candidate)
+    raise AssertionError
+
+
+def test_payment_details_are_read_only_when_certain():
+    reference, account = fictive_reference(), fictive_iban()
+    text = f"Montant à payer sur le compte {account}\nCommunication : {reference}"
+    assert intervat.payment_details(text) == (account, reference)
+    # Compte d'une restitution (compte du client) : jamais repris.
+    assert intervat.payment_details(f"Restitution sur le compte {account}")[0] == ""
+    # Communication aux chiffres de contrôle faux : ignorée.
+    assert intervat.payment_details("+++123/4567/89000+++")[1] == ""
+
+
+def test_contact_person_is_saved_and_greets_in_the_email(web, user):
+    company, filing = _filed(user)
+    web.post(reverse("clients:contact_person", args=[company.pk]),
+             {"contact_title": "Docteur", "contact_name": "Leroy"})  # fmt: skip
+    company.refresh_from_db()
+    assert company.greeting == "Bonjour Docteur Leroy,"
+    html = web.get(reverse("clients:identity", args=[company.pk])).content.decode()
+    assert "Docteur Leroy" in html
+    html = web.get(reverse("clients:vat_mail", args=[company.pk, filing.pk]),
+                   HTTP_HX_REQUEST="true").content.decode()  # fmt: skip
+    assert "Bonjour Docteur Leroy," in html
+    web.post(reverse("clients:contact_person", args=[company.pk]),
+             {"contact_title": "Majesté", "contact_name": "X"})  # fmt: skip
+    company.refresh_from_db()
+    assert company.contact_title == "Docteur"  # civilité inconnue refusée
+
+
+def test_payment_details_from_the_pdf_go_into_the_email(web, user):
+    company = vat_client()
+    from apps.clients.models import ContactPoint
+
+    ContactPoint.objects.create(client=company, kind="email", value="compta@fictif.test")
+    number, reference, account = company.enterprise_number, fictive_reference(), fictive_iban()
+    pdf = pdf_with(f"Déclaration TVA BE{number} 3e trimestre 2026<br>"
+                   f"Paiement sur le compte {account}<br>Communication {reference}")  # fmt: skip
+    importer.import_files([upload("a.xml", vat_xml(number)), upload("a.pdf", pdf)],
+                          clients=type(company).objects.all(), user=user)  # fmt: skip
+    filing = VatFiling.objects.get(client=company)
+    assert (filing.payment_iban, filing.payment_reference) == (account, reference)
+    html = web.get(reverse("clients:vat_mail", args=[company.pk, filing.pk]),
+                   HTTP_HX_REQUEST="true").content.decode()  # fmt: skip
+    assert f"Compte : {account}" in html and f"Communication structurée : {reference}" in html

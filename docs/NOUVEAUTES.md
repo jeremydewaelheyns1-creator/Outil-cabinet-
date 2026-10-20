@@ -3,6 +3,13 @@
 Ce qui a été ajouté à l'outil, du plus récent au plus ancien. Toutes les données de la démo
 sont inventées.
 
+## 20 octobre 2026 — E-mails personnalisés
+
+- Page **Identité** : nouvelle case **Personne de contact** (Monsieur, Madame, Docteur,
+  Maître… + nom). Les e-mails commencent par « Bonjour Monsieur Dubois, ».
+- E-mail TVA : quand le PDF de la déclaration contient le compte et la communication
+  structurée, l'outil les recopie dans l'e-mail, prêts à copier-coller pour le paiement.
+
 ## 20 octobre 2026 — E-mail TVA au client, acomptes déduits
 
 - Colonne **Acomptes** : on y indique les acomptes déjà payés par le client. Le reste à payer

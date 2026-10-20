@@ -344,3 +344,15 @@ une case pour ne pas le joindre).
 - Envoyer coche « Com. client ». Tant que la messagerie du cabinet n'est pas branchée
   (`OUTGOING_EMAIL_ENABLED` faux), l'e-mail est enregistré mais ne part pas, et la fenêtre
   le dit.
+
+## D-043 — E-mails personnalisés : personne de contact, paiement prêt à copier
+Demande de Jeremy.
+- Fiche client, page Identité : « Personne de contact » = civilité (Monsieur, Madame, Madame
+  et Monsieur, Docteur, Maître) + nom. Les e-mails commencent par « Bonjour Docteur Leroy, »
+  (sinon « Bonjour, »).
+- Le compte et la communication structurée de paiement sont lus sur le PDF de la déclaration
+  quand ils y sont, et repris dans l'e-mail en bloc à copier-coller. Repris seulement s'ils
+  sont sûrs : communication aux chiffres de contrôle corrects, compte valide sur une ligne qui
+  parle de paiement (jamais une ligne de restitution, pour ne pas prendre le compte du client),
+  un seul candidat. Sinon : la phrase générale.
+- Emplacement exact de ces données sur le PDF d'Intervat à vérifier sur un vrai fichier.

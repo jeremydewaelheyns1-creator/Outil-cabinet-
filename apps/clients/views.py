@@ -290,6 +290,7 @@ def client_identity(request: AppRequest, pk: int) -> HttpResponse:
         lambda client: {
             "contacts": client.contacts.all(),
             "contact_form": ContactPointForm(),
+            "contact_titles": Client.Title.choices,
             "assignments": client.assignments.select_related("user"),
             "last_change": client.history.select_related("history_user").first(),
             "external_links": _external_links(client),
@@ -742,6 +743,23 @@ def contact_add(request: AppRequest, pk: int) -> HttpResponse:
     else:
         errors = "; ".join(str(e) for errs in form.errors.values() for e in errs)
         messages.error(request, f"Coordonnée non ajoutée : {errors}")
+    return redirect("clients:identity", pk=client.pk)
+
+
+@require_POST
+@require_capability(Capability.CLIENTS_EDIT)
+def contact_person(request: AppRequest, pk: int) -> HttpResponse:
+    """Personne de contact (civilité + nom), pour le « Bonjour … » des e-mails (D-043)."""
+    client = _get_client(request, pk)
+    title = request.POST.get("contact_title", "")
+    if title not in Client.Title.values:
+        messages.error(request, "Civilité inconnue.")
+        return redirect("clients:identity", pk=client.pk)
+    client.contact_title = title
+    client.contact_name = request.POST.get("contact_name", "").strip()[:150]
+    client.save(update_fields=["contact_title", "contact_name", "updated_at"])
+    log_access(request, AccessLog.Action.UPDATE, client, details={"personne de contact": True})
+    messages.success(request, "Personne de contact enregistrée.")
     return redirect("clients:identity", pk=client.pk)
 
 

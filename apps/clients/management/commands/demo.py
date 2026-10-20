@@ -190,6 +190,8 @@ class Command(BaseCommand):
                 vat.set_status(filing, column, Status.DONE, user=user,
                                on=filing.period_end + timedelta(days=15))  # fmt: skip
             vat.set_status(filing, Column.IC, Status.NOT_NEEDED, user=user)
+        company.contact_title, company.contact_name = Client.Title.MR, "Dubois"
+        company.save(update_fields=["contact_title", "contact_name"])
         number = company.enterprise_number or ""
         xml = (
             '<?xml version="1.0"?><ns2:VATConsignment '
@@ -210,6 +212,9 @@ class Command(BaseCommand):
         t3 = vat.filing_for(company, vat.period(2026, quarter=3))
         t3.advance_1 = t3.advance_2 = Decimal("2100.00")
         t3.remark = "Régularisation faite"
+        # Données de paiement visiblement fictives (comme si elles avaient été lues sur le PDF).
+        t3.payment_iban = "BE00 0000 0000 0000"
+        t3.payment_reference = "+++000/0000/00097+++"
         t3.save()
         for column in (Column.DOCS, Column.DONE):
             vat.set_status(t3, column, Status.DONE, user=user)

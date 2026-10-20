@@ -183,6 +183,22 @@ class Client(models.Model):
     nace_codes = models.JSONField("activités NACE principales", default=list, blank=True)
     bce_synced_at = models.DateTimeField("dernière synchronisation BCE", null=True, blank=True)
 
+    # Personne de contact (D-043) : pour personnaliser les e-mails (« Bonjour Docteur Leroy, »).
+    class Title(models.TextChoices):
+        NONE = "", "—"
+        MR = "Monsieur", "Monsieur"
+        MRS = "Madame", "Madame"
+        BOTH = "Madame et Monsieur", "Madame et Monsieur"
+        DR = "Docteur", "Docteur"
+        ME = "Maître", "Maître"
+
+    contact_title = models.CharField(
+        "civilité du contact", max_length=30, choices=Title.choices, default="", blank=True
+    )
+    contact_name = models.CharField(
+        "nom du contact", max_length=150, blank=True, help_text="Ex. : Dupont, ou Jean Dupont."
+    )
+
     notes = models.TextField("notes", blank=True)
     created_at = models.DateTimeField("créé le", default=timezone.now, editable=False)
     updated_at = models.DateTimeField("modifié le", auto_now=True)
@@ -217,6 +233,15 @@ class Client(models.Model):
 
     def get_absolute_url(self) -> str:
         return reverse("clients:identity", args=[self.pk])
+
+    @property
+    def contact_display(self) -> str:
+        return " ".join(p for p in (self.contact_title, self.contact_name) if p)
+
+    @property
+    def greeting(self) -> str:
+        """Début des e-mails : « Bonjour Monsieur Dupont, » (ou « Bonjour, »)."""
+        return f"Bonjour {self.contact_display}," if self.contact_display else "Bonjour,"
 
     def clean(self) -> None:
         errors: dict[str, str] = {}
