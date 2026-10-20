@@ -219,45 +219,67 @@ def _title(kind: str, person: Client | None, label: str, doc_type: str = "") -> 
     return base
 
 
-def _email_body(request: DocumentRequest, reminder: bool) -> str:
-    """Message volontairement neutre : aucune donnée sensible, aucune pièce jointe."""
-    if request.kind == DocumentRequest.Kind.SIGNATURE:
-        opening = (
-            "Sauf erreur de notre part, le document ci-dessous attend encore votre signature."
+def _email_body(request: DocumentRequest, reminder: bool, sender: User | None) -> str:
+    """Message clair et neutre : aucune donnée sensible, aucune pièce jointe (D-045)."""
+    greeting = request.client.greeting
+    who = request.person.display_name if request.person is not None else ""
+    if request.kind == DocumentRequest.Kind.IDENTITY_CARD:
+        intro = (
+            f"Petit rappel : nous n'avons pas encore reçu la carte d'identité de {who}."
             if reminder
-            else "Nous avons préparé le document ci-dessous. Il est déjà signé par notre cabinet "
-            "et n'attend plus que votre signature."
+            else "Dans le cadre de nos obligations légales (loi anti-blanchiment du 18 septembre "
+            f"2017), nous devons conserver une copie à jour de la carte d'identité de {who}."
         )
         action = (
-            "Vous pouvez le consulter et le signer via ce lien sécurisé : "
+            "Pourriez-vous nous l'envoyer en répondant simplement à cet e-mail, avec une "
+            "photo nette du recto et du verso de la carte ?"
+        )
+    elif request.kind == DocumentRequest.Kind.SIGNATURE:
+        intro = (
+            f"Petit rappel : le document « {request.title} » attend encore votre signature."
+            if reminder
+            else f"Nous avons préparé le document « {request.title} ». Il est déjà signé par "
+            "notre cabinet et n'attend plus que votre signature."
+        )
+        action = (
+            "Vous pourrez le consulter et le signer via ce lien sécurisé : "
             "[lien de signature — disponible quand la signature en ligne sera branchée]"
         )
     else:
-        opening = (
-            "Sauf erreur de notre part, nous n'avons pas encore reçu le document ci-dessous."
+        intro = (
+            f"Petit rappel : nous n'avons pas encore reçu le document « {request.title} »."
             if reminder
-            else "Dans le cadre de notre mission, pourriez-vous nous transmettre le document "
-            "ci-dessous ?"
+            else f"Pour la bonne tenue de votre dossier, pourriez-vous nous transmettre le "
+            f"document suivant : « {request.title} » ?"
         )
-        action = "Il vous suffit de répondre à ce message en joignant le document."
-    return (
-        f"Bonjour,\n\n{opening}\n\n— {request.title}\n\n"
-        f"{action}\n\n"
-        f"Référence : {request.reference}\n\n"
-        f"Cordialement,\n{settings.CABINET_NAME}"
-    )
+        action = "Il vous suffit de répondre à cet e-mail en le joignant."
+    signature = [sender.get_full_name()] if sender is not None and sender.get_full_name() else []
+    lines = [greeting, "", intro, "", action, "", "Merci d'avance pour votre aide.", "",
+             "Bien à vous,", *signature, settings.CABINET_NAME, "",
+             f"Référence de la demande : {request.reference}"]  # fmt: skip
+    return "\n".join(lines)
 
 
 def _prepare_email(request: DocumentRequest, kind: str) -> OutgoingEmail:
+    from .mailing import sender_for
+
     reminder = kind == OutgoingEmail.Kind.REMINDER
     prefix = "Rappel : " if reminder else ""
+    sender = sender_for(request.client, request.created_by)
     return OutgoingEmail.objects.create(
         request=request,
         kind=kind,
         to=request.recipient,
         subject=f"{prefix}{request.title} [réf. {request.reference}]",
-        body=_email_body(request, reminder),
+        body=_email_body(request, reminder, sender),
     )
+
+
+def _deliver(email: OutgoingEmail, user: User | None) -> None:
+    """Envoi réel, après l'enregistrement (un refus de Microsoft n'annule pas la demande)."""
+    from .mailing import deliver
+
+    deliver(email, user)
 
 
 def create_request(
@@ -280,7 +302,8 @@ def create_request(
             created_by=user,
             next_reminder_on=timezone.localdate() + timedelta(days=settings.REQUEST_REMINDER_DAYS),
         )
-        _prepare_email(request, OutgoingEmail.Kind.REQUEST)
+        email = _prepare_email(request, OutgoingEmail.Kind.REQUEST)
+    _deliver(email, user)
     events.emit(
         "document_request.created",
         subject=client,
@@ -355,10 +378,11 @@ def send_due_reminders(today: date | None = None) -> int:
     count = 0
     for request in due:
         with transaction.atomic():
-            _prepare_email(request, OutgoingEmail.Kind.REMINDER)
+            email = _prepare_email(request, OutgoingEmail.Kind.REMINDER)
             request.reminders_sent += 1
             request.next_reminder_on = today + timedelta(days=settings.REQUEST_REMINDER_DAYS)
             request.save(update_fields=["reminders_sent", "next_reminder_on"])
+        _deliver(email, None)
         count += 1
     return count
 

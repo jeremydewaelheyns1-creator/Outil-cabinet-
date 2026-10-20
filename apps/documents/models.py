@@ -155,8 +155,8 @@ class Document(models.Model):
 
 
 class OutgoingEmail(models.Model):
-    """E-mail envoyé (ou préparé) au client pour une demande. Tant que la messagerie du cabinet
-    n'est pas branchée, il est seulement enregistré et affiché (`delivered` = faux)."""
+    """E-mail au client pour une demande. Il part de la boîte Outlook reliée de l'équipe du
+    dossier (D-045) ; sans boîte reliée, il est seulement préparé (`delivered` = faux)."""
 
     class Kind(models.TextChoices):
         REQUEST = "request", "Demande"
@@ -169,6 +169,7 @@ class OutgoingEmail(models.Model):
     body = models.TextField("message")
     created_at = models.DateTimeField(default=timezone.now)
     delivered = models.BooleanField("envoyé", default=False)
+    sent_from = models.EmailField("envoyé depuis", blank=True)  # boîte Outlook (D-045)
 
     class Meta:
         verbose_name = "e-mail sortant"

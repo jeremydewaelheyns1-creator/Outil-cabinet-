@@ -341,8 +341,15 @@ def request_create(request: AppRequest, pk: int) -> HttpResponse:
         doc_type=form.cleaned_data["doc_type"],
     )
     log_access(request, AccessLog.Action.CREATE, created, details={"client": client.pk})
-    if created.recipient:
-        messages.success(request, f"Demande « {created.title} » préparée.")
+    email = created.emails.first()
+    if email is not None and email.delivered:
+        messages.success(request, f"Demande « {created.title} » envoyée depuis {email.sent_from}.")
+    elif created.recipient:
+        messages.warning(
+            request,
+            f"Demande « {created.title} » préparée mais pas envoyée : aucune boîte Outlook "
+            "reliée (menu « Ma boîte mail »).",
+        )
     else:
         messages.warning(
             request,

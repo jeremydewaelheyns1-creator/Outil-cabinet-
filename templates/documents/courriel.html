@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>{{ subject }}</title>
+<style>
+  @page { size: A4; margin: 20mm; @bottom-right { content: "Page " counter(page) " / " counter(pages); font-size: 8pt; color: #777; } }
+  body { font-family: "DejaVu Sans", sans-serif; font-size: 10pt; color: #1b2430; line-height: 1.5; }
+  .label { color: #14243b; font-weight: bold; font-size: 8.5pt; text-transform: uppercase; letter-spacing: .04em; margin-bottom: 8px; }
+  table { width: 100%; border-collapse: collapse; margin-bottom: 14px; }
+  th, td { text-align: left; vertical-align: top; padding: 3px 8px 3px 0; font-size: 9.5pt; }
+  th { width: 22%; color: #555; font-weight: normal; }
+  .subject { font-size: 13pt; font-weight: bold; border-bottom: 2px solid #14243b; padding-bottom: 6px; margin: 0 0 14px; }
+  .body { white-space: pre-wrap; }
+</style>
+</head>
+<body>
+  <div class="label">Courriel envoyé — copie gardée par {{ cabinet }}</div>
+  <div class="subject">{{ subject }}</div>
+  <table>
+    <tr><th>De</th><td>{{ sender|default:"—" }}</td></tr>
+    <tr><th>À</th><td>{{ to }}</td></tr>
+    <tr><th>Envoyé le</th><td>{{ sent_at|date:"d/m/Y à H:i" }}</td></tr>
+    {% if attachments %}<tr><th>Pièces jointes</th><td>{{ attachments|join:", " }}</td></tr>{% endif %}
+  </table>
+  <div class="body">{{ body }}</div>
+</body>
+</html>

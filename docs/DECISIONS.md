@@ -375,3 +375,17 @@ Idée de Jeremy (le cabinet est sur Outlook / Microsoft 365). Application `apps/
 - Mise à jour (même jour) : format confirmé sur un PDF de l'administration (ligne « Pour tout
   paiement à "TVA-BTW" - compte (BIC : …) … communication structurée … »). L'outil reprend
   aussi le bénéficiaire et le BIC. Vérifié sans afficher ni conserver aucune valeur réelle.
+
+## D-045 — Demandes de documents envoyées depuis Outlook, copies dans « Courriels »
+Demande de Jeremy après son essai.
+- Les demandes (carte d'identité d'abord) et leurs relances partent réellement de la boîte
+  Outlook reliée : celle de l'employé qui demande, sinon du responsable du dossier, sinon de
+  son assistant (pour les demandes et relances automatiques). Sans boîte reliée : préparées
+  seulement, et l'outil le dit.
+- Texte réécrit : « Bonjour Madame X, », raison (loi anti-blanchiment), consigne claire
+  (photo recto verso en réponse), signature de l'employé, référence de la demande.
+- Chaque e-mail réellement envoyé (demande, relance, e-mail TVA) est gardé en PDF dans
+  « Archives › Courriels » du dossier.
+- E-mail TVA : « Pour le paiement : » (sans « à copier-coller dans votre banque »).
+- **Pas encore fait, en attente de l'accord de Jeremy** : lire les réponses pour ranger la
+  carte jointe toute seule (demande le droit de lire la boîte, voir la question posée).

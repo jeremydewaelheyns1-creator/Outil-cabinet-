@@ -132,6 +132,16 @@ def send(message: VatMessage, user: User | None) -> None:
     )
     if link is None and settings.OUTGOING_EMAIL_ENABLED:
         _deliver(message)
+    if message.delivered:
+        # D-045 : copie de l'e-mail dans les archives « Courriels » du dossier.
+        from apps.documents.mailing import archive_copy
+
+        names = [a.name for a in _attachments(message)]
+        archive_copy(
+            message.filing.client, sender=message.sent_from or settings.DEFAULT_FROM_EMAIL,
+            to=message.to, subject=message.subject, body=message.body,
+            sent_at=message.sent_at or timezone.now(), attachments=names, user=user,
+        )  # fmt: skip
 
 
 def _attachments(message: VatMessage) -> list[graph.Attachment]:

@@ -3,6 +3,13 @@
 Ce qui a été ajouté à l'outil, du plus récent au plus ancien. Toutes les données de la démo
 sont inventées.
 
+## 20 octobre 2026 — Les demandes de documents partent vraiment
+
+- Une demande de carte d'identité (et ses relances) part maintenant de la boîte Outlook
+  reliée, avec un texte plus clair et personnalisé (« Bonjour Madame X, »).
+- Chaque e-mail envoyé est gardé dans **Archives › Courriels** du dossier.
+- E-mail TVA : le bloc commence par « Pour le paiement : ».
+
 ## 20 octobre 2026 — TVA : paiement prêt à copier, cases alignées
 
 - L'e-mail TVA reprend la ligne de paiement du PDF de l'administration : bénéficiaire

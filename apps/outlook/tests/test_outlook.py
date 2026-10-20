@@ -175,3 +175,76 @@ def test_vat_email_is_not_marked_sent_when_microsoft_refuses(web, user, monkeypa
     assert "pas parti" in html
     assert filing.messages.get().sent_at is None
     assert filing.cells.filter(column="client", status="done").count() == 0
+
+
+# --- Demandes de documents envoyées depuis Outlook, copies archivées (D-045) -------------------
+
+
+def test_identity_request_leaves_from_outlook_and_is_archived(web, user, monkeypatch):
+    from apps.clients.models import Client
+    from apps.documents.models import Document, DocumentRequest
+    from apps.documents.tests.test_documents import company_with_manager
+
+    fake = FakeMicrosoft()
+    monkeypatch.setattr(graph, "_http", fake.client)
+    link_for(user)
+    company, manager = company_with_manager()
+    Client.objects.filter(pk=company.pk).update(contact_title="Madame", contact_name="Fictive")
+    web.post(reverse("clients:request_create", args=[company.pk]),
+             {"kind": "identity_card", "person": manager.pk})  # fmt: skip
+    request = DocumentRequest.objects.get()
+    email = request.emails.get()
+    assert email.delivered and email.sent_from == "jeremy@cabinet-fictif.test"
+    sent = fake.sent[0]["message"]
+    assert request.reference in sent["subject"]
+    body = sent["body"]["content"]
+    assert body.startswith("Bonjour Madame Fictive,") and "recto et du verso" in body
+    archived = Document.objects.get(client=company, folder="courriels")
+    assert archived.content_type == "application/pdf" and request.reference in archived.title
+
+
+def test_request_without_linked_mailbox_stays_prepared(web, user):
+    from apps.documents.models import Document, DocumentRequest
+    from apps.documents.tests.test_documents import company_with_manager
+
+    company, manager = company_with_manager()
+    response = web.post(reverse("clients:request_create", args=[company.pk]),
+                        {"kind": "identity_card", "person": manager.pk}, follow=True)  # fmt: skip
+    assert "pas envoyée" in response.content.decode()
+    assert not DocumentRequest.objects.get().emails.get().delivered
+    assert not Document.objects.filter(folder="courriels").exists()
+
+
+def test_automatic_reminder_leaves_from_the_dossier_manager(user, monkeypatch):
+    from datetime import timedelta
+
+    from django.utils import timezone
+
+    from apps.clients.models import Assignment
+    from apps.documents import services
+    from apps.documents.tests.test_documents import company_with_manager
+
+    fake = FakeMicrosoft()
+    monkeypatch.setattr(graph, "_http", fake.client)
+    company, manager = company_with_manager()
+    request = services.create_request(company, "identity_card", person=manager)  # automatique
+    assert not request.emails.get().delivered  # personne de l'équipe n'a de boîte reliée
+    Assignment.objects.create(client=company, user=user, role="manager")
+    link_for(user)
+    services.send_due_reminders(timezone.localdate() + timedelta(days=7))
+    reminder = request.emails.get(kind="reminder")
+    assert reminder.delivered and reminder.subject.startswith("Rappel")
+
+
+def test_vat_email_copy_is_archived(web, user, monkeypatch):
+    from apps.documents.models import Document
+    from apps.vat.tests.test_vat import _filed
+
+    monkeypatch.setattr(graph, "_http", FakeMicrosoft().client)
+    link_for(user)
+    company, filing = _filed(user)
+    url = reverse("clients:vat_mail", args=[company.pk, filing.pk])
+    web.post(url, {"action": "send", "to": "compta@fictif.test", "subject": "TVA T3",
+                   "body": "Bonjour", "attach_pdf": "1"}, HTTP_HX_REQUEST="true")  # fmt: skip
+    archived = Document.objects.get(client=company, folder="courriels")
+    assert "TVA T3" in archived.title
