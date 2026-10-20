@@ -1,5 +1,39 @@
 # Journal des sessions
 
+## Session — 20 octobre 2026 : TVA, dépôt unique, Outlook, mise en ligne
+
+**Fait** (décisions D-039 à D-044)
+- Documents générés (lettre de mission, identifications, déclaration UBO, procuration),
+  aperçu signé par le cabinet, « Envoyer au client ».
+- Onglet **Déclaration TVA** (grille FID : Doc. reçus, Fini, Déposée, IC, solde 71/72,
+  Com. client, acomptes déjà payés, remarques ; 4 états au clic).
+- **Déposer des documents** (barre du haut) : XML/PDF Intervat et cartes d'identité classés
+  seuls ; sinon « À classer » (visible par le déposant, effacé après 30 jours).
+- E-mail TVA au client : personne de contact (civilité), montant, acomptes, reste à payer,
+  bénéficiaire/compte/BIC/communication lus sur le PDF de l'administration, PDF joint,
+  envoi seulement aux adresses de la fiche.
+- **Outlook** : envoi depuis la boîte de chaque employé (Graph, droit d'envoi seul, jeton
+  chiffré). Testé par Jeremy avec une adresse Outlook personnelle (« consumers ») : OK.
+- **Installation chez Jeremy** : Google Cloud (essai gratuit, europe-west1), projet
+  `outil-cabinet-512217`, service `outil` (deux adresses Google acceptées). Données fictives
+  seulement. Installateur `deploy/installer.sh`, guides `docs/INSTALLATION.md`,
+  `docs/OUTLOOK.md`.
+
+**Choix de Jeremy en attente de réalisation**
+- Mises à jour **automatiques** de l'outil en ligne depuis GitHub (sans clé : fédération
+  d'identité Google, limitée au dépôt).
+- Cartes d'identité demandées au client : **lien sécurisé** de dépôt plutôt que réponse par
+  e-mail.
+
+**À faire plus tard**
+- Onglets Clôture, Versements anticipés, Facturation (contenu à définir avec Jeremy).
+- Documents RGPD avant toute donnée réelle : registre des traitements, analyse d'impact,
+  contrat de sous-traitance Google, droits des personnes.
+- Outlook du cabinet : inscription par l'administrateur Microsoft 365, accord du cabinet.
+- Modèles du cabinet (lettre de mission, procuration…), fiche de risque guidée.
+- Rappel : un vrai PDF de client a été transmis dans la conversation pour montrer la mise en
+  page ; rien n'a été conservé. Ne transmettre que des documents anonymisés.
+
 ## Session 1 — 13 octobre 2026 : socle et module clients
 
 **Fait**
