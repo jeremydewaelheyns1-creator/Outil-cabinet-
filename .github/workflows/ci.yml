@@ -59,7 +59,7 @@ jobs:
       - name: L'application se charge dans l'image (réglages de production)
         run: |
           set +e
-          docker run --rm -e DJANGO_SECRET_KEY=verification-ci-uniquement-0123456789-abcdefghij \
+          docker run --rm -e DJANGO_SECRET_KEY=verification-ci-uniquement-0123456789-abcdefghijklmnopqrstuvwxyz \
             -e DJANGO_ALLOWED_HOSTS=outil.example.be -e DJANGO_CSRF_TRUSTED_ORIGINS=https://outil.example.be \
             -e GS_DOCUMENTS_BUCKET=verification-ci outil python manage.py check --deploy --fail-level WARNING \
             > sortie.txt 2>&1

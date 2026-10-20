@@ -22,7 +22,7 @@ SCHEDULER_SA_NAME="outil-planificateur"
 say() { printf '\n\033[1;34m▶ %s\033[0m\n' "$*"; }
 ok() { printf '  \033[32m✓ %s\033[0m\n' "$*"; }
 fail() { printf '\n\033[1;31m✗ %s\033[0m\n' "$*" >&2; exit 1; }
-random_secret() { openssl rand -base64 48 | tr -d '\n/+=' | cut -c1-"${1:-50}"; }
+random_secret() { openssl rand -base64 96 | tr -d '\n/+=' | cut -c1-"${1:-50}"; }
 
 PROJECT="$(gcloud config get-value project 2>/dev/null || true)"
 [[ -n "$PROJECT" ]] || fail "Aucun projet choisi. Lancez d'abord : gcloud config set project ID-DU-PROJET"
