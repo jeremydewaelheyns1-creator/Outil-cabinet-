@@ -1,0 +1,25 @@
+{% extends "documents/modeles/_base.html" %}
+{% block body %}
+<p class="muted">Identification d'un mandataire du client {{ client.display_name }} (loi du 18 septembre 2017).</p>
+<h2>Mandataire</h2>
+<table>
+  {% if person.is_person %}
+    <tr><th>Nom et prénom</th><td>{{ person.name }} {{ person.first_name }}</td></tr>
+    <tr><th>Date de naissance</th><td>{{ person.birth_date|date:"d/m/Y"|default:"—" }}</td></tr>
+    <tr><th>Nationalité</th><td>{{ person.nationality|default:"—" }}</td></tr>
+    <tr><th>N° national</th><td>{{ person.national_number_masked|default:"—" }}</td></tr>
+  {% else %}
+    <tr><th>Dénomination</th><td>{{ person.name }} {{ person.legal_form }}</td></tr>
+    <tr><th>Numéro d'entreprise</th><td>{{ person.enterprise_number_display|default:"—" }}</td></tr>
+  {% endif %}
+  <tr><th>Adresse</th><td>{% for line in person.address_lines %}{{ line }}{% if not forloop.last %}, {% endif %}{% empty %}—{% endfor %}</td></tr>
+  <tr><th>Fonction</th><td>{% for r in management %}{% if r.person_id == person.pk %}{{ r.get_role_display }}{% if r.start_date %} depuis le {{ r.start_date|date:"d/m/Y" }}{% endif %}{% endif %}{% endfor %}</td></tr>
+</table>
+{% if person.is_person %}
+<h2>Pièce d'identité vérifiée</h2>
+<table>
+  <tr><th>Carte d'identité</th><td>{% if card %}n° {{ card.masked_number }} — valable jusqu'au {{ card.valid_until|date:"d/m/Y" }}{% else %}{{ card_text }}{% endif %}</td></tr>
+</table>
+{% endif %}
+{% endblock %}
+{% block client_signature %}{% endblock %}

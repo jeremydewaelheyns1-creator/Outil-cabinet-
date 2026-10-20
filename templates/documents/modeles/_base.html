@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>{{ doc_label }} — {{ client.display_name }}</title>
+<style>
+  @page { size: A4; margin: 22mm 20mm 22mm 20mm;
+    @bottom-left { content: "{{ cabinet }} — {{ doc_label }}"; font-size: 8pt; color: #777; }
+    @bottom-right { content: "Page " counter(page) " / " counter(pages); font-size: 8pt; color: #777; } }
+  body { font-family: "DejaVu Sans", sans-serif; font-size: 10pt; color: #1b2430; line-height: 1.45; }
+  .head { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #14243b; padding-bottom: 8px; margin-bottom: 18px; }
+  .cabinet { font-weight: bold; font-size: 12pt; color: #14243b; }
+  .ref { text-align: right; font-size: 8.5pt; color: #555; }
+  h1 { font-size: 15pt; color: #fff; background: #14243b; padding: 8px 12px; margin: 0 0 16px; }
+  h2 { font-size: 11pt; color: #14243b; border-bottom: 1px solid #c9d1dc; padding-bottom: 3px; margin: 18px 0 8px; }
+  table { width: 100%; border-collapse: collapse; margin: 4px 0 8px; }
+  th, td { border: 1px solid #c9d1dc; padding: 5px 7px; text-align: left; vertical-align: top; font-size: 9.5pt; }
+  th { background: #eef2f7; width: 34%; font-weight: normal; color: #444; }
+  table.list th { width: auto; font-weight: bold; color: #1b2430; }
+  .muted { color: #666; }
+  .provisional { border: 1px dashed #c97a00; color: #8a5a00; background: #fff6e5; padding: 6px 9px; font-size: 8.5pt; margin-bottom: 12px; }
+  .signatures { display: flex; gap: 16px; margin-top: 26px; page-break-inside: avoid; }
+  .sign { flex: 1; border: 1px solid #c9d1dc; padding: 10px 12px; min-height: 92px; }
+  .sign .who { font-weight: bold; margin-bottom: 6px; }
+  .signed { border-color: #2e8b57; background: #f1faf4; }
+  .stamp { color: #1f6f43; font-size: 9pt; margin-top: 8px; }
+  .blank { color: #999; font-size: 9pt; margin-top: 30px; border-top: 1px dotted #999; padding-top: 4px; }
+</style>
+</head>
+<body>
+  <div class="head">
+    <div class="cabinet">{{ cabinet }}</div>
+    <div class="ref">Dossier : {{ client.display_name }}{% if client.reference %} · réf. {{ client.reference }}{% endif %}<br>Établi le {{ today|date:"d/m/Y" }}</div>
+  </div>
+  <h1>{{ doc_label }}</h1>
+  {% if provisional %}<div class="provisional">Modèle provisoire de l'outil : à remplacer par le modèle du cabinet.</div>{% endif %}
+  {% block body %}{% endblock %}
+  {% block signatures %}
+  <div class="signatures">
+    <div class="sign signed">
+      <div class="who">Pour {{ cabinet }}</div>
+      <div>{% if author %}{{ author.get_full_name|default:author.email }}{% endif %}</div>
+      <div class="stamp">Signé électroniquement le {{ today|date:"d/m/Y" }}</div>
+    </div>
+    {% block client_signature %}
+    <div class="sign">
+      <div class="who">Pour le client</div>
+      <div>{{ client.display_name }}</div>
+      <div class="blank">Signature, nom et date</div>
+    </div>
+    {% endblock %}
+  </div>
+  {% endblock %}
+</body>
+</html>

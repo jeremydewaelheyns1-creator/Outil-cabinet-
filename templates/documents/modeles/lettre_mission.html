@@ -1,0 +1,16 @@
+{% extends "documents/modeles/_base.html" %}
+{% block body %}
+<p><strong>Entre</strong> {{ cabinet }}, ci-après « le professionnel »,</p>
+<p><strong>et</strong> {{ client.display_name }}{% if client.enterprise_number %}, inscrite à la Banque-Carrefour des Entreprises sous le numéro {{ client.enterprise_number_display }}{% endif %}{% if client.address_lines %}, dont le siège est situé {{ client.address_lines|join:", " }}{% endif %}{% for r in management %}{% if forloop.first %}, représentée par {% endif %}{{ r.person.display_name }}{% if not forloop.last %} et {% endif %}{% endfor %}, ci-après « le client »,</p>
+<p>il est convenu ce qui suit.</p>
+<h2>Article 1 — Mission</h2>
+<p>Le client confie au professionnel, qui l'accepte : la tenue de la comptabilité et les formalités administratives qui s'y rattachent ; l'établissement des déclarations fiscales{% if client.vat_status == "subject" %} et des déclarations TVA ({{ client.get_vat_periodicity_display|lower }}){% endif %} ; l'établissement et le dépôt des comptes annuels.</p>
+<h2>Article 2 — Durée</h2>
+<p>La présente lettre de mission prend effet le {{ today|date:"d/m/Y" }} pour une durée indéterminée. Chaque partie peut y mettre fin moyennant un préavis de trois mois.</p>
+<h2>Article 3 — Honoraires</h2>
+<p>Les honoraires sont fixés selon les conditions convenues entre les parties.</p>
+<h2>Article 4 — Lutte contre le blanchiment</h2>
+<p>Le client s'engage à fournir au professionnel les informations nécessaires à son identification, à celle de ses mandataires et de ses bénéficiaires effectifs, et à l'informer de toute modification.</p>
+<h2>Article 5 — Protection des données</h2>
+<p>Les données personnelles sont traitées pour l'exécution de la mission et le respect des obligations légales du professionnel, conformément au RGPD.</p>
+{% endblock %}

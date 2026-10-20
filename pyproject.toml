@@ -19,6 +19,7 @@ dependencies = [
     "psycopg[binary]>=3.3,<3.4",
     "python-stdnum>=2.2,<3",
     "pyyaml>=6,<7",
+    "weasyprint>=66,<67",
     "whitenoise>=6.12,<7",
 ]
 
@@ -78,7 +79,7 @@ module = ["*.tests.*", "apps.core.testing.*", "conftest"]
 ignore_errors = true
 
 [[tool.mypy.overrides]]
-module = ["allauth.*", "simple_history.*", "procrastinate.*", "stdnum.*", "environ.*", "django_htmx.*"]
+module = ["allauth.*", "simple_history.*", "procrastinate.*", "stdnum.*", "environ.*", "django_htmx.*", "weasyprint.*"]
 ignore_missing_imports = true
 
 [tool.django-stubs]

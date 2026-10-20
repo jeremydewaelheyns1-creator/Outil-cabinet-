@@ -3,6 +3,18 @@
 Ce qui a été ajouté à l'outil, du plus récent au plus ancien. Toutes les données de la démo
 sont inventées.
 
+## 20 octobre 2026 — Générer un document et l'envoyer au client pour signature
+
+- Dans l'onglet **Documents**, un bouton **Générer** (document jamais fait) ou **Mettre à
+  jour** (document qui expire ou n'est plus à jour) produit le document avec les données du
+  dossier et la date du jour.
+- L'aperçu s'ouvre aussitôt, comme pour les autres documents : déjà signé par le cabinet, la
+  case du client vide. En bas à droite : **Envoyer au client** (ou **Valider et ranger** pour
+  les documents que le client ne signe pas).
+- Documents concernés pour l'instant : identification du client, identification des
+  mandataires, déclaration des bénéficiaires effectifs, lettre de mission et procuration
+  (ces deux derniers avec un modèle provisoire, en attendant ceux du cabinet).
+
 ## 15 octobre 2026 — Un rectangle par document, comme la liste de FID
 
 - L'onglet **Documents** a maintenant un rectangle pour chaque ligne de la rubrique

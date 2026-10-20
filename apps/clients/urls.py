@@ -51,6 +51,26 @@ urlpatterns = [
         document_views.document_page,
         name="document_page",
     ),
+    path(
+        "<int:pk>/documents/generer/<slug:doc_type>/",
+        document_views.document_generate,
+        name="document_generate",
+    ),
+    path(
+        "<int:pk>/documents/brouillon/<uuid:document_id>/valider/",
+        document_views.document_finalize,
+        name="document_finalize",
+    ),
+    path(
+        "<int:pk>/documents/brouillon/<uuid:document_id>/envoyer/",
+        document_views.document_send,
+        name="document_send",
+    ),
+    path(
+        "<int:pk>/documents/brouillon/<uuid:document_id>/supprimer/",
+        document_views.document_discard,
+        name="document_discard",
+    ),
     path("<int:pk>/documents/demander/", document_views.request_create, name="request_create"),
     path(
         "<int:pk>/documents/demande/<uuid:request_id>/recue/",

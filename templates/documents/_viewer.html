@@ -5,6 +5,7 @@
       <h2>{{ document.title }}{% if extension %}<span class="muted">.{{ extension }}</span>{% endif %}
         {% if document.auto_filed %}<span class="badge badge-primary">classé automatiquement</span>{% endif %}
         {% if document.review_needed %}<span class="badge badge-warning">à confirmer</span>{% endif %}
+        {% if document.state == "draft" %}<span class="badge badge-warning">brouillon</span>{% elif document.state == "awaiting_signature" %}<span class="badge badge-primary">envoyé pour signature</span>{% endif %}
       </h2>
       <div class="viewer-meta">
         <span><span class="muted">Date</span> {{ document.uploaded_at|date:"d/m/Y" }}</span>
@@ -70,5 +71,21 @@
     {% endif %}
   </div>
 
-  <footer class="viewer-foot"><button type="button" class="button-secondary" data-viewer-close>Fermer</button></footer>
+  <footer class="viewer-foot">
+    <button type="button" class="button-secondary" data-viewer-close>Fermer</button>
+    {% if can_edit and document.generated %}
+      <div class="viewer-foot-actions">
+        {% if document.state == "draft" %}
+          <form method="post" action="{% url 'clients:document_discard' client.pk document.pk %}">{% csrf_token %}<button type="submit" class="link-button">Supprimer le brouillon</button></form>
+          {% if needs_signature %}
+            <form method="post" action="{% url 'clients:document_send' client.pk document.pk %}" hx-post="{% url 'clients:document_send' client.pk document.pk %}" hx-target="#doc-viewer-content" hx-swap="innerHTML">{% csrf_token %}<button type="submit">Envoyer au client</button></form>
+          {% else %}
+            <form method="post" action="{% url 'clients:document_finalize' client.pk document.pk %}" hx-post="{% url 'clients:document_finalize' client.pk document.pk %}" hx-target="#doc-viewer-content" hx-swap="innerHTML">{% csrf_token %}<button type="submit">Valider et ranger</button></form>
+          {% endif %}
+        {% elif document.state == "awaiting_signature" %}
+          <span class="muted small">Envoyé au client{% if document.request %} le {{ document.request.created_at|date:"d/m/Y" }} · réf. {{ document.request.reference }}{% endif %} — en attente de sa signature</span>
+        {% endif %}
+      </div>
+    {% endif %}
+  </footer>
 </div>

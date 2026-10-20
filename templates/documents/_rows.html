@@ -10,16 +10,23 @@
           {% if row.doc_type.expires %}<span class="small doc-expiry">(expire le <strong>{{ row.document.expires_on|date:"d/m/Y"|default:"indéfini" }}</strong>{% if row.level == "ok" and row.days_left is not None %} · dans {{ row.days_left }} jour{{ row.days_left|pluralize }}{% endif %})</span>{% endif %}
         {% endif %}
         {% if row.text %}<span class="small doc-state">{{ row.text }}</span>{% endif %}
+        {% if row.draft %}
+          <div class="doc-draft">{% with d=row.draft %}{% include "documents/_open.html" %}{% if d.state == "draft" %}Brouillon du {{ d.uploaded_at|date:"d/m/Y" }} — à relire{% else %}Envoyé au client pour signature le {{ d.request.created_at|date:"d/m/Y" }}{% endif %}</a>{% endwith %}</div>
+        {% endif %}
       </td>
       <td class="nowrap doc-row-actions">
         {% if can_edit %}
-          {% if row.doc_type.from_client and row.level != "ok" %}
-            {% if pending %}<span class="small muted">demandé au client</span>{% else %}
+          {% if pending and not row.draft %}<span class="small muted">demandé au client</span>
+          {% elif row.doc_type.from_client and row.level != "ok" and not row.can_generate %}
             <form class="inline" method="post" action="{% url 'clients:request_create' client.pk %}">{% csrf_token %}
               <input type="hidden" name="kind" value="other"><input type="hidden" name="doc_type" value="{{ row.doc_type.slug }}">
               {% if row.person %}<input type="hidden" name="person" value="{{ row.person.pk }}">{% endif %}
               <button type="submit" class="link-button small">Demander au client</button></form>
-            {% endif %}
+          {% endif %}
+          {% if row.can_generate and not row.draft %}
+            <form class="inline" method="post" action="{% url 'clients:document_generate' client.pk row.doc_type.slug %}" hx-post="{% url 'clients:document_generate' client.pk row.doc_type.slug %}" hx-target="#doc-viewer-content" hx-swap="innerHTML">{% csrf_token %}
+              {% if row.person %}<input type="hidden" name="person" value="{{ row.person.pk }}">{% endif %}
+              <button type="submit" class="small">{% if row.document %}Mettre à jour{% else %}Générer{% endif %}</button></form>
           {% endif %}
           <a class="small" href="?type={{ row.doc_type.slug }}{% if row.person %}&amp;personne={{ row.person.pk }}{% endif %}#ajouter">{% if row.document %}Remplacer{% else %}Ajouter{% endif %}</a>
         {% endif %}

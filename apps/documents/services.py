@@ -115,7 +115,7 @@ def store(
         doc_type = doc_type or types.CARD
     with transaction.atomic():
         if case:
-            _archive_replaced(client, case, doc_type, person)
+            archive_replaced(client, case, doc_type, person)
         document = Document(
             client=client,
             title=title.strip()[:200] or "Document",
@@ -144,7 +144,7 @@ def store(
     return document
 
 
-def _archive_replaced(client: Client, case: str, doc_type: str, person: Client | None) -> None:
+def archive_replaced(client: Client, case: str, doc_type: str, person: Client | None) -> None:
     """Le nouveau document remplace l'ancien du même type (et de la même personne) : l'ancien
     part aux archives."""
     if doc_type == types.CARD:
@@ -154,7 +154,11 @@ def _archive_replaced(client: Client, case: str, doc_type: str, person: Client |
     else:
         return
     current = Document.objects.filter(
-        client=client, case=case, doc_type=doc_type, archived_at__isnull=True
+        client=client,
+        case=case,
+        doc_type=doc_type,
+        archived_at__isnull=True,
+        state=Document.State.FINAL,
     )
     if doc_type == types.CARD or (doc_type in types.BY_SLUG and types.BY_SLUG[doc_type].per):
         current = current.filter(person=person)
@@ -163,7 +167,9 @@ def _archive_replaced(client: Client, case: str, doc_type: str, person: Client |
 
 def current_documents(client: Client, case: str) -> list[Document]:
     return list(
-        Document.objects.filter(client=client, case=case, archived_at__isnull=True)
+        Document.objects.filter(
+            client=client, case=case, archived_at__isnull=True, state=Document.State.FINAL
+        )
         .select_related("person", "uploaded_by")
         .order_by("-uploaded_at")
     )
@@ -213,15 +219,28 @@ def _title(kind: str, person: Client | None, label: str, doc_type: str = "") -> 
 
 def _email_body(request: DocumentRequest, reminder: bool) -> str:
     """Message volontairement neutre : aucune donnée sensible, aucune pièce jointe."""
-    opening = (
-        "Sauf erreur de notre part, nous n'avons pas encore reçu le document ci-dessous."
-        if reminder
-        else "Dans le cadre de notre mission, pourriez-vous nous transmettre le document "
-        "ci-dessous ?"
-    )
+    if request.kind == DocumentRequest.Kind.SIGNATURE:
+        opening = (
+            "Sauf erreur de notre part, le document ci-dessous attend encore votre signature."
+            if reminder
+            else "Nous avons préparé le document ci-dessous. Il est déjà signé par notre cabinet "
+            "et n'attend plus que votre signature."
+        )
+        action = (
+            "Vous pouvez le consulter et le signer via ce lien sécurisé : "
+            "[lien de signature — disponible quand la signature en ligne sera branchée]"
+        )
+    else:
+        opening = (
+            "Sauf erreur de notre part, nous n'avons pas encore reçu le document ci-dessous."
+            if reminder
+            else "Dans le cadre de notre mission, pourriez-vous nous transmettre le document "
+            "ci-dessous ?"
+        )
+        action = "Il vous suffit de répondre à ce message en joignant le document."
     return (
         f"Bonjour,\n\n{opening}\n\n— {request.title}\n\n"
-        "Il vous suffit de répondre à ce message en joignant le document.\n\n"
+        f"{action}\n\n"
         f"Référence : {request.reference}\n\n"
         f"Cordialement,\n{settings.CABINET_NAME}"
     )
@@ -291,6 +310,12 @@ def receive(
             user=user,
             doc_type=request.doc_type,
         )
+        # La version envoyée pour signature est gardée aux archives, comme preuve.
+        for sent in request.documents.filter(state=Document.State.AWAITING_SIGNATURE):
+            kind = types.BY_SLUG.get(sent.doc_type)
+            sent.case, sent.folder = "", kind.archive_folder if kind else "administratif"
+            sent.archived_at = timezone.now()
+            sent.save(update_fields=["case", "folder", "archived_at"])
         request.status = DocumentRequest.Status.RECEIVED
         request.closed_at = timezone.now()
         request.next_reminder_on = None

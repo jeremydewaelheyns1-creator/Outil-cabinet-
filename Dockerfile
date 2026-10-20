@@ -11,9 +11,10 @@ COPY --from=ghcr.io/astral-sh/uv:0.11.32 /uv /usr/local/bin/uv
 
 WORKDIR /app
 
-# Lecture des cartes d'identité sur le serveur (D-035) : OCR local, aucun service extérieur.
+# Lecture des cartes d'identité (D-035, OCR local) et fabrication des PDF (D-039, WeasyPrint).
 RUN apt-get update \
     && apt-get install -y --no-install-recommends tesseract-ocr poppler-utils \
+       libpango-1.0-0 libpangoft2-1.0-0 fonts-dejavu-core \
     && rm -rf /var/lib/apt/lists/*
 
 # Dépendances d'abord : cette couche n'est reconstruite que si elles changent.

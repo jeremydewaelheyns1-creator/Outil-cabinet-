@@ -10,6 +10,8 @@ EVENT_LABELS = {
     "relation.deleted": "Relation supprimée",
     "official.changed": "Nouveauté sur un site officiel",
     "document.added": "Document ajouté",
+    "document.generated": "Document généré par l'outil",
+    "document.finalized": "Document généré validé",
     "document_request.created": "Document demandé au client",
     "document_request.received": "Document demandé reçu",
     "document_request.cancelled": "Demande de document annulée",

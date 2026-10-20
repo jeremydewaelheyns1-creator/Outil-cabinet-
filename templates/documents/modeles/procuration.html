@@ -1,0 +1,6 @@
+{% extends "documents/modeles/_base.html" %}
+{% block body %}
+<p>Le soussigné, <strong>{{ client.display_name }}</strong>{% if client.enterprise_number %} (BCE {{ client.enterprise_number_display }}){% endif %}{% for r in management %}{% if forloop.first %}, représenté par {% endif %}{{ r.person.display_name }}{% if not forloop.last %} et {% endif %}{% endfor %},</p>
+<p>donne procuration à <strong>{{ cabinet }}</strong> pour, en son nom : consulter et déposer ses déclarations fiscales et TVA auprès du SPF Finances (MyMinfin, Biztax, Intervat) ; déposer ses comptes annuels auprès de la Banque nationale de Belgique ; recevoir les courriers administratifs relatifs à ces démarches.</p>
+<p>Cette procuration est valable jusqu'à sa révocation écrite.</p>
+{% endblock %}

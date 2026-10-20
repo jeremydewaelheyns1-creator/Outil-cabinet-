@@ -105,6 +105,19 @@ class Row:
     document: Document | None
     level: str  # ok / warning / danger / empty (facultatif absent)
     text: str
+    draft: Document | None = None  # brouillon généré ou envoyé pour signature (D-039)
+
+    @property
+    def can_generate(self) -> bool:
+        from .generation import can_generate
+
+        return can_generate(self.doc_type.slug)
+
+    @property
+    def needs_signature(self) -> bool:
+        from .generation import needs_signature
+
+        return needs_signature(self.doc_type.slug)
 
     @property
     def days_left(self) -> int | None:
@@ -130,11 +143,13 @@ def _situation(doc_type: DocType, document: Document | None, today: date) -> tup
 
 def rows(client: Client, case: str) -> list[Row]:
     today = timezone.localdate()
-    current = list(
+    everything = list(
         Document.objects.filter(client=client, case=case, archived_at__isnull=True)
-        .select_related("person")
+        .select_related("person", "request")
         .order_by("-uploaded_at")
     )
+    current = [d for d in everything if d.state == Document.State.FINAL]
+    drafts = [d for d in everything if d.state != Document.State.FINAL]
     result: list[Row] = []
     for doc_type in types_for_case(case, client):
         targets: list[Client | None] = (
@@ -149,8 +164,16 @@ def rows(client: Client, case: str) -> list[Row]:
                 ),
                 None,
             )
+            draft = next(
+                (
+                    d
+                    for d in drafts
+                    if d.doc_type == doc_type.slug and (person is None or d.person_id == person.pk)
+                ),
+                None,
+            )
             level, text = _situation(doc_type, document, today)
-            result.append(Row(doc_type, person, document, level, text))
+            result.append(Row(doc_type, person, document, level, text, draft))
     return result
 
 

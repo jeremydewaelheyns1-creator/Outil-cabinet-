@@ -1,0 +1,36 @@
+{% extends "documents/modeles/_base.html" %}
+{% block body %}
+<p class="muted">Identification et vérification de l'identité du client (loi du 18 septembre 2017, articles 21 à 32).</p>
+<h2>Client</h2>
+<table>
+  {% if client.is_person %}
+    <tr><th>Nom et prénom</th><td>{{ client.name }} {{ client.first_name }}</td></tr>
+    <tr><th>Date de naissance</th><td>{{ client.birth_date|date:"d/m/Y"|default:"—" }}</td></tr>
+    <tr><th>Nationalité</th><td>{{ client.nationality|default:"—" }}</td></tr>
+    <tr><th>N° national</th><td>{{ client.national_number_masked|default:"—" }}</td></tr>
+  {% else %}
+    <tr><th>Dénomination</th><td>{{ client.name }}</td></tr>
+    <tr><th>Forme juridique</th><td>{{ client.legal_form|default:"—" }}</td></tr>
+    <tr><th>Numéro d'entreprise</th><td>{{ client.enterprise_number_display|default:"—" }}</td></tr>
+    {% if client.founded_on %}<tr><th>Date de début</th><td>{{ client.founded_on|date:"d/m/Y" }}</td></tr>{% endif %}
+    {% if client.nace_codes %}<tr><th>Activités (NACE)</th><td>{{ client.nace_codes|join:", " }}</td></tr>{% endif %}
+  {% endif %}
+  <tr><th>{% if client.is_person %}Adresse{% else %}Siège{% endif %}</th><td>{% for line in client.address_lines %}{{ line }}{% if not forloop.last %}, {% endif %}{% empty %}—{% endfor %}</td></tr>
+  <tr><th>Client depuis</th><td>{{ client.client_since|date:"d/m/Y"|default:"—" }}</td></tr>
+</table>
+{% if not client.is_person %}
+<h2>Mandataires (personnes habilitées à représenter le client)</h2>
+<table class="list">
+  <tr><th>Nom</th><th>Fonction</th><th>Depuis</th></tr>
+  {% for r in management %}<tr><td>{{ r.person.display_name }}{% if r.person.enterprise_number %} ({{ r.person.enterprise_number_display }}){% endif %}</td><td>{{ r.get_role_display }}</td><td>{{ r.start_date|date:"d/m/Y"|default:"—" }}</td></tr>
+  {% empty %}<tr><td colspan="3" class="muted">Aucun mandataire encodé.</td></tr>{% endfor %}
+</table>
+{% endif %}
+<h2>Vérification</h2>
+<table>
+  <tr><th>Sources</th><td>{% if client.enterprise_number %}Banque-Carrefour des Entreprises{% if client.bce_synced_at %} (consultée le {{ client.bce_synced_at|date:"d/m/Y" }}){% endif %}{% endif %}{% if client.is_person %}Carte d'identité{% endif %}</td></tr>
+  <tr><th>Nature et objet de la relation</th><td>Mission comptable et fiscale</td></tr>
+</table>
+<p class="muted">Données conservées 10 ans après la fin de la relation d'affaires.</p>
+{% endblock %}
+{% block client_signature %}{% endblock %}

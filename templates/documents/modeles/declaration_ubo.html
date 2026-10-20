@@ -1,0 +1,12 @@
+{% extends "documents/modeles/_base.html" %}
+{% block body %}
+<p>Le client <strong>{{ client.display_name }}</strong>{% if client.enterprise_number %} (BCE {{ client.enterprise_number_display }}){% endif %} déclare qu'en date du {{ today|date:"d/m/Y" }}, la ou les personnes physiques suivantes sont ses bénéficiaires effectifs :</p>
+<table class="list">
+  <tr><th>Nom et prénom</th><th>Date de naissance</th><th>Fondement</th><th>Capital / votes</th></tr>
+  {% for c in ubo.candidates %}
+    <tr><td>{{ c.person }}</td><td>{{ c.person.birth_date|date:"d/m/Y"|default:"—" }}</td><td>{{ c.basis_label }}</td>
+        <td>{% if c.basis == "ownership" %}{{ c.share_percentage|floatformat:"-2" }} % / {{ c.voting_percentage|floatformat:"-2" }} %{% else %}—{% endif %}</td></tr>
+  {% empty %}<tr><td colspan="4" class="muted">Aucun bénéficiaire effectif calculé : actionnaires à encoder.</td></tr>{% endfor %}
+</table>
+<p>Il s'engage à informer {{ cabinet }} de toute modification de ces informations et joint, pour chaque personne, une copie de sa pièce d'identité.</p>
+{% endblock %}

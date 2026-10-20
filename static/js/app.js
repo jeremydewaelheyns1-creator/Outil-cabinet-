@@ -33,8 +33,13 @@
       document.body.classList.remove("printing-document");
     }
   });
+  var changed = false;
+  document.body && document.body.addEventListener("documents-changed", function () { changed = true; });
+  document.addEventListener("documents-changed", function () { changed = true; });
   document.addEventListener("close", function (event) {
-    if (event.target.id === "doc-viewer") document.getElementById("doc-viewer-content").innerHTML = "";
+    if (event.target.id !== "doc-viewer") return;
+    document.getElementById("doc-viewer-content").innerHTML = "";
+    if (changed) window.location.reload(); // un document a été généré, validé ou envoyé
   }, true);
 })();
 

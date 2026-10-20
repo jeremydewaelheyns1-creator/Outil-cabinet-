@@ -266,3 +266,25 @@ FID-Manager : À recevoir, Lettre de mission, Cartes d'identité, Déclaration d
 effectifs, Identification du client, Identification des mandataires (une ligne par mandataire),
 Procuration, Fiche de détermination du niveau de risque, UBO (calcul + extrait du registre).
 La case « Anti-blanchiment » disparaît (ses documents sont répartis, migration 0004).
+
+## D-039 — Générer ou mettre à jour un document, puis l'envoyer pour signature
+Demande de Jeremy. La plupart des documents viendront de FID-Manager ; l'outil sait aussi les
+produire lui-même à partir des données du dossier (`apps/documents/generation.py`, modèles
+HTML dans `templates/documents/modeles/`, PDF fait sur le serveur par WeasyPrint, aucun
+service externe).
+- Bouton « Générer » si le document n'a jamais existé, « Mettre à jour » s'il existe (même
+  document, données et dates du jour).
+- Le résultat est d'abord un **brouillon** affiché dans le visualiseur : déjà signé par le
+  cabinet (mention « Signé électroniquement le … » au nom du gestionnaire), case du client
+  vide. En bas à droite : « Envoyer au client » (documents à signer) ou « Valider et ranger »
+  (documents du cabinet), et « Supprimer le brouillon ».
+- « Envoyer au client » crée une demande « À recevoir » (relances comprises) ; le document
+  signé reçu remplace l'ancien, qui part aux archives. Rien ne remplace le document en place
+  avant d'être définitif.
+- Générables : identification du client, identification des mandataires (sans signature du
+  client), déclaration des bénéficiaires effectifs, lettre de mission et procuration (modèles
+  provisoires, à remplacer par ceux du cabinet). La fiche de risque attend le questionnaire
+  guidé. Numéro national toujours masqué dans les documents produits.
+- Limites actuelles : la signature du cabinet est une mention, pas une signature électronique
+  qualifiée ; l'e-mail est préparé mais pas envoyé tant que la messagerie et la signature en
+  ligne ne sont pas branchées.

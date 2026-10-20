@@ -121,6 +121,18 @@ class Document(models.Model):
         User, on_delete=models.SET_NULL, null=True, blank=True, related_name="+"
     )
     archived_at = models.DateTimeField("archivé le", null=True, blank=True)
+
+    # D-039 : un document généré par l'outil est d'abord un brouillon, puis éventuellement
+    # envoyé au client pour signature ; il ne compte qu'une fois définitif.
+    class State(models.TextChoices):
+        FINAL = "final", "Définitif"
+        DRAFT = "draft", "Brouillon"
+        AWAITING_SIGNATURE = "awaiting_signature", "Envoyé pour signature"
+
+    state = models.CharField(
+        "état", max_length=20, choices=State.choices, default=State.FINAL, db_index=True
+    )
+    generated = models.BooleanField("généré par l'outil", default=False)
     # Type de document (D-037, voir types.py) et date d'expiration éventuelle.
     doc_type = models.CharField("type", max_length=40, blank=True, db_index=True)
     expires_on = models.DateField("expire le", null=True, blank=True)

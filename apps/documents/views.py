@@ -213,7 +213,11 @@ def _viewer_context(request: AppRequest, client: Client, document: Document) -> 
     )
     ids = [d.pk for d in siblings]
     position = ids.index(document.pk) if document.pk in ids else -1
+    from . import generation
+
     return {
+        "can_edit": request.user.has_capability(Capability.CLIENTS_EDIT),
+        "needs_signature": generation.needs_signature(document.doc_type),
         "position": position + 1,
         "total": len(ids),
         "previous": siblings[position - 1] if position > 0 else None,
@@ -422,3 +426,101 @@ def identity_undo(request: AppRequest, pk: int, card_id: int) -> HttpResponse:
     else:
         messages.error(request, "Ce classement ne peut plus être annulé.")
     return redirect("clients:document_case", pk=client.pk, slug=identity.CASE)
+
+
+# --- Documents générés par l'outil (D-039) ---------------------------------------------------
+
+
+def _viewer_response(request: AppRequest, client: Client, document: Document) -> HttpResponse:
+    """Après une action : le visualiseur (fenêtre) si HTMX, sinon retour à la case."""
+    if request.htmx:
+        response = render(
+            request, "documents/_viewer.html", _viewer_context(request, client, document)
+        )
+        response["HX-Trigger"] = (
+            "documents-changed"  # la page derrière se met à jour à la fermeture
+        )
+        return response
+    case = document.case or "a-recevoir"
+    if case == "ubo":
+        return redirect("clients:ubo", pk=client.pk)
+    return redirect("clients:document_case", pk=client.pk, slug=case)
+
+
+@require_POST
+@require_capability(Capability.CLIENTS_EDIT)
+def document_generate(request: AppRequest, pk: int, doc_type: str) -> HttpResponse:
+    """« Générer » ou « Mettre à jour » : produit un brouillon et l'affiche aussitôt."""
+    from . import generation
+
+    client = _get_client(request, pk)
+    if not generation.can_generate(doc_type):
+        raise Http404
+    person = None
+    if types.BY_SLUG[doc_type].per:
+        person = get_object_or_404(
+            Client, pk=request.POST.get("person") or 0, pk__in=_concerned_ids(client)
+        )
+    document = generation.generate(client, doc_type, person=person, user=request.user)
+    log_access(request, AccessLog.Action.CREATE, document, details={"généré": doc_type})
+    return _viewer_response(request, client, document)
+
+
+def _draft(request: AppRequest, client: Client, document_id: str) -> Document:
+    return get_object_or_404(
+        Document,
+        pk=document_id,
+        client=client,
+        generated=True,
+        state__in=(Document.State.DRAFT, Document.State.AWAITING_SIGNATURE),
+    )
+
+
+@require_POST
+@require_capability(Capability.CLIENTS_EDIT)
+def document_finalize(request: AppRequest, pk: int, document_id: str) -> HttpResponse:
+    from . import generation
+
+    client = _get_client(request, pk)
+    document = _draft(request, client, document_id)
+    try:
+        generation.finalize(document, user=request.user)
+    except ValueError as error:
+        messages.error(request, str(error))
+        return _viewer_response(request, client, document)
+    log_access(request, AccessLog.Action.UPDATE, document, details={"validé": True})
+    messages.success(request, f"« {document.title} » validé et rangé.")
+    return _viewer_response(request, client, document)
+
+
+@require_POST
+@require_capability(Capability.CLIENTS_EDIT)
+def document_send(request: AppRequest, pk: int, document_id: str) -> HttpResponse:
+    from . import generation
+
+    client = _get_client(request, pk)
+    document = _draft(request, client, document_id)
+    try:
+        sent = generation.send_for_signature(document, user=request.user)
+    except ValueError as error:
+        messages.error(request, str(error))
+        return _viewer_response(request, client, document)
+    log_access(request, AccessLog.Action.UPDATE, document, details={"envoyé": sent.reference})
+    messages.success(request, f"« {document.title} » envoyé au client pour signature.")
+    return _viewer_response(request, client, document)
+
+
+@require_POST
+@require_capability(Capability.CLIENTS_EDIT)
+def document_discard(request: AppRequest, pk: int, document_id: str) -> HttpResponse:
+    from . import generation
+
+    client = _get_client(request, pk)
+    document = _draft(request, client, document_id)
+    case = document.case
+    log_access(request, AccessLog.Action.DELETE, document, details={"brouillon": True})
+    generation.discard(document)
+    messages.success(request, "Brouillon supprimé.")
+    if case == "ubo":
+        return redirect("clients:ubo", pk=client.pk)
+    return redirect("clients:document_case", pk=client.pk, slug=case)
