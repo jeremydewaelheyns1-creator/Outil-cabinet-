@@ -1,0 +1,12 @@
+# Fichiers envoyés à Google Cloud Build pour construire l'image : le code seulement.
+.git
+.github
+.venv
+.mypy_cache
+.ruff_cache
+.pytest_cache
+__pycache__
+var/
+site/
+*.pyc
+.env

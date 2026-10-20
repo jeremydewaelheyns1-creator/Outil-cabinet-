@@ -48,3 +48,18 @@ jobs:
           DJANGO_CSRF_TRUSTED_ORIGINS: https://outil.example.be
           GS_DOCUMENTS_BUCKET: verification-ci
         run: uv run python manage.py check --deploy --fail-level WARNING --settings=config.settings.prod
+
+  image:
+    # L'image de production se construit et démarre (comme sur Google Cloud Run).
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Construire l'image
+        run: docker build -t outil .
+      - name: L'application se charge dans l'image (réglages de production)
+        run: |
+          docker run --rm -e DJANGO_SECRET_KEY=verification-ci-uniquement-0123456789-abcdefghij \
+            -e DJANGO_ALLOWED_HOSTS=outil.example.be -e DJANGO_CSRF_TRUSTED_ORIGINS=https://outil.example.be \
+            -e GS_DOCUMENTS_BUCKET=verification-ci outil python manage.py check --deploy --fail-level WARNING
+      - name: Script d'installation (shellcheck)
+        run: shellcheck -S warning deploy/installer.sh
