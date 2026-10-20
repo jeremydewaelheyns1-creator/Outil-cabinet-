@@ -26,16 +26,23 @@ sur « Envoyer », et restent dans ses « Éléments envoyés ».
    gestionnaire de secrets de Google Cloud (étape 2). Ne jamais l'envoyer par e-mail, chat,
    ni à Claude.
 
-## Étape 2 — Donner les valeurs à l'outil (dans Google Cloud)
+## Étape 2 — Donner les valeurs à l'outil (Cloud Shell)
 
-Dans les réglages du service (variables et secrets) :
+Les trois valeurs sont rangées dans Secret Manager (Belgique) ; l'installateur les reprend à
+chaque mise à jour. Pour chacune : coller la commande, Entrée, coller la valeur, Entrée, puis
+Ctrl+D (rien ne s'affiche à l'écran ni dans l'historique).
 
-| Nom | Valeur |
-|---|---|
-| `OUTLOOK_TENANT_ID` | ID de l'annuaire (locataire) |
-| `OUTLOOK_CLIENT_ID` | ID d'application (client) |
-| `OUTLOOK_CLIENT_SECRET` | le secret client (en **secret**, pas en variable visible) |
-| `MAILBOX_TOKEN_KEY` | clé de chiffrement des jetons (en **secret**), générée lors de l'installation |
+```bash
+gcloud secrets create OUTLOOK_TENANT_ID --replication-policy=user-managed --locations=europe-west1 --data-file=-
+gcloud secrets create OUTLOOK_CLIENT_ID --replication-policy=user-managed --locations=europe-west1 --data-file=-
+gcloud secrets create OUTLOOK_CLIENT_SECRET --replication-policy=user-managed --locations=europe-west1 --data-file=-
+```
+
+Puis brancher l'outil dessus (une minute, sans reconstruire) :
+
+```bash
+gcloud run services update outil --region=europe-west1 --update-secrets=OUTLOOK_TENANT_ID=OUTLOOK_TENANT_ID:latest,OUTLOOK_CLIENT_ID=OUTLOOK_CLIENT_ID:latest,OUTLOOK_CLIENT_SECRET=OUTLOOK_CLIENT_SECRET:latest
+```
 
 ## Étape 3 — Chaque employé relie sa boîte
 

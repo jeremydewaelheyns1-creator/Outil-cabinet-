@@ -110,15 +110,16 @@ gcloud builds submit --region="$REGION" --tag="$IMAGE" --quiet .
 ok "Image construite"
 
 SECRETS="DJANGO_SECRET_KEY=DJANGO_SECRET_KEY:latest,DATABASE_URL=DATABASE_URL:latest,MAILBOX_TOKEN_KEY=MAILBOX_TOKEN_KEY:latest"
-if secret_exists OUTLOOK_CLIENT_SECRET; then  # connexion Outlook (D-044), quand elle est prête
-  SECRETS="${SECRETS},OUTLOOK_CLIENT_SECRET=OUTLOOK_CLIENT_SECRET:latest"
-fi
+# Connexion Outlook (D-044) : les trois valeurs sont rangées dans Secret Manager quand elle
+# est prête ; elles sont alors reprises à chaque mise à jour.
+for optional in OUTLOOK_TENANT_ID OUTLOOK_CLIENT_ID OUTLOOK_CLIENT_SECRET; do
+  if secret_exists "$optional"; then
+    SECRETS="${SECRETS},${optional}=${optional}:latest"
+  fi
+done
 URL="$(gcloud run services describe "$SERVICE" --region="$REGION" --format='value(status.url)' 2>/dev/null || true)"
 HOST="${URL#https://}"
 ENV_VARS="GS_DOCUMENTS_BUCKET=${BUCKET},DJANGO_ALLOWED_HOSTS=${HOST:-localhost},DJANGO_CSRF_TRUSTED_ORIGINS=${URL:-https://localhost}"
-for optional in OUTLOOK_TENANT_ID OUTLOOK_CLIENT_ID; do
-  [[ -n "${!optional:-}" ]] && ENV_VARS="${ENV_VARS},${optional}=${!optional}"
-done
 
 job() {  # job NOM COMMANDE... : crée ou met à jour une tâche Cloud Run avec la même image
   local name="$1"; shift
@@ -145,9 +146,6 @@ HOST="${URL#https://}"
 if [[ "$ENV_VARS" != *"DJANGO_ALLOWED_HOSTS=${HOST},"* ]]; then
   # Première installation : l'adresse n'est connue qu'après la mise en ligne.
   ENV_VARS="GS_DOCUMENTS_BUCKET=${BUCKET},DJANGO_ALLOWED_HOSTS=${HOST},DJANGO_CSRF_TRUSTED_ORIGINS=${URL}"
-  for optional in OUTLOOK_TENANT_ID OUTLOOK_CLIENT_ID; do
-    [[ -n "${!optional:-}" ]] && ENV_VARS="${ENV_VARS},${optional}=${!optional}"
-  done
   gcloud run services update "$SERVICE" --region="$REGION" --update-env-vars="$ENV_VARS" --quiet >/dev/null
   job outil-migrations migrate --noinput
 fi
