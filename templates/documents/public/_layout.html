@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load static %}
 {% block body %}
 <main class="public-page">
   <div class="public-card">
@@ -8,3 +9,4 @@
   <p class="public-foot small muted">Page sécurisée : vos documents sont transmis directement à {{ CABINET_NAME }} et conservés en Belgique.</p>
 </main>
 {% endblock %}
+{% block extra_body %}<script src="{% static 'js/app.js' %}" defer></script>{% endblock %}

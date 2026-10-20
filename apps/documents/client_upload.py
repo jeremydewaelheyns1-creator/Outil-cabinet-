@@ -9,7 +9,7 @@ Sécurité :
 - fichiers contrôlés par leur contenu (photo JPG/PNG ou PDF), taille limitée ; deux photos
   (recto, verso) sont réunies en un seul PDF ;
 - chaque dépôt est journalisé ; la page n'est ni mise en cache, ni indexée, et l'adresse n'est
-  pas transmise aux autres sites (`Referrer-Policy`).
+  pas transmise aux autres sites (`Referrer-Policy: same-origin`).
 """
 
 from __future__ import annotations
@@ -38,7 +38,10 @@ MAX_FILES = 2
 def _headers(response: HttpResponse) -> HttpResponse:
     response["Cache-Control"] = "no-store"
     response["X-Robots-Tag"] = "noindex, nofollow"
-    response["Referrer-Policy"] = "no-referrer"
+    # « same-origin » et pas « no-referrer » : le navigateur doit pouvoir dire au serveur que
+    # le formulaire vient bien de cette page (contrôle anti-falsification CSRF), sans jamais
+    # transmettre l'adresse du lien à un autre site.
+    response["Referrer-Policy"] = "same-origin"
     return response
 
 

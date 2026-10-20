@@ -50,7 +50,7 @@ def test_client_uploads_front_and_back_without_an_account(client):
     request, path = new_request()
     page = client.get(path)
     assert page.status_code == 200 and "Fictif Anne" in page.content.decode()
-    assert page["Cache-Control"] == "no-store" and page["Referrer-Policy"] == "no-referrer"
+    assert page["Cache-Control"] == "no-store" and page["Referrer-Policy"] == "same-origin"
     response = client.post(path, {"files": [photo("recto.png", "red"), photo("verso.png", "blue")]})
     assert "reçu" in response.content.decode()
     request.refresh_from_db()
