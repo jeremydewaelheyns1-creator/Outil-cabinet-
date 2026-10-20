@@ -19,8 +19,8 @@ from apps.core.http import AppRequest
 from apps.core.models import AccessLog
 from apps.core.permissions import require_capability
 
-from . import importer, services
-from .models import COLUMN_HEADERS, Column, Status, VatFiling, VatPending
+from . import importer, mail, services
+from .models import COLUMN_HEADERS, Column, Status, VatFiling, VatMessage, VatPending
 
 # Choix proposés en cliquant sur une case (demande de Jeremy). Recliquer sur l'état en cours
 # vide la case.
@@ -53,7 +53,7 @@ def _row_response(request: AppRequest, filing: VatFiling) -> HttpResponse:
         return redirect("clients:vat", pk=filing.client_id)
     filing = (
         VatFiling.objects.select_related("manager", "assistant", "xml", "pdf", "ic_xml", "ic_pdf")
-        .prefetch_related("cells__by")
+        .prefetch_related("cells__by", "messages")
         .get(pk=filing.pk)
     )
     return render(
@@ -152,3 +152,53 @@ def vat_confirm(request: AppRequest, pk: int, pending_id: int) -> HttpResponse:
                    details={"rubrique": "tva", "periode": filing.period_key})  # fmt: skip
         messages.success(request, f"PDF rangé : {filing.short_label}.")
     return redirect("depot:index")
+
+
+def _mail_response(request: AppRequest, filing: VatFiling, message: VatMessage,
+                   error: str = "") -> HttpResponse:  # fmt: skip
+    response = render(
+        request,
+        "vat/_mail.html",
+        {
+            "client": filing.client,
+            "filing": filing,
+            "message": message,
+            "error": error,
+            "addresses": mail.addresses(filing),
+        },
+    )
+    if message.sent_at is not None:
+        response["HX-Trigger"] = "documents-changed"  # la grille se met à jour à la fermeture
+    return response
+
+
+@require_capability(Capability.CLIENTS_EDIT)
+def vat_mail(request: AppRequest, pk: int, filing_id: int) -> HttpResponse:
+    """E-mail au client : proposé par l'outil, relu et modifiable, envoyé sur clic (D-042)."""
+    filing = _filing(request, pk, filing_id)
+    message = mail.draft(filing, request.user)
+    if request.method != "POST":
+        log_access(request, AccessLog.Action.VIEW, filing.client,
+                   details={"rubrique": "tva", "email": filing.period_key})  # fmt: skip
+        return _mail_response(request, filing, message)
+    if message.sent_at is None:
+        if request.POST.get("action") == "recompose":
+            message.subject, message.body = mail.compose(filing, request.user)
+        else:
+            message.to = request.POST.get("to", "").strip()[:254]
+            message.subject = request.POST.get("subject", "").strip()[:255] or message.subject
+            message.body = request.POST.get("body", "").strip() or message.body
+            message.attach_pdf = request.POST.get("attach_pdf") == "1"
+        if message.to and message.to not in mail.addresses(filing):
+            message.to = mail.recipient(filing)
+            return _mail_response(request, filing, message,
+                                  "Cette adresse n'est pas sur la fiche du client.")  # fmt: skip
+        message.save()
+        if request.POST.get("action") == "send":
+            try:
+                mail.send(message, request.user)
+            except ValueError as error:
+                return _mail_response(request, filing, message, str(error))
+            log_access(request, AccessLog.Action.UPDATE, filing.client,
+                       details={"rubrique": "tva", "email envoyé": filing.period_key})  # fmt: skip
+    return _mail_response(request, filing, message)

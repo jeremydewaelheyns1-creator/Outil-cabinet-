@@ -157,7 +157,9 @@ class Command(BaseCommand):
                     seen.add(link)
                     queue.append(link)
             # Visualiseur de documents : fenêtre chargée en HTMX et images des pages.
-            for link in re.findall(r'\shx-get="(/clients/[^"]*/apercu/[^"]*/fenetre/)"', html):
+            fragments = re.findall(r'\shx-get="(/clients/[^"]*/apercu/[^"]*/fenetre/)"', html)
+            fragments += re.findall(r'\shx-get="(/clients/\d+/tva/\d+/email/)"', html)
+            for link in fragments:
                 if link not in seen:
                     seen.add(link)
                     fragment = browser.get(link)

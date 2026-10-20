@@ -171,7 +171,7 @@ def grid(client: Client, today: date | None = None) -> list[Row]:
     filings = (
         client.vat_filings.filter(period_start__lte=today)
         .select_related("manager", "assistant", "xml", "pdf", "ic_xml", "ic_pdf", "task")
-        .prefetch_related("cells__by")
+        .prefetch_related("cells__by", "messages")
     )
     return [row_for(f, never) for f in filings]
 

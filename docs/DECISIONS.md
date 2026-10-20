@@ -328,3 +328,19 @@ et la place (`apps/documents/inbox.py`) :
   (dossier, puis endroit).
 - La liste « À confirmer » (PDF TVA sans période sûre, cartes à vérifier) est sur la même page.
   La zone d'import de l'onglet TVA est retirée.
+
+## D-042 — E-mail au client après le dépôt TVA, acomptes déduits
+Demande de Jeremy (option 1 proposée : comme FID, montants dans l'e-mail et PDF joint, avec
+une case pour ne pas le joindre).
+- Colonne « Acomptes » : acomptes **déjà payés** par le client (1er et 2e mois). Reste à payer
+  = grille 71 − grille 72 − acomptes (négatif : en sa faveur), affiché sous le solde.
+- Case « Com. client » → « Préparer l'e-mail au client » : fenêtre comme le visualiseur.
+  L'outil propose l'objet et le texte (montant de la déclaration, acomptes déjà payés, reste à
+  payer, date limite), modifiables ; « Refaire le texte » reprend les montants actuels.
+  En bas à droite : Enregistrer, Envoyer au client. Rien ne part sans ce clic.
+- Sécurité : destinataire choisi parmi les adresses e-mail de la fiche du client uniquement
+  (jamais une adresse tapée à la main) ; ouverture et envoi journalisés ; ouvrir la fenêtre
+  n'enregistre rien.
+- Envoyer coche « Com. client ». Tant que la messagerie du cabinet n'est pas branchée
+  (`OUTGOING_EMAIL_ENABLED` faux), l'e-mail est enregistré mais ne part pas, et la fenêtre
+  le dit.

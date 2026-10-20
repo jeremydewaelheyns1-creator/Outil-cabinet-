@@ -331,3 +331,98 @@ def test_other_formats_are_refused(user):
     clients = type(ClientFactory()).objects.all()
     [outcome] = importer.import_files([upload("x.txt", b"bonjour")], clients=clients, user=user)
     assert outcome.level == importer.ERROR
+
+
+# --- Acomptes et e-mail au client (D-042) -----------------------------------------------------
+
+
+def _filed(user, *, email="compta@fictif.test"):
+    from apps.clients.models import ContactPoint
+
+    company = vat_client()
+    if email:
+        ContactPoint.objects.create(client=company, kind="email", value=email)
+    number = company.enterprise_number
+    text = f"Déclaration TVA BE{number} 3e trimestre 2026"
+    files = [upload("a.xml", vat_xml(number)), upload("a.pdf", pdf_with(text))]
+    importer.import_files(files, clients=type(company).objects.all(), user=user)
+    filing = VatFiling.objects.get(client=company)
+    filing.advance_1 = filing.advance_2 = Decimal("2100.00")
+    filing.save()
+    return company, filing
+
+
+def test_remaining_after_advances():
+    company = vat_client()
+    filing = services.filing_for(company, services.period(2026, quarter=3))
+    assert filing.remaining is None
+    filing.grid_71, filing.advance_1, filing.advance_2 = (
+        Decimal("4272.44"), Decimal("2100"), Decimal("2100"),
+    )  # fmt: skip
+    assert filing.advances_total == Decimal("4200") and filing.remaining == Decimal("72.44")
+    filing.grid_71 = Decimal("3000")
+    assert filing.remaining == Decimal("-1200")  # acomptes trop élevés : en sa faveur
+
+
+def test_email_is_proposed_with_amount_advances_and_rest(web, user):
+    company, filing = _filed(user)
+    url = reverse("clients:vat_mail", args=[company.pk, filing.pk])
+    html = web.get(url, HTTP_HX_REQUEST="true").content.decode()
+    assert "4 272,44 € à payer" in html
+    assert "Acomptes déjà payés : 4 200,00 €" in html
+    assert "Reste à payer : 72,44 €" in html
+    assert "compta@fictif.test" in html and "Envoyer au client" in html
+    assert "Joindre le PDF" in html
+    assert not filing.messages.exists()  # rien n'est enregistré en ouvrant
+
+
+def test_email_is_only_sent_on_click_and_ticks_the_cell(web, user, settings, mailoutbox):
+    settings.OUTGOING_EMAIL_ENABLED = True
+    company, filing = _filed(user)
+    url = reverse("clients:vat_mail", args=[company.pk, filing.pk])
+    web.post(url, {"action": "save", "to": "compta@fictif.test", "subject": "TVA",
+                   "body": "Bonjour", "attach_pdf": "1"}, HTTP_HX_REQUEST="true")  # fmt: skip
+    assert not mailoutbox and filing.messages.get().sent_at is None  # enregistré seulement
+    data = {"action": "send", "to": "compta@fictif.test", "subject": "TVA", "body": "Bonjour",
+            "attach_pdf": "1"}  # fmt: skip
+    response = web.post(url, data, HTTP_HX_REQUEST="true")
+    assert response["HX-Trigger"] == "documents-changed"
+    message = filing.messages.get()
+    assert message.sent_at and message.delivered
+    assert len(mailoutbox) == 1 and mailoutbox[0].attachments
+    assert filing.cells.get(column="client").status == Status.DONE
+    assert AccessLog.objects.filter(action="update", details__has_key="email envoyé").exists()
+
+
+def test_email_never_goes_to_an_address_outside_the_file(web, user, settings, mailoutbox):
+    settings.OUTGOING_EMAIL_ENABLED = True
+    company, filing = _filed(user)
+    url = reverse("clients:vat_mail", args=[company.pk, filing.pk])
+    html = web.post(url, {"action": "send", "to": "pirate@ailleurs.test", "subject": "x",
+                          "body": "y"}, HTTP_HX_REQUEST="true").content.decode()  # fmt: skip
+    assert "pas sur la fiche" in html and not mailoutbox
+    assert not filing.messages.filter(sent_at__isnull=False).exists()
+
+
+def test_email_is_recorded_while_the_mailbox_is_not_wired(web, user, mailoutbox):
+    company, filing = _filed(user)
+    url = reverse("clients:vat_mail", args=[company.pk, filing.pk])
+    html = web.post(url, {"action": "send", "to": "compta@fictif.test", "subject": "x",
+                          "body": "y"}, HTTP_HX_REQUEST="true").content.decode()  # fmt: skip
+    assert "messagerie du cabinet sera branchée" in html and not mailoutbox
+    assert not filing.messages.get().delivered
+
+
+def test_no_address_on_file_blocks_sending(web, user):
+    company, filing = _filed(user, email="")
+    url = reverse("clients:vat_mail", args=[company.pk, filing.pk])
+    html = web.get(url, HTTP_HX_REQUEST="true").content.decode()
+    assert "Aucune adresse e-mail sur la fiche" in html
+
+
+def test_read_only_user_cannot_prepare_or_send(client, make_user, user):
+    company, filing = _filed(user)
+    client.force_login(make_user())
+    url = reverse("clients:vat_mail", args=[company.pk, filing.pk])
+    assert client.get(url).status_code == 403
+    assert client.post(url, {"action": "send"}).status_code == 403

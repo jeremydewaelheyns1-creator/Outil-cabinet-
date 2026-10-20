@@ -84,10 +84,10 @@ class VatFiling(models.Model):
         "grille 72 (à récupérer)", max_digits=14, decimal_places=2, null=True, blank=True
     )
     advance_1 = models.DecimalField(
-        "acompte du 1er mois", max_digits=14, decimal_places=2, null=True, blank=True
+        "acompte payé le 1er mois", max_digits=14, decimal_places=2, null=True, blank=True
     )
     advance_2 = models.DecimalField(
-        "acompte du 2e mois", max_digits=14, decimal_places=2, null=True, blank=True
+        "acompte payé le 2e mois", max_digits=14, decimal_places=2, null=True, blank=True
     )
     manager = models.ForeignKey(
         User, verbose_name="responsable", on_delete=models.SET_NULL, null=True, blank=True,
@@ -137,6 +137,21 @@ class VatFiling(models.Model):
         """« T3 2026 » ou « 09/2026 »."""
         year, _, part = self.period_key.partition("-")
         return f"{part} {year}" if part.startswith("T") else f"{part}/{year}"
+
+    @property
+    def advances_total(self) -> Decimal | None:
+        """Acomptes déjà payés par le client pour ce trimestre."""
+        if self.advance_1 is None and self.advance_2 is None:
+            return None
+        return (self.advance_1 or Decimal("0")) + (self.advance_2 or Decimal("0"))
+
+    @property
+    def remaining(self) -> Decimal | None:
+        """Reste à payer après les acomptes (négatif : à récupérer). Sans montant : None."""
+        if self.grid_71 is None and self.grid_72 is None:
+            return None
+        due = (self.grid_71 or Decimal("0")) - (self.grid_72 or Decimal("0"))
+        return due - (self.advances_total or Decimal("0"))
 
     @property
     def balance(self) -> tuple[str, Decimal] | None:
@@ -207,3 +222,34 @@ class VatPending(models.Model):
 
     def __str__(self) -> str:
         return str(self.document)
+
+
+class VatMessage(models.Model):
+    """E-mail au client après le dépôt (D-042) : préparé par l'outil, relu, puis envoyé.
+
+    Tant que la messagerie du cabinet n'est pas branchée, « Envoyer » l'enregistre comme prêt
+    à partir (`delivered` reste faux) et coche la case « Com. client ».
+    """
+
+    filing = models.ForeignKey(VatFiling, on_delete=models.CASCADE, related_name="messages")
+    to = models.EmailField("à", blank=True)
+    subject = models.CharField("objet", max_length=255)
+    body = models.TextField("message")
+    attach_pdf = models.BooleanField("joindre le PDF de la déclaration", default=True)
+    created_at = models.DateTimeField(default=timezone.now, editable=False)
+    created_by = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True, related_name="+"
+    )
+    sent_at = models.DateTimeField("envoyé le", null=True, blank=True)
+    sent_by = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True, related_name="+"
+    )
+    delivered = models.BooleanField("parti réellement", default=False)
+
+    class Meta:
+        verbose_name = "e-mail TVA au client"
+        verbose_name_plural = "e-mails TVA au client"
+        ordering: ClassVar = ["-created_at"]
+
+    def __str__(self) -> str:
+        return self.subject

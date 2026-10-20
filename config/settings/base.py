@@ -189,6 +189,8 @@ IDENTITY_OCR_ENABLED = env.bool("IDENTITY_OCR_ENABLED", default=True)
 IDENTITY_RENEWAL_DAYS = env.int("IDENTITY_RENEWAL_DAYS", default=30)
 # D-041 : un fichier du dépôt unique non classé est effacé après ce délai.
 INBOX_RETENTION_DAYS = env.int("INBOX_RETENTION_DAYS", default=30)
+# D-042 : vrai seulement quand la messagerie du cabinet est branchée (sinon : enregistré).
+OUTGOING_EMAIL_ENABLED = env.bool("OUTGOING_EMAIL_ENABLED", default=False)
 
 DATA_UPLOAD_MAX_MEMORY_SIZE = 25 * 1024 * 1024
 FILE_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024

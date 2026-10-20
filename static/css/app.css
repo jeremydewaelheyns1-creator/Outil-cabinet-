@@ -805,3 +805,16 @@ a.badge:hover { text-decoration: none; filter: brightness(0.95); }
 .depot-classify { display: flex; flex-direction: column; gap: .4rem; flex: 1 1 18rem; }
 .vat-drop-hint { margin: 0 0 .8rem; }
 @media (max-width: 760px) { .topbar-drop { margin-left: .4rem; font-size: 0; gap: 0; padding: .4rem; } }
+
+/* --- E-mail au client après la déclaration TVA (D-042) ------------------------------------- */
+.doc-viewer:has(.vat-mail) { width: min(780px, 94vw); }
+.vat-mail { display: flex; flex-direction: column; flex: 1; min-height: 0; }
+.vat-mail-body > section { background: var(--surface); padding: 1.2rem; min-height: 100%; }
+.vat-mail label { display: block; margin-bottom: .8rem; font-weight: 600; font-size: .9rem; }
+.vat-mail input:not([type="checkbox"]), .vat-mail textarea { display: block; width: 100%; margin-top: .25rem; font-weight: 400; }
+.vat-mail textarea { font: inherit; line-height: 1.5; }
+.vat-mail .vat-mail-attach { display: flex; gap: .5rem; align-items: center; font-weight: 500; }
+.vat-mail-button { width: 100%; margin-top: .4rem; text-align: center; }
+.vat-mailed { display: inline-block; margin-left: .2rem; }
+.vat-rest { display: block; font-size: .78rem; font-weight: 600; color: var(--text); }
+.vat-advances { white-space: nowrap; }

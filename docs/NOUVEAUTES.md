@@ -3,6 +3,17 @@
 Ce qui a été ajouté à l'outil, du plus récent au plus ancien. Toutes les données de la démo
 sont inventées.
 
+## 20 octobre 2026 — E-mail TVA au client, acomptes déduits
+
+- Colonne **Acomptes** : on y indique les acomptes déjà payés par le client. Le reste à payer
+  s'affiche sous le solde.
+- Dans la case **Com. client** : « Préparer l'e-mail au client ». L'outil écrit l'e-mail
+  (montant de la déclaration, acomptes déjà payés, reste à payer, date limite), on le relit,
+  on le modifie si besoin, puis **Envoyer au client** en bas à droite. Le PDF de la
+  déclaration est joint (case à décocher si on ne veut pas).
+- L'e-mail ne peut partir qu'à une adresse de la fiche du client. Tant que la messagerie du
+  cabinet n'est pas branchée, il est enregistré mais ne part pas encore.
+
 ## 20 octobre 2026 — Un seul endroit pour déposer les documents
 
 - Nouveau bouton **Déposer des documents** en haut de l'écran : on y glisse n'importe quel

@@ -184,7 +184,7 @@ class Command(BaseCommand):
         for (year, quarter), amount in amounts.items():
             filing = vat.filing_for(company, vat.period(year, quarter=quarter))
             filing.grid_71 = Decimal(amount)
-            filing.advance_1 = filing.advance_2 = Decimal("2100.00")
+            filing.advance_1 = filing.advance_2 = Decimal("1000.00")
             filing.save()
             for column in (Column.DOCS, Column.DONE, Column.FILED, Column.CLIENT):
                 vat.set_status(filing, column, Status.DONE, user=user,
