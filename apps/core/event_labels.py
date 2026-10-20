@@ -20,6 +20,8 @@ EVENT_LABELS = {
     "client.team_changed": "Équipe modifiée",
     "task.completed": "Échéance terminée",
     "task.reopened": "Échéance rouverte",
+    "vat.cell_changed": "Suivi TVA modifié",
+    "vat.return_imported": "Déclaration TVA importée",
 }
 
 

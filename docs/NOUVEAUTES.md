@@ -3,6 +3,16 @@
 Ce qui a été ajouté à l'outil, du plus récent au plus ancien. Toutes les données de la démo
 sont inventées.
 
+## 20 octobre 2026 — Onglet Déclaration TVA, comme FID
+
+- Une ligne par trimestre (ou par mois) avec les cases **Doc. reçus, Fini, Déposée, IC,
+  Com. client**. Un clic sur une case propose les sept états de FID (fait, en cours, en
+  attente, avertissement, pas nécessaire…), avec la date et une remarque.
+- **Import des déclarations** : on dépose le XML et le PDF sortis d'Intervat, même de
+  plusieurs dossiers à la fois. L'outil reconnaît seul le dossier et la période, coche
+  « Déposée », reprend le solde (grille 71 ou 72) et range les fichiers dans les archives TVA.
+- La ligne passe au vert quand tout est fait, et l'échéance du dossier se clôture d'elle-même.
+
 ## 20 octobre 2026 — Générer un document et l'envoyer au client pour signature
 
 - Dans l'onglet **Documents**, un bouton **Générer** (document jamais fait) ou **Mettre à

@@ -92,3 +92,17 @@ def iso_date(value: object) -> str:
 def get_item(mapping: object, key: str) -> object:
     """Valeur d'un dictionnaire dans un gabarit (compteurs du panneau du dossier)."""
     return mapping.get(key) if isinstance(mapping, dict) else None
+
+
+@register.filter
+def euros(value: object) -> str:
+    """Decimal('6632.44') → « 6 632,44 € » (montants des déclarations)."""
+    from decimal import Decimal, InvalidOperation
+
+    try:
+        amount = Decimal(str(value)).quantize(Decimal("0.01"))
+    except (InvalidOperation, ValueError):
+        return ""
+    whole, _, cents = f"{abs(amount):,.2f}".partition(".")
+    sign = "-" if amount < 0 else ""
+    return f"{sign}{whole.replace(',', ' ')},{cents} €"

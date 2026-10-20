@@ -51,6 +51,7 @@ INSTALLED_APPS = [
     "apps.reprise",
     "apps.tasks",
     "apps.documents",
+    "apps.vat",
 ]
 
 MIDDLEWARE = [

@@ -34,8 +34,9 @@ def test_inside_a_dossier_only_the_dossier_is_shown(web):
     assert "⌂ Accueil" in html
     assert "Synthèse" not in html  # supprimée (D-025)
     # En haut : le travail fréquent (D-026).
-    urls = [reverse("clients:work", args=[client.pk, slug])
-            for slug in ("cloture", "tva", "versements-anticipes")]  # fmt: skip
+    urls = [reverse("clients:work", args=[client.pk, "cloture"]),
+            reverse("clients:vat", args=[client.pk]),
+            reverse("clients:work", args=[client.pk, "versements-anticipes"])]  # fmt: skip
     urls.append(reverse("clients:documents", args=[client.pk]))
     positions = [html.index(u) for u in urls]
     assert positions == sorted(positions)  # ordre voulu par Jeremy
@@ -156,10 +157,10 @@ def test_work_pages_are_placeholders_until_defined(web):
 def test_vat_tab_only_for_vat_subject_clients(web):
     subject = ClientFactory(vat_status="subject")
     exempt = ClientFactory(vat_status="exempt")
-    url = reverse("clients:work", args=[subject.pk, "tva"])
+    url = reverse("clients:vat", args=[subject.pk])
     assert url in web.get(reverse("clients:identity", args=[subject.pk])).content.decode()
     html = web.get(reverse("clients:identity", args=[exempt.pk])).content.decode()
-    assert reverse("clients:work", args=[exempt.pk, "tva"]) not in html
+    assert reverse("clients:vat", args=[exempt.pk]) not in html
 
 
 def test_relations_are_split_by_kind_with_counts(web):

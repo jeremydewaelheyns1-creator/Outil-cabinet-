@@ -1,0 +1,37 @@
+{# Une case de suivi : clic → les sept états (comme FID), la date, l'auteur, une remarque. #}
+<td class="vat-cell vat-{{ cell.css }}">
+  {% if can_edit %}<details class="vat-menu"><summary title="{{ cell.label }} : {% if cell.never %}jamais nécessaire{% else %}{{ cell.status_label|lower }}{% endif %}">{% endif %}
+    <span class="vat-date">{% if cell.never %}&nbsp;{% elif cell.on %}{{ cell.on|date:"d/m" }}{% else %}&nbsp;{% endif %}</span>
+    {% if cell.comment %}<svg class="vat-note" viewBox="0 0 24 24" width="13" height="13" fill="currentColor" aria-label="Remarque"><path d="M4 4h16v12H8l-4 4z"/></svg>{% endif %}
+    <span class="visually-hidden">{{ cell.label }} : {{ cell.status_label }}</span>
+  {% if can_edit %}</summary>
+    <div class="vat-pop">
+      <div class="vat-pop-head">{{ cell.label }}</div>
+      {% if cell.never %}
+        <p class="small muted">Jamais nécessaire pour ce client.</p>
+      {% elif cell.on %}
+        <p class="small">{{ cell.status_label }} — {{ cell.on|date:"d/m/Y" }}{% if cell.by %} · {{ cell.by }}{% endif %}</p>
+      {% endif %}
+      <form method="post" action="{% url 'clients:vat_cell' client.pk row.filing.pk cell.column %}" hx-post="{% url 'clients:vat_cell' client.pk row.filing.pk cell.column %}" hx-target="closest tr" hx-swap="outerHTML">{% csrf_token %}
+        <div class="vat-choices">
+          {% for value, label in statuses %}<button type="submit" name="status" value="{{ value }}" class="vat-choice vat-{{ value }}{% if value == cell.css %} is-current{% endif %}">{{ label }}</button>{% endfor %}
+        </div>
+        <label class="small">Remarque<input name="comment" value="{{ cell.comment }}" maxlength="300"></label>
+        <button type="submit" name="status" value="" class="link-button small">Enregistrer la remarque seule</button>
+      </form>
+    </div>
+  </details>{% else %}{% if cell.comment %}<span class="small">{{ cell.comment }}</span>{% endif %}{% endif %}
+  {% with f=row.filing %}
+    {% if cell.column == "filed" and f.xml or cell.column == "filed" and f.pdf or cell.column == "ic" and f.ic_xml or cell.column == "ic" and f.ic_pdf %}
+      <div class="vat-files">
+        {% if cell.column == "filed" %}
+          {% if f.xml %}{% with d=f.xml %}{% include "documents/_open.html" with link_class="vat-file" %}XML</a>{% endwith %}{% endif %}
+          {% if f.pdf %}{% with d=f.pdf %}{% include "documents/_open.html" with link_class="vat-file" %}PDF</a>{% endwith %}{% endif %}
+        {% else %}
+          {% if f.ic_xml %}{% with d=f.ic_xml %}{% include "documents/_open.html" with link_class="vat-file" %}XML</a>{% endwith %}{% endif %}
+          {% if f.ic_pdf %}{% with d=f.ic_pdf %}{% include "documents/_open.html" with link_class="vat-file" %}PDF</a>{% endwith %}{% endif %}
+        {% endif %}
+      </div>
+    {% endif %}
+  {% endwith %}
+</td>

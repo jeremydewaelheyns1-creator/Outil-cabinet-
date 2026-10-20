@@ -734,3 +734,56 @@ a.badge:hover { text-decoration: none; filter: brightness(0.95); }
 .doc-row-actions > * + * { margin-left: 0.6rem; }
 .doc-draft { margin-top: 0.35rem; font-size: 0.85rem; }
 .doc-draft a { color: #9a5b13; font-weight: 600; }
+
+/* --- Déclaration TVA : grille comme FID-Manager (D-040) ------------------------------------ */
+.vat-import { margin-bottom: 1rem; }
+.vat-import-row { display: flex; gap: .6rem; align-items: center; flex-wrap: wrap; }
+.vat-import-row input[type="file"] { flex: 1 1 18rem; width: auto; }
+.vat-pending { margin-bottom: 1rem; }
+.vat-pending h2 { margin: 0 0 .2rem; font-size: 1rem; }
+.vat-pending-item { display: flex; gap: .8rem; align-items: center; flex-wrap: wrap; padding: .4rem 0; border-top: 1px solid var(--border); }
+.vat-wrap { overflow: visible; }
+.vat-grid th, .vat-grid td { vertical-align: middle; }
+.vat-grid thead th { text-align: center; white-space: nowrap; }
+.vat-grid tbody th { white-space: nowrap; }
+.vat-grid tr:hover td { background: transparent; }
+.vat-grid tr.vat-complete > *, .vat-grid tr.vat-complete:hover > * { background: #eef8ee; }
+.vat-cell { padding: 3px !important; min-width: 5.2rem; text-align: center; }
+.vat-cell > details > summary, .vat-cell > .vat-date { display: flex; align-items: center; justify-content: center; gap: .25rem; min-height: 2.5rem; border-radius: 6px; font-weight: 600; font-size: .92rem; }
+.vat-cell.vat-todo summary { border: 1px dashed var(--border); }
+.vat-cell.vat-never summary { background: #6b7280; color: #fff; }
+.vat-cell.vat-in_progress summary { background: #2c6fad; color: #fff; }
+.vat-cell.vat-done summary { background: #2ea043; color: #fff; }
+.vat-cell.vat-na summary { background: #d4d6da; color: #4b5563; }
+.vat-cell.vat-waiting summary { background: #38bdf8; color: #0c3a52; }
+.vat-cell.vat-warning summary { background: #f08c2e; color: #fff; }
+.vat-note { opacity: .85; }
+.vat-files { display: flex; gap: .3rem; justify-content: center; margin-top: 3px; }
+.vat-file { font-size: .72rem; font-weight: 700; padding: 1px 5px; border: 1px solid var(--border); border-radius: 4px; background: var(--surface); color: var(--primary); text-decoration: none; }
+.vat-amount { text-align: right; white-space: nowrap; }
+.vat-amount summary, .vat-advances summary, .vat-remark summary { display: block; }
+.vat-amount summary .small { display: block; }
+.vat-pay { color: var(--danger); font-weight: 600; }
+.vat-get { color: var(--success); font-weight: 600; }
+.vat-remark { min-width: 10rem; }
+.vat-menu { position: relative; }
+.vat-menu > summary { list-style: none; cursor: pointer; }
+.vat-menu > summary::-webkit-details-marker { display: none; }
+.vat-menu > summary:focus-visible { outline: 2px solid var(--primary); outline-offset: 1px; }
+.vat-pop { position: absolute; z-index: 30; top: calc(100% + 4px); left: 0; width: 17rem; padding: .7rem; text-align: left; font-weight: 400; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; box-shadow: 0 10px 30px rgba(15, 23, 42, .18); }
+.vat-menu-end .vat-pop, .vat-amount .vat-pop { left: auto; right: 0; }
+.vat-pop-head { font-weight: 600; margin-bottom: .4rem; }
+.vat-pop p { margin: 0 0 .5rem; }
+.vat-pop label { display: block; margin: .4rem 0; }
+.vat-pop input, .vat-pop textarea { width: 100%; margin-top: .15rem; }
+.vat-choices { display: grid; gap: 4px; }
+.vat-choice { width: 100%; text-align: left; border-radius: 6px; border: 1px solid transparent; font-weight: 500; }
+.vat-choice.vat-never { background: #6b7280; color: #fff; }
+.vat-choice.vat-todo { background: var(--surface); color: var(--text); border-color: var(--border); }
+.vat-choice.vat-in_progress { background: #2c6fad; color: #fff; }
+.vat-choice.vat-done { background: #2ea043; color: #fff; }
+.vat-choice.vat-na { background: #d4d6da; color: #374151; }
+.vat-choice.vat-waiting { background: #38bdf8; color: #0c3a52; }
+.vat-choice.vat-warning { background: #f08c2e; color: #fff; }
+.vat-choice.is-current { box-shadow: inset 0 0 0 2px rgba(0, 0, 0, .35); }
+@media (max-width: 900px) { .vat-wrap { overflow-x: auto; } }

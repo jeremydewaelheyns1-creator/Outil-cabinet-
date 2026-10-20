@@ -1,0 +1,61 @@
+{% extends "clients/sections/_base.html" %}
+{% block head_title %}Déclaration TVA · {{ client.display_name }}{% endblock %}
+{% block page_title %}Déclaration TVA{% endblock %}
+{% block content %}
+{% if can_edit %}
+  <section class="card vat-import">
+    <form method="post" action="{% url 'clients:vat_import' client.pk %}" enctype="multipart/form-data">{% csrf_token %}
+      <label for="vat-files"><strong>Importer des déclarations déposées</strong></label>
+      <p class="small muted" style="margin:.15rem 0 .5rem">Le XML et le PDF sortis d'Intervat, d'un ou de plusieurs dossiers à la fois : chaque fichier va seul dans son dossier et sur sa ligne.</p>
+      <div class="vat-import-row">
+        <input id="vat-files" type="file" name="files" accept=".xml,.pdf" multiple required>
+        <button type="submit">Importer</button>
+      </div>
+    </form>
+  </section>
+{% endif %}
+
+{% if pending %}
+  <section class="card vat-pending">
+    <h2>À confirmer</h2>
+    <p class="small muted">PDF reconnus pour ce dossier, mais sans certitude sur la période.</p>
+    {% for p, label, filings in pending %}
+      <div class="vat-pending-item">
+        {% with d=p.document %}{% include "documents/_open.html" %}{{ d.original_name }}</a>{% endwith %}
+        {% if can_edit %}
+          <form method="post" action="{% url 'clients:vat_confirm' client.pk p.pk %}" class="inline">{% csrf_token %}
+            <select name="kind" aria-label="Sorte de document">{% for value, text in kinds %}<option value="{{ value }}"{% if value == p.kind %} selected{% endif %}>{{ text }}</option>{% endfor %}</select>
+            <select name="filing" aria-label="Période">{% for f in filings %}<option value="{{ f.pk }}"{% if f.period_key == p.period_key %} selected{% endif %}>{{ f.short_label }}</option>{% endfor %}</select>
+            <button type="submit">Confirmer</button>
+            <button type="submit" name="action" value="laisser" class="link-button small">Laisser aux archives</button>
+          </form>
+        {% endif %}
+      </div>
+    {% endfor %}
+  </section>
+{% endif %}
+
+<div class="table-wrap vat-wrap">
+  <table class="table vat-grid">
+    <thead>
+      <tr>
+        <th scope="col">Période</th>
+        {% for key, label, header in headers|slice:":4" %}<th scope="col" title="{{ label }}">{{ header }}</th>{% endfor %}
+        <th scope="col" title="Grille 71 (à payer) ou 72 (à récupérer)">Solde</th>
+        {% with h=headers.4 %}<th scope="col" title="{{ h.1 }}">{{ h.2 }}</th>{% endwith %}
+        {% if quarterly %}<th scope="col">Acomptes</th>{% endif %}
+        <th scope="col" title="Responsable">Resp.</th>
+        <th scope="col" title="Assistant">Assis.</th>
+        <th scope="col">Remarque</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in rows %}
+        {% include "vat/_row.html" %}
+      {% empty %}
+        <tr><td colspan="11" class="muted">Aucune période à déclarer pour l'instant. Les lignes apparaissent d'elles-mêmes avec les échéances TVA du dossier, ou à l'import d'une déclaration.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

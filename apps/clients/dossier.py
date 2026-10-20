@@ -61,7 +61,7 @@ HISTORY = Section("history", "Historique")
 # D-026 — En haut : le travail le plus fréquent. Contenu défini un par un avec Jeremy.
 TOP: tuple[Section, ...] = (
     Section(WORK, "Clôture", slug="cloture"),
-    Section(WORK, "Déclaration TVA", slug="tva", vat_only=True),
+    Section("vat", "Déclaration TVA", vat_only=True),
     Section(WORK, "Versements anticipés", slug="versements-anticipes"),
     Section("documents", "Documents"),
 )

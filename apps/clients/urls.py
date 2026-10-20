@@ -2,6 +2,7 @@ from django.urls import path
 
 from apps.documents import views as document_views
 from apps.tasks import views as task_views
+from apps.vat import views as vat_views
 
 from . import views
 
@@ -28,6 +29,12 @@ urlpatterns = [
     path("<int:pk>/echeances/", task_views.client_tasks, name="tasks"),
     path("<int:pk>/historique/", views.client_history, name="history"),
     path("<int:pk>/travail/<slug:slug>/", views.client_work, name="work"),
+    # Déclaration TVA (D-040)
+    path("<int:pk>/tva/", vat_views.vat_grid, name="vat"),
+    path("<int:pk>/tva/importer/", vat_views.vat_import, name="vat_import"),
+    path("<int:pk>/tva/<int:filing_id>/case/<slug:column>/", vat_views.vat_cell, name="vat_cell"),
+    path("<int:pk>/tva/<int:filing_id>/montants/", vat_views.vat_amounts, name="vat_amounts"),
+    path("<int:pk>/tva/a-confirmer/<int:pending_id>/", vat_views.vat_confirm, name="vat_confirm"),
     path("<int:pk>/archives/<slug:slug>/", views.client_archive, name="archive"),
     path("<int:pk>/documents/", views.client_documents, name="documents"),
     path("<int:pk>/documents/ajouter/", document_views.upload, name="document_upload"),

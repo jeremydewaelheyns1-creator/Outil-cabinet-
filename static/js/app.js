@@ -110,3 +110,22 @@ document.addEventListener("click", function (event) {
     }
   });
 })();
+
+// Grille TVA : un seul menu de case ouvert à la fois ; clic ailleurs ou Échap → fermé.
+(function () {
+  function closeMenus(except) {
+    document.querySelectorAll("details.vat-menu[open]").forEach(function (menu) {
+      if (menu !== except) menu.removeAttribute("open");
+    });
+  }
+  document.addEventListener("toggle", function (event) {
+    var menu = event.target;
+    if (menu.classList && menu.classList.contains("vat-menu") && menu.open) closeMenus(menu);
+  }, true);
+  document.addEventListener("click", function (event) {
+    if (!event.target.closest || !event.target.closest("details.vat-menu")) closeMenus(null);
+  });
+  document.addEventListener("keydown", function (event) {
+    if (event.key === "Escape") closeMenus(null);
+  });
+})();

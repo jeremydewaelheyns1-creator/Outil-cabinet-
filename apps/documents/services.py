@@ -53,8 +53,10 @@ FILE_TYPES = (
         (b"PK\x03\x04",),
         False,
     ),
+    # Fichiers XML d'Intervat (déclarations TVA, listings) : téléchargés, jamais affichés.
+    FileType("application/xml", (".xml",), (b"<?xml", b"\xef\xbb\xbf<?xml"), False),
 )
-ACCEPTED = "PDF, JPG, PNG, Word (.docx) ou Excel (.xlsx)"
+ACCEPTED = "PDF, JPG, PNG, Word (.docx), Excel (.xlsx) ou XML"
 
 
 def detect_type(upload: UploadedFile[bytes]) -> FileType:

@@ -288,3 +288,24 @@ service externe).
 - Limites actuelles : la signature du cabinet est une mention, pas une signature électronique
   qualifiée ; l'e-mail est préparé mais pas envoyé tant que la messagerie et la signature en
   ligne ne sont pas branchées.
+
+## D-040 — Onglet « Déclaration TVA » : la grille de FID et l'import Intervat
+Demande de Jeremy, sur le modèle de FID-Manager (application `apps/vat`).
+- Une ligne par période (trimestre ou mois), créée d'elle-même à partir des échéances TVA
+  (`config/taches/regles.yaml`) ou à l'import d'une déclaration.
+- Cinq cases cliquables : documents reçus, travail fini, déclaration déposée, listing
+  intracommunautaire, communication au client. Sept états comme FID (jamais nécessaire pour ce
+  client, non commencé, en cours, fait, pas nécessaire pour cette période, en attente,
+  avertissement), avec date, auteur et remarque. « Jamais nécessaire » vaut pour toute la
+  colonne du client. Puis solde (grille 71 à payer ou 72 à récupérer, décision de Jeremy),
+  acomptes (trimestriels), responsable, assistant, remarque.
+- L'échéance suit la grille : case « Déposée » faite → échéance terminée.
+- Import : on dépose le XML et le PDF sortis d'Intervat, de n'importe quel dossier. Le XML est
+  lu sans IA (numéro de TVA, période, grilles) : classement direct (règle D-032), case cochée,
+  solde repris. Le PDF rejoint son XML (même envoi, ou XML déjà importé pour la même période) ;
+  seul, il est rangé dans le dossier reconnu mais la période est « à confirmer » ; dossier non
+  reconnu → rien n'est rangé. Un XML groupant plusieurs clients n'est rangé dans aucun dossier
+  (montants repris seulement). Lecture XML par `defusedxml` ; tout reste sur le serveur ;
+  seuls les dossiers visibles par l'utilisateur sont cherchés ; chaque import est journalisé.
+- Format XML repris du format publié par le SPF Finances (VATConsignment / IntraConsignment),
+  à vérifier sur un vrai fichier du cabinet.

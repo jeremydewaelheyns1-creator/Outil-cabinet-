@@ -7,7 +7,7 @@ s'exécuter si la base contient déjà des clients (pour ne jamais se mélanger 
 données), sauf avec --vider, qui n'est accepté qu'en mode DEBUG.
 """
 
-from datetime import date
+from datetime import date, timedelta
 from decimal import Decimal
 from typing import Any
 
@@ -159,11 +159,64 @@ class Command(BaseCommand):
         from apps.tasks.generator import generate_all
 
         run = generate_all()
+        self._vat(companies, user)
         self.stdout.write(
             self.style.SUCCESS(
                 f"{len(companies) + len(persons)} fiches fictives, {run.created} échéances. "
                 f"Connexion : {user.email}"
             )
+        )
+
+    @staticmethod
+    def _vat(companies: list[Client], user: User) -> None:
+        """Grille TVA fictive (D-040) : trimestres passés terminés, T3 importé depuis Intervat."""
+        from django.core.files.uploadedfile import SimpleUploadedFile
+
+        from apps.vat import importer
+        from apps.vat import services as vat
+        from apps.vat.models import Column, Status
+
+        company = next(
+            c for c in companies
+            if c.vat_status == Client.VatStatus.SUBJECT and c.vat_periodicity == "quarterly"
+        )  # fmt: skip
+        amounts = {(2025, 4): "3177.78", (2026, 1): "2957.28", (2026, 2): "2292.13"}
+        for (year, quarter), amount in amounts.items():
+            filing = vat.filing_for(company, vat.period(year, quarter=quarter))
+            filing.grid_71 = Decimal(amount)
+            filing.advance_1 = filing.advance_2 = Decimal("2100.00")
+            filing.save()
+            for column in (Column.DOCS, Column.DONE, Column.FILED, Column.CLIENT):
+                vat.set_status(filing, column, Status.DONE, user=user,
+                               on=filing.period_end + timedelta(days=15))  # fmt: skip
+            vat.set_status(filing, Column.IC, Status.NOT_NEEDED, user=user)
+        number = company.enterprise_number or ""
+        xml = (
+            '<?xml version="1.0"?><ns2:VATConsignment '
+            'xmlns="http://www.minfin.fgov.be/InputCommon" '
+            'xmlns:ns2="http://www.minfin.fgov.be/VATConsignment"><ns2:VATDeclaration>'
+            f"<ns2:Declarant><VATNumber>{number}</VATNumber></ns2:Declarant>"
+            "<ns2:Period><ns2:Quarter>3</ns2:Quarter><ns2:Year>2026</ns2:Year></ns2:Period>"
+            '<ns2:Data><ns2:Amount GridNumber="71">4272.44</ns2:Amount></ns2:Data>'
+            "</ns2:VATDeclaration></ns2:VATConsignment>"
+        ).encode()
+        files = [
+            SimpleUploadedFile("declaration-t3.xml", xml),
+            SimpleUploadedFile(
+                "declaration-t3.pdf", demo_pdf(f"Declaration TVA BE{number} T3 2026")
+            ),
+        ]
+        importer.import_files(files, clients=Client.objects.filter(pk=company.pk), user=user)
+        t3 = vat.filing_for(company, vat.period(2026, quarter=3))
+        t3.advance_1 = t3.advance_2 = Decimal("2100.00")
+        t3.remark = "Régularisation faite"
+        t3.save()
+        for column in (Column.DOCS, Column.DONE):
+            vat.set_status(t3, column, Status.DONE, user=user)
+        vat.set_status(t3, Column.IC, Status.NOT_NEEDED, user=user)
+        t4 = vat.filing_for(company, vat.period(2026, quarter=4))
+        vat.set_status(
+            t4, Column.DOCS, Status.WAITING, user=user, comment="Ventes d'octobre reçues"
         )
 
     @staticmethod
