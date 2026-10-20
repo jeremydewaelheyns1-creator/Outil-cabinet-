@@ -183,6 +183,11 @@ STORAGES = {
 DOCUMENT_MAX_BYTES = 20 * 1024 * 1024
 # Relances automatiques d'une demande « À recevoir » : après N jours, au plus N fois.
 REQUEST_REMINDER_DAYS = env.int("REQUEST_REMINDER_DAYS", default=7)
+# D-046 : lien sécurisé de dépôt envoyé au client (validité, prolongée à chaque relance).
+REQUEST_LINK_DAYS = env.int("REQUEST_LINK_DAYS", default=14)
+REQUEST_LINK_MAX_ATTEMPTS = env.int("REQUEST_LINK_MAX_ATTEMPTS", default=10)
+# Adresse publique de l'outil (liens dans les e-mails). Réglée par l'installateur.
+SITE_URL = env("SITE_URL", default="http://localhost:8000")
 REQUEST_MAX_REMINDERS = env.int("REQUEST_MAX_REMINDERS", default=2)
 # Pièces d'identité (D-035) : lecture locale des lignes « machine » (Tesseract, sur le serveur
 # du cabinet) et demande de la nouvelle carte N jours avant expiration.

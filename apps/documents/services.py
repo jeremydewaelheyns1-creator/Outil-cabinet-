@@ -11,6 +11,7 @@ Sécurité :
 from __future__ import annotations
 
 import hashlib
+import secrets
 from dataclasses import dataclass
 from datetime import date, timedelta
 
@@ -219,10 +220,64 @@ def _title(kind: str, person: Client | None, label: str, doc_type: str = "") -> 
     return base
 
 
+# --- Lien sécurisé de dépôt (D-046) ----------------------------------------------------------
+
+
+def _link_hash(token: str) -> str:
+    return hashlib.sha256(token.encode()).hexdigest()
+
+
+def open_link(request: DocumentRequest) -> None:
+    """Crée (ou prolonge) le lien personnel de dépôt de cette demande."""
+    from apps.outlook.graph import encrypt
+
+    expires = timezone.now() + timedelta(days=settings.REQUEST_LINK_DAYS)
+    if not request.link_hash:
+        token = secrets.token_urlsafe(32)
+        request.link_hash, request.link_token = _link_hash(token), encrypt(token)
+    request.link_expires_at = max(expires, request.link_expires_at or expires)
+    request.save(update_fields=["link_hash", "link_token", "link_expires_at"])
+
+
+def upload_url(request: DocumentRequest) -> str:
+    from django.urls import reverse
+
+    from apps.outlook.graph import decrypt
+
+    token = decrypt(request.link_token)
+    base = str(settings.SITE_URL).rstrip("/")
+    return base + reverse("depot_client:page", args=[token])
+
+
+def request_for_link(token: str) -> DocumentRequest | None:
+    """La demande de ce lien, seulement s'il est encore valable (sinon : rien, sans détail)."""
+    if not token or len(token) > 100:
+        return None
+    request = (
+        DocumentRequest.objects.filter(link_hash=_link_hash(token))
+        .select_related("client", "person")
+        .first()
+    )
+    if (
+        request is None
+        or request.status != DocumentRequest.Status.PENDING
+        or request.link_expires_at is None
+        or request.link_expires_at < timezone.now()
+        or request.link_attempts >= settings.REQUEST_LINK_MAX_ATTEMPTS
+    ):
+        return None
+    return request
+
+
 def _email_body(request: DocumentRequest, reminder: bool, sender: User | None) -> str:
     """Message clair et neutre : aucune donnée sensible, aucune pièce jointe (D-045)."""
     greeting = request.client.greeting
     who = request.person.display_name if request.person is not None else ""
+    link = ""
+    if request.link_token:
+        until = timezone.localtime(request.link_expires_at) if request.link_expires_at else None
+        valid = f" (valable jusqu'au {until:%d/%m/%Y})" if until else ""
+        link = f"{upload_url(request)}{valid}"
     if request.kind == DocumentRequest.Kind.IDENTITY_CARD:
         intro = (
             f"Petit rappel : nous n'avons pas encore reçu la carte d'identité de {who}."
@@ -231,8 +286,10 @@ def _email_body(request: DocumentRequest, reminder: bool, sender: User | None) -
             f"2017), nous devons conserver une copie à jour de la carte d'identité de {who}."
         )
         action = (
-            "Pourriez-vous nous l'envoyer en répondant simplement à cet e-mail, avec une "
-            "photo nette du recto et du verso de la carte ?"
+            "Pour nous la transmettre en toute sécurité, utilisez ce lien personnel"
+            f"{' ' if link else ''}: {link}\n\nIl suffit d'y déposer une photo nette du recto et "
+            "du verso de la carte. Pour protéger vos données, merci de ne pas l'envoyer par "
+            "e-mail."
         )
     elif request.kind == DocumentRequest.Kind.SIGNATURE:
         intro = (
@@ -252,7 +309,11 @@ def _email_body(request: DocumentRequest, reminder: bool, sender: User | None) -
             else f"Pour la bonne tenue de votre dossier, pourriez-vous nous transmettre le "
             f"document suivant : « {request.title} » ?"
         )
-        action = "Il vous suffit de répondre à cet e-mail en le joignant."
+        action = (
+            f"Vous pouvez le déposer en toute sécurité via ce lien personnel : {link}"
+            if link
+            else "Il vous suffit de répondre à cet e-mail en le joignant."
+        )
     signature = [sender.get_full_name()] if sender is not None and sender.get_full_name() else []
     lines = [greeting, "", intro, "", action, "", "Merci d'avance pour votre aide.", "",
              "Bien à vous,", *signature, settings.CABINET_NAME, "",
@@ -302,6 +363,8 @@ def create_request(
             created_by=user,
             next_reminder_on=timezone.localdate() + timedelta(days=settings.REQUEST_REMINDER_DAYS),
         )
+        if kind != DocumentRequest.Kind.SIGNATURE:
+            open_link(request)
         email = _prepare_email(request, OutgoingEmail.Kind.REQUEST)
     _deliver(email, user)
     events.emit(
@@ -378,6 +441,8 @@ def send_due_reminders(today: date | None = None) -> int:
     count = 0
     for request in due:
         with transaction.atomic():
+            if request.link_hash:
+                open_link(request)  # le lien reste le même, sa validité est prolongée
             email = _prepare_email(request, OutgoingEmail.Kind.REMINDER)
             request.reminders_sent += 1
             request.next_reminder_on = today + timedelta(days=settings.REQUEST_REMINDER_DAYS)

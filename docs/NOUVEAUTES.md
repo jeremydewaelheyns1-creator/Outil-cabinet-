@@ -3,6 +3,14 @@
 Ce qui a été ajouté à l'outil, du plus récent au plus ancien. Toutes les données de la démo
 sont inventées.
 
+## 20 octobre 2026 — Lien sécurisé pour les documents demandés
+
+- L'e-mail de demande contient un **lien personnel** : le client y dépose la photo du recto
+  et du verso de sa carte (ou un PDF), sans créer de compte. La carte est aussitôt lue,
+  vérifiée et rangée dans son dossier.
+- Le lien ne sert qu'à déposer, il expire après 14 jours (prolongé à chaque relance) et ne
+  marche plus une fois la pièce reçue.
+
 ## 20 octobre 2026 — Les demandes de documents partent vraiment
 
 - Une demande de carte d'identité (et ses relances) part maintenant de la boîte Outlook

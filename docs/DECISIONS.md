@@ -389,3 +389,18 @@ Demande de Jeremy après son essai.
 - E-mail TVA : « Pour le paiement : » (sans « à copier-coller dans votre banque »).
 - **Pas encore fait, en attente de l'accord de Jeremy** : lire les réponses pour ranger la
   carte jointe toute seule (demande le droit de lire la boîte, voir la question posée).
+
+## D-046 — Lien sécurisé pour que le client dépose la pièce demandée
+Choix de Jeremy (plutôt que la réponse par e-mail, qui demanderait de lire les boîtes et
+laisserait la carte dans les messageries).
+- Chaque demande (sauf signature) contient un **lien personnel** : page publique sans compte
+  où le client dépose sa photo recto + verso (réunies en un PDF) ou un PDF. La pièce est
+  rangée et, pour une carte, lue et vérifiée comme d'habitude (D-035).
+- Lien de 256 bits au hasard ; seule son empreinte sert à le retrouver, le lien est gardé
+  chiffré pour les relances (même lien, validité prolongée). Valable 14 jours
+  (`REQUEST_LINK_DAYS`), inutilisable après réception ou annulation, bloqué après 10 essais.
+  Il ne permet que de déposer : la page ne montre que l'objet de la demande ; lien inconnu ou
+  expiré → même message neutre. Pas de cache, pas d'indexation, `Referrer-Policy: no-referrer`.
+  Chaque dépôt est journalisé.
+- L'e-mail demande de ne pas envoyer la carte par e-mail. `SITE_URL` (adresse des liens)
+  réglée par l'installateur.

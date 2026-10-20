@@ -1,0 +1,22 @@
+{% extends "documents/public/_layout.html" %}
+{% block head_title %}Envoi sécurisé{% endblock %}
+{% block public %}
+<h1>Envoi sécurisé d'un document</h1>
+<p>Document demandé : <strong>{{ demande.title }}</strong></p>
+{% if is_card %}
+  <p>Déposez une photo nette du <strong>recto</strong> et une du <strong>verso</strong> de la carte (ou un seul PDF avec les deux faces).</p>
+{% else %}
+  <p>Déposez le document (photo JPG/PNG ou PDF).</p>
+{% endif %}
+{% if error %}<p class="alert alert-error">{{ error }}</p>{% endif %}
+<form method="post" enctype="multipart/form-data">{% csrf_token %}
+  <label class="depot-zone" for="files">
+    <strong>Choisir {% if is_card %}les photos{% else %}le fichier{% endif %}</strong>
+    <span class="small muted">JPG, PNG ou PDF · 2 fichiers au maximum</span>
+    <span class="small muted depot-chosen" data-depot-chosen></span>
+    <input id="files" type="file" name="files" accept=".jpg,.jpeg,.png,.pdf,image/*" multiple required>
+  </label>
+  <button type="submit" class="public-submit">Envoyer</button>
+</form>
+<p class="small muted">Référence : {{ demande.reference }}</p>
+{% endblock %}

@@ -73,6 +73,12 @@ class DocumentRequest(models.Model):
         User, on_delete=models.SET_NULL, null=True, blank=True, related_name="+"
     )
     closed_at = models.DateTimeField("clôturée le", null=True, blank=True)
+    # D-046 : lien sécurisé de dépôt. Seule l'empreinte sert à le retrouver ; le lien lui-même
+    # est gardé chiffré pour être remis dans les relances.
+    link_hash = models.CharField(max_length=64, unique=True, null=True, blank=True)
+    link_token = models.TextField(blank=True)
+    link_expires_at = models.DateTimeField("lien valable jusqu'au", null=True, blank=True)
+    link_attempts = models.PositiveSmallIntegerField("essais de dépôt", default=0)
 
     class Meta:
         verbose_name = "demande de document"

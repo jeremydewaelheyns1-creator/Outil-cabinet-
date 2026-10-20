@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block body %}
+<main class="public-page">
+  <div class="public-card">
+    <div class="public-brand">{{ CABINET_NAME }}</div>
+    {% block public %}{% endblock %}
+  </div>
+  <p class="public-foot small muted">Page sécurisée : vos documents sont transmis directement à {{ CABINET_NAME }} et conservés en Belgique.</p>
+</main>
+{% endblock %}

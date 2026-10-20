@@ -127,7 +127,8 @@ service_urls() {
 env_vars() {  # env_vars ADRESSES (séparées par des virgules)
   local urls="${1:-https://localhost}"
   local hosts; hosts="$(printf '%s' "$urls" | sed 's#https://##g')"
-  echo "^@^GS_DOCUMENTS_BUCKET=${BUCKET}@DJANGO_ALLOWED_HOSTS=${hosts}@DJANGO_CSRF_TRUSTED_ORIGINS=${urls}"
+  # SITE_URL : adresse mise dans les liens envoyés aux clients (la première de la liste).
+  echo "^@^GS_DOCUMENTS_BUCKET=${BUCKET}@DJANGO_ALLOWED_HOSTS=${hosts}@DJANGO_CSRF_TRUSTED_ORIGINS=${urls}@SITE_URL=${urls%%,*}"
 }
 URLS="$(service_urls || true)"
 ENV_VARS="$(env_vars "$URLS")"
