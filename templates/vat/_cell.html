@@ -5,6 +5,7 @@
     {% if cell.column == "client" and row.filing.messages.all|length %}<svg class="vat-mailed" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" aria-label="E-mail préparé"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>{% endif %}
     {% if cell.comment %}<svg class="vat-note" viewBox="0 0 24 24" width="13" height="13" fill="currentColor" aria-label="Remarque"><path d="M4 4h16v12H8l-4 4z"/></svg>{% endif %}
     <span class="visually-hidden">{{ cell.label }} : {{ cell.status_label }}</span>
+    {% include "vat/_files.html" %}
   {% if can_edit %}</summary>
     <div class="vat-pop">
       <div class="vat-pop-head">{{ cell.label }}</div>
@@ -26,17 +27,4 @@
       {% endif %}
     </div>
   </details>{% else %}{% if cell.comment %}<span class="small">{{ cell.comment }}</span>{% endif %}{% endif %}
-  {% with f=row.filing %}
-    {% if cell.column == "filed" and f.xml or cell.column == "filed" and f.pdf or cell.column == "ic" and f.ic_xml or cell.column == "ic" and f.ic_pdf %}
-      <div class="vat-files">
-        {% if cell.column == "filed" %}
-          {% if f.xml %}{% with d=f.xml %}{% include "documents/_open.html" with link_class="vat-file" %}XML</a>{% endwith %}{% endif %}
-          {% if f.pdf %}{% with d=f.pdf %}{% include "documents/_open.html" with link_class="vat-file" %}PDF</a>{% endwith %}{% endif %}
-        {% else %}
-          {% if f.ic_xml %}{% with d=f.ic_xml %}{% include "documents/_open.html" with link_class="vat-file" %}XML</a>{% endwith %}{% endif %}
-          {% if f.ic_pdf %}{% with d=f.ic_pdf %}{% include "documents/_open.html" with link_class="vat-file" %}PDF</a>{% endwith %}{% endif %}
-        {% endif %}
-      </div>
-    {% endif %}
-  {% endwith %}
 </td>

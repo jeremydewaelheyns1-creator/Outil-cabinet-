@@ -372,3 +372,6 @@ Idée de Jeremy (le cabinet est sur Outlook / Microsoft 365). Application `apps/
 - Mise en route (inscription de l'application dans Microsoft Entra, secret placé directement
   dans le gestionnaire de secrets de l'hébergement) : `docs/OUTLOOK.md`. Nécessite l'outil
   en ligne chez le cabinet.
+- Mise à jour (même jour) : format confirmé sur un PDF de l'administration (ligne « Pour tout
+  paiement à "TVA-BTW" - compte (BIC : …) … communication structurée … »). L'outil reprend
+  aussi le bénéficiaire et le BIC. Vérifié sans afficher ni conserver aucune valeur réelle.

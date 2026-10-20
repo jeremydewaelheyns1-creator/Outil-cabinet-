@@ -1,0 +1,14 @@
+{# Fichiers XML/PDF d'une déclaration, dans la case (comme FID). #}
+  {% with f=row.filing %}
+    {% if cell.column == "filed" and f.xml or cell.column == "filed" and f.pdf or cell.column == "ic" and f.ic_xml or cell.column == "ic" and f.ic_pdf %}
+      <span class="vat-files">
+        {% if cell.column == "filed" %}
+          {% if f.xml %}{% with d=f.xml %}{% include "documents/_open.html" with link_class="vat-file" %}XML</a>{% endwith %}{% endif %}
+          {% if f.pdf %}{% with d=f.pdf %}{% include "documents/_open.html" with link_class="vat-file" %}PDF</a>{% endwith %}{% endif %}
+        {% else %}
+          {% if f.ic_xml %}{% with d=f.ic_xml %}{% include "documents/_open.html" with link_class="vat-file" %}XML</a>{% endwith %}{% endif %}
+          {% if f.ic_pdf %}{% with d=f.ic_pdf %}{% include "documents/_open.html" with link_class="vat-file" %}PDF</a>{% endwith %}{% endif %}
+        {% endif %}
+      </span>
+    {% endif %}
+  {% endwith %}

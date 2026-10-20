@@ -749,7 +749,7 @@ a.badge:hover { text-decoration: none; filter: brightness(0.95); }
 .vat-grid tr:hover td { background: transparent; }
 .vat-grid tr.vat-complete > *, .vat-grid tr.vat-complete:hover > * { background: #eef8ee; }
 .vat-cell { padding: 3px !important; min-width: 5.2rem; text-align: center; }
-.vat-cell > details > summary, .vat-cell > .vat-date { display: flex; align-items: center; justify-content: center; gap: .25rem; min-height: 2.5rem; border-radius: 6px; font-weight: 600; font-size: .92rem; }
+.vat-cell > details > summary { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; align-content: center; gap: .1rem .25rem; min-height: 3.3rem; border-radius: 6px; font-weight: 600; font-size: .92rem; }
 .vat-cell.vat-todo summary { border: 1px dashed var(--border); }
 .vat-cell.vat-never summary { background: #6b7280; color: #fff; }
 .vat-cell.vat-in_progress summary { background: #2c6fad; color: #fff; }
@@ -758,8 +758,10 @@ a.badge:hover { text-decoration: none; filter: brightness(0.95); }
 .vat-cell.vat-waiting summary { background: #38bdf8; color: #0c3a52; }
 .vat-cell.vat-warning summary { background: #f08c2e; color: #fff; }
 .vat-note { opacity: .85; }
-.vat-files { display: flex; gap: .3rem; justify-content: center; margin-top: 3px; }
-.vat-file { font-size: .72rem; font-weight: 700; padding: 1px 5px; border: 1px solid var(--border); border-radius: 4px; background: var(--surface); color: var(--primary); text-decoration: none; }
+.vat-files { display: flex; flex-basis: 100%; gap: .3rem; justify-content: center; }
+.vat-file { font-size: .68rem; font-weight: 700; line-height: 1.3; padding: 0 5px; border: 1px solid rgba(255, 255, 255, .7); border-radius: 4px; background: rgba(255, 255, 255, .15); color: inherit; text-decoration: none; }
+.vat-file:hover { background: rgba(255, 255, 255, .35); }
+.vat-cell.vat-todo .vat-file { border-color: var(--border); color: var(--primary); }
 .vat-amount { text-align: right; white-space: nowrap; }
 .vat-amount summary, .vat-advances summary, .vat-remark summary { display: block; }
 .vat-amount summary .small { display: block; }

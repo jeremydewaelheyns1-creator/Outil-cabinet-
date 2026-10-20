@@ -231,3 +231,20 @@ def payment_details(text: str) -> tuple[str, str]:
     account = accounts.pop() if len(accounts) == 1 else ""
     reference = references.pop() if len(references) == 1 else ""
     return account, reference
+
+
+BIC = re.compile(r"BIC\s*:?\s*([A-Z]{6}[A-Z0-9]{2}(?:[A-Z0-9]{3})?)\b")
+BENEFICIARY = re.compile(r"paiement\s+à\s+[\"«“]\s*([^\"»”]{2,40}?)\s*[\"»”]", re.I)
+
+
+def payment_extras(text: str) -> tuple[str, str]:
+    """(bénéficiaire, BIC) de la ligne de paiement, comme sur les PDF de l'administration :
+    « Pour tout paiement à "TVA-BTW" - BE.. (BIC : GEBABEBB) … ». Vides si absents."""
+    for line in text.splitlines():
+        lowered = line.lower()
+        if "paiement" not in lowered or any(w in lowered for w in REFUND_WORDS):
+            continue
+        beneficiary = BENEFICIARY.search(line)
+        bic = BIC.search(line)
+        return (beneficiary.group(1).strip() if beneficiary else "", bic.group(1) if bic else "")
+    return "", ""

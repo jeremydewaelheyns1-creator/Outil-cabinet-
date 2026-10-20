@@ -152,12 +152,18 @@ def attach_pdf(filing: VatFiling, document: Document, kind: str, user: User | No
         filing.pdf = document
         # Compte et communication de paiement, s'ils sont sur la déclaration (D-043).
         with document.file.open("rb") as handle:
-            account, reference = intervat.payment_details(intervat.pdf_text(handle.read()))
-        filing.payment_iban = account or filing.payment_iban
-        filing.payment_reference = reference or filing.payment_reference
+            text = intervat.pdf_text(handle.read())
+        account, reference = intervat.payment_details(text)
+        if account and reference:
+            beneficiary, bic = intervat.payment_extras(text)
+            filing.payment_iban, filing.payment_reference = account, reference
+            filing.payment_beneficiary, filing.payment_bic = beneficiary, bic
     else:
         filing.ic_pdf = document
-    filing.save(update_fields=["pdf", "ic_pdf", "payment_iban", "payment_reference"])
+    filing.save(
+        update_fields=["pdf", "ic_pdf", "payment_iban", "payment_reference", "payment_bic",
+                       "payment_beneficiary"]
+    )  # fmt: skip
     column = Column.FILED if kind == VAT else Column.IC
     if not filing.cells.filter(column=column, status=Status.DONE).exists():
         set_status(filing, column, Status.DONE, user=user)

@@ -62,8 +62,12 @@ def compose(filing: VatFiling, user: User | None) -> tuple[str, str]:
             if filing.payment_iban and filing.payment_reference:
                 lines += [
                     "Pour le paiement (à copier-coller dans votre banque) :",
+                    f"Bénéficiaire : {filing.payment_beneficiary or 'SPF Finances — TVA'}",
                     f"Compte : {filing.payment_iban}",
-                    "Bénéficiaire : SPF Finances",
+                ]
+                if filing.payment_bic:
+                    lines.append(f"BIC : {filing.payment_bic}")
+                lines += [
                     f"Montant : {euros(remaining)}",
                     f"Communication structurée : {filing.payment_reference}",
                 ]

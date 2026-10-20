@@ -101,6 +101,8 @@ class VatFiling(models.Model):
     # Lus sur le PDF de la déclaration quand ils y sont (D-043), repris dans l'e-mail au client.
     payment_iban = models.CharField("compte de paiement", max_length=42, blank=True)
     payment_reference = models.CharField("communication structurée", max_length=24, blank=True)
+    payment_bic = models.CharField("BIC", max_length=11, blank=True)
+    payment_beneficiary = models.CharField("bénéficiaire du paiement", max_length=40, blank=True)
     xml = models.ForeignKey(
         Document, verbose_name="déclaration (XML)", on_delete=models.SET_NULL, null=True,
         blank=True, related_name="+",

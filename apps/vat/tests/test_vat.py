@@ -489,3 +489,15 @@ def test_payment_details_from_the_pdf_go_into_the_email(web, user):
     html = web.get(reverse("clients:vat_mail", args=[company.pk, filing.pk]),
                    HTTP_HX_REQUEST="true").content.decode()  # fmt: skip
     assert f"Compte : {account}" in html and f"Communication structurée : {reference}" in html
+
+
+def test_payment_line_in_the_administration_format():
+    """Même tournure que les PDF de l'administration ; valeurs fictives."""
+    reference, account = fictive_reference(), fictive_iban()
+    text = (
+        f'Pour tout paiement à "TVA-BTW" - {account} (BIC : GEBABEBB), veuillez utiliser la '
+        "communication structurée que vous avez\n"
+        f"reçu avec votre numéro de TVA : {reference}. Vous payez via une banque étrangère"
+    )
+    assert intervat.payment_details(text) == (account, reference)
+    assert intervat.payment_extras(text) == ("TVA-BTW", "GEBABEBB")

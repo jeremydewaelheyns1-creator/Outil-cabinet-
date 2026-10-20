@@ -3,6 +3,13 @@
 Ce qui a été ajouté à l'outil, du plus récent au plus ancien. Toutes les données de la démo
 sont inventées.
 
+## 20 octobre 2026 — TVA : paiement prêt à copier, cases alignées
+
+- L'e-mail TVA reprend la ligne de paiement du PDF de l'administration : bénéficiaire
+  (TVA-BTW), compte, BIC, montant et communication structurée, prêts à copier-coller.
+- Les boutons XML et PDF sont maintenant dans la case « Déposée » : toutes les cases d'une
+  ligne ont la même taille.
+
 ## 20 octobre 2026 — Le dépôt de documents fonctionne dans la démo
 
 - Sur la page **Déposer des documents** de cette démo, on peut maintenant essayer : un lien
