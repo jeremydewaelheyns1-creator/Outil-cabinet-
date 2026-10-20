@@ -3,6 +3,14 @@
 Ce qui a été ajouté à l'outil, du plus récent au plus ancien. Toutes les données de la démo
 sont inventées.
 
+## 20 octobre 2026 — Le dépôt de documents fonctionne dans la démo
+
+- Sur la page **Déposer des documents** de cette démo, on peut maintenant essayer : un lien
+  permet de télécharger une déclaration TVA fictive, à redéposer ensuite. L'outil la lit dans
+  le navigateur et indique où il la range (dossier, trimestre, montant). Rien n'est
+  enregistré.
+- La lecture des PDF et des cartes d'identité ne marche que dans l'outil installé.
+
 ## 20 octobre 2026 — Envoyer depuis sa boîte Outlook (préparé)
 
 - Nouvelle page **Ma boîte mail** (en haut à droite) : chaque employé pourra relier sa boîte

@@ -84,6 +84,7 @@ BANNER = """
     toast("Démo : case cochée sur cette page seulement (rien n'est enregistré).");
   }, true);
   document.addEventListener("submit", function (e) {
+    if (e.target.closest && e.target.closest(".depot-drop")) return; // dépôt simulé (demo-depot.js)
     if ((e.target.method || "get").toLowerCase() !== "get") { e.preventDefault(); toast(); }
   }, true);
   document.addEventListener("htmx:beforeRequest", function (e) {
@@ -92,6 +93,8 @@ BANNER = """
   });
 })();
 </script>
+<script>window.DEMO_BASE = "{base}";</script>
+<script src="{base}static/js/demo-depot.js" defer></script>
 """
 
 
@@ -127,6 +130,7 @@ class Command(BaseCommand):
             fragment = browser.get("/clients/dossier/recherche/").content.decode()
             self._write(out, "/clients/dossier/recherche/", self._rewrite(fragment, base))
         self._write(out, "/nouveautes/", self._news_page(base, banner))
+        self._demo_drop(out, base)
         self.stdout.write(self.style.SUCCESS(f"{pages} pages exportées dans {out}"))
 
     # ------------------------------------------------------------------------------------------
@@ -192,6 +196,40 @@ class Command(BaseCommand):
             target = out / path.strip("/")
             target.parent.mkdir(parents=True, exist_ok=True)
             target.write_bytes(response.content)
+
+    @staticmethod
+    def _demo_drop(out: Path, base: str) -> None:
+        """Dépôt simulé dans la démo : dossiers fictifs + une déclaration TVA fictive à essayer."""
+        import json
+
+        folder = out / "deposer"
+        folder.mkdir(parents=True, exist_ok=True)
+        clients = [
+            {
+                "name": c.display_name,
+                "number": c.enterprise_number,
+                "url": f"{base}clients/{c.pk}/" + ("tva/" if c.vat_status == "subject" else ""),
+            }
+            for c in Client.objects.exclude(enterprise_number=None)
+        ]
+        (folder / "demo-clients.json").write_text(json.dumps(clients), encoding="utf-8")
+        garage = Client.objects.filter(name__startswith="Garage").first()
+        if garage is None or not garage.enterprise_number:
+            return
+        xml = (
+            '<?xml version="1.0" encoding="UTF-8"?>\n'
+            '<ns2:VATConsignment xmlns="http://www.minfin.fgov.be/InputCommon" '
+            'xmlns:ns2="http://www.minfin.fgov.be/VATConsignment" VATDeclarationsNbr="1">\n'
+            "  <!-- Déclaration FICTIVE pour la démo -->\n"
+            '  <ns2:VATDeclaration SequenceNumber="1">\n'
+            f"    <ns2:Declarant><VATNumber>{garage.enterprise_number}</VATNumber>"
+            "<Name>Garage des Trois Ponts Fictif SRL</Name></ns2:Declarant>\n"
+            "    <ns2:Period><ns2:Quarter>4</ns2:Quarter><ns2:Year>2026</ns2:Year></ns2:Period>\n"
+            '    <ns2:Data><ns2:Amount GridNumber="71">1850.00</ns2:Amount></ns2:Data>\n'
+            "  </ns2:VATDeclaration>\n"
+            "</ns2:VATConsignment>\n"
+        )
+        (folder / "exemple-declaration-tva.xml").write_text(xml, encoding="utf-8")
 
     @staticmethod
     def _write(out: Path, path: str, html: str) -> None:
