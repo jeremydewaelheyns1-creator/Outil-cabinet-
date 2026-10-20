@@ -23,7 +23,7 @@ from apps.clients.models import Assignment, Client
 from apps.core.models import User
 from apps.outlook import graph
 
-from .models import Document, OutgoingEmail
+from .models import Document, DocumentRequest, OutgoingEmail
 
 logger = logging.getLogger(__name__)
 
@@ -50,6 +50,7 @@ def archive_copy(
     sent_at: datetime,
     attachments: Sequence[str] = (),
     user: User | None = None,
+    request: DocumentRequest | None = None,
 ) -> Document:
     """Copie PDF de l'e-mail envoyé, rangée dans les archives « Courriels » du dossier."""
     from weasyprint import HTML
@@ -71,7 +72,12 @@ def archive_copy(
     content = bytes(HTML(string=html).write_pdf())
     upload = SimpleUploadedFile("courriel.pdf", content, content_type="application/pdf")
     title = f"Courriel du {timezone.localtime(sent_at):%d/%m/%Y} — {subject}"[:200]
-    return services.store(client, upload, title=title, folder="courriels", user=user)
+    document = services.store(client, upload, title=title, folder="courriels", user=user)
+    if request is not None:
+        # Rattachée à sa demande : la réponse du client s'affiche sous l'e-mail (D-047).
+        Document.objects.filter(pk=document.pk).update(request=request)
+        document.request = request
+    return document
 
 
 def deliver(email: OutgoingEmail, user: User | None = None) -> bool:
@@ -93,6 +99,6 @@ def deliver(email: OutgoingEmail, user: User | None = None) -> bool:
     email.save(update_fields=["delivered", "sent_from"])
     archive_copy(
         request.client, sender=link.address, to=email.to, subject=email.subject,
-        body=email.body, sent_at=timezone.now(), user=sender,
+        body=email.body, sent_at=timezone.now(), user=sender, request=request,
     )  # fmt: skip
     return True

@@ -3,6 +3,13 @@
 Ce qui a été ajouté à l'outil, du plus récent au plus ancien. Toutes les données de la démo
 sont inventées.
 
+## 20 octobre 2026 — Archives des courriels plus claires
+
+- Une demande annulée disparaît des archives « Courriels ».
+- Sous l'e-mail de demande, la pièce renvoyée par le client apparaît (« Réponse du client,
+  reçue le … »), à ouvrir d'un clic.
+- Lien sécurisé : correction de l'envoi qui était refusé, et les fichiers choisis s'affichent.
+
 ## 20 octobre 2026 — Lien sécurisé pour les documents demandés
 
 - L'e-mail de demande contient un **lien personnel** : le client y dépose la photo du recto

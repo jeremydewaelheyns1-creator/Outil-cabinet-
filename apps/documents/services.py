@@ -417,6 +417,15 @@ def receive(
     return document
 
 
+def email_copies(request: DocumentRequest) -> list[Document]:
+    """Copies archivées des e-mails de cette demande (rattachées, ou par leur référence)."""
+    return list(
+        Document.objects.filter(client=request.client, folder="courriels").filter(
+            Q(request=request) | Q(title__contains=f"[réf. {request.reference}]")
+        )
+    )
+
+
 def cancel(request: DocumentRequest, *, user: User | None = None) -> None:
     if request.status != DocumentRequest.Status.PENDING:
         return
@@ -424,6 +433,10 @@ def cancel(request: DocumentRequest, *, user: User | None = None) -> None:
     request.closed_at = timezone.now()
     request.next_reminder_on = None
     request.save(update_fields=["status", "closed_at", "next_reminder_on"])
+    # D-047 : une demande annulée disparaît des archives « Courriels » (copies de ses e-mails).
+    for copy in email_copies(request):
+        copy.file.delete(save=False)
+        copy.delete()
     events.emit(
         "document_request.cancelled", subject=request.client, actor=user,
         payload={"request": str(request.pk)},

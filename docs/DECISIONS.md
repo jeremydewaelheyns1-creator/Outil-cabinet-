@@ -404,3 +404,10 @@ laisserait la carte dans les messageries).
   Chaque dépôt est journalisé.
 - L'e-mail demande de ne pas envoyer la carte par e-mail. `SITE_URL` (adresse des liens)
   réglée par l'installateur.
+
+## D-047 — Archives « Courriels » : demandes annulées retirées, réponse sous l'e-mail
+Demande de Jeremy.
+- Annuler une demande supprime les copies de ses e-mails (demande, relances) des archives
+  « Courriels ». L'annulation reste dans l'historique du dossier.
+- Sous chaque e-mail de demande archivé, la pièce renvoyée par le client (par le lien
+  sécurisé) s'affiche avec sa date de réception et s'ouvre dans le visualiseur.

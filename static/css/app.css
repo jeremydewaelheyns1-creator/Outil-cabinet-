@@ -831,3 +831,4 @@ a.badge:hover { text-decoration: none; filter: brightness(0.95); }
 .public-card h1 { font-size: 1.35rem; margin: 0 0 .8rem; }
 .public-submit { width: 100%; margin-top: .9rem; padding: .7rem; font-size: 1rem; }
 .public-foot { max-width: 34rem; text-align: center; margin-top: 1rem; }
+.email-reply { margin-top: .3rem; padding-left: .6rem; border-left: 3px solid var(--primary-soft); }

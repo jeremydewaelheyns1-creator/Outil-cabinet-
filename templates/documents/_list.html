@@ -6,7 +6,10 @@
   {% for d in documents %}
     <tr>
       <td>{% include "documents/_open.html" %}{{ d.title }}</a>
-        <div class="muted small">{{ d.original_name }} · {{ d.size|filesizeformat }}</div></td>
+        <div class="muted small">{{ d.original_name }} · {{ d.size|filesizeformat }}</div>
+        {% for r in d.replies %}
+          <div class="small email-reply">↳ Réponse du client, reçue le {{ r.uploaded_at|date:"d/m/Y" }} : {% with d=r %}{% include "documents/_open.html" %}{{ d.title }}</a>{% endwith %}</div>
+        {% endfor %}</td>
       <td class="small">{% if d.person %}{{ d.person.display_name }}{% else %}—{% endif %}</td>
       <td class="small nowrap">{{ d.uploaded_at|date:"d/m/Y" }}{% if d.archived_at and d.case == "" and d.archived_at != d.uploaded_at %}<div class="muted">archivé le {{ d.archived_at|date:"d/m/Y" }}</div>{% endif %}</td>
       <td class="small">{% if d.auto_filed %}<span class="badge badge-primary">classé automatiquement</span>{% else %}{{ d.get_source_display }}{% if d.uploaded_by %} · {{ d.uploaded_by.get_short_name }}{% endif %}{% endif %}</td>

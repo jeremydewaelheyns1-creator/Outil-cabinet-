@@ -248,3 +248,40 @@ def test_vat_email_copy_is_archived(web, user, monkeypatch):
                    "body": "Bonjour", "attach_pdf": "1"}, HTTP_HX_REQUEST="true")  # fmt: skip
     archived = Document.objects.get(client=company, folder="courriels")
     assert "TVA T3" in archived.title
+
+
+# --- Archives « Courriels » : annulation et réponse du client (D-047) -------------------------
+
+
+def _sent_request(web, user, monkeypatch):
+    from apps.documents.models import DocumentRequest
+    from apps.documents.tests.test_documents import company_with_manager
+
+    monkeypatch.setattr(graph, "_http", FakeMicrosoft().client)
+    link_for(user)
+    company, manager = company_with_manager()
+    web.post(reverse("clients:request_create", args=[company.pk]),
+             {"kind": "identity_card", "person": manager.pk})  # fmt: skip
+    return company, DocumentRequest.objects.get()
+
+
+def test_cancelled_request_disappears_from_the_email_archive(web, user, monkeypatch):
+    from apps.documents.models import Document
+
+    company, request = _sent_request(web, user, monkeypatch)
+    assert Document.objects.filter(client=company, folder="courriels").count() == 1
+    web.post(reverse("clients:request_cancel", args=[company.pk, request.pk]))
+    assert not Document.objects.filter(client=company, folder="courriels").exists()
+
+
+def test_client_reply_is_shown_under_the_request_email(web, user, monkeypatch):
+    from django.test import Client as Browser
+
+    from apps.documents.tests.test_client_link import link_of, photo
+
+    company, request = _sent_request(web, user, monkeypatch)
+    Browser().post(
+        "/" + link_of(request), {"files": [photo("r.png", "red"), photo("v.png", "blue")]}
+    )
+    html = web.get(reverse("clients:archive", args=[company.pk, "courriels"])).content.decode()
+    assert "Réponse du client" in html and "Carte d" in html

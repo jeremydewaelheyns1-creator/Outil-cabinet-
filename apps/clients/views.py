@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import io
+import re
 from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import timedelta
@@ -542,6 +543,34 @@ def _documents_block(client: Client, *, case: str = "", folder: str = "") -> dic
     }
 
 
+REFERENCE_IN_TITLE = re.compile(r"\[réf\. ([A-Z0-9]+)\]")
+
+
+def _attach_replies(client: Client, emails: list[Any]) -> None:
+    """D-047 : sous chaque e-mail de demande, la pièce que le client a renvoyée."""
+    from apps.documents.models import Document, DocumentRequest
+
+    for email in emails:
+        request_id = email.request_id
+        if request_id is None:
+            match = REFERENCE_IN_TITLE.search(email.title)
+            found = (
+                DocumentRequest.objects.filter(client=client, reference=match.group(1)).first()
+                if match
+                else None
+            )
+            request_id = found.pk if found else None
+        email.replies = (
+            list(
+                Document.objects.filter(client=client, request_id=request_id)
+                .exclude(folder="courriels")
+                .order_by("uploaded_at")
+            )
+            if request_id
+            else []
+        )
+
+
 def client_archive(request: AppRequest, pk: int, slug: str) -> HttpResponse:
     """Dossier d'archives (D-031). Le Moniteur se remplit seul ; les autres, avec l'onglet
     Documents (les documents traités y seront rangés automatiquement)."""
@@ -553,6 +582,8 @@ def client_archive(request: AppRequest, pk: int, slug: str) -> HttpResponse:
         context: dict[str, Any] = {"folder": found, **_documents_block(client, folder=slug)}
         if slug == "moniteur" and client.enterprise_number:
             context.update(_official(client, OfficialSnapshot.Source.MONITEUR))
+        if slug == "courriels":
+            _attach_replies(client, context["documents"])
         return context
 
     return render_section(request, pk, found.key, "clients/sections/archive.html", build)
