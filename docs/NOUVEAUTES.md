@@ -3,6 +3,15 @@
 Ce qui a été ajouté à l'outil, du plus récent au plus ancien. Toutes les données de la démo
 sont inventées.
 
+## 20 octobre 2026 — Envoyer depuis sa boîte Outlook (préparé)
+
+- Nouvelle page **Ma boîte mail** (en haut à droite) : chaque employé pourra relier sa boîte
+  Outlook avec « Se connecter avec Microsoft ». Les e-mails envoyés depuis l'outil partiront
+  alors de sa propre adresse et resteront dans ses « Éléments envoyés ».
+- L'outil ne voit jamais le mot de passe et ne peut pas lire la boîte : il peut seulement
+  envoyer ce que vous validez.
+- À activer quand l'outil sera installé chez le cabinet (pas dans cette démo).
+
 ## 20 octobre 2026 — E-mails personnalisés
 
 - Page **Identité** : nouvelle case **Personne de contact** (Monsieur, Madame, Docteur,

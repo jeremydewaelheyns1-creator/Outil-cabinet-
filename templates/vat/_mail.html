@@ -19,7 +19,13 @@
       <section>
         {% if error %}<p class="alert alert-error">{{ error }}</p>{% endif %}
         {% if message.sent_at %}
-          <p class="alert alert-success">Envoyé le {{ message.sent_at|date:"d/m/Y à H:i" }}{% if message.sent_by %} par {{ message.sent_by }}{% endif %}.{% if not message.delivered %} Il partira dès que la messagerie du cabinet sera branchée.{% endif %}</p>
+          <p class="alert alert-success">Envoyé le {{ message.sent_at|date:"d/m/Y à H:i" }}{% if message.sent_by %} par {{ message.sent_by }}{% endif %}{% if message.sent_from %}, depuis {{ message.sent_from }}{% endif %}.{% if not message.delivered %} Il est enregistré ; il partira dès que la messagerie du cabinet sera branchée.{% endif %}</p>
+        {% else %}
+          {% if mailbox %}
+            <p class="small muted">Partira depuis votre boîte Outlook <strong>{{ mailbox.address }}</strong> (copie dans vos « Éléments envoyés »).</p>
+          {% elif outlook_configured %}
+            <p class="alert alert-warning">Votre boîte Outlook n'est pas reliée : l'e-mail sera seulement enregistré. <a href="{% url 'outlook:mailbox' %}">Relier ma boîte</a></p>
+          {% endif %}
         {% endif %}
         {% if message.sent_at %}
           <label>À<input type="text" value="{{ message.to }}" disabled></label>

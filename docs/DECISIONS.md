@@ -356,3 +356,19 @@ Demande de Jeremy.
   parle de paiement (jamais une ligne de restitution, pour ne pas prendre le compte du client),
   un seul candidat. Sinon : la phrase générale.
 - Emplacement exact de ces données sur le PDF d'Intervat à vérifier sur un vrai fichier.
+
+## D-044 — Les e-mails partent de la boîte Outlook de chaque employé
+Idée de Jeremy (le cabinet est sur Outlook / Microsoft 365). Application `apps/outlook`.
+- « Ma boîte mail » (barre du haut) : « Se connecter avec Microsoft » (OAuth 2.0, code +
+  PKCE, état vérifié). Droits délégués : `Mail.Send`, `User.Read`, `offline_access`, rien
+  d'autre (pas de lecture des boîtes). Refus si `Mail.Send` n'est pas accordé.
+- En base : adresse + jeton de renouvellement **chiffré** (Fernet, `MAILBOX_TOKEN_KEY`).
+  Jamais de mot de passe. Jeton renouvelé à chaque envoi ; jeton refusé → boîte « à relier
+  à nouveau ».
+- Envoi par Microsoft Graph `/me/sendMail` (copie dans « Éléments envoyés »), pièce jointe
+  jusqu'à 3 Mo. Si Microsoft refuse, l'e-mail n'est pas marqué envoyé et la case reste
+  inchangée. Journaux : code d'erreur seulement.
+- Branché d'abord sur l'e-mail TVA (D-042). Sans boîte reliée : e-mail enregistré seulement.
+- Mise en route (inscription de l'application dans Microsoft Entra, secret placé directement
+  dans le gestionnaire de secrets de l'hébergement) : `docs/OUTLOOK.md`. Nécessite l'outil
+  en ligne chez le cabinet.

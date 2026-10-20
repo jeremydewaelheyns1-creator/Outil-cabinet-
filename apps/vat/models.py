@@ -248,6 +248,7 @@ class VatMessage(models.Model):
         User, on_delete=models.SET_NULL, null=True, blank=True, related_name="+"
     )
     delivered = models.BooleanField("parti réellement", default=False)
+    sent_from = models.EmailField("envoyé depuis", blank=True)  # boîte Outlook (D-044)
 
     class Meta:
         verbose_name = "e-mail TVA au client"

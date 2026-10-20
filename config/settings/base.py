@@ -52,6 +52,7 @@ INSTALLED_APPS = [
     "apps.tasks",
     "apps.documents",
     "apps.vat",
+    "apps.outlook",
 ]
 
 MIDDLEWARE = [
@@ -191,6 +192,15 @@ IDENTITY_RENEWAL_DAYS = env.int("IDENTITY_RENEWAL_DAYS", default=30)
 INBOX_RETENTION_DAYS = env.int("INBOX_RETENTION_DAYS", default=30)
 # D-042 : vrai seulement quand la messagerie du cabinet est branchée (sinon : enregistré).
 OUTGOING_EMAIL_ENABLED = env.bool("OUTGOING_EMAIL_ENABLED", default=False)
+# D-044 : envoi depuis la boîte Outlook de chaque employé (Microsoft 365, droit d'envoi seul).
+# Les trois valeurs viennent de l'inscription de l'application dans Microsoft Entra ; le secret
+# est placé directement dans le gestionnaire de secrets de l'hébergement, jamais dans le dépôt.
+OUTLOOK_TENANT_ID = env("OUTLOOK_TENANT_ID", default="")
+OUTLOOK_CLIENT_ID = env("OUTLOOK_CLIENT_ID", default="")
+OUTLOOK_CLIENT_SECRET = env("OUTLOOK_CLIENT_SECRET", default="")
+OUTLOOK_TIMEOUT_SECONDS = env.int("OUTLOOK_TIMEOUT_SECONDS", default=20)
+# Clé qui chiffre les jetons Microsoft en base (Fernet). Vide : dérivée de DJANGO_SECRET_KEY.
+MAILBOX_TOKEN_KEY = env("MAILBOX_TOKEN_KEY", default="")
 
 DATA_UPLOAD_MAX_MEMORY_SIZE = 25 * 1024 * 1024
 FILE_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024

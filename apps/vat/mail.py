@@ -16,6 +16,7 @@ from apps.clients.models import ContactPoint
 from apps.core import events
 from apps.core.models import User
 from apps.core.templatetags.app_tags import euros
+from apps.outlook import graph
 
 from .models import Column, Status, VatFiling, VatMessage
 from .services import set_status
@@ -104,10 +105,20 @@ def send(message: VatMessage, user: User | None) -> None:
     if message.to not in addresses(message.filing):
         # Sécurité : jamais d'envoi à une adresse qui n'est pas sur la fiche du client.
         raise ValueError("Cette adresse n'est pas sur la fiche du client.")
+    message.attach_pdf = message.attach_pdf and bool(message.filing.pdf_id)
+    # D-044 : depuis la boîte Outlook de l'employé si elle est reliée. Si Microsoft refuse,
+    # rien n'est marqué comme envoyé.
+    link = graph.mailbox_for(user)
+    if link is not None:
+        try:
+            graph.send(link, to=message.to, subject=message.subject, body=message.body,
+                       attachments=_attachments(message))  # fmt: skip
+        except graph.MailboxError as error:
+            raise ValueError(str(error)) from error
+        message.delivered, message.sent_from = True, link.address
     with transaction.atomic():
         message.sent_at, message.sent_by = timezone.now(), user
-        message.attach_pdf = message.attach_pdf and bool(message.filing.pdf_id)
-        message.save(update_fields=["sent_at", "sent_by", "attach_pdf"])
+        message.save(update_fields=["sent_at", "sent_by", "attach_pdf", "delivered", "sent_from"])
         set_status(message.filing, Column.CLIENT, Status.DONE, user=user)
     events.emit(
         "vat.client_informed",
@@ -115,18 +126,24 @@ def send(message: VatMessage, user: User | None) -> None:
         actor=user,
         payload={"periode": message.filing.period_key, "piece_jointe": message.attach_pdf},
     )
-    if settings.OUTGOING_EMAIL_ENABLED:
+    if link is None and settings.OUTGOING_EMAIL_ENABLED:
         _deliver(message)
+
+
+def _attachments(message: VatMessage) -> list[graph.Attachment]:
+    pdf = message.filing.pdf
+    if not message.attach_pdf or pdf is None:
+        return []
+    with pdf.file.open("rb") as handle:
+        content = handle.read()
+    return [graph.Attachment(f"declaration-tva-{message.filing.period_key}.pdf", content)]
 
 
 def _deliver(message: VatMessage) -> None:
     """Envoi réel, seulement quand la messagerie du cabinet est branchée."""
     email = EmailMessage(message.subject, message.body, to=[message.to])
-    pdf = message.filing.pdf
-    if message.attach_pdf and pdf is not None:
-        with pdf.file.open("rb") as handle:
-            email.attach(f"declaration-tva-{message.filing.period_key}.pdf", handle.read(),
-                         "application/pdf")  # fmt: skip
+    for attachment in _attachments(message):
+        email.attach(attachment.name, attachment.content, attachment.content_type)
     email.send()
     message.delivered = True
     message.save(update_fields=["delivered"])

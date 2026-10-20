@@ -31,5 +31,6 @@ urlpatterns = [
     path("reprise/", include("apps.reprise.urls")),
     path("echeances/", include("apps.tasks.urls")),
     path("deposer/", include("apps.documents.inbox_urls")),
+    path("ma-boite-mail/", include("apps.outlook.urls")),
     path("", include("apps.core.urls")),
 ]

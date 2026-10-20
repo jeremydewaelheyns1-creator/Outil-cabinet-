@@ -18,6 +18,7 @@ from apps.core.capabilities import Capability
 from apps.core.http import AppRequest
 from apps.core.models import AccessLog
 from apps.core.permissions import require_capability
+from apps.outlook import graph
 
 from . import importer, mail, services
 from .models import COLUMN_HEADERS, Column, Status, VatFiling, VatMessage, VatPending
@@ -165,6 +166,8 @@ def _mail_response(request: AppRequest, filing: VatFiling, message: VatMessage,
             "message": message,
             "error": error,
             "addresses": mail.addresses(filing),
+            "mailbox": graph.mailbox_for(request.user),
+            "outlook_configured": graph.configured(),
         },
     )
     if message.sent_at is not None:
