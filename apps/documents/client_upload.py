@@ -90,6 +90,8 @@ def page(request: HttpRequest, token: str) -> HttpResponse:
         "demande": found,
         "is_card": found.kind == DocumentRequest.Kind.IDENTITY_CARD,
     }
+    if found.kind == DocumentRequest.Kind.SIGNATURE:
+        return _sign_page(request, found, token, context)
     if request.method == "POST":
         DocumentRequest.objects.filter(pk=found.pk).update(link_attempts=F("link_attempts") + 1)
         try:
@@ -102,3 +104,59 @@ def page(request: HttpRequest, token: str) -> HttpResponse:
                        details={"via": "lien client", "demande": found.reference})  # fmt: skip
             return _headers(render(request, "documents/public/thanks.html", context))
     return _headers(render(request, "documents/public/upload.html", context))
+
+
+# --- Signature en ligne (D-048) ---------------------------------------------------------------
+
+
+def _sign_page(
+    request: HttpRequest, found: DocumentRequest, token: str, context: dict[str, object]
+) -> HttpResponse:
+    from apps.core.audit import client_ip
+
+    from . import preview, signing
+
+    document = signing.awaiting_document(found)
+    if document is None:
+        return _headers(render(request, "documents/public/expired.html", status=404))
+    context.update({"document": document, "pages": range(1, preview.page_count(document) + 1),
+                    "token": token, "signer_name": found.client.contact_name})  # fmt: skip
+    if request.method == "POST":
+        DocumentRequest.objects.filter(pk=found.pk).update(link_attempts=F("link_attempts") + 1)
+        if request.POST.get("approve") != "1":
+            context["error"] = "Cochez la case pour confirmer que vous avez lu le document."
+        else:
+            try:
+                signed = signing.sign(
+                    found,
+                    signer_name=request.POST.get("signer_name", ""),
+                    signer_role=request.POST.get("signer_role", ""),
+                    signature_data_url=request.POST.get("signature", ""),
+                    ip=client_ip(request),
+                    user_agent=request.headers.get("User-Agent", ""),
+                )
+            except ValidationError as error:
+                context["error"] = " ".join(error.messages)
+            else:
+                details = {"via": "signature en ligne", "demande": found.reference}
+                log_access(request, AccessLog.Action.CREATE, signed, details=details)
+                context["signed"] = True
+                return _headers(render(request, "documents/public/thanks.html", context))
+        context["signer_name"] = request.POST.get("signer_name", "")
+        context["signer_role"] = request.POST.get("signer_role", "")
+    return _headers(render(request, "documents/public/sign.html", context))
+
+
+@login_not_required
+@require_http_methods(["GET"])
+def sign_page_image(request: HttpRequest, token: str, number: int) -> HttpResponse:
+    """Image d'une page du document à signer (seulement tant que le lien est valable)."""
+    from . import preview, signing
+
+    found = services.request_for_link(token)
+    document = signing.awaiting_document(found) if found is not None else None
+    rendered = preview.render_page(document, number) if document is not None else None
+    if rendered is None:
+        return _headers(HttpResponse(status=404))
+    content, content_type = rendered
+    return _headers(HttpResponse(content, content_type=content_type))

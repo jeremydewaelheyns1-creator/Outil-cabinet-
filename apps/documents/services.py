@@ -299,8 +299,10 @@ def _email_body(request: DocumentRequest, reminder: bool, sender: User | None) -
             "notre cabinet et n'attend plus que votre signature."
         )
         action = (
-            "Vous pourrez le consulter et le signer via ce lien sécurisé : "
-            "[lien de signature — disponible quand la signature en ligne sera branchée]"
+            f"Vous pouvez le relire et le signer en ligne, en quelques secondes, via ce lien "
+            f"personnel : {link}"
+            if link
+            else "Vous recevrez prochainement un lien pour le signer en ligne."
         )
     else:
         intro = (
@@ -363,8 +365,7 @@ def create_request(
             created_by=user,
             next_reminder_on=timezone.localdate() + timedelta(days=settings.REQUEST_REMINDER_DAYS),
         )
-        if kind != DocumentRequest.Kind.SIGNATURE:
-            open_link(request)
+        open_link(request)
         email = _prepare_email(request, OutgoingEmail.Kind.REQUEST)
     _deliver(email, user)
     events.emit(

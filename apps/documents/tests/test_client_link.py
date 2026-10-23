@@ -103,7 +103,82 @@ def test_reminder_keeps_the_same_link_and_extends_it():
     assert path in reminder.body and request.link_expires_at > before
 
 
-def test_signature_requests_have_no_upload_link():
+# --- Signature en ligne (D-048) ---------------------------------------------------------------
+
+
+def signature_png() -> str:
+    import base64
+
+    from PIL import ImageDraw
+
+    image = Image.new("RGBA", (400, 150), (255, 255, 255, 0))
+    draw = ImageDraw.Draw(image)
+    draw.line([(20, 120), (120, 30), (200, 110), (380, 40)], fill=(20, 36, 59, 255), width=4)
+    buffer = io.BytesIO()
+    image.save(buffer, format="PNG")
+    return "data:image/png;base64," + base64.b64encode(buffer.getvalue()).decode()
+
+
+def letter_sent_for_signature():
+    from apps.documents import generation
+
     company, _ = company_with_manager()
-    request = services.create_request(company, "signature", label="Lettre de mission à signer")
-    assert not request.link_hash and "depot-client" not in request.emails.get().body
+    draft = generation.generate(company, "lettre_mission")
+    request = generation.send_for_signature(draft)
+    return company, request, "/" + link_of(request)
+
+
+def test_signature_request_email_has_a_signing_link():
+    _, request, path = letter_sent_for_signature()
+    assert "signer en ligne" in request.emails.get().body and path.startswith("/depot-client/")
+
+
+def test_client_reads_and_signs_online(client):
+    from pypdf import PdfReader
+
+    from apps.documents.models import Signature
+
+    company, request, path = letter_sent_for_signature()
+    page = client.get(path).content.decode()
+    assert "Signer le document" in page and "page-1.png" in page
+    assert client.get(path + "page-1.png").status_code == 200
+    original = request.documents.get(state="awaiting_signature")
+    pages_before = len(PdfReader(original.file.open("rb")).pages)
+    data = {"signer_name": "Anne Fictif", "signer_role": "gérante",
+            "signature": signature_png(), "approve": "1"}  # fmt: skip
+    html = client.post(path, data).content.decode()
+    assert "signé" in html
+    request.refresh_from_db()
+    assert request.status == DocumentRequest.Status.RECEIVED
+    signed = Document.objects.get(client=company, case="lettre-de-mission", state="final")
+    assert len(PdfReader(signed.file.open("rb")).pages) == pages_before + 1  # + certificat
+    proof = Signature.objects.get()
+    assert proof.signer_name == "Anne Fictif" and proof.document == signed
+    assert len(proof.original_sha256) == 64 and proof.original_sha256 != proof.signed_sha256
+    original.refresh_from_db()
+    assert original.archived_at is not None  # la version envoyée reste aux archives
+    assert (
+        client.get(path).status_code == 404 and client.get(path + "page-1.png").status_code == 404
+    )
+
+
+def test_signing_needs_approval_name_and_a_real_signature(client):
+    _, request, path = letter_sent_for_signature()
+    html = client.post(path, {"signer_name": "Anne Fictif", "signature": signature_png()}).content
+    assert "Cochez la case" in html.decode()
+    blank = "data:image/png;base64," + __import__("base64").b64encode(
+        _blank_png()).decode()  # fmt: skip
+    html = client.post(path, {"signer_name": "Anne Fictif", "signature": blank,
+                              "approve": "1"}).content.decode()  # fmt: skip
+    assert "Signature trop courte" in html
+    html = client.post(path, {"signer_name": "Anne Fictif", "signature": "data:text/html,<b>",
+                              "approve": "1"}).content.decode()  # fmt: skip
+    assert "Signature manquante" in html
+    request.refresh_from_db()
+    assert request.status == DocumentRequest.Status.PENDING
+
+
+def _blank_png() -> bytes:
+    buffer = io.BytesIO()
+    Image.new("RGBA", (400, 150), (255, 255, 255, 0)).save(buffer, format="PNG")
+    return buffer.getvalue()

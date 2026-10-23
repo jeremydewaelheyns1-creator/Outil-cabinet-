@@ -832,3 +832,10 @@ a.badge:hover { text-decoration: none; filter: brightness(0.95); }
 .public-submit { width: 100%; margin-top: .9rem; padding: .7rem; font-size: 1rem; }
 .public-foot { max-width: 34rem; text-align: center; margin-top: 1rem; }
 .email-reply { margin-top: .3rem; padding-left: .6rem; border-left: 3px solid var(--primary-soft); }
+.sign-pages { display: grid; gap: .8rem; margin: 1rem 0; max-height: 70vh; overflow: auto; padding: .6rem; background: #e6e9ee; border-radius: 10px; }
+.sign-pages img { width: 100%; background: #fff; box-shadow: 0 2px 8px rgba(0, 0, 0, .12); }
+.sign-form label { display: block; margin: .6rem 0; font-weight: 600; font-size: .92rem; }
+.sign-form input[type="text"] { display: block; width: 100%; margin-top: .25rem; font-weight: 400; }
+.sign-pad-label { display: flex; justify-content: space-between; align-items: center; font-weight: 600; font-size: .92rem; margin-top: .8rem; }
+.sign-pad { display: block; width: 100%; height: 180px; margin-top: .3rem; border: 2px dashed var(--border); border-radius: 10px; background: #fff; touch-action: none; cursor: crosshair; }
+.sign-form .sign-approve { display: flex; gap: .5rem; align-items: flex-start; font-weight: 500; }

@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Certificat de signature</title>
+<style>
+  @page { size: A4; margin: 20mm; }
+  body { font-family: "DejaVu Sans", sans-serif; font-size: 9.5pt; color: #1b2430; line-height: 1.45; }
+  h1 { font-size: 14pt; color: #fff; background: #14243b; padding: 8px 12px; margin: 0 0 14px; }
+  table { width: 100%; border-collapse: collapse; margin-bottom: 14px; }
+  th, td { border: 1px solid #c9d1dc; padding: 5px 8px; text-align: left; vertical-align: top; }
+  th { width: 34%; background: #eef2f7; font-weight: normal; color: #444; }
+  .sig { border: 1px solid #2e8b57; background: #f7fcf9; padding: 10px; text-align: center; margin: 10px 0 14px; }
+  .sig img { max-height: 110px; max-width: 100%; }
+  .mono { font-family: "DejaVu Sans Mono", monospace; font-size: 8pt; word-break: break-all; }
+  .note { color: #555; font-size: 8.5pt; }
+</style>
+</head>
+<body>
+  <h1>Certificat de signature électronique</h1>
+  <p>Ce certificat fait partie du document qui le précède. Il atteste sa signature en ligne par le client, via le lien personnel envoyé par {{ cabinet }}.</p>
+  <table>
+    <tr><th>Document</th><td>{{ title }}</td></tr>
+    <tr><th>Dossier</th><td>{{ client }}</td></tr>
+    <tr><th>Référence de la demande</th><td>{{ reference }}</td></tr>
+    <tr><th>Envoyé à</th><td>{{ recipient|default:"—" }}</td></tr>
+    <tr><th>Signé par</th><td><strong>{{ signer_name }}</strong>{% if signer_role %}, {{ signer_role }}{% endif %}</td></tr>
+    <tr><th>Date et heure</th><td>{{ signed_at|date:"d/m/Y à H:i:s" }} (heure de Bruxelles)</td></tr>
+    <tr><th>Adresse IP</th><td>{{ ip|default:"—" }}</td></tr>
+    <tr><th>Déclaration</th><td>« J'ai lu le document ci-dessus et je l'approuve. »</td></tr>
+  </table>
+  <div class="sig"><img src="{{ signature_uri }}" alt="Signature"></div>
+  <table>
+    <tr><th>Empreinte du document lu (SHA-256)</th><td class="mono">{{ original_sha256 }}</td></tr>
+  </table>
+  <p class="note">Signature électronique simple (dessinée), avec piste d'audit conservée par {{ cabinet }}. L'empreinte permet de vérifier que le document n'a pas été modifié depuis sa lecture par le signataire.</p>
+</body>
+</html>

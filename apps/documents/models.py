@@ -252,3 +252,31 @@ class InboxItem(models.Model):
 
     def __str__(self) -> str:
         return self.original_name
+
+
+class Signature(models.Model):
+    """Preuve d'une signature en ligne par le client (D-048).
+
+    Signature électronique « simple » (dessinée), avec piste d'audit : qui, quand, d'où, et
+    l'empreinte du document lu puis du document signé (toute modification se verrait).
+    """
+
+    request = models.ForeignKey(
+        DocumentRequest, on_delete=models.PROTECT, related_name="signatures"
+    )
+    document = models.ForeignKey(Document, on_delete=models.PROTECT, related_name="signatures")
+    signer_name = models.CharField("signataire", max_length=150)
+    signer_role = models.CharField("qualité", max_length=100, blank=True)
+    signed_at = models.DateTimeField("signé le", default=timezone.now)
+    ip_address = models.GenericIPAddressField("adresse IP", null=True, blank=True)
+    user_agent = models.CharField("navigateur", max_length=255, blank=True)
+    original_sha256 = models.CharField("empreinte du document lu", max_length=64)
+    signed_sha256 = models.CharField("empreinte du document signé", max_length=64)
+
+    class Meta:
+        verbose_name = "signature en ligne"
+        verbose_name_plural = "signatures en ligne"
+        ordering: ClassVar = ["-signed_at"]
+
+    def __str__(self) -> str:
+        return f"{self.signer_name} — {self.signed_at:%d/%m/%Y}"

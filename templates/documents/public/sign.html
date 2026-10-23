@@ -1,0 +1,24 @@
+{% extends "documents/public/_layout.html" %}
+{% load static %}
+{% block head_title %}Signature en ligne{% endblock %}
+{% block public %}
+<h1>Signature en ligne</h1>
+<p>Document à signer : <strong>{{ document.title }}</strong></p>
+<p class="small muted">Lisez le document ci-dessous (touchez une page pour l'agrandir), puis signez en bas.</p>
+<div class="sign-pages">
+  {% for n in pages %}<a href="{% url 'depot_client:page_image' token n %}" target="_blank" rel="noopener" title="Agrandir"><img src="{% url 'depot_client:page_image' token n %}" alt="Page {{ n }}" loading="lazy"></a>{% empty %}<p class="muted">Aperçu indisponible.</p>{% endfor %}
+</div>
+{% if error %}<p class="alert alert-error">{{ error }}</p>{% endif %}
+<form method="post" class="sign-form" data-sign-form>{% csrf_token %}
+  <label>Vos nom et prénom<input type="text" name="signer_name" value="{{ signer_name }}" maxlength="150" required autocomplete="name"></label>
+  <label>Votre qualité <span class="muted small">(par ex. gérant, administrateur — facultatif)</span><input type="text" name="signer_role" value="{{ signer_role|default:'' }}" maxlength="100"></label>
+  <div class="sign-pad-label">Votre signature <button type="button" class="link-button small" data-sign-clear>Effacer</button></div>
+  <canvas class="sign-pad" data-sign-pad aria-label="Cadre de signature : dessinez avec le doigt ou la souris"></canvas>
+  <input type="hidden" name="signature" data-sign-value>
+  <label class="sign-approve"><input type="checkbox" name="approve" value="1" required> J'ai lu le document et je l'approuve.</label>
+  <button type="submit" class="public-submit">Signer le document</button>
+  <p class="small muted">Signature électronique : la date, l'heure et l'empreinte du document sont ajoutées sur une page de certificat. Une copie signée vous sera envoyée par e-mail.</p>
+</form>
+<p class="small muted">Référence : {{ demande.reference }}</p>
+{% endblock %}
+{% block extra_body %}{{ block.super }}<script src="{% static 'js/signature.js' %}" defer></script>{% endblock %}
