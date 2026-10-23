@@ -28,6 +28,7 @@
               {% if row.person %}<input type="hidden" name="person" value="{{ row.person.pk }}">{% endif %}
               <button type="submit" class="small">{% if row.document %}Mettre à jour{% else %}Générer{% endif %}</button></form>
           {% endif %}
+          {% if row.doc_type.slug == "fiche_risque" %}<a class="small" href="{% url 'clients:risk_sheet' client.pk %}"><strong>{% if row.document %}Réviser avec la fiche guidée{% else %}Remplir la fiche guidée{% endif %}</strong></a> · {% endif %}
           <a class="small" href="?type={{ row.doc_type.slug }}{% if row.person %}&amp;personne={{ row.person.pk }}{% endif %}#ajouter">{% if row.document %}Remplacer{% else %}Ajouter{% endif %}</a>
         {% endif %}
       </td>

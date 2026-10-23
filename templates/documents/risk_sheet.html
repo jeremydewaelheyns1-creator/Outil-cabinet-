@@ -1,0 +1,46 @@
+{% extends "clients/sections/_base.html" %}
+{% block head_title %}Fiche de risque · {{ client.display_name }}{% endblock %}
+{% block page_title %}<a href="{% url 'clients:documents' client.pk %}" class="muted">Documents</a> › <a href="{% url 'clients:document_case' client.pk 'fiche-risque' %}" class="muted">Fiche de risque</a> › Remplir{% endblock %}
+{% block content %}
+<section class="card">
+  <div class="card-header"><h2>Fiche de détermination du niveau de risque</h2></div>
+  <p class="small muted" style="margin-top:0">L'outil a pré-rempli les réponses qu'il pouvait déduire du dossier (BCE, structure de détention, pays, ancienneté). Vérifiez-les et répondez aux autres. Le niveau et la date de la prochaine révision sont calculés à l'enregistrement : faible → {{ review_years.low }} ans, moyen → {{ review_years.medium }} ans, élevé → {{ review_years.high }} an (validation de l'AMLCO).</p>
+  {% if can_edit %}
+  <form method="post" class="risk-form">
+    {% csrf_token %}
+    <table class="table risk-table">
+      <thead><tr><th>Question</th><th class="nowrap">Réponse</th><th>Ce que l'outil a vérifié</th></tr></thead>
+      <tbody>
+      {% for p, value in proposals %}
+        <tr{% if not value %} class="risk-open"{% endif %}>
+          <td>{{ p.question.text }}{% if p.question.forces_high %} <span class="badge badge-danger" title="Un « oui » rend le risque élevé">décisif</span>{% endif %}<div class="small muted">{{ p.question.help }}</div></td>
+          <td class="nowrap">
+            <label><input type="radio" name="{{ p.question.key }}" value="oui"{% if value == "oui" %} checked{% endif %} required> Oui</label>
+            <label><input type="radio" name="{{ p.question.key }}" value="non"{% if value == "non" %} checked{% endif %}> Non</label>
+          </td>
+          <td class="small">{% if p.answer is None %}<span class="badge badge-warning">à répondre</span> {% endif %}{{ p.reason }}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    <label class="small" for="risk-comment">Commentaire (facultatif)</label>
+    <textarea id="risk-comment" name="commentaire" rows="3" maxlength="2000" style="width:100%">{{ request.POST.commentaire }}</textarea>
+    <p><button type="submit">Calculer et enregistrer la fiche</button></p>
+  </form>
+  {% endif %}
+</section>
+{% if history %}
+<section class="card">
+  <div class="card-header"><h2>Fiches précédentes</h2></div>
+  <table class="table">
+    <thead><tr><th>Date</th><th>Niveau</th><th>Révision</th><th>Établie par</th><th>AMLCO</th></tr></thead>
+    <tbody>
+    {% for a in history %}
+      <tr><td>{{ a.created_at|date:"d/m/Y" }}</td><td>{{ a.get_level_display }} ({{ a.score }} pts)</td><td>{{ a.next_review|date:"d/m/Y" }}</td><td>{{ a.created_by|default:"—" }}</td>
+        <td>{% if a.level == "high" %}{% if a.approved_at %}validée le {{ a.approved_at|date:"d/m/Y" }}{% elif can_decide %}<form method="post" action="{% url 'clients:risk_approve' client.pk a.pk %}" class="inline">{% csrf_token %}<button type="submit" class="small">Valider</button></form>{% else %}en attente{% endif %}{% else %}—{% endif %}</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</section>
+{% endif %}
+{% endblock %}

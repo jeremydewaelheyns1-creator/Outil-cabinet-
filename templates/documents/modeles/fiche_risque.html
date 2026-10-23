@@ -1,0 +1,22 @@
+{% extends "documents/modeles/_base.html" %}
+{% block body %}
+  <table>
+    <tr><th>Client</th><td>{{ client.display_name }}{% if client.enterprise_number %} — BE {{ client.enterprise_number_display }}{% endif %}</td></tr>
+    <tr><th>Niveau de risque</th><td><strong>{{ assessment.get_level_display }}</strong> ({{ assessment.score }} points)</td></tr>
+    <tr><th>Prochaine révision</th><td>{{ assessment.next_review|date:"d/m/Y" }}</td></tr>
+    <tr><th>Établie par</th><td>{{ author|default:"—" }}, le {{ today|date:"d/m/Y" }}</td></tr>
+    {% if assessment.level == "high" %}<tr><th>Validation AMLCO</th><td>{% if assessment.approved_at %}{{ assessment.approved_by }}, le {{ assessment.approved_at|date:"d/m/Y" }}{% else %}en attente{% endif %}</td></tr>{% endif %}
+  </table>
+  <h2>Facteurs de risque</h2>
+  <table class="list">
+    <tr><th>Question</th><th style="width:12%">Réponse</th><th style="width:34%">Élément vérifié</th></tr>
+    {% for question, answer, reason in rows %}
+      <tr><td>{{ question.text }}</td><td>{% if answer %}<strong>Oui</strong> (+{{ question.points }}){% else %}Non{% endif %}</td><td class="muted">{{ reason }}</td></tr>
+    {% endfor %}
+  </table>
+  {% if assessment.comment %}<h2>Commentaire</h2><p>{{ assessment.comment|linebreaksbr }}</p>{% endif %}
+  <h2>Mesures de vigilance</h2>
+  <p>{% if assessment.level == "high" %}Vigilance accrue : acceptation par l'AMLCO, informations complémentaires sur l'origine des fonds, suivi renforcé et révision au moins annuelle.{% elif assessment.level == "medium" %}Vigilance normale : mise à jour des données d'identification et de cette fiche à la date de révision, ou plus tôt en cas de changement.{% else %}Vigilance simplifiée possible : mise à jour à la date de révision, ou plus tôt en cas de changement.{% endif %}</p>
+  <p class="muted" style="font-size:8.5pt">Base : loi du 18 septembre 2017 (art. 19, annexes I à III) et norme ITAA anti-blanchiment. Barème de l'outil, à valider par l'AMLCO du cabinet.</p>
+{% endblock %}
+{% block signatures %}{% endblock %}

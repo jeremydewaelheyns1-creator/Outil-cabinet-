@@ -1,5 +1,6 @@
 from django.urls import path
 
+from apps.documents import risk_views
 from apps.documents import views as document_views
 from apps.tasks import views as task_views
 from apps.vat import views as vat_views
@@ -98,6 +99,12 @@ urlpatterns = [
         "<int:pk>/documents/carte/<int:card_id>/annuler/",
         document_views.identity_undo,
         name="identity_undo",
+    ),
+    path("<int:pk>/documents/fiche-risque/remplir/", risk_views.risk_sheet, name="risk_sheet"),
+    path(
+        "<int:pk>/documents/fiche-risque/<int:assessment_id>/valider/",
+        risk_views.risk_approve,
+        name="risk_approve",
     ),
     path("<int:pk>/documents/<slug:slug>/", document_views.case_page, name="document_case"),
     # Actions

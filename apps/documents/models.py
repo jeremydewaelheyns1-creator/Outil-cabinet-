@@ -280,3 +280,43 @@ class Signature(models.Model):
 
     def __str__(self) -> str:
         return f"{self.signer_name} — {self.signed_at:%d/%m/%Y}"
+
+
+class RiskAssessment(models.Model):
+    """Fiche de détermination du niveau de risque, remplie avec l'outil (D-049)."""
+
+    class Level(models.TextChoices):
+        LOW = "low", "Faible"
+        MEDIUM = "medium", "Moyen"
+        HIGH = "high", "Élevé"
+
+    client = models.ForeignKey(Client, on_delete=models.PROTECT, related_name="risk_assessments")
+    answers = models.JSONField("réponses", default=dict)
+    score = models.PositiveSmallIntegerField("points")
+    level = models.CharField("niveau", max_length=10, choices=Level.choices)
+    next_review = models.DateField("prochaine révision")
+    comment = models.TextField("commentaire", blank=True)
+    document = models.ForeignKey(
+        Document, on_delete=models.SET_NULL, null=True, blank=True, related_name="+"
+    )
+    created_at = models.DateTimeField("établie le", default=timezone.now)
+    created_by = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True, related_name="+"
+    )
+    # Risque élevé : acceptation au niveau hiérarchique adéquat (norme ITAA, point 4.2).
+    approved_at = models.DateTimeField("validée par l'AMLCO le", null=True, blank=True)
+    approved_by = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True, related_name="+"
+    )
+
+    class Meta:
+        verbose_name = "évaluation du risque"
+        verbose_name_plural = "évaluations du risque"
+        ordering: ClassVar = ["-created_at"]
+
+    def __str__(self) -> str:
+        return f"{self.client} — {self.get_level_display()} ({self.created_at:%d/%m/%Y})"
+
+    @property
+    def awaiting_approval(self) -> bool:
+        return self.level == self.Level.HIGH and self.approved_at is None

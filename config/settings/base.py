@@ -188,6 +188,10 @@ REQUEST_LINK_DAYS = env.int("REQUEST_LINK_DAYS", default=14)
 REQUEST_LINK_MAX_ATTEMPTS = env.int("REQUEST_LINK_MAX_ATTEMPTS", default=10)
 # Adresse publique de l'outil (liens dans les e-mails). Réglée par l'installateur.
 SITE_URL = env("SITE_URL", default="http://localhost:8000")
+# D-049 : révision de la fiche de risque selon le niveau (années). Valeurs proposées, à
+# valider par l'AMLCO : la norme ITAA demande une mise à jour « à intervalles réguliers »
+# selon le risque ; l'AMLR (2027) : au moins chaque année si élevé, tous les 5 ans sinon.
+RISK_REVIEW_YEARS = {"low": 5, "medium": 3, "high": 1}
 REQUEST_MAX_REMINDERS = env.int("REQUEST_MAX_REMINDERS", default=2)
 # Pièces d'identité (D-035) : lecture locale des lignes « machine » (Tesseract, sur le serveur
 # du cabinet) et demande de la nouvelle carte N jours avant expiration.

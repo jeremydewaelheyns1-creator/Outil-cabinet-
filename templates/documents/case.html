@@ -105,6 +105,12 @@
       </details>
     {% endif %}
   {% elif rows is not None %}
+    {% if risk_pending %}
+      <div class="identity-review"><strong>Risque élevé : validation de l'AMLCO requise</strong>
+        <div class="small muted">Fiche du {{ risk_pending.created_at|date:"d/m/Y" }} ({{ risk_pending.score }} points). La relation ne peut être acceptée ou poursuivie qu'avec son accord (norme ITAA, point 4.2).</div>
+        {% if can_decide %}<form method="post" action="{% url 'clients:risk_approve' client.pk risk_pending.pk %}" class="inline">{% csrf_token %}<button type="submit" class="small">Valider (AMLCO)</button></form>{% endif %}
+      </div>
+    {% endif %}
     {% include "documents/_rows.html" %}
     {% include "documents/_upload.html" with with_type=True with_person=True %}
   {% else %}

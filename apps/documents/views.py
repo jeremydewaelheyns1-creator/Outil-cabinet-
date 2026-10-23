@@ -166,6 +166,10 @@ def case_page(request: AppRequest, pk: int, slug: str) -> HttpResponse:
                     "person": request.GET.get("personne") or None,
                 },
             )
+        if slug == "fiche-risque":
+            latest = client.risk_assessments.first()
+            context["risk_pending"] = latest if latest and latest.awaiting_approval else None
+            context["can_decide"] = request.user.has_capability(Capability.AML_DECIDE)
         if slug == "a-recevoir":
             context["requests"] = services.pending_requests(client)
             context["request_form"] = RequestForm(client=client)
