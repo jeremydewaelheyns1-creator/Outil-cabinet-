@@ -1,5 +1,21 @@
 # Journal des sessions
 
+## Session — 23 octobre 2026 : paperasse anti-blanchiment (mandat « révolutionne tout »)
+
+**Fait** (D-048 à D-051)
+- Signature en ligne par le client (certificat, preuve, copie par e-mail).
+- Fiche de risque guidée (pré-remplie, niveau, révision, validation AMLCO, PDF).
+- Documents obsolètes repérés + échéances automatiques (fiche de risque, extrait UBO).
+- Menu « Conformité » + demande groupée (un e-mail, un lien, une relance par client).
+
+**À valider par Jeremy / l'AMLCO**
+- Barème de la fiche de risque, liste des secteurs sensibles et des pays, durées de révision.
+- Entrée « Conformité » dans le menu principal (pas un onglet du dossier).
+- Signature qualifiée (itsme/eID) : utile ? (prestataire payant).
+
+**Reste proposé, non fait** : mises à jour automatiques, onglets Clôture / Versements
+anticipés / Facturation, documents RGPD, modèles du cabinet (lettre de mission, procuration).
+
 ## Session — 20 octobre 2026 : TVA, dépôt unique, Outlook, mise en ligne
 
 **Fait** (décisions D-039 à D-044)

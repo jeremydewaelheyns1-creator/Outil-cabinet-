@@ -3,6 +3,21 @@
 Ce qui a été ajouté à l'outil, du plus récent au plus ancien. Toutes les données de la démo
 sont inventées.
 
+## 23 octobre 2026 — La paperasse anti-blanchiment en pilote automatique
+
+- **Signature en ligne** : le client reçoit un lien, lit le document sur son téléphone, signe
+  du doigt. Le document signé (avec son certificat) se range seul et le client en reçoit une
+  copie.
+- **Fiche de risque guidée** : l'outil pré-remplit ce qu'il sait (activité BCE, pays,
+  structure), calcule le niveau et la date de la prochaine révision, et fabrique le PDF.
+  Risque élevé : validation de l'AMLCO.
+- **Documents à mettre à jour** : si l'adresse, les mandataires ou les bénéficiaires changent,
+  le document concerné passe en orange, et une échéance est créée pour le gestionnaire. Idem
+  pour la fiche de risque et l'extrait UBO qui expirent.
+- **Nouvel écran « Conformité »** : tous les dossiers, ce qui manque, et un bouton pour tout
+  demander aux clients — **un seul e-mail, un seul lien** par client pour déposer les cartes
+  et signer les documents.
+
 ## 20 octobre 2026 — Archives des courriels plus claires
 
 - Une demande annulée disparaît des archives « Courriels ».

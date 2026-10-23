@@ -411,3 +411,48 @@ Demande de Jeremy.
   « Courriels ». L'annulation reste dans l'historique du dossier.
 - Sous chaque e-mail de demande archivé, la pièce renvoyée par le client (par le lien
   sécurisé) s'affiche avec sa date de réception et s'ouvre dans le visualiseur.
+
+## D-048 — Signature en ligne des documents par le client
+Mandat de Jeremy (« fais-le pour tout le reste »).
+- Un document à signer (lettre de mission, déclaration UBO, procuration) part avec le lien
+  personnel de D-046. Le client lit les pages (images, rien à télécharger), dessine sa
+  signature, coche « J'ai lu et j'approuve ».
+- L'outil vérifie la signature (vraie image, assez d'encre, taille limitée) et la redessine,
+  ajoute au document **inchangé** une page « certificat de signature » (qui, quand, adresse IP,
+  empreinte SHA-256 du document lu), range le document signé (l'envoyé reste aux archives),
+  garde la preuve (`Signature`) et envoie une copie au client depuis la boîte Outlook.
+- Valeur : signature électronique simple (Code civil, livre 8 ; eIDAS), appréciée par le juge,
+  renforcée par la piste d'audit. Une signature qualifiée (itsme, eID) pourra venir plus tard
+  par un prestataire agréé (coût par signature) — à décider par Jeremy.
+
+## D-049 — Fiche de risque guidée
+- 11 questions tirées de la loi du 18/09/2017 (annexes I à III) et de la norme ITAA. L'outil
+  propose une réponse quand il sait (activité BCE dans un secteur sensible, pays, structure de
+  détention, ancienneté, fiche précédente) et dit pourquoi ; le reste est « à répondre ».
+- Points → faible (0-2), moyen (3-5), élevé (6+). PPE, pays à haut risque, prête-noms :
+  élevé d'office. Révision : faible 5 ans, moyen 3 ans, élevé 1 an (`RISK_REVIEW_YEARS`),
+  alignées sur le futur règlement européen (AMLR 2027).
+- Le PDF est rangé dans la case « Fiche de risque » avec sa date d'expiration = prochaine
+  révision. Risque élevé : en attente de la validation de l'AMLCO (droit « aml.decide »),
+  bouton « Valider » ; un AMLCO qui remplit la fiche la valide d'office.
+- Barème, secteurs et pays sont des points de départ **à valider par l'AMLCO du cabinet**.
+
+## D-050 — Documents obsolètes et suivi de ce qui expire
+- Un document produit par l'outil garde une empreinte (HMAC, sans numéro national) de chaque
+  partie du dossier utilisée. Si l'adresse, les mandataires, les bénéficiaires… changent, la
+  ligne passe en orange « À mettre à jour : adresse modifiée depuis ».
+- Chaque jour : une échéance « Anti-blanchiment » est créée pour le gestionnaire quand une
+  fiche de risque ou un extrait UBO expire dans les 60 jours, ou qu'un document est obsolète.
+  Elle se ferme seule quand le document est remplacé. Les cartes d'identité restent demandées
+  directement au client (D-035).
+
+## D-051 — Tableau « Conformité » et demande groupée
+- Nouvelle entrée du menu principal « Conformité » (pas un onglet du dossier) : tous les
+  dossiers visibles, ce qui manque (rouge), ce qui expire (orange), et ce que l'outil peut
+  demander tout de suite. Filtre « Mes dossiers / Tout le cabinet ».
+- « Demander » : **un seul e-mail et un seul lien par client** pour toutes les pièces
+  (cartes d'identité + documents préparés à signer). La page du lien liste les documents ;
+  le client dépose et signe en une ou plusieurs fois. Une seule relance pour le tout, qui ne
+  cite que ce qui manque encore. La demande se clôture quand tout est reçu.
+- Un document jamais préparé n'est jamais envoyé d'office : il faut le générer et le relire.
+- Le même bouton existe dans la case « À recevoir » du dossier.
