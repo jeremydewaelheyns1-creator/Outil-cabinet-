@@ -165,7 +165,10 @@ def archive_replaced(client: Client, case: str, doc_type: str, person: Client | 
     )
     if doc_type == types.CARD or (doc_type in types.BY_SLUG and types.BY_SLUG[doc_type].per):
         current = current.filter(person=person)
-    current.update(case="", folder=folder, archived_at=timezone.now())
+    if current.update(case="", folder=folder, archived_at=timezone.now()):
+        from .freshness import close_resolved
+
+        close_resolved(client)  # la tâche « réviser / mettre à jour » se ferme seule
 
 
 def current_documents(client: Client, case: str) -> list[Document]:

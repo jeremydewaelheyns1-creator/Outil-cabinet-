@@ -173,6 +173,13 @@ def rows(client: Client, case: str) -> list[Row]:
                 None,
             )
             level, text = _situation(doc_type, document, today)
+            if document is not None and document.data_fingerprint and level != "danger":
+                from .freshness import changes
+
+                changed = changes(document, client)
+                if changed:
+                    level = "warning"
+                    text = f"À mettre à jour : {', '.join(changed)} modifié depuis"
             result.append(Row(doc_type, person, document, level, text, draft))
     return result
 

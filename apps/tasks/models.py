@@ -47,6 +47,7 @@ class Task(models.Model):
         CORPORATE_TAX = "isoc", "Impôt des sociétés"
         PERSONAL_TAX = "ipp", "Impôt des personnes physiques"
         LEGAL = "juridique", "Juridique"
+        AML = "aml", "Anti-blanchiment"
         OTHER = "autre", "Autre"
 
     OPEN_STATUSES: ClassVar[tuple[str, ...]] = (

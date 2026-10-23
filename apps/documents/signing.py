@@ -139,7 +139,8 @@ def sign(
     document = receive(request, upload)
     label = types.BY_SLUG[request.doc_type].label if request.doc_type in types.BY_SLUG else ""
     document.title = f"{label or original_doc.title} — signé le {signed_at:%d/%m/%Y}"[:200]
-    document.save(update_fields=["title"])
+    document.data_fingerprint = original_doc.data_fingerprint  # mêmes données que l'original
+    document.save(update_fields=["title", "data_fingerprint"])
     Signature.objects.create(
         request=request, document=document, signer_name=signer_name,
         signer_role=signer_role.strip()[:100], signed_at=signed_at, ip_address=ip,

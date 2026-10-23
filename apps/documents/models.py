@@ -121,6 +121,8 @@ class Document(models.Model):
     original_name = models.CharField("nom du fichier", max_length=255)
     content_type = models.CharField(max_length=100)
     size = models.PositiveIntegerField("taille")
+    # Empreinte des données du dossier utilisées par un document produit par l'outil (D-050).
+    data_fingerprint = models.JSONField("empreinte des données", default=dict, blank=True)
     sha256 = models.CharField(max_length=64)
     uploaded_at = models.DateTimeField("ajouté le", default=timezone.now)
     uploaded_by = models.ForeignKey(

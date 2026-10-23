@@ -5,7 +5,8 @@ peu coûteux). Cloud Scheduler lance donc cette commande toutes les 5 minutes (t
 Cloud Run « jobs ») :
 1. les événements restés en échec ou en attente sont retraités ;
 2. les fichiers de reprise déposés depuis plus de 24 heures sans suite sont effacés ;
-3. une fois par jour, les échéances manquantes sont générées ;
+3. une fois par jour, les échéances manquantes sont générées, ainsi que les tâches pour les
+   documents qui expirent ou ne sont plus à jour (D-050) ;
 4. les travaux de la file procrastinate sont exécutés jusqu'à ce qu'elle soit vide.
 """
 
@@ -15,7 +16,7 @@ from django.core.management import call_command
 from django.core.management.base import BaseCommand
 
 from apps.core import events
-from apps.documents import identity, inbox
+from apps.documents import freshness, identity, inbox
 from apps.documents import services as documents
 from apps.integrations import official
 from apps.reprise.models import purge_stale_uploads
@@ -32,6 +33,7 @@ class Command(BaseCommand):
         run = generate_all_if_due()
         if run is not None:
             self.stdout.write(f"Échéances : {run.created} créées, {run.removed} retirées")
+            self.stdout.write(f"Documents à revoir : {freshness.follow_up()} tâches créées")
         self.stdout.write(f"Relances préparées : {documents.send_due_reminders()}")
         self.stdout.write(f"Cartes d'identité demandées : {identity.request_renewals()}")
         self.stdout.write(f"Fichiers non classés effacés : {inbox.purge()}")

@@ -30,7 +30,7 @@ from apps.clients.models import Client, Relation
 from apps.core import events
 from apps.core.models import User
 
-from . import types
+from . import freshness, types
 from .models import Document, DocumentRequest
 
 
@@ -129,6 +129,7 @@ def generate(
             size=len(content),
             sha256=hashlib.sha256(content).hexdigest(),
             uploaded_by=user,
+            data_fingerprint=freshness.fingerprint(client, doc_type, person),
         )
         document.file.save("document", ContentFile(content), save=False)
         document.save()
