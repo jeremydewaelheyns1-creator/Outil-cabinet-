@@ -14,6 +14,7 @@ import hashlib
 import secrets
 from dataclasses import dataclass
 from datetime import date, timedelta
+from typing import Any
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
@@ -281,7 +282,22 @@ def _email_body(request: DocumentRequest, reminder: bool, sender: User | None) -
         until = timezone.localtime(request.link_expires_at) if request.link_expires_at else None
         valid = f" (valable jusqu'au {until:%d/%m/%Y})" if until else ""
         link = f"{upload_url(request)}{valid}"
-    if request.kind == DocumentRequest.Kind.IDENTITY_CARD:
+    if request.kind == DocumentRequest.Kind.BUNDLE:
+        items = request.items.filter(status=DocumentRequest.Status.PENDING).order_by("title")
+        listing = "\n".join(f"  • {item.title}" for item in items)
+        intro = (
+            "Petit rappel : il nous manque encore les documents suivants pour votre dossier :"
+            if reminder
+            else "Pour tenir votre dossier à jour, comme la loi anti-blanchiment du 18 septembre "
+            "2017 nous y oblige, nous avons besoin des documents suivants :"
+        ) + f"\n\n{listing}"
+        action = (
+            "Tout se fait au même endroit, en toute sécurité, via ce lien personnel : "
+            f"{link}\n\nVous pouvez y déposer les pièces (une photo suffit) et signer les "
+            "documents en ligne, en une ou plusieurs fois. Pour protéger vos données, merci de "
+            "ne pas nous les envoyer par e-mail."
+        )
+    elif request.kind == DocumentRequest.Kind.IDENTITY_CARD:
         intro = (
             f"Petit rappel : nous n'avons pas encore reçu la carte d'identité de {who}."
             if reminder
@@ -356,7 +372,11 @@ def create_request(
     label: str = "",
     user: User | None = None,
     doc_type: str = "",
+    bundle: DocumentRequest | None = None,
 ) -> DocumentRequest:
+    """Une demande au client. Dans une demande groupée (`bundle`), pas d'e-mail ni de relance
+    propres : c'est la demande groupée qui écrit au client et relance (D-051)."""
+    reminder = timezone.localdate() + timedelta(days=settings.REQUEST_REMINDER_DAYS)
     with transaction.atomic():
         request = DocumentRequest.objects.create(
             client=client,
@@ -364,13 +384,15 @@ def create_request(
             person=person,
             doc_type=doc_type,
             title=_title(kind, person, label, doc_type),
-            recipient=_recipient(client),
+            recipient=bundle.recipient if bundle else _recipient(client),
             created_by=user,
-            next_reminder_on=timezone.localdate() + timedelta(days=settings.REQUEST_REMINDER_DAYS),
+            next_reminder_on=None if bundle else reminder,
+            bundle=bundle,
         )
         open_link(request)
-        email = _prepare_email(request, OutgoingEmail.Kind.REQUEST)
-    _deliver(email, user)
+        email = None if bundle else _prepare_email(request, OutgoingEmail.Kind.REQUEST)
+    if email is not None:
+        _deliver(email, user)
     events.emit(
         "document_request.created",
         subject=client,
@@ -412,6 +434,8 @@ def receive(
         request.closed_at = timezone.now()
         request.next_reminder_on = None
         request.save(update_fields=["status", "closed_at", "next_reminder_on"])
+        if request.bundle is not None:
+            close_bundle_if_done(request.bundle)
     events.emit(
         "document_request.received",
         subject=request.client,
@@ -419,6 +443,59 @@ def receive(
         payload={"request": str(request.pk), "document": str(document.pk)},
     )
     return document
+
+
+def close_bundle_if_done(bundle: DocumentRequest) -> None:
+    """La demande groupée se clôture quand plus aucune de ses pièces n'est attendue."""
+    if bundle.status != DocumentRequest.Status.PENDING:
+        return
+    if bundle.items.filter(status=DocumentRequest.Status.PENDING).exists():
+        return
+    received = bundle.items.filter(status=DocumentRequest.Status.RECEIVED).exists()
+    bundle.status = (
+        DocumentRequest.Status.RECEIVED if received else DocumentRequest.Status.CANCELLED
+    )
+    bundle.closed_at = timezone.now()
+    bundle.next_reminder_on = None
+    bundle.save(update_fields=["status", "closed_at", "next_reminder_on"])
+
+
+def create_bundle(
+    client: Client, items: list[tuple[str, Any]], *, user: User | None = None
+) -> DocumentRequest:
+    """Plusieurs pièces demandées en un seul e-mail et un seul lien (D-051).
+
+    `items` : (« carte », personne) ou (« signature », brouillon à faire signer).
+    """
+    from .generation import send_for_signature
+
+    if not items:
+        raise ValueError("Rien à demander.")
+    recipient = _recipient(client)
+    if not recipient:
+        raise ValidationError("Aucune adresse e-mail dans la fiche du client.")
+    with transaction.atomic():
+        bundle = DocumentRequest.objects.create(
+            client=client, kind=DocumentRequest.Kind.BUNDLE, title="Documents à compléter",
+            recipient=recipient, created_by=user,
+            next_reminder_on=timezone.localdate() + timedelta(days=settings.REQUEST_REMINDER_DAYS),
+        )  # fmt: skip
+        open_link(bundle)
+        for kind, target in items:
+            if kind == "carte":
+                create_request(
+                    client, DocumentRequest.Kind.IDENTITY_CARD, person=target, user=user,
+                    bundle=bundle,
+                )  # fmt: skip
+            else:
+                send_for_signature(target, user=user, bundle=bundle)
+        email = _prepare_email(bundle, OutgoingEmail.Kind.REQUEST)
+    _deliver(email, user)
+    events.emit(
+        "document_request.created", subject=client, actor=user,
+        payload={"request": str(bundle.pk), "kind": bundle.kind, "pieces": len(items)},
+    )  # fmt: skip
+    return bundle
 
 
 def email_copies(request: DocumentRequest) -> list[Document]:
@@ -437,6 +514,11 @@ def cancel(request: DocumentRequest, *, user: User | None = None) -> None:
     request.closed_at = timezone.now()
     request.next_reminder_on = None
     request.save(update_fields=["status", "closed_at", "next_reminder_on"])
+    if request.kind == DocumentRequest.Kind.BUNDLE:
+        for item in request.items.filter(status=DocumentRequest.Status.PENDING):
+            cancel(item, user=user)
+    elif request.bundle is not None:
+        close_bundle_if_done(request.bundle)
     # D-047 : une demande annulée disparaît des archives « Courriels » (copies de ses e-mails).
     for copy in email_copies(request):
         copy.file.delete(save=False)
@@ -481,8 +563,10 @@ def overdue_requests(client: Client) -> list[DocumentRequest]:
 
 
 def pending_requests(client: Client) -> list[DocumentRequest]:
+    """Demandes en attente, pièce par pièce (une demande groupée apparaît via ses pièces)."""
     return list(
         client.document_requests.filter(status=DocumentRequest.Status.PENDING)
-        .select_related("person")
+        .exclude(kind=DocumentRequest.Kind.BUNDLE)
+        .select_related("person", "bundle")
         .prefetch_related("emails")
     )

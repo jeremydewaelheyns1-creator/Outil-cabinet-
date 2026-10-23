@@ -2,6 +2,7 @@
 {% load static %}
 {% block head_title %}Signature en ligne{% endblock %}
 {% block public %}
+{% if bundle_url %}<p class="small"><a href="{{ bundle_url }}">← Tous les documents demandés</a></p>{% endif %}
 <h1>Signature en ligne</h1>
 <p>Document à signer : <strong>{{ document.title }}</strong></p>
 <p class="small muted">Lisez le document ci-dessous (touchez une page pour l'agrandir), puis signez en bas.</p>

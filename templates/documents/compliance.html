@@ -1,0 +1,56 @@
+{% extends "layouts/app.html" %}
+{% block head_title %}Conformité{% endblock %}
+{% block page_title %}Conformité anti-blanchiment{% endblock %}
+{% block page_subtitle %}<div class="subtitle">Ce qui manque ou expire dans les dossiers, et ce que l'outil peut demander aux clients en un seul e-mail.</div>{% endblock %}
+{% block content %}
+<div class="grid grid-3" style="margin-bottom: 1rem">
+  <a class="card" href="?qui={{ who }}&niveau=danger"><div class="stat" style="color: var(--danger)">{{ totals.danger }}</div><div class="stat-label">dossier{{ totals.danger|pluralize }} incomplet{{ totals.danger|pluralize }}</div></a>
+  <a class="card" href="?qui={{ who }}&niveau=warning"><div class="stat" style="color: var(--warning, #b7791f)">{{ totals.warning }}</div><div class="stat-label">à revoir bientôt</div></a>
+  <a class="card" href="?qui={{ who }}"><div class="stat">{{ totals.askable }}</div><div class="stat-label">demande{{ totals.askable|pluralize }} possible{{ totals.askable|pluralize }} en un clic</div></a>
+</div>
+<form class="filters" method="get">
+  <div>
+    <label for="f-qui">Dossiers</label>
+    <select id="f-qui" name="qui" onchange="this.form.submit()">
+      <option value="moi"{% if who == "moi" %} selected{% endif %}>Mes dossiers</option>
+      <option value="tous"{% if who == "tous" %} selected{% endif %}>Tout le cabinet</option>
+    </select>
+  </div>
+  <div>
+    <label for="f-niveau">Situation</label>
+    <select id="f-niveau" name="niveau" onchange="this.form.submit()">
+      <option value="">Tout</option>
+      <option value="danger"{% if level == "danger" %} selected{% endif %}>Incomplets</option>
+      <option value="warning"{% if level == "warning" %} selected{% endif %}>À revoir bientôt</option>
+    </select>
+  </div>
+</form>
+{% if rows %}
+<form method="post" action="{% url 'conformite:ask' %}">{% csrf_token %}
+  <input type="hidden" name="retour" value="{{ request.get_full_path }}">
+  <section class="card">
+    <table class="table compliance-table">
+      <thead><tr>{% if can_edit %}<th><input type="checkbox" aria-label="Tout cocher" data-check-all="client"></th>{% endif %}<th>Dossier</th><th>Ce qui manque ou expire</th><th>Ce que l'outil peut demander</th></tr></thead>
+      <tbody>
+      {% for r in rows %}
+        <tr class="doc-row-{{ r.level }}">
+          {% if can_edit %}<td>{% if r.askable and r.has_email %}<input type="checkbox" name="client" value="{{ r.client.pk }}" aria-label="Demander pour {{ r.client.display_name }}">{% endif %}</td>{% endif %}
+          <td><a href="{% url 'clients:documents' r.client.pk %}">{% client_icon r.client %} {{ r.client.display_name }}</a>
+            {% if r.pending %}<div class="small muted">{{ r.pending }} demande{{ r.pending|pluralize }} en cours</div>{% endif %}</td>
+          <td class="small"><ul class="plain">{% for line in r.lines %}<li><span class="badge {% if line.level == 'danger' %}badge-danger{% else %}badge-warning{% endif %}">{% if line.level == 'danger' %}manque{% else %}bientôt{% endif %}</span> {{ line.label }}</li>{% endfor %}</ul></td>
+          <td class="small">{% if r.askable %}{% if r.has_email %}<ul class="plain">{% for label in r.askable_labels %}<li>{{ label }}</li>{% endfor %}</ul>{% else %}<span class="muted">Pas d'adresse e-mail dans la fiche</span>{% endif %}{% else %}<span class="muted">—</span>{% endif %}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    {% if can_edit and totals.askable %}
+      <p><button type="submit">Demander aux clients cochés</button>
+        <span class="small muted">Un seul e-mail par client, envoyé depuis la boîte Outlook du gestionnaire, avec un lien sécurisé pour tout déposer et signer. Relances automatiques.</span></p>
+    {% endif %}
+  </section>
+</form>
+{% else %}
+  <section class="card"><p>Rien à signaler : tous les dossiers sont complets et à jour. ✓</p></section>
+{% endif %}
+<p class="small muted">Les documents jamais préparés (lettre de mission, déclaration UBO…) ne sont pas envoyés d'office : générez-les et relisez-les d'abord dans le dossier, ils seront alors proposés ici.</p>
+{% endblock %}

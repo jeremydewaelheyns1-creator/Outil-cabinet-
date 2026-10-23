@@ -1,6 +1,7 @@
 {% extends "documents/public/_layout.html" %}
 {% block head_title %}Envoi sécurisé{% endblock %}
 {% block public %}
+{% if bundle_url %}<p class="small"><a href="{{ bundle_url }}">← Tous les documents demandés</a></p>{% endif %}
 <h1>Envoi sécurisé d'un document</h1>
 <p>Document demandé : <strong>{{ demande.title }}</strong></p>
 {% if is_card %}

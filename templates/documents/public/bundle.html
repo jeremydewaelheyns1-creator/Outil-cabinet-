@@ -1,0 +1,22 @@
+{% extends "documents/public/_layout.html" %}
+{% block head_title %}Documents à compléter{% endblock %}
+{% block public %}
+<h1>Documents à compléter</h1>
+{% if remaining %}
+  <p>Il nous manque encore <strong>{{ remaining }} document{{ remaining|pluralize }}</strong>. Vous pouvez tout faire maintenant ou en plusieurs fois : ce lien reste valable.</p>
+{% else %}
+  <p>Tout est complet, merci ✓ Vous pouvez fermer cette page.</p>
+{% endif %}
+<ul class="bundle-items">
+  {% for item in items %}
+    <li class="{% if item.pending %}bundle-todo{% else %}bundle-done{% endif %}">
+      {% if item.pending and item.url %}
+        <a href="{{ item.url }}"><span>{{ item.title }}</span><strong>{% if item.sign %}Lire et signer{% else %}Déposer{% endif %} →</strong></a>
+      {% else %}
+        <span>{{ item.title }}</span><span class="small">{% if item.pending %}en attente{% else %}✓ fait{% endif %}</span>
+      {% endif %}
+    </li>
+  {% endfor %}
+</ul>
+<p class="small muted">Référence : {{ demande.reference }}</p>
+{% endblock %}

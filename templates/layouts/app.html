@@ -9,6 +9,7 @@
       <div class="nav-title">Cabinet</div>
       <a href="{% url 'core:home' %}" {% nav_current request "core:home" %}>Accueil</a>
       <a href="{% url 'clients:list' %}" {% nav_current request "clients:list" %}>Tous les clients</a>
+      <a href="{% url 'conformite:board' %}" {% nav_current request "conformite:board" %}>Conformité</a>
       {% if user|can:"clients.edit" %}<a href="{% url 'depot:index' %}" {% nav_current request "depot:index" %}>Déposer des documents</a>{% endif %}
     </nav>
   </aside>

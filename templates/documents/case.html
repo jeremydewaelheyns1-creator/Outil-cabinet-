@@ -54,16 +54,27 @@
     {% if documents %}<details class="small" style="margin-top:.5rem"><summary>Cartes enregistrées ({{ documents|length }})</summary>{% include "documents/_list.html" %}</details>{% endif %}
     {% include "documents/_upload.html" with with_person=True %}
   {% elif case.slug == "a-recevoir" %}
+    {% if can_edit and ask_all.askable %}
+      <div class="identity-review">
+        <strong>Tout demander au client en un seul e-mail</strong>
+        <div class="small muted">{% for label in ask_all.askable_labels %}{{ label }}{% if not forloop.last %} · {% endif %}{% endfor %}</div>
+        {% if ask_all.has_email %}
+          <form method="post" action="{% url 'conformite:ask' %}" class="inline">{% csrf_token %}
+            <input type="hidden" name="client" value="{{ client.pk }}"><input type="hidden" name="retour" value="{{ request.get_full_path }}">
+            <button type="submit" class="small">Envoyer la demande ({{ ask_all.askable|length }} document{{ ask_all.askable|length|pluralize }})</button></form>
+        {% else %}<div class="small">Ajoutez d'abord une adresse e-mail dans la fiche.</div>{% endif %}
+      </div>
+    {% endif %}
     {% if requests %}
       <table class="table">
         <thead><tr><th>Demande</th><th>Envoyée le</th><th>Relances</th><th></th></tr></thead>
         <tbody>
-        {% for r in requests %}
+        {% for r in requests %}{% with src=r.bundle|default:r %}
           <tr>
             <td><strong>{{ r.title }}</strong>
-              <div class="muted small">à {{ r.recipient|default:"— (pas d'adresse e-mail)" }} · réf. {{ r.reference }}</div>
-              <details class="small"><summary>Voir les e-mails ({{ r.emails.all|length }})</summary>
-                {% for e in r.emails.all %}
+              <div class="muted small">à {{ r.recipient|default:"— (pas d'adresse e-mail)" }} · réf. {{ src.reference }}{% if r.bundle %} · demandé avec d'autres documents, même e-mail{% endif %}</div>
+              <details class="small"><summary>Voir les e-mails ({{ src.emails.all|length }})</summary>
+                {% for e in src.emails.all %}
                   <div class="email-preview">
                     <div><strong>{{ e.subject }}</strong></div>
                     <div class="muted">{{ e.created_at|date:"d/m/Y H:i" }} · {% if e.delivered %}envoyé{% if e.sent_from %} depuis {{ e.sent_from }}{% endif %} · copie dans Archives › Courriels{% else %}préparé, pas envoyé : aucune boîte Outlook reliée (<a href="{% url 'outlook:mailbox' %}">Ma boîte mail</a>){% endif %}</div>
@@ -73,7 +84,7 @@
               </details>
             </td>
             <td class="small nowrap">{{ r.created_at|date:"d/m/Y" }}</td>
-            <td class="small nowrap">{{ r.reminders_sent }}{% if r.next_reminder_on %}<div class="muted">prochaine le {{ r.next_reminder_on|date:"d/m" }}</div>{% endif %}</td>
+            <td class="small nowrap">{{ src.reminders_sent }}{% if src.next_reminder_on %}<div class="muted">prochaine le {{ src.next_reminder_on|date:"d/m" }}</div>{% endif %}</td>
             <td class="nowrap">
               {% if can_edit %}
                 <details class="small"><summary>Reçu</summary>
@@ -85,7 +96,7 @@
                 <form class="inline" method="post" action="{% url 'clients:request_cancel' client.pk r.pk %}">{% csrf_token %}<button type="submit" class="link-button small">Annuler</button></form>
               {% endif %}
             </td>
-          </tr>
+          </tr>{% endwith %}
         {% endfor %}
         </tbody>
       </table>

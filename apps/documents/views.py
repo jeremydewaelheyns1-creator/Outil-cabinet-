@@ -76,7 +76,10 @@ class UploadForm(forms.Form):
 
 
 class RequestForm(forms.Form):
-    kind = forms.ChoiceField(label="Pièce demandée", choices=DocumentRequest.Kind.choices)
+    kind = forms.ChoiceField(
+        label="Pièce demandée",
+        choices=[c for c in DocumentRequest.Kind.choices if c[0] != DocumentRequest.Kind.BUNDLE],
+    )
     doc_type = forms.CharField(required=False, widget=forms.HiddenInput)
     person = forms.ModelChoiceField(
         queryset=Client.objects.none(), required=False, label="Personne concernée"
@@ -171,6 +174,9 @@ def case_page(request: AppRequest, pk: int, slug: str) -> HttpResponse:
             context["risk_pending"] = latest if latest and latest.awaiting_approval else None
             context["can_decide"] = request.user.has_capability(Capability.AML_DECIDE)
         if slug == "a-recevoir":
+            from .compliance import overview
+
+            context["ask_all"] = overview(client)
             context["requests"] = services.pending_requests(client)
             context["request_form"] = RequestForm(client=client)
             context["receive_form"] = ReceiveForm()

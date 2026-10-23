@@ -86,9 +86,12 @@ def page(request: HttpRequest, token: str) -> HttpResponse:
     found = services.request_for_link(token)
     if found is None:
         return _headers(render(request, "documents/public/expired.html", status=404))
+    if found.kind == DocumentRequest.Kind.BUNDLE:
+        return _bundle_page(request, found)
     context: dict[str, object] = {
         "demande": found,
         "is_card": found.kind == DocumentRequest.Kind.IDENTITY_CARD,
+        "bundle_url": _bundle_url(found),
     }
     if found.kind == DocumentRequest.Kind.SIGNATURE:
         return _sign_page(request, found, token, context)
@@ -102,8 +105,36 @@ def page(request: HttpRequest, token: str) -> HttpResponse:
         else:
             log_access(request, AccessLog.Action.CREATE, document,
                        details={"via": "lien client", "demande": found.reference})  # fmt: skip
+            context["bundle_url"] = _bundle_url(found)
             return _headers(render(request, "documents/public/thanks.html", context))
     return _headers(render(request, "documents/public/upload.html", context))
+
+
+# --- Demande groupée : une page qui rassemble toutes les pièces (D-051) ----------------------
+
+
+def _bundle_url(found: DocumentRequest) -> str:
+    """Retour à la liste des pièces, tant qu'il en reste à fournir."""
+    bundle = found.bundle
+    if bundle is None:
+        return ""
+    bundle.refresh_from_db(fields=["status"])
+    return services.upload_url(bundle) if bundle.status == DocumentRequest.Status.PENDING else ""
+
+
+def _bundle_page(request: HttpRequest, bundle: DocumentRequest) -> HttpResponse:
+    items = []
+    for item in bundle.items.order_by("title"):
+        pending = item.status == DocumentRequest.Status.PENDING
+        items.append({
+            "title": item.title,
+            "pending": pending,
+            "sign": item.kind == DocumentRequest.Kind.SIGNATURE,
+            "url": services.upload_url(item) if pending and item.link_token else "",
+        })  # fmt: skip
+    remaining = sum(1 for i in items if i["pending"])
+    context = {"demande": bundle, "items": items, "remaining": remaining}
+    return _headers(render(request, "documents/public/bundle.html", context))
 
 
 # --- Signature en ligne (D-048) ---------------------------------------------------------------
@@ -141,6 +172,7 @@ def _sign_page(
                 details = {"via": "signature en ligne", "demande": found.reference}
                 log_access(request, AccessLog.Action.CREATE, signed, details=details)
                 context["signed"] = True
+                context["bundle_url"] = _bundle_url(found)
                 return _headers(render(request, "documents/public/thanks.html", context))
         context["signer_name"] = request.POST.get("signer_name", "")
         context["signer_role"] = request.POST.get("signer_role", "")

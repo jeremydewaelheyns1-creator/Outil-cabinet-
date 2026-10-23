@@ -170,7 +170,9 @@ def finalize(document: Document, *, user: User | None = None) -> Document:
     return document
 
 
-def send_for_signature(document: Document, *, user: User | None = None) -> DocumentRequest:
+def send_for_signature(
+    document: Document, *, user: User | None = None, bundle: DocumentRequest | None = None
+) -> DocumentRequest:
     """Le brouillon part chez le client pour signature : une demande « À recevoir »."""
     from .services import create_request
 
@@ -184,6 +186,7 @@ def send_for_signature(document: Document, *, user: User | None = None) -> Docum
             label=f"{types.BY_SLUG[document.doc_type].label} à signer",
             user=user,
             doc_type=document.doc_type,
+            bundle=bundle,
         )
         document.state = Document.State.AWAITING_SIGNATURE
         document.request = request

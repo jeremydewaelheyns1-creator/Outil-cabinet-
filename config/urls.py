@@ -31,6 +31,7 @@ urlpatterns = [
     path("reprise/", include("apps.reprise.urls")),
     path("echeances/", include("apps.tasks.urls")),
     path("deposer/", include("apps.documents.inbox_urls")),
+    path("conformite/", include("apps.documents.compliance_urls")),
     path("ma-boite-mail/", include("apps.outlook.urls")),
     # D-046 : lien sécurisé envoyé au client (sans compte, dépôt seulement).
     path("depot-client/", include("apps.documents.client_upload_urls")),

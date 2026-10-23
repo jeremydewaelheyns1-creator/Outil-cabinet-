@@ -152,3 +152,14 @@ document.addEventListener("click", function (event) {
     });
   });
 })();
+
+// Case « tout cocher » (tableau de conformité).
+document.addEventListener("change", function (event) {
+  var box = event.target;
+  if (!box.matches || !box.matches("[data-check-all]")) return;
+  var form = box.closest("form");
+  if (!form) return;
+  form.querySelectorAll('input[type=checkbox][name="' + box.dataset.checkAll + '"]').forEach(function (other) {
+    other.checked = box.checked;
+  });
+});

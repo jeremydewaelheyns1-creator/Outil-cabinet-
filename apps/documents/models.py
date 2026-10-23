@@ -40,6 +40,8 @@ class DocumentRequest(models.Model):
         UBO = "ubo", "Confirmation des bénéficiaires effectifs"
         SIGNATURE = "signature", "Document à signer"
         OTHER = "other", "Autre pièce"
+        # D-051 : plusieurs pièces demandées en un seul e-mail et un seul lien.
+        BUNDLE = "bundle", "Plusieurs documents"
 
     class Status(models.TextChoices):
         PENDING = "pending", "En attente"
@@ -79,6 +81,14 @@ class DocumentRequest(models.Model):
     link_token = models.TextField(blank=True)
     link_expires_at = models.DateTimeField("lien valable jusqu'au", null=True, blank=True)
     link_attempts = models.PositiveSmallIntegerField("essais de dépôt", default=0)
+    bundle = models.ForeignKey(
+        "self",
+        verbose_name="demande groupée",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="items",
+    )
 
     class Meta:
         verbose_name = "demande de document"
