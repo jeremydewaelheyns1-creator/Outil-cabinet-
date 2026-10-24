@@ -141,20 +141,43 @@ def _situation(doc_type: DocType, document: Document | None, today: date) -> tup
     return "ok", ""
 
 
-def rows(client: Client, case: str) -> list[Row]:
-    today = timezone.localdate()
-    everything = list(
-        Document.objects.filter(client=client, case=case, archived_at__isnull=True)
+def all_rows(client: Client) -> dict[str, list[Row]]:
+    """Toutes les cases typées d'un client en deux requêtes (tableau de conformité)."""
+    cases = sorted(TYPED_CASES)
+    documents = list(
+        Document.objects.filter(client=client, case__in=cases, archived_at__isnull=True)
         .select_related("person", "request")
         .order_by("-uploaded_at")
+    )
+    people = mandataires(client)
+    return {
+        case: rows(client, case, [d for d in documents if d.case == case], people) for case in cases
+    }
+
+
+def rows(
+    client: Client,
+    case: str,
+    documents: list[Document] | None = None,
+    people: list[Client] | None = None,
+) -> list[Row]:
+    today = timezone.localdate()
+    everything = (
+        documents
+        if documents is not None
+        else list(
+            Document.objects.filter(client=client, case=case, archived_at__isnull=True)
+            .select_related("person", "request")
+            .order_by("-uploaded_at")
+        )
     )
     current = [d for d in everything if d.state == Document.State.FINAL]
     drafts = [d for d in everything if d.state != Document.State.FINAL]
     result: list[Row] = []
     for doc_type in types_for_case(case, client):
-        targets: list[Client | None] = (
-            list(mandataires(client)) if doc_type.per == "mandataire" else [None]
-        )
+        targets: list[Client | None] = [None]
+        if doc_type.per == "mandataire":
+            targets = list(people if people is not None else mandataires(client))
         for person in targets:
             document = next(
                 (

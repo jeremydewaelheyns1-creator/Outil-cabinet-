@@ -14,6 +14,12 @@ from .models import AccessLog, Event, Notification
 from .permissions import require_capability
 
 
+def _compliance(request: AppRequest) -> dict[str, int]:
+    from apps.documents.compliance import summary_for
+
+    return summary_for(request.user)
+
+
 def home(request: AppRequest) -> HttpResponse:
     clients = Client.objects.visible_to(request.user)
     context = {
@@ -34,6 +40,7 @@ def home(request: AppRequest) -> HttpResponse:
         "my_clients": clients.filter(assignments__user=request.user)
         .distinct()
         .order_by("name")[:10],
+        "compliance": _compliance(request),
         "failed_events": Event.objects.filter(status=Event.Status.FAILED).count()
         if request.user.is_superuser
         else 0,

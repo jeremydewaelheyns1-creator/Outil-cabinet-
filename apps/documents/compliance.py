@@ -54,10 +54,11 @@ def overview(client: Client) -> Overview:
     pending = services.pending_requests(client)
     result.pending = len(pending)
     pending_keys = {(r.doc_type, r.person_id) for r in pending if r.doc_type}
+    every = types.all_rows(client)
     for case in dossier.document_cases_for(client):
-        if case.slug not in types.TYPED_CASES:
+        if case.slug not in every:
             continue
-        for row in types.rows(client, case.slug):
+        for row in every[case.slug]:
             if row.level not in ("danger", "warning"):
                 continue
             who = f" — {row.person.display_name}" if row.person else ""
@@ -97,3 +98,25 @@ def ask_everything(client: Client, user: Any) -> DocumentRequest | None:
     if not found.askable or not found.has_email:
         return None
     return services.create_bundle(client, found.askable, user=user)
+
+
+def summary_for(user: Any) -> dict[str, int]:
+    """Nombres pour l'accueil : mes dossiers incomplets / à revoir (gardés 15 minutes).
+
+    Seulement des nombres en mémoire, jamais de nom ni de donnée du dossier."""
+    from django.core.cache import cache
+
+    key = f"conformite-accueil:{user.pk}"
+    found = cache.get(key)
+    if found is None:
+        clients = list(
+            Client.objects.visible_to(user).active().filter(assignments__user=user).distinct()
+        )
+        rows = board(clients)
+        found = {
+            "danger": sum(1 for r in rows if r.level == "danger"),
+            "warning": sum(1 for r in rows if r.level == "warning"),
+            "askable": sum(1 for r in rows if r.askable and r.has_email),
+        }
+        cache.set(key, found, 15 * 60)
+    return dict(found)

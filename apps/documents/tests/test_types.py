@@ -125,3 +125,9 @@ def test_persons_have_no_mandataire_or_ubo_lines():
     person = PersonFactory()
     assert types.rows(person, "identification-mandataires") == []
     assert types.rows(person, "identification-client")[0].doc_type.slug == "identification_client"
+
+
+def test_ubo_extract_without_date_expires_after_a_year():
+    company, _, _ = company_with_managers()
+    document = services.store(company, pdf(), title="Extrait", case="ubo", doc_type="extrait_ubo")
+    assert document.expires_on == timezone.localdate() + timedelta(days=365)

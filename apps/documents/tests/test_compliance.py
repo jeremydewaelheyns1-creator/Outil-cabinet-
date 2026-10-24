@@ -111,3 +111,14 @@ def test_board_respects_visibility(web):
     )
     web.post(reverse("conformite:ask"), {"client": [hidden.pk]})
     assert not DocumentRequest.objects.exists()
+
+
+def test_home_shows_my_compliance_counts(web, user):
+    from django.core.cache import cache
+
+    cache.clear()
+    mine, _ = prepared_company()
+    Assignment.objects.create(client=mine, user=user, role=Assignment.Role.MANAGER)
+    html = web.get(reverse("core:home")).content.decode()
+    assert "de mes dossiers incomplets" in html
+    assert compliance.summary_for(user) == {"danger": 1, "warning": 0, "askable": 1}

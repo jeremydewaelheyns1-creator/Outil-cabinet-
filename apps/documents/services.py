@@ -117,6 +117,9 @@ def store(
     upload.seek(0)
     if case == "pieces-identite":
         doc_type = doc_type or types.CARD
+    if doc_type == "extrait_ubo" and expires_on is None:
+        # Le registre UBO se reconsulte au moins une fois par an (D-053).
+        expires_on = timezone.localdate() + timedelta(days=settings.UBO_EXTRACT_VALID_DAYS)
     with transaction.atomic():
         if case:
             archive_replaced(client, case, doc_type, person)

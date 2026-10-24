@@ -11,6 +11,12 @@
   <a class="card" href="{% url 'clients:list' %}?statut=prospect"><div class="stat">{{ counts.prospect }}</div><div class="stat-label">prospects</div></a>
 </div>
 
+<div class="grid grid-3" style="margin-top: 1rem">
+  <a class="card" href="{% url 'conformite:board' %}?qui=moi&niveau=danger"><div class="stat"{% if compliance.danger %} style="color: var(--danger)"{% endif %}>{{ compliance.danger }}</div><div class="stat-label">de mes dossiers incomplets (anti-blanchiment)</div></a>
+  <a class="card" href="{% url 'conformite:board' %}?qui=moi&niveau=warning"><div class="stat">{{ compliance.warning }}</div><div class="stat-label">à revoir bientôt</div></a>
+  <a class="card" href="{% url 'conformite:board' %}?qui=moi"><div class="stat">{{ compliance.askable }}</div><div class="stat-label">demande{{ compliance.askable|pluralize }} à envoyer en un clic</div></a>
+</div>
+
 <div class="grid grid-2" style="margin-top: 1rem">
   <section class="card">
     <div class="card-header"><h2>Mes dossiers</h2></div>
