@@ -849,3 +849,8 @@ a.badge:hover { text-decoration: none; filter: brightness(0.95); }
 .bundle-items li.bundle-done .small { color: #1f6f43; }
 ul.plain { list-style: none; margin: 0; padding: 0; display: grid; gap: .2rem; }
 .compliance-table td { vertical-align: top; }
+
+/* Cloche des notifications (D-052) */
+.topbar-bell { position: relative; display: inline-flex; align-items: center; }
+.topbar-bell .bell-count { position: absolute; top: -6px; right: -9px; background: var(--danger, #c0392b); color: #fff; border-radius: 999px; font-size: .68rem; line-height: 1; padding: 2px 5px; font-weight: 700; }
+.notification-new { border-left: 3px solid var(--primary); }

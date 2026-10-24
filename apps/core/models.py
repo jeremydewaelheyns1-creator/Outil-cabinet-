@@ -283,3 +283,31 @@ class EventHandling(models.Model):
 def events_for(obj: models.Model) -> QuerySet[Event]:
     ct = ContentType.objects.get_for_model(obj)
     return Event.objects.filter(subject_type=ct, subject_id=str(obj.pk))
+
+
+# --- Notifications dans l'outil (D-052) -------------------------------------------------------
+
+
+class Notification(models.Model):
+    """Petit message pour un employé, affiché sous la cloche (jamais envoyé par e-mail).
+
+    Contenu volontairement sobre : des nombres et un lien vers l'écran concerné, aucune donnée
+    sensible. `key` empêche d'envoyer deux fois le même résumé (ex. « conformite:2026-11 »).
+    """
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="notifications")
+    key = models.CharField(max_length=60)
+    title = models.CharField("titre", max_length=200)
+    lines = models.JSONField("détail", default=list, blank=True)
+    link = models.CharField("lien", max_length=200, blank=True)
+    created_at = models.DateTimeField(default=timezone.now)
+    read_at = models.DateTimeField("lue le", null=True, blank=True)
+
+    class Meta:
+        ordering: ClassVar = ["-created_at"]
+        constraints: ClassVar = [
+            models.UniqueConstraint(fields=["user", "key"], name="one_notification_per_key")
+        ]
+
+    def __str__(self) -> str:
+        return self.title

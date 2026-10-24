@@ -297,7 +297,8 @@ def _dossier_for(person: Client) -> Client | None:
 
 def request_renewals(today: date | None = None) -> int:
     """Demande la nouvelle carte de chaque personne dont la carte expire dans les
-    IDENTITY_RENEWAL_DAYS jours (une seule demande en cours par personne)."""
+    IDENTITY_RENEWAL_DAYS jours, ou a expiré (une seule demande en cours par personne).
+    Plusieurs cartes pour le même client : un seul e-mail et un seul lien (D-052)."""
     from . import services
 
     today = today or timezone.localdate()
@@ -310,13 +311,19 @@ def request_renewals(today: date | None = None) -> int:
             kind=DocumentRequest.Kind.IDENTITY_CARD, status=DocumentRequest.Status.PENDING
         ).values_list("person_id", flat=True)
     )
-    count = 0
+    by_dossier: dict[int, tuple[Client, list[Client]]] = {}
     for person_id, card in latest.items():
         if card.valid_until > limit or person_id in already:
             continue
         dossier = _dossier_for(card.person)
         if dossier is None:
             continue
-        services.create_request(dossier, DocumentRequest.Kind.IDENTITY_CARD, person=card.person)
-        count += 1
+        by_dossier.setdefault(dossier.pk, (dossier, []))[1].append(card.person)
+    count = 0
+    for dossier, people in by_dossier.values():
+        if len(people) == 1:
+            services.create_request(dossier, DocumentRequest.Kind.IDENTITY_CARD, person=people[0])
+        else:
+            services.create_bundle(dossier, [("carte", person) for person in people])
+        count += len(people)
     return count

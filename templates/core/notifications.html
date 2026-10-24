@@ -1,0 +1,15 @@
+{% extends "layouts/app.html" %}
+{% block head_title %}Notifications{% endblock %}
+{% block page_title %}Notifications{% endblock %}
+{% block page_subtitle %}<div class="subtitle">Un résumé chaque mois : vos dossiers à mettre en ordre, et ce que l'outil a fait seul.</div>{% endblock %}
+{% block content %}
+{% for n in items %}
+  <section class="card notification{% if n.pk in unread %} notification-new{% endif %}">
+    <div class="card-header"><h2>{{ n.title }}</h2><span class="small muted">{{ n.created_at|date:"d/m/Y" }}{% if n.pk in unread %} · <strong>nouveau</strong>{% endif %}</span></div>
+    {% if n.lines %}<ul class="plain">{% for line in n.lines %}<li>{{ line }}</li>{% endfor %}</ul>{% endif %}
+    {% if n.link %}<p><a href="{{ n.link }}">Voir le détail →</a></p>{% endif %}
+  </section>
+{% empty %}
+  <section class="card"><p class="empty">Aucune notification pour le moment.</p></section>
+{% endfor %}
+{% endblock %}

@@ -3,6 +3,13 @@
 Ce qui a été ajouté à l'outil, du plus récent au plus ancien. Toutes les données de la démo
 sont inventées.
 
+## 24 octobre 2026 — Rappels automatiques et résumé du mois
+
+- Quand la carte d'identité d'un client expire, l'outil lui écrit tout seul. S'il y a
+  plusieurs cartes pour le même client, tout part dans **un seul e-mail**.
+- Nouvelle **cloche** en haut de l'écran : chaque début de mois, un résumé de vos dossiers à
+  mettre en ordre et de ce que l'outil a fait seul (demandes, rappels, documents reçus).
+
 ## 23 octobre 2026 — La paperasse anti-blanchiment en pilote automatique
 
 - **Signature en ligne** : le client reçoit un lien, lit le document sur son téléphone, signe

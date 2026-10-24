@@ -4,12 +4,13 @@ from django.core.exceptions import PermissionDenied
 from django.core.paginator import Paginator
 from django.http import HttpResponse
 from django.shortcuts import render
+from django.utils import timezone
 
 from apps.clients.models import Client
 
 from .capabilities import Capability
 from .http import AppRequest
-from .models import AccessLog, Event
+from .models import AccessLog, Event, Notification
 from .permissions import require_capability
 
 
@@ -96,3 +97,12 @@ def settings_page(request: AppRequest) -> HttpResponse:
     if not allowed:
         raise PermissionDenied
     return render(request, "core/settings.html", {"tools": allowed})
+
+
+def notifications(request: AppRequest) -> HttpResponse:
+    """Les notifications de l'employé ; les ouvrir les marque comme lues."""
+    items = list(Notification.objects.filter(user=request.user)[:50])
+    unread = [n.pk for n in items if n.read_at is None]
+    response = render(request, "core/notifications.html", {"items": items, "unread": unread})
+    Notification.objects.filter(pk__in=unread).update(read_at=timezone.now())
+    return response

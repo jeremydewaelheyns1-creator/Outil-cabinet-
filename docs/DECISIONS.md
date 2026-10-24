@@ -456,3 +456,17 @@ Mandat de Jeremy (« fais-le pour tout le reste »).
   cite que ce qui manque encore. La demande se clôture quand tout est reçu.
 - Un document jamais préparé n'est jamais envoyé d'office : il faut le générer et le relire.
 - Le même bouton existe dans la case « À recevoir » du dossier.
+
+## D-052 — Automatismes : e-mails au client, résumé mensuel aux employés
+Choix de Jeremy (24/10/2026).
+- **E-mails automatiques : au client seulement.** Ce que le client doit fournir et qui expire
+  (carte d'identité) lui est demandé tout seul, avant l'expiration (`IDENTITY_RENEWAL_DAYS`)
+  ou dès qu'elle a expiré. Plusieurs cartes pour le même client : **un seul e-mail et un seul
+  lien** (demande groupée, D-051). Relances : 2, à 7 jours d'intervalle.
+- **Employés : pas d'e-mail.** Une fois par mois (premier passage du mois), deux
+  notifications dans l'outil (cloche en haut) pour les dossiers de son équipe :
+  « N dossiers à mettre en ordre » et « Ce que l'outil a fait en <mois> » (demandes
+  envoyées, rappels, documents reçus, demandes sans réponse après les rappels). Seulement des
+  nombres et un lien vers « Conformité » : aucun nom, aucune donnée sensible.
+- Ce que le cabinet doit faire lui-même (fiche de risque, extrait UBO, document à mettre à
+  jour) reste une échéance du gestionnaire (D-050) et apparaît dans le résumé.
