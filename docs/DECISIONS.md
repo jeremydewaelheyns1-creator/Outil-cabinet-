@@ -499,3 +499,13 @@ Choix de Jeremy (24/10).
   au client ; le gestionnaire est averti dans l'outil — pastille rouge « N sans réponse » en
   haut de l'écran (seulement pour les dossiers de son équipe), page « Clients sans réponse »,
   badge « ⚠ sans réponse » dans l'en-tête du dossier, ligne dans le résumé mensuel.
+
+## D-056 — Nouveau look « style Apple »
+Choix de Jeremy (24/10) parmi 5 maquettes : la 5 (« moderne doux »), poussée vers un style
+Apple. Seule l'apparence change (aucune page, aucun lien, aucun droit modifié) : une couche
+de style ajoutée à la fin de `static/css/app.css`.
+- Fond gris très clair, cartes blanches très arrondies sans contour, ombres douces.
+- Barre du haut translucide, menu de gauche façon Finder, onglets du dossier en « segmented
+  control », grand titre du dossier, boutons en pilule bleue, états par pastille de couleur.
+- Police Inter **hébergée par l'outil** (`static/fonts`, licence OFL) : aucun appel à Google
+  Fonts ni à un autre site (confidentialité). Sur Mac, la police du système (San Francisco).

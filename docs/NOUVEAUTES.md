@@ -3,6 +3,12 @@
 Ce qui a été ajouté à l'outil, du plus récent au plus ancien. Toutes les données de la démo
 sont inventées.
 
+## 24 octobre 2026 — Nouveau look
+
+- L'outil fait peau neuve, dans un style épuré inspiré d'Apple : cartes blanches arrondies,
+  barre du haut translucide, onglets du dossier en bouton segmenté, grands titres, pastilles
+  de couleur pour l'état des documents. Rien ne change dans le fonctionnement.
+
 ## 24 octobre 2026 — Rappels de la carte d'identité et clients qui ne répondent pas
 
 - Carte d'identité : l'outil la demande au client 15 jours avant l'expiration, puis lui
