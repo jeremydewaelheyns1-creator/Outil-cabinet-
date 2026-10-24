@@ -217,7 +217,7 @@ def test_case_colours(reader, web):
     upload_card(company, person)
     assert "à confirmer" in web.get(url).content.decode()  # orange
     Document.objects.update(review_needed=False)
-    soon = timezone.localdate() + timedelta(days=20)
+    soon = timezone.localdate() + timedelta(days=10)
     IdentityCard.objects.create(person=person, valid_until=soon, source="manual")
     assert "expirent bientôt" in web.get(url).content.decode()  # orange
     IdentityCard.objects.create(person=person, valid_until=future(), source="manual")

@@ -5,7 +5,8 @@ sont inventées.
 
 ## 24 octobre 2026 — Rappels automatiques et résumé du mois
 
-- La nouvelle carte d'identité est demandée **60 jours** avant l'expiration (au lieu de 30).
+- La nouvelle carte d'identité est demandée **15 jours** avant l'expiration (la ligne passe en
+  orange au même moment).
 - Un extrait du registre UBO rangé sans date est considéré valable un an.
 - Page d'accueil : vos dossiers incomplets et à revoir, en un coup d'œil.
 - L'écran Conformité s'affiche beaucoup plus vite.
@@ -175,7 +176,7 @@ sont inventées.
 - La case **Pièces d'identité** liste chaque personne du dossier (gérants, administrateurs,
   actionnaires) avec sa carte : vert si elle est valable, orange si elle expire dans les deux
   mois, rouge si elle manque ou est expirée.
-- **30 jours (aujourd'hui 60) avant l'expiration**, l'outil demande tout seul la nouvelle carte au client (elle
+- **15 jours avant l'expiration**, l'outil demande tout seul la nouvelle carte au client (elle
   apparaît dans « À recevoir », avec les relances).
 - Quand la carte arrive, l'outil **lit les lignes codées au dos** et vérifie tout (chiffres de
   contrôle, nom, numéro national, validité). Si tout concorde, la fiche est mise à jour sans

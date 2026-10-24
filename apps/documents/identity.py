@@ -39,7 +39,7 @@ from .models import Document, DocumentRequest, IdentityCard
 logger = logging.getLogger(__name__)
 CASE = "pieces-identite"
 UNDO_DAYS = 7
-WARN_DAYS = 60  # orange quand la carte expire dans moins de 60 jours
+WARN_DAYS = 15  # orange (et demande au client) quand la carte expire dans 15 jours (D-054)
 WHITELIST = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789<"
 
 

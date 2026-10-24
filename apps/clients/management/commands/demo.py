@@ -368,7 +368,7 @@ class Command(BaseCommand):
         )  # fmt: skip
         # Marc : carte qui expire bientôt (orange), nouvelle carte déjà demandée.
         IdentityCard.objects.create(
-            person=marc, card_number="592000000025", valid_until=today_ + timedelta(days=20),
+            person=marc, card_number="592000000025", valid_until=today_ + timedelta(days=10),
             source="manual", created_by=user,
         )  # fmt: skip
         late = services.create_request(garage, "identity_card", person=marc, user=user)

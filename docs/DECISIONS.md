@@ -481,3 +481,8 @@ Mandat de Jeremy (« fais tout ce qui améliore »), propositions annoncées le 
   clic », vers l'écran Conformité. Calcul gardé 15 minutes en mémoire (des nombres seulement).
 - Tableau de conformité : toutes les cases d'un dossier lues en une fois (environ 6 fois plus
   rapide).
+
+## D-054 — Carte d'identité : 15 jours avant l'expiration
+Choix de Jeremy (24/10) : 60 jours, c'est trop tôt, personne ne renouvelle sa carte deux mois
+avant. La ligne passe en orange **et** la demande part au client **15 jours** avant
+l'expiration (`IDENTITY_RENEWAL_DAYS`, `identity.WARN_DAYS`). Remplace ce point de D-053.

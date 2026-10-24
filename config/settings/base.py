@@ -194,10 +194,10 @@ SITE_URL = env("SITE_URL", default="http://localhost:8000")
 RISK_REVIEW_YEARS = {"low": 5, "medium": 3, "high": 1}
 REQUEST_MAX_REMINDERS = env.int("REQUEST_MAX_REMINDERS", default=2)
 # Pièces d'identité (D-035) : lecture locale des lignes « machine » (Tesseract, sur le serveur
-# du cabinet) et demande de la nouvelle carte N jours avant expiration (60 : en même temps que
-# la ligne passe en orange, D-053).
+# du cabinet) et demande de la nouvelle carte N jours avant expiration (15, choix de Jeremy :
+# personne ne renouvelle sa carte deux mois à l'avance ; D-054).
 IDENTITY_OCR_ENABLED = env.bool("IDENTITY_OCR_ENABLED", default=True)
-IDENTITY_RENEWAL_DAYS = env.int("IDENTITY_RENEWAL_DAYS", default=60)
+IDENTITY_RENEWAL_DAYS = env.int("IDENTITY_RENEWAL_DAYS", default=15)
 # D-053 : un extrait du registre UBO rangé sans date est à reconsulter après un an.
 UBO_EXTRACT_VALID_DAYS = env.int("UBO_EXTRACT_VALID_DAYS", default=365)
 # D-041 : un fichier du dépôt unique non classé est effacé après ce délai.
