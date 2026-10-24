@@ -377,8 +377,9 @@ class Command(BaseCommand):
             created_at=timezone.now() - timedelta(days=21)
         )
         today = timezone.localdate()
-        services.send_due_reminders(today + timedelta(days=7))
-        services.send_due_reminders(today + timedelta(days=14))
+        for _ in range(2):  # les deux rappels sont partis, toujours rien 15 jours après
+            DocumentRequest.objects.filter(pk=late.pk).update(next_reminder_on=today)
+            services.send_due_reminders(today)
         DocumentRequest.objects.filter(pk=late.pk).update(next_reminder_on=today)
         services.create_request(bakery, "identity_card", person=marc, user=user)
 

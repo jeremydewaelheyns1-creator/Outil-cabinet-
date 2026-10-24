@@ -193,6 +193,10 @@ SITE_URL = env("SITE_URL", default="http://localhost:8000")
 # selon le risque ; l'AMLR (2027) : au moins chaque année si élevé, tous les 5 ans sinon.
 RISK_REVIEW_YEARS = {"low": 5, "medium": 3, "high": 1}
 REQUEST_MAX_REMINDERS = env.int("REQUEST_MAX_REMINDERS", default=2)
+# D-055 : carte d'identité demandée 15 jours avant l'expiration, rappels 15 et 30 jours APRÈS
+# l'expiration ; sans réponse 15 jours après le dernier rappel, le gestionnaire est averti.
+CARD_REMINDERS_AFTER_EXPIRY = (15, 30)
+REQUEST_ESCALATION_DAYS = env.int("REQUEST_ESCALATION_DAYS", default=15)
 # Pièces d'identité (D-035) : lecture locale des lignes « machine » (Tesseract, sur le serveur
 # du cabinet) et demande de la nouvelle carte N jours avant expiration (15, choix de Jeremy :
 # personne ne renouvelle sa carte deux mois à l'avance ; D-054).

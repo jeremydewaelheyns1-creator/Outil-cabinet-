@@ -3,6 +3,14 @@
 Ce qui a été ajouté à l'outil, du plus récent au plus ancien. Toutes les données de la démo
 sont inventées.
 
+## 24 octobre 2026 — Rappels de la carte d'identité et clients qui ne répondent pas
+
+- Carte d'identité : l'outil la demande au client 15 jours avant l'expiration, puis lui
+  envoie un rappel **15 jours** et **30 jours après** l'expiration.
+- Toujours rien 15 jours après le dernier rappel ? Une **pastille rouge « sans réponse »**
+  apparaît en haut de l'écran du gestionnaire du dossier, avec la liste des clients à
+  reprendre en main, et un badge dans l'en-tête du dossier.
+
 ## 24 octobre 2026 — Rappels automatiques et résumé du mois
 
 - La nouvelle carte d'identité est demandée **15 jours** avant l'expiration (la ligne passe en

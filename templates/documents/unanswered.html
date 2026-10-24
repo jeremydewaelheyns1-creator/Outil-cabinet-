@@ -1,0 +1,35 @@
+{% extends "layouts/app.html" %}
+{% block head_title %}Sans réponse{% endblock %}
+{% block page_title %}Clients sans réponse{% endblock %}
+{% block page_subtitle %}<div class="subtitle">Demandes restées sans réponse 15 jours après le dernier rappel automatique : à reprendre vous-même (téléphone, rendez-vous…).</div>{% endblock %}
+{% block content %}
+<form class="filters" method="get">
+  <div>
+    <label for="f-qui">Dossiers</label>
+    <select id="f-qui" name="qui" onchange="this.form.submit()">
+      <option value="moi"{% if who == "moi" %} selected{% endif %}>Mes dossiers</option>
+      <option value="tous"{% if who == "tous" %} selected{% endif %}>Tout le cabinet</option>
+    </select>
+  </div>
+</form>
+<section class="card">
+  {% if requests %}
+    <table class="table">
+      <thead><tr><th>Dossier</th><th>Demande</th><th>Demandée le</th><th>Rappels</th><th></th></tr></thead>
+      <tbody>
+      {% for r in requests %}
+        <tr>
+          <td>{% client_icon r.client %} {{ r.client.display_name }}</td>
+          <td>{{ r.title }}{% if r.kind == "bundle" %} <span class="small muted">({{ r.items.count }} documents)</span>{% endif %}</td>
+          <td class="nowrap">{{ r.created_at|date:"d/m/Y" }}</td>
+          <td>{{ r.reminders_sent }}</td>
+          <td class="nowrap"><a href="{% url 'clients:document_case' r.client.pk 'a-recevoir' %}">Ouvrir</a></td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <p class="empty">Aucune demande sans réponse. ✓</p>
+  {% endif %}
+</section>
+{% endblock %}

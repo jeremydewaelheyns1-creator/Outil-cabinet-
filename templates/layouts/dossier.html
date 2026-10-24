@@ -15,6 +15,7 @@
           {% if c.bce_juridical_situation %}<span class="badge badge-danger">{{ c.bce_juridical_situation }}</span>{% endif %}
           {% if c.bce_status == "absent" %}<span class="badge badge-warning">Absent de la BCE</span>{% endif %}
           {% if dossier_overdue %}<a class="badge badge-danger" href="{% url 'clients:tasks' c.pk %}">{{ dossier_overdue }} en retard</a>{% endif %}
+          {% if dossier_unanswered %}<a class="badge badge-danger" href="{% url 'clients:document_case' c.pk 'a-recevoir' %}" title="Le client ne répond pas malgré les rappels">⚠ {{ dossier_unanswered }} sans réponse</a>{% endif %}
           {% if c.enterprise_number %}<span class="mono">{{ c.enterprise_number_display }}</span>{% endif %}
           {% if c.reference %}<span>réf. {{ c.reference }}</span>{% endif %}
           <span>{{ c.portfolio.name }}</span>

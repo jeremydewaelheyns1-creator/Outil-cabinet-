@@ -486,3 +486,16 @@ Mandat de Jeremy (« fais tout ce qui améliore »), propositions annoncées le 
 Choix de Jeremy (24/10) : 60 jours, c'est trop tôt, personne ne renouvelle sa carte deux mois
 avant. La ligne passe en orange **et** la demande part au client **15 jours** avant
 l'expiration (`IDENTITY_RENEWAL_DAYS`, `identity.WARN_DAYS`). Remplace ce point de D-053.
+
+## D-055 — Rappels de la carte après l'expiration, puis avertissement du gestionnaire
+Choix de Jeremy (24/10).
+- Carte d'identité : demande au client 15 jours **avant** l'expiration (D-054), rappels
+  automatiques 15 jours et 30 jours **après** l'expiration (`CARD_REMINDERS_AFTER_EXPIRY`).
+  Carte déjà expirée au moment de la demande : rappels 15 et 30 jours après la demande.
+  Les autres demandes gardent un rappel tous les 7 jours (2 au plus).
+- Le lien sécurisé reste valable jusqu'au rappel suivant + 14 jours (il ne doit pas expirer
+  entre deux rappels) ; il sert toujours une seule fois.
+- **Sans réponse 15 jours après le dernier rappel** (`REQUEST_ESCALATION_DAYS`) : plus d'e-mail
+  au client ; le gestionnaire est averti dans l'outil — pastille rouge « N sans réponse » en
+  haut de l'écran (seulement pour les dossiers de son équipe), page « Clients sans réponse »,
+  badge « ⚠ sans réponse » dans l'en-tête du dossier, ligne dans le résumé mensuel.

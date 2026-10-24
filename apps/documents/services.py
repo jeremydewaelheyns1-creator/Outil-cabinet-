@@ -13,7 +13,7 @@ from __future__ import annotations
 import hashlib
 import secrets
 from dataclasses import dataclass
-from datetime import date, timedelta
+from datetime import date, datetime, time, timedelta
 from typing import Any
 
 from django.conf import settings
@@ -234,11 +234,15 @@ def _link_hash(token: str) -> str:
     return hashlib.sha256(token.encode()).hexdigest()
 
 
-def open_link(request: DocumentRequest) -> None:
-    """Crée (ou prolonge) le lien personnel de dépôt de cette demande."""
+def open_link(request: DocumentRequest, until: date | None = None) -> None:
+    """Crée (ou prolonge) le lien personnel de dépôt de cette demande. `until` : le lien reste
+    valable au moins jusqu'à cette date (prochain rappel) + REQUEST_LINK_DAYS."""
     from apps.outlook.graph import encrypt
 
     expires = timezone.now() + timedelta(days=settings.REQUEST_LINK_DAYS)
+    if until is not None:
+        end_of_day = timezone.make_aware(datetime.combine(until, time(23, 59)))
+        expires = max(expires, end_of_day + timedelta(days=settings.REQUEST_LINK_DAYS))
     if not request.link_hash:
         token = secrets.token_urlsafe(32)
         request.link_hash, request.link_token = _link_hash(token), encrypt(token)
@@ -379,7 +383,6 @@ def create_request(
 ) -> DocumentRequest:
     """Une demande au client. Dans une demande groupée (`bundle`), pas d'e-mail ni de relance
     propres : c'est la demande groupée qui écrit au client et relance (D-051)."""
-    reminder = timezone.localdate() + timedelta(days=settings.REQUEST_REMINDER_DAYS)
     with transaction.atomic():
         request = DocumentRequest.objects.create(
             client=client,
@@ -389,10 +392,12 @@ def create_request(
             title=_title(kind, person, label, doc_type),
             recipient=bundle.recipient if bundle else _recipient(client),
             created_by=user,
-            next_reminder_on=None if bundle else reminder,
             bundle=bundle,
         )
-        open_link(request)
+        if bundle is None:
+            request.next_reminder_on = reminder_dates(request)[0]
+            request.save(update_fields=["next_reminder_on"])
+        open_link(request, until=request.next_reminder_on)
         email = None if bundle else _prepare_email(request, OutgoingEmail.Kind.REQUEST)
     if email is not None:
         _deliver(email, user)
@@ -481,7 +486,6 @@ def create_bundle(
         bundle = DocumentRequest.objects.create(
             client=client, kind=DocumentRequest.Kind.BUNDLE, title="Documents à compléter",
             recipient=recipient, created_by=user,
-            next_reminder_on=timezone.localdate() + timedelta(days=settings.REQUEST_REMINDER_DAYS),
         )  # fmt: skip
         open_link(bundle)
         for kind, target in items:
@@ -492,6 +496,9 @@ def create_bundle(
                 )  # fmt: skip
             else:
                 send_for_signature(target, user=user, bundle=bundle)
+        bundle.next_reminder_on = reminder_dates(bundle)[0]
+        bundle.save(update_fields=["next_reminder_on"])
+        open_link(bundle, until=bundle.next_reminder_on)
         email = _prepare_email(bundle, OutgoingEmail.Kind.REQUEST)
     _deliver(email, user)
     events.emit(
@@ -532,6 +539,40 @@ def cancel(request: DocumentRequest, *, user: User | None = None) -> None:
     )  # fmt: skip
 
 
+# --- Calendrier des rappels (D-055) -----------------------------------------------------------
+
+
+def _card_expiry(request: DocumentRequest) -> date | None:
+    """Date d'expiration de la carte demandée (la plus proche pour une demande groupée de
+    cartes) ; None si la demande ne porte pas uniquement sur des cartes déjà connues."""
+    from .models import IdentityCard
+
+    if request.kind == DocumentRequest.Kind.BUNDLE:
+        items = list(request.items.all())
+        if not items or any(i.kind != DocumentRequest.Kind.IDENTITY_CARD for i in items):
+            return None
+        dates = [_card_expiry(i) for i in items]
+        known = [d for d in dates if d is not None]
+        return min(known) if len(known) == len(dates) else None
+    if request.kind != DocumentRequest.Kind.IDENTITY_CARD or request.person_id is None:
+        return None
+    card = IdentityCard.objects.filter(person_id=request.person_id).order_by("-valid_until")
+    latest = card.first()
+    return latest.valid_until if latest else None
+
+
+def reminder_dates(request: DocumentRequest) -> list[date]:
+    """Dates des rappels. Carte qui expire : 15 et 30 jours après l'expiration (ou après la
+    demande si la carte avait déjà expiré). Autres demandes : tous les 7 jours."""
+    asked = timezone.localtime(request.created_at).date()
+    expiry = _card_expiry(request)
+    if expiry is not None:
+        start = max(expiry, asked)
+        return [start + timedelta(days=d) for d in settings.CARD_REMINDERS_AFTER_EXPIRY]
+    step = settings.REQUEST_REMINDER_DAYS
+    return [asked + timedelta(days=step * (n + 1)) for n in range(settings.REQUEST_MAX_REMINDERS)]
+
+
 def send_due_reminders(today: date | None = None) -> int:
     """Relances automatiques (passage quotidien de run_jobs). Idempotent pour une journée."""
     today = today or timezone.localdate()
@@ -543,26 +584,35 @@ def send_due_reminders(today: date | None = None) -> int:
     count = 0
     for request in due:
         with transaction.atomic():
-            if request.link_hash:
-                open_link(request)  # le lien reste le même, sa validité est prolongée
             email = _prepare_email(request, OutgoingEmail.Kind.REMINDER)
             request.reminders_sent += 1
-            request.next_reminder_on = today + timedelta(days=settings.REQUEST_REMINDER_DAYS)
+            planned = reminder_dates(request)
+            if request.reminders_sent < len(planned):
+                following = max(planned[request.reminders_sent], today + timedelta(days=1))
+            else:  # dernier rappel : sans réponse à cette date, le gestionnaire est averti
+                following = today + timedelta(days=settings.REQUEST_ESCALATION_DAYS)
+            request.next_reminder_on = following
             request.save(update_fields=["reminders_sent", "next_reminder_on"])
+            if request.link_hash:
+                open_link(request, until=following)  # même lien, validité prolongée
         _deliver(email, None)
         count += 1
     return count
 
 
+def unanswered() -> Any:
+    """Demandes sans réponse 15 jours après le dernier rappel (D-055)."""
+    return DocumentRequest.objects.filter(
+        status=DocumentRequest.Status.PENDING,
+        bundle__isnull=True,
+        reminders_sent__gte=settings.REQUEST_MAX_REMINDERS,
+        next_reminder_on__lte=timezone.localdate(),
+    )
+
+
 def overdue_requests(client: Client) -> list[DocumentRequest]:
     """Demandes restées sans réponse après toutes les relances."""
-    today = timezone.localdate()
-    return list(
-        client.document_requests.filter(
-            status=DocumentRequest.Status.PENDING,
-            reminders_sent__gte=settings.REQUEST_MAX_REMINDERS,
-        ).filter(Q(next_reminder_on__lte=today) | Q(next_reminder_on__isnull=True))
-    )
+    return list(unanswered().filter(client=client))
 
 
 def pending_requests(client: Client) -> list[DocumentRequest]:

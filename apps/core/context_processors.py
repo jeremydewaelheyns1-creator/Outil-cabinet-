@@ -9,4 +9,14 @@ def app_context(request: HttpRequest) -> dict[str, Any]:
     user = getattr(request, "user", None)
     if user is not None and user.is_authenticated:
         context["unread_notifications"] = user.notifications.filter(read_at__isnull=True).count()
+        context["unanswered_requests"] = _unanswered(user)
     return context
+
+
+def _unanswered(user: Any) -> int:
+    """Demandes de mes dossiers restées sans réponse après tous les rappels (D-055)."""
+    from apps.clients.models import Client
+    from apps.documents.services import unanswered
+
+    mine = Client.objects.visible_to(user).filter(assignments__user=user)
+    return int(unanswered().filter(client__in=mine).values("client").distinct().count())

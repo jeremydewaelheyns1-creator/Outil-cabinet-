@@ -12,8 +12,7 @@ from __future__ import annotations
 
 from datetime import date, timedelta
 
-from django.conf import settings
-from django.db.models import Q, QuerySet
+from django.db.models import QuerySet
 from django.urls import reverse
 from django.utils import timezone
 
@@ -76,12 +75,9 @@ def _activity(user: User, clients: list[Client], month: str, start: date, end: d
         .exclude(kind=DocumentRequest.Kind.BUNDLE)
         .count()
     )  # fmt: skip
-    unanswered = (
-        requests.filter(status=DocumentRequest.Status.PENDING,
-                        reminders_sent__gte=settings.REQUEST_MAX_REMINDERS)
-        .filter(Q(next_reminder_on__isnull=True) | Q(next_reminder_on__lte=timezone.localdate()))
-        .count()
-    )  # fmt: skip
+    from .services import unanswered as no_answer
+
+    unanswered = no_answer().filter(client__in=clients).count()
     lines = [
         f"{_plural(sent, 'demande envoyée', 'demandes envoyées')} aux clients",
         f"{_plural(reminders, 'rappel envoyé', 'rappels envoyés')}",

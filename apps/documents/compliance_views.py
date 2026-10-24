@@ -75,3 +75,19 @@ def ask(request: AppRequest) -> HttpResponse:
     if back.startswith("/") and "//" not in back:
         return redirect(back)
     return redirect("conformite:board")
+
+
+def unanswered(request: AppRequest) -> HttpResponse:
+    """Demandes restées sans réponse 15 jours après le dernier rappel (D-055)."""
+    from .services import unanswered as no_answer
+
+    who = request.GET.get("qui", "moi")
+    who = who if who in {"moi", "tous"} else "moi"
+    requests = list(
+        no_answer()
+        .filter(client__in=_clients(request, who))
+        .select_related("client", "person")
+        .order_by("created_at")
+    )
+    log_access(request, AccessLog.Action.VIEW, None, details={"écran": "sans réponse"})
+    return render(request, "documents/unanswered.html", {"requests": requests, "who": who})

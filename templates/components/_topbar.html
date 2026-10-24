@@ -7,6 +7,8 @@
         Déposer des documents</a>
     {% endif %}
     <div class="topbar-user">
+      {% if unanswered_requests %}<a class="topbar-alert" href="{% url 'conformite:unanswered' %}" title="{{ unanswered_requests }} dossier{{ unanswered_requests|pluralize }} : le client ne répond pas malgré les rappels">
+        <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01"/></svg><span>{{ unanswered_requests }} sans réponse</span></a>{% endif %}
       <a class="topbar-bell" href="{% url 'core:notifications' %}" title="Notifications"{% if unread_notifications %} aria-label="{{ unread_notifications }} notification{{ unread_notifications|pluralize }} non lue{{ unread_notifications|pluralize }}"{% endif %}>
         <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>{% if unread_notifications %}<span class="bell-count">{{ unread_notifications }}</span>{% endif %}</a>
       <span class="topbar-user-name">{{ user.get_full_name|default:user.email }}</span>
