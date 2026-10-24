@@ -470,3 +470,14 @@ Choix de Jeremy (24/10/2026).
   nombres et un lien vers « Conformité » : aucun nom, aucune donnée sensible.
 - Ce que le cabinet doit faire lui-même (fiche de risque, extrait UBO, document à mettre à
   jour) reste une échéance du gestionnaire (D-050) et apparaît dans le résumé.
+
+## D-053 — Réglages de délais et accueil
+Mandat de Jeremy (« fais tout ce qui améliore »), propositions annoncées le 24/10.
+- Carte d'identité : demande au client **60 jours** avant l'expiration (avant : 30), en même
+  temps que la ligne passe en orange (`IDENTITY_RENEWAL_DAYS`).
+- Extrait du registre UBO rangé sans date : valable **un an** (`UBO_EXTRACT_VALID_DAYS`), car
+  on le reconsulte au moins une fois par an.
+- Accueil : trois chiffres « de mes dossiers incomplets / à revoir bientôt / demandes en un
+  clic », vers l'écran Conformité. Calcul gardé 15 minutes en mémoire (des nombres seulement).
+- Tableau de conformité : toutes les cases d'un dossier lues en une fois (environ 6 fois plus
+  rapide).

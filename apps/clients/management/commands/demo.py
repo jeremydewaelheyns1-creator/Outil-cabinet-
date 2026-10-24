@@ -160,6 +160,7 @@ class Command(BaseCommand):
 
         run = generate_all()
         self._vat(companies, user)
+        self._compliance(companies, user)
         self.stdout.write(
             self.style.SUCCESS(
                 f"{len(companies) + len(persons)} fiches fictives, {run.created} échéances. "
@@ -281,6 +282,24 @@ class Command(BaseCommand):
                 OfficialSnapshot.objects.create(
                     client=company, source=source, status=OfficialSnapshot.Status.OK, items=items
                 )
+
+    @staticmethod
+    def _compliance(companies: list[Client], user: User) -> None:
+        """Paperasse anti-blanchiment (D-048 à D-052) : fiche guidée, demande groupée, résumé."""
+        from django.utils import timezone
+
+        from apps.documents import compliance, digest, generation, risk
+
+        brewery, medical = companies[6], companies[3]
+        risk.save(
+            brewery,
+            {"sensitive_sector": True, "cash": True, "new_client": False},
+            user=user,
+            comment="Débit de boissons : paiements en espèces fréquents (exemple fictif).",
+        )
+        generation.generate(medical, "lettre_mission", user=user)
+        compliance.ask_everything(medical, user)
+        digest.monthly(timezone.localdate().replace(day=1))
 
     @staticmethod
     def _documents(companies: list[Client], persons: list[Client], user: User) -> None:
