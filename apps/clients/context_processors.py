@@ -27,6 +27,7 @@ def current_dossier(request: HttpRequest) -> dict[str, Any]:
         "dossier_counts": {**_relation_counts(client, user), "overdue": overdue},
         "dossier_overdue": overdue,
         "dossier_unanswered": _unanswered(client),
+        "dossier_progress": _progress(client),
         "dossier_relations": dossier.header_relations(client, user),
     }
 
@@ -58,3 +59,9 @@ def _unanswered(client: Client) -> int:
     from apps.documents.services import unanswered  # les documents dépendent des clients
 
     return int(unanswered().filter(client=client).count())
+
+
+def _progress(client: Client) -> dict[str, int]:
+    from apps.documents.compliance import progress
+
+    return progress(client)

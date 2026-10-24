@@ -120,3 +120,19 @@ def summary_for(user: Any) -> dict[str, int]:
         }
         cache.set(key, found, 15 * 60)
     return dict(found)
+
+
+def progress(client: Client) -> dict[str, int]:
+    """Avancement du dossier anti-blanchiment pour l'en-tête : documents en ordre / exigés."""
+    every = types.all_rows(client)
+    levels = [
+        row.level
+        for case in dossier.document_cases_for(client)
+        for row in every.get(case.slug, [])
+        if row.level != "empty"
+    ]
+    people = services.people_concerned(client)
+    levels += [card.level for card in identity.people_cards(client, people)]
+    total = len(levels)
+    done = sum(1 for level in levels if level == "ok")
+    return {"done": done, "total": total, "percent": round(100 * done / total) if total else 100}

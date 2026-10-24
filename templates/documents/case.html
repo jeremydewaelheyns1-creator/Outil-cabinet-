@@ -55,7 +55,7 @@
     {% include "documents/_upload.html" with with_person=True %}
   {% elif case.slug == "a-recevoir" %}
     {% if can_edit and ask_all.askable %}
-      <div class="identity-review">
+      <div class="identity-review ask-all">
         <strong>Tout demander au client en un seul e-mail</strong>
         <div class="small muted">{% for label in ask_all.askable_labels %}{{ label }}{% if not forloop.last %} · {% endif %}{% endfor %}</div>
         {% if ask_all.has_email %}

@@ -509,3 +509,14 @@ de style ajoutée à la fin de `static/css/app.css`.
   control », grand titre du dossier, boutons en pilule bleue, états par pastille de couleur.
 - Police Inter **hébergée par l'outil** (`static/fonts`, licence OFL) : aucun appel à Google
   Fonts ni à un autre site (confidentialité). Sur Mac, la police du système (San Francisco).
+
+## D-057 — Look « moderne doux » (maquette 5), à la place de D-056
+Choix de Jeremy (24/10) : rester exactement sur la maquette 5. Remplace l'essai « style
+Apple » de D-056 (même principe : une couche de style en fin de `static/css/app.css`, aucune
+fonction changée).
+- Fond lavande clair, cartes blanches très arrondies et à plat, police Manrope **hébergée
+  par l'outil** (licence OFL, aucun appel extérieur), violet indigo pour les actions.
+- Barre du haut blanche, onglets du dossier en pilules (l'onglet ouvert en bleu nuit),
+  en-tête du dossier dans un bloc blanc avec pictogramme, bandeau « tout demander » foncé.
+- Nouveau dans l'en-tête du dossier : barre **« Dossier anti-blanchiment : NN % »**
+  (documents en ordre / documents exigés, cartes d'identité comprises), lien vers Documents.

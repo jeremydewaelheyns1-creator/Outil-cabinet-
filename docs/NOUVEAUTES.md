@@ -5,9 +5,10 @@ sont inventées.
 
 ## 24 octobre 2026 — Nouveau look
 
-- L'outil fait peau neuve, dans un style épuré inspiré d'Apple : cartes blanches arrondies,
-  barre du haut translucide, onglets du dossier en bouton segmenté, grands titres, pastilles
-  de couleur pour l'état des documents. Rien ne change dans le fonctionnement.
+- L'outil fait peau neuve (maquette « moderne doux » choisie par Jeremy) : fond lavande clair,
+  cartes blanches arrondies, onglets en pilules, boutons violets, nouvelle police.
+- En haut de chaque dossier : une barre « Dossier anti-blanchiment : 75 % » montre d'un coup
+  d'œil ce qui est en ordre. Un clic ouvre les documents.
 
 ## 24 octobre 2026 — Rappels de la carte d'identité et clients qui ne répondent pas
 

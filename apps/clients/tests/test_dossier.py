@@ -38,7 +38,8 @@ def test_inside_a_dossier_only_the_dossier_is_shown(web):
             reverse("clients:vat", args=[client.pk]),
             reverse("clients:work", args=[client.pk, "versements-anticipes"])]  # fmt: skip
     urls.append(reverse("clients:documents", args=[client.pk]))
-    positions = [html.index(u) for u in urls]
+    tabs = html[html.index('class="tabs"') :]  # l'en-tête a aussi un lien vers Documents
+    positions = [tabs.index(u) for u in urls]
     assert positions == sorted(positions)  # ordre voulu par Jeremy
     assert "time-sheet" not in html
     # À gauche : la paperasse, chaque page à un clic.
