@@ -246,5 +246,9 @@ def payment_extras(text: str) -> tuple[str, str]:
             continue
         beneficiary = BENEFICIARY.search(line)
         bic = BIC.search(line)
-        return (beneficiary.group(1).strip() if beneficiary else "", bic.group(1) if bic else "")
+        if beneficiary or bic:  # une ligne qui cite seulement « paiement » ne suffit pas
+            return (
+                beneficiary.group(1).strip() if beneficiary else "",
+                bic.group(1) if bic else "",
+            )
     return "", ""

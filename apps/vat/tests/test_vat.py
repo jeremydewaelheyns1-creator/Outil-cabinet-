@@ -501,3 +501,8 @@ def test_payment_line_in_the_administration_format():
     )
     assert intervat.payment_details(text) == (account, reference)
     assert intervat.payment_extras(text) == ("TVA-BTW", "GEBABEBB")
+    # Un titre « Paiement » plus haut ne doit pas cacher la vraie ligne.
+    assert intervat.payment_extras("Paiement\nDate limite de paiement : 20/11\n" + text) == (
+        "TVA-BTW",
+        "GEBABEBB",
+    )

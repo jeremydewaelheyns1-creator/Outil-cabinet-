@@ -19,6 +19,8 @@ sont inventées.
 - **Mon agenda** : bouton « Une échéance » (rendez-vous, appel…) avec rappel le jour J
   (bandeau et cloche).
 - Pas d'intelligence artificielle : tout se fait avec des règles simples.
+- Corrections : un listing intracommunautaire joint à un e-mail est bien nommé ; le BIC du
+  paiement TVA est retrouvé même si le PDF a un titre « Paiement » plus haut.
 
 ## 25 octobre 2026 — Ma journée et feuille de temps
 

@@ -38,10 +38,12 @@ def recognize(
     """(sorte, description courte) d'une pièce jointe."""
     lowered_name = name.lower()
     if content_type in ("application/xml", "text/xml") or lowered_name.endswith(".xml"):
-        declarations: list[object] = []
+        declarations: list[intervat.Declaration] = []
         # Fichier XML quelconque : simplement pas une déclaration Intervat.
         with contextlib.suppress(ValueError, SyntaxError, KeyError, AttributeError, TypeError):
             declarations = list(intervat.parse_xml(content))
+        if declarations and declarations[0].kind == intervat.IC:
+            return Kind.VAT, "Listing intracommunautaire (fichier Intervat)"
         if declarations:
             return Kind.VAT, "Déclaration TVA (fichier Intervat)"
         return Kind.OTHER, "Fichier XML"

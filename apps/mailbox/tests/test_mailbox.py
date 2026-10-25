@@ -378,3 +378,19 @@ def test_unread_badge_in_menu(web, user, link, fake):
     sync.sync_link(link)
     html = web.get(reverse("core:home")).content.decode()
     assert 'class="nav-count">2<' in html
+
+
+def test_recognizes_an_ic_listing_attachment(bakery):
+    from apps.clients.models import Client
+    from apps.mailbox import recognize
+
+    listing = b"""<?xml version="1.0"?>
+<ns2:IntraConsignment xmlns="http://www.minfin.fgov.be/InputCommon"
+  xmlns:ns2="http://www.minfin.fgov.be/IntraConsignment" IntraListingsNbr="1">
+  <ns2:IntraListing SequenceNumber="1" ClientsNbr="1" AmountSum="100.00">
+    <ns2:Declarant><VATNumber>BE0403170701</VATNumber></ns2:Declarant>
+    <ns2:Period>332026</ns2:Period>
+  </ns2:IntraListing>
+</ns2:IntraConsignment>"""
+    kind, label = recognize.recognize("ic.xml", listing, "application/xml", Client.objects.all())
+    assert kind == "tva" and label.startswith("Listing intracommunautaire")
