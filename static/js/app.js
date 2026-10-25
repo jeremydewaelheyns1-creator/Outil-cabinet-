@@ -185,3 +185,10 @@ document.addEventListener("change", function (event) {
   else fade();
   document.addEventListener("htmx:afterSwap", fade);
 })();
+
+// Listes déroulantes qui relancent le filtre dès qu'on change la valeur (sans script en ligne,
+// pour la politique de sécurité du contenu).
+document.addEventListener("change", function (event) {
+  var field = event.target;
+  if (field.matches && field.matches("[data-autosubmit]") && field.form) field.form.submit();
+});

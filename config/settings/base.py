@@ -10,6 +10,7 @@ from typing import Any
 
 import django_stubs_ext
 import environ
+from django.utils.csp import CSP
 
 # Permet d'écrire ModelAdmin[Client], ModelForm[Client]... (typage vérifié par mypy).
 django_stubs_ext.monkeypatch()
@@ -60,6 +61,7 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     "apps.core.health.HealthCheckMiddleware",  # en premier : sondes Cloud Run (voir module)
     "django.middleware.security.SecurityMiddleware",
+    "django.middleware.csp.ContentSecurityPolicyMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.locale.LocaleMiddleware",
@@ -222,6 +224,20 @@ MAIL_UNCLASSED_DAYS = env.int("MAIL_UNCLASSED_DAYS", default=365)
 MAIL_KEEP_YEARS_AFTER_CLIENT = env.int("MAIL_KEEP_YEARS_AFTER_CLIENT", default=10)
 # Clé qui chiffre les jetons Microsoft en base (Fernet). Vide : dérivée de DJANGO_SECRET_KEY.
 MAILBOX_TOKEN_KEY = env("MAILBOX_TOKEN_KEY", default="")
+
+# Politique de sécurité du contenu : le navigateur n'exécute que les scripts de l'outil lui-même
+# (aucun script en ligne, aucun site tiers) ; l'outil ne peut pas être affiché dans un autre site.
+SECURE_CSP = {
+    "default-src": [CSP.SELF],
+    "script-src": [CSP.SELF],
+    "style-src": [CSP.SELF, CSP.UNSAFE_INLINE],
+    "img-src": [CSP.SELF, "data:", "blob:"],
+    "font-src": [CSP.SELF],
+    "connect-src": [CSP.SELF],
+    "object-src": [CSP.SELF],  # PDF ouverts dans le navigateur
+    "base-uri": [CSP.SELF],
+    "frame-ancestors": [CSP.NONE],
+}
 
 DATA_UPLOAD_MAX_MEMORY_SIZE = 25 * 1024 * 1024
 FILE_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024

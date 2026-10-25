@@ -8,7 +8,7 @@
     <form method="get" class="inline">
       <input type="hidden" name="semaine" value="{{ monday|date:'Y-m-d' }}">
       <label class="visually-hidden" for="ts-qui">Collaborateur</label>
-      <select id="ts-qui" name="qui" class="compact" onchange="this.form.submit()">
+      <select id="ts-qui" name="qui" class="compact" data-autosubmit>
         {% for u in colleagues %}<option value="{{ u.pk }}"{% if u.pk == person.pk %} selected{% endif %}>{{ u }}</option>{% endfor %}
       </select>
     </form>

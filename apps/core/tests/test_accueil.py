@@ -248,3 +248,8 @@ def test_hybrid_board_lists_only_the_most_urgent_free_dossiers(user, django_asse
         board = hybrid.board(user)
     assert board.free == hybrid.MAX_FREE_ROWS + 5 and board.hidden == 5
     assert board.rows[0].client.name == "Hybride 00"
+
+
+def test_pages_forbid_inline_scripts_and_framing(web):
+    policy = web.get(reverse("core:home"))["Content-Security-Policy"]
+    assert "script-src 'self'" in policy and "frame-ancestors 'none'" in policy

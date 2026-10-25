@@ -6,7 +6,7 @@
 <form class="filters" method="get">
   <div>
     <label for="f-qui">Dossiers</label>
-    <select id="f-qui" name="qui" onchange="this.form.submit()">
+    <select id="f-qui" name="qui" data-autosubmit>
       <option value="moi"{% if who == "moi" %} selected{% endif %}>Mes dossiers</option>
       <option value="tous"{% if who == "tous" %} selected{% endif %}>Tout le cabinet</option>
     </select>
