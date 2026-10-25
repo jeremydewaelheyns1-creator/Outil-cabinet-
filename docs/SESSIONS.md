@@ -23,6 +23,22 @@ ambitieux pour l'instant), adresse « support » pour les demandes automatiques,
 **module Administrateur** (onglet réservé, vue générale de ce qui se passe ; Conformité et
 le journal des consultations pourraient y aller — à décider avec Jeremy).
 
+**Recette de nuit du 25 au 26 octobre (D-065)** — faite seule, à la demande de Jeremy
+(« teste tout, améliore »). Corrigé : heures vides (erreur 500), lenteur à 1 500 dossiers
+(Conformité / Ma journée), téléphone (menus, tableaux, recherche boîte mail), visualiseur
+ouvert seul, « 1er », libellés accessibles, portefeuille par défaut, politique de sécurité du
+contenu, icône. Propositions NON faites (à décider par Jeremy) :
+- base de données : `db-f1-micro` (partagée, 0,6 Go) suffit pour la démo ; pour ~1 000
+  dossiers réels, passer au moins à `db-g1-small` (coût mensuel plus élevé) ;
+- échéancier : quelqu'un sans le droit « modifier les fiches » peut quand même cocher une
+  échéance « terminée » (voulu ? sinon réserver au droit clients.edit) ;
+- rôles accordés au féminin (« gérante ») : il faudrait connaître le sexe (lu sur la carte
+  d'identité) ;
+- « Tous les clients » : filtre « hybrides libres » pour parcourir les dossiers à prendre
+  au-delà des 15 de l'Accueil ;
+- l'adresse de la page « Liaison Outlook » est /ma-boite-mail/ (historique, liée au retour
+  Microsoft enregistré dans Azure) : ne pas la renommer sans mettre Azure à jour.
+
 **Reprise FID — dossiers complets (D-064)** : personne de contact, « Hybride » dans la
 colonne Comptable, feuille « Relations ». Fichier de test de 30 dossiers fictifs envoyé à
 Jeremy (script : à refaire depuis D-064 si besoin). Les tâches IPP n'apparaissent pas tant

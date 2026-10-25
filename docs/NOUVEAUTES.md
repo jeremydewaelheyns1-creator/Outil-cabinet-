@@ -3,6 +3,22 @@
 Ce qui a été ajouté à l'outil, du plus récent au plus ancien. Toutes les données de la démo
 sont inventées.
 
+## 26 octobre 2026 — Recette complète de nuit
+
+- Testé avec 1 500 dossiers inventés : « Conformité » et « Ma journée » s'ouvrent maintenant en
+  moins d'une demi-seconde (au lieu de plus de 20 secondes). « Conformité » est découpée en
+  pages de 50 dossiers.
+- Sur téléphone : le menu et les rubriques du dossier deviennent une bande qu'on fait glisser,
+  les tableaux larges défilent dans leur cadre, la recherche de « Ma boîte mail » est lisible.
+- Accueil : « ⚠ N échéances en retard » sous le titre quand il y en a (un clic ouvre la
+  liste). Les dossiers hybrides : les 15 plus urgents, avec le nombre des autres.
+- « 1er janvier » au lieu de « 1 janvier » partout où l'outil écrit une date en toutes lettres.
+- Feuille de temps : une entrée sans heure affichait une erreur ; elle est maintenant refusée
+  avec un message clair.
+- Nouvelle fiche client : proposée dans le portefeuille commun, plus dans un bureau privé.
+- Sécurité renforcée : le navigateur refuse tout script qui ne vient pas de l'outil lui-même.
+- Petite icône de l'outil dans l'onglet du navigateur.
+
 ## 25 octobre 2026 — Reprise FID-Manager : dossiers complets
 
 - L'import du fichier Excel des clients (Paramètres › Reprise) reprend maintenant aussi la

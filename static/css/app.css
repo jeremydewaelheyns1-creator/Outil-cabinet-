@@ -1399,3 +1399,9 @@ button:active, .button:active { transform: scale(.98); }
 }
 .acc-late { display: inline-block; margin-top: .5rem; padding: .3rem .75rem; border-radius: 999px; background: var(--danger-soft, #fde8ea); color: var(--danger, #c0182b); font-weight: 700; font-size: .9rem; }
 .acc-late:hover { text-decoration: none; filter: brightness(.97); }
+@media (width <= 640px) {
+  .ts-nav strong { order: -1; flex-basis: 100%; }
+  .mb-search { flex-wrap: wrap; border-radius: 18px; padding: .5rem .6rem; }
+  .mb-search input[type="search"] { flex: 1 1 100%; }
+  .mb-search-dossier { flex: 1 1 auto; max-width: none; }
+}

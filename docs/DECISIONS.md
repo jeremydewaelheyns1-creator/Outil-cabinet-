@@ -668,3 +668,24 @@ Validé par Jeremy sur maquettes (25/10).
   le rapport ne contient jamais de numéro national.
 - Fichier de test : 30 dossiers fictifs (numéros d'entreprise dans la plage 0020.9xx.xxx,
   jamais attribuée par la BCE ; numéros nationaux fictifs valides).
+
+## D-065 — Recette de nuit : tenue de charge, politique de sécurité du contenu
+
+- **Tenue de charge** : essai avec 1 500 dossiers fictifs et 3 300 échéances. Le tableau de
+  conformité calculait chaque dossier séparément (une dizaine de requêtes par dossier :
+  22 secondes pour « Conformité » et « Ma journée »). Il charge désormais tout en une dizaine
+  de requêtes pour l'ensemble (`compliance.load`, `identity.preload`) : 0,2 à 0,4 seconde.
+  Résultat identique vérifié par un test (calcul dossier par dossier = calcul groupé).
+  « Conformité » est découpée en pages de 50 dossiers ; le tableau hybride de l'Accueil liste
+  les 15 dossiers libres les plus urgents (le total reste affiché).
+- **Politique de sécurité du contenu** (en-tête `Content-Security-Policy`, intégré à Django) :
+  le navigateur n'exécute que les scripts servis par l'outil (aucun script en ligne, aucun site
+  tiers) et l'outil ne peut pas être affiché dans un autre site. Les trois listes déroulantes
+  qui utilisaient un script en ligne passent par `data-autosubmit`. Vérifié : 103 pages sans
+  erreur, connexion et ajout d'une clé d'accès (clé virtuelle) fonctionnent.
+- Parcours automatiques gardés pour les prochaines recettes (hors dépôt, données fictives) :
+  toutes les pages avec trois profils, formulaires remplis de valeurs absurdes (aucune erreur
+  500, aucun script renvoyé), formulaires de l'administrateur envoyés par un stagiaire sans
+  droits (aucune écriture, sauf l'actualisation des données publiques BCE / Moniteur / BNB),
+  fiches d'un portefeuille privé demandées par adresse (aucune fuite), numéro national
+  recherché dans les pages, journaux et tables techniques (jamais en clair).
