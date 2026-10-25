@@ -3,7 +3,7 @@
 {% block page %}
 <div class="day-head">
   <div>
-    <div class="day-date">{{ today|date:"l j F"|capfirst }}</div>
+    <div class="day-date">{{ today|date_fr:"l j F"|capfirst }}</div>
     <h1>Bonjour {{ user.first_name|default:"" }}{% if count %}, {{ count }} chose{{ count|pluralize }} pour vous aujourd'hui{% else %}, rien d'urgent aujourd'hui ✓{% endif %}</h1>
   </div>
   {% if total_today %}

@@ -222,3 +222,18 @@ def test_settings_link_in_the_top_bar_only_for_those_who_can(web, make_user):
     browser = Browser()
     browser.force_login(make_user(capabilities=["reprise.import"]))
     assert ">Paramètres<" in unescape(browser.get(reverse("core:home")).content.decode())
+
+
+def test_my_overdue_deadlines_are_signalled(web, user):
+    client = mine(user)
+    late = task(client, "isoc", timezone.localdate() - timedelta(days=3), label="2025")
+    late.assignee = user
+    late.save()
+    assert "⚠ 1 échéance en retard" in page(web)
+
+
+def test_first_of_the_month_reads_premier():
+    from apps.core.templatetags.app_tags import date_fr
+
+    assert date_fr(date(2027, 1, 1)) == "1er janvier"
+    assert date_fr(date(2027, 1, 2), "l j F") == "samedi 2 janvier"

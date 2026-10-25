@@ -1,7 +1,10 @@
 """Petites aides de gabarits."""
 
+from datetime import date, datetime
+
 from django import template
 from django.http import HttpRequest
+from django.utils.formats import date_format
 from django.utils.safestring import SafeString, mark_safe
 
 from apps.core.models import User
@@ -106,3 +109,13 @@ def euros(value: object) -> str:
     whole, _, cents = f"{abs(amount):,.2f}".partition(".")
     sign = "-" if amount < 0 else ""
     return f"{sign}{whole.replace(',', ' ')},{cents} €"
+
+
+@register.filter
+def date_fr(value: date | datetime | None, fmt: str = "j F") -> str:
+    """Comme `date`, mais « 1er octobre » le premier du mois (usage français)."""
+    if value is None:
+        return ""
+    if value.day == 1:
+        fmt = fmt.replace("j", "j\\e\\r")
+    return date_format(value, fmt)

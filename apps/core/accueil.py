@@ -241,6 +241,11 @@ def build(user: User, today: date) -> dict[str, object]:
         "calendar": month_calendar(today, tasks),
         "hybrid": hybrid.board(user),
         "links": LINKS,
+        # Mes échéances en retard (même définition que l'échéancier « Moi · en retard »).
+        "late": Task.objects.visible_to(user)
+        .open()
+        .filter(assignee=user, due_date__lt=today)
+        .count(),
     }
     if center is not None:
         days = (center.deadline - today).days

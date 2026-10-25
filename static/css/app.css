@@ -348,6 +348,7 @@ legend { font-weight: 700; padding: 0 0.4rem; }
 .filters { display: flex; gap: 0.75rem; flex-wrap: wrap; align-items: flex-end; margin-bottom: 1rem; }
 .filters > * { flex: 1 1 160px; }
 .filters .search { flex: 3 1 320px; }
+.filters > *:has(select) { flex: 1 0 auto; max-width: 100%; }
 
 /* --- Boutons ------------------------------------------------------------------------------- */
 
@@ -695,7 +696,7 @@ a.badge:hover { text-decoration: none; filter: brightness(0.95); }
 .viewer-tabs button[aria-selected="true"] { color: var(--primary); border-bottom-color: var(--primary); }
 .viewer-body { flex: 1; overflow: auto; background: #e6e9ee; }
 .viewer-body > section[data-viewer-panel="infos"], .viewer-body > section[data-viewer-panel="lu"] { background: var(--surface); padding: 1.2rem; min-height: 100%; }
-.viewer-pages { display: grid; justify-items: center; gap: 1rem; padding: 1.2rem; }
+.viewer-pages { display: grid; grid-template-columns: minmax(0, 1fr); justify-items: center; gap: 1rem; padding: 1.2rem; }
 .viewer-pages img { width: min(100%, 860px); background: #fff; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15); }
 .viewer-empty { background: var(--surface); padding: 2rem; border-radius: 8px; text-align: center; }
 .viewer-foot { padding: 0.6rem 1.2rem; border-top: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; gap: 1rem; }
@@ -1378,3 +1379,23 @@ button:active, .button:active { transform: scale(.98); }
 .acc-links li { display: grid; }
 .acc-links a { font-weight: 600; }
 .acc-links li span:not([aria-hidden]) { color: var(--text-muted); font-size: .8rem; }
+
+/* --- Téléphone : rubriques du dossier en bande défilante, tableaux qui défilent --------- */
+@media (width <= 900px) {
+  .dossier-side { display: flex; gap: .4rem; overflow-x: auto; padding: .4rem; scrollbar-width: thin; }
+  .dossier-side .side-group { display: contents; }
+  .dossier-side .side-group-title { display: none; }
+  .dossier-side .side-link { flex: 0 0 auto; white-space: nowrap; display: inline-flex; gap: .35rem; align-items: center; }
+  .dossier-side .side-link[aria-current="page"] { order: -1; }
+  .main table.table { display: block; max-width: 100%; overflow-x: auto; }
+  .main .table-wrap table.table { display: table; }
+  .main img { max-width: 100%; height: auto; }
+}
+@media (width <= 900px) {
+  .sidebar { padding: .4rem .75rem; }
+  .sidebar nav { display: flex; flex-direction: row; gap: .35rem; overflow-x: auto; scrollbar-width: thin; }
+  .sidebar .nav-title { display: none; }
+  .sidebar nav a { flex: 0 0 auto; white-space: nowrap; padding: .45rem .8rem; }
+}
+.acc-late { display: inline-block; margin-top: .5rem; padding: .3rem .75rem; border-radius: 999px; background: var(--danger-soft, #fde8ea); color: var(--danger, #c0182b); font-weight: 700; font-size: .9rem; }
+.acc-late:hover { text-decoration: none; filter: brightness(.97); }

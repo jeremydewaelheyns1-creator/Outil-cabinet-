@@ -11,6 +11,7 @@
         {% elif upcoming %}Pas de grande échéance avant {{ upcoming.family.before }} du {{ upcoming_date }} : mes dossiers à traiter{% if hybrid %}, puis les dossiers hybrides que je peux prendre{% endif %}.
         {% else %}Pas de grande échéance à venir pour mes dossiers.{% endif %}
       </p>
+      {% if late %}<a class="acc-late" href="{% url 'tasks:board' %}?qui=moi&amp;quand=retard">⚠ {{ late }} échéance{{ late|pluralize }} en retard</a>{% endif %}
     </div>
     {% if center %}
       <div class="acc-countdown" role="timer">
@@ -150,7 +151,7 @@
       {% if not center and upcoming %}
         <section class="card acc-next" aria-label="Prochaine grande période">
           <div class="acc-next-box"><span>Dans {{ upcoming_days }} jour{{ upcoming_days|pluralize }}</span><strong>{{ upcoming.family.label }}</strong><span>{{ upcoming_date }}</span></div>
-          <p class="muted small">{{ upcoming_count }} de mes dossiers concerné{{ upcoming_count|pluralize }}. L'Accueil changera le {{ upcoming_switch|date:"j F" }}.</p>
+          <p class="muted small">{{ upcoming_count }} de mes dossiers concerné{{ upcoming_count|pluralize }}. L'Accueil changera le {{ upcoming_switch|date_fr:"j F" }}.</p>
         </section>
       {% endif %}
       <section class="acc-links" aria-labelledby="acc-links-title">

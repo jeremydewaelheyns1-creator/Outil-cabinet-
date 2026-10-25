@@ -247,6 +247,8 @@ def document_viewer(request: AppRequest, pk: int, document_id: str) -> HttpRespo
     """Visualiseur (fenêtre au-dessus de la page) : renvoie le contenu de la fenêtre."""
     client = _get_client(request, pk)
     document = get_object_or_404(Document, pk=document_id, client=client)
+    if not request.htmx:  # adresse ouverte directement (nouvel onglet) : la page entière
+        return redirect("clients:document_viewer_page", client.pk, document.pk)
     return render(request, "documents/_viewer.html", _viewer_context(request, client, document))
 
 

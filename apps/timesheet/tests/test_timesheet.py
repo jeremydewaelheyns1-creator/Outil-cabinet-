@@ -117,3 +117,8 @@ def test_short_slot_is_shown_on_one_line_and_confirmation_only_once(web):
                                                "dossier": ClientFactory().pk})  # fmt: skip
     page = web.get(reverse("core:agenda") + "?jour=2026-10-20").content.decode()
     assert page.count("Échéance ajoutée") == 1
+
+
+def test_missing_hours_are_refused_without_crashing(web):
+    response = add(web, start="", end="")
+    assert response.status_code == 302 and not TimeEntry.objects.exists()

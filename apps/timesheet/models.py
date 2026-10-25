@@ -74,6 +74,8 @@ class TimeEntry(models.Model):
         return minutes_between(self.start, self.end)
 
     def clean(self) -> None:
+        if None in (self.start, self.end, self.day):
+            return  # champ manquant : déjà signalé par le formulaire
         if self.end <= self.start:
             raise ValidationError("L'heure de fin doit venir après l'heure de début.")
         if self.minutes > MAX_MINUTES:

@@ -25,7 +25,9 @@ def stored(client, content=None, name="lettre.pdf", **place):
 def test_viewer_window_shows_title_place_and_actions(web):
     company = ClientFactory()
     document = stored(company, case="lettre-de-mission")
-    response = web.get(reverse("clients:document_viewer", args=[company.pk, document.pk]))
+    response = web.get(
+        reverse("clients:document_viewer", args=[company.pk, document.pk]), HTTP_HX_REQUEST="true"
+    )
     html = response.content.decode()
     assert response.status_code == 200
     assert "Lettre de mission" in html and "Documents › Lettre de mission" in html
@@ -46,7 +48,9 @@ def test_viewer_page_without_javascript(web):
 def test_pdf_pages_are_shown_as_images(web):
     company = ClientFactory()
     document = stored(company)
-    html = web.get(reverse("clients:document_viewer", args=[company.pk, document.pk])).content
+    html = web.get(
+        reverse("clients:document_viewer", args=[company.pk, document.pk]), HTTP_HX_REQUEST="true"
+    ).content
     page_url = reverse("clients:document_page", args=[company.pk, document.pk, 1])
     assert page_url in html.decode()
     page = web.get(page_url)
@@ -62,7 +66,9 @@ def test_office_files_have_no_preview_but_can_be_downloaded(web):
     company = ClientFactory()
     xlsx = b"PK\x03\x04" + b"0" * 20
     document = stored(company, content=xlsx, name="tableau.xlsx")
-    html = web.get(reverse("clients:document_viewer", args=[company.pk, document.pk])).content
+    html = web.get(
+        reverse("clients:document_viewer", args=[company.pk, document.pk]), HTTP_HX_REQUEST="true"
+    ).content
     assert "Pas d&#x27;aperçu" in html.decode() or "Pas d'aperçu" in html.decode()
 
 
@@ -87,6 +93,15 @@ def test_viewer_moves_between_documents_of_the_same_place(web):
     company = ClientFactory()
     first = stored(company, case="procuration")
     second = stored(company, case="procuration")  # le plus récent en premier
-    html = web.get(reverse("clients:document_viewer", args=[company.pk, second.pk])).content
+    html = web.get(
+        reverse("clients:document_viewer", args=[company.pk, second.pk]), HTTP_HX_REQUEST="true"
+    ).content
     assert "1 / 2" in html.decode()
     assert reverse("clients:document_viewer", args=[company.pk, first.pk]) in html.decode()
+
+
+def test_viewer_opened_directly_shows_the_full_page(web):
+    company = ClientFactory()
+    document = stored(company)
+    response = web.get(reverse("clients:document_viewer", args=[company.pk, document.pk]))
+    assert response.url == reverse("clients:document_viewer_page", args=[company.pk, document.pk])

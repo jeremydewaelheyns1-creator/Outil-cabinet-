@@ -95,7 +95,7 @@
     {% if selected %}
       <header class="mb-read-head">
         <h2>{{ selected.subject|default:"(sans objet)" }}</h2>
-        <div class="muted">{% if selected.folder == "sent" %}À {{ selected.to_addresses|join:", " }}{% else %}De {{ selected.sender }}{% if selected.from_name %} &lt;{{ selected.from_address }}&gt;{% endif %}{% endif %} · {{ selected.received_at|date:"l j F à H:i" }}</div>
+        <div class="muted">{% if selected.folder == "sent" %}À {{ selected.to_addresses|join:", " }}{% else %}De {{ selected.sender }}{% if selected.from_name %} &lt;{{ selected.from_address }}&gt;{% endif %}{% endif %} · {{ selected.received_at|date_fr:"l j F à H:i" }}</div>
       </header>
       <div class="mb-body">{{ selected.body|linebreaksbr }}</div>
 

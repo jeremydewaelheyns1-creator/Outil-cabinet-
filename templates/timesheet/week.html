@@ -18,7 +18,7 @@
 {% include "core/_day_tabs.html" %}
 <div class="ts-nav">
   <a class="button button-secondary button-small" href="?semaine={{ previous|date:'Y-m-d' }}{% if not mine %}&amp;qui={{ person.pk }}{% endif %}" aria-label="Semaine précédente">‹</a>
-  <strong>Semaine du {{ monday|date:"j F" }} au {{ sunday|date:"j F Y" }}</strong>
+  <strong>Semaine du {{ monday|date_fr:"j F" }} au {{ sunday|date_fr:"j F Y" }}</strong>
   <a class="button button-secondary button-small" href="?semaine={{ next|date:'Y-m-d' }}{% if not mine %}&amp;qui={{ person.pk }}{% endif %}" aria-label="Semaine suivante">›</a>
   <a class="small" href="?{% if not mine %}qui={{ person.pk }}{% endif %}">Aujourd'hui</a>
   <span class="ts-week-total">Total : <strong>{{ total }}</strong>{% if total != "0 h" %} · facturable {{ billable_percent }} %{% endif %}</span>
