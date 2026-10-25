@@ -29,7 +29,19 @@ def current_dossier(request: HttpRequest) -> dict[str, Any]:
         "dossier_unanswered": _unanswered(client),
         "dossier_progress": _progress(client),
         "dossier_relations": dossier.header_relations(client, user),
+        "dossier_hybrid": _hybrid(client),
     }
+
+
+def _hybrid(client: Client) -> dict[str, Any] | None:
+    """Gestion hybride (D-063) : libre, ou pris par qui (pour ne pas travailler à deux)."""
+    from . import hybrid
+
+    if not hybrid.is_hybrid(client):
+        return None
+    from .models import HybridClaim
+
+    return {"claim": HybridClaim.objects.filter(client=client).select_related("user").first()}
 
 
 def _overdue(client: Client) -> int:

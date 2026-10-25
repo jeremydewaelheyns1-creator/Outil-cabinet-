@@ -16,6 +16,7 @@ from typing import Any
 from django.core.management import call_command
 from django.core.management.base import BaseCommand
 
+from apps.clients import hybrid
 from apps.core import events
 from apps.documents import digest, freshness, identity, inbox
 from apps.documents import services as documents
@@ -39,6 +40,7 @@ class Command(BaseCommand):
             self.stdout.write(f"Documents à revoir : {freshness.follow_up()} tâches créées")
             self.stdout.write(f"Résumés mensuels : {digest.monthly()} employés")
             self.stdout.write(f"Copies d'e-mails expirées effacées : {mail_sync.purge()}")
+            self.stdout.write(f"Dossiers hybrides rendus libres : {hybrid.release_stale()}")
         self.stdout.write(f"Relances préparées : {documents.send_due_reminders()}")
         self.stdout.write(f"Cartes d'identité demandées : {identity.request_renewals()}")
         self.stdout.write(f"Rappels d'échéances : {deadlines.send_reminders()}")

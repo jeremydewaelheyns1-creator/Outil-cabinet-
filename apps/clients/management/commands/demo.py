@@ -163,6 +163,7 @@ class Command(BaseCommand):
         self._compliance(companies, user)
         self._timesheet(companies, user)
         self._mailbox(companies, persons, user)
+        self._hybrid(companies, user)
         self.stdout.write(
             self.style.SUCCESS(
                 f"{len(companies) + len(persons)} fiches fictives, {run.created} échéances. "
@@ -316,6 +317,20 @@ class Command(BaseCommand):
                 activity=activity, description=text,
                 billable=client is not None and activity not in TimeEntry.NOT_BILLABLE,
             )  # fmt: skip
+
+    @staticmethod
+    def _hybrid(companies: list[Client], user: User) -> None:
+        """Gestion hybride (D-063) activée pour la démo : deux dossiers sans comptable fixe."""
+        from apps.clients import hybrid
+        from apps.core.models import CabinetSettings
+
+        settings = CabinetSettings.current()
+        settings.hybrid_management = True
+        settings.save()
+        medical, joinery = companies[3], companies[5]
+        for client in (medical, joinery, companies[4]):
+            hybrid.set_hybrid(client, True, user)
+        hybrid.take(medical, user)
 
     @staticmethod
     def _mailbox(companies: list[Client], persons: list[Client], user: User) -> None:

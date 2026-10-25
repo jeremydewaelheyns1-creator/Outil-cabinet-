@@ -123,6 +123,8 @@ urlpatterns = [
         name="official_function_add",
     ),
     path("<int:pk>/equipe/modifier/", views.assignments_edit, name="assignments"),
+    path("<int:pk>/hybride/prendre/", views.hybrid_take, name="hybrid_take"),
+    path("<int:pk>/hybride/rendre/", views.hybrid_release, name="hybrid_release"),
     path("<int:pk>/coordonnees/ajouter/", views.contact_add, name="contact_add"),
     path("<int:pk>/coordonnees/contact/", views.contact_person, name="contact_person"),
     path(

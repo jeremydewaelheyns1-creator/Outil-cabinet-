@@ -7,7 +7,8 @@
   <aside class="sidebar">
     <nav aria-label="Cabinet">
       <div class="nav-title">Cabinet</div>
-      <a href="{% url 'core:home' %}" {% if request.resolver_match.view_name in "core:home core:agenda temps:week" %}aria-current="page"{% endif %}>Ma journée</a>
+      <a href="{% url 'core:home' %}" {% if request.resolver_match.view_name == "core:home" %}aria-current="page"{% endif %}>Accueil</a>
+      <a href="{% url 'core:today' %}" {% if request.resolver_match.view_name in "core:today core:agenda temps:week" %}aria-current="page"{% endif %}>Ma journée</a>
       <a href="{% url 'boite:inbox' %}" class="nav-with-count" {% nav_current request "boite:inbox" %}>Ma boîte mail{% if unread_mails %}<span class="nav-count">{{ unread_mails }}</span>{% endif %}</a>
       <a href="{% url 'clients:list' %}" {% nav_current request "clients:list" %}>Tous les clients</a>
       <a href="{% url 'conformite:board' %}" {% nav_current request "conformite:board" %}>Conformité</a>

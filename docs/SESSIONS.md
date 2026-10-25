@@ -23,7 +23,7 @@ ambitieux pour l'instant), adresse « support » pour les demandes automatiques,
 **module Administrateur** (onglet réservé, vue générale de ce qui se passe ; Conformité et
 le journal des consultations pourraient y aller — à décider avec Jeremy).
 
-**Accueil — VALIDÉ sur maquette (planche « Accueil selon la période »)** :
+**Accueil — CONSTRUIT (D-063)**, d'après la maquette validée :
 - Personnel : chacun voit SA période et SES dossiers, jamais de nom de collègue. « Ses
   dossiers » = ceux où il est affecté (expert-comptable ou comptable, `Assignment`) : deux
   personnes n'ont donc pas le même Accueil.
@@ -51,7 +51,8 @@ sur la fiche utilisateur (plusieurs comptes possibles), changement tracé.
 - Plus tard dans « Gestion » : un vrai module de vision du cabinet et de facturation.
 - Rapport personnel du temps passé sur les dossiers.
 
-**Gestion hybride des dossiers (idée du patron, à concevoir — 25/10)** :
+**Gestion hybride des dossiers — CONSTRUITE (D-063)** ; reste : la modification en masse dans
+« Gestion des dossiers » (onglet Administrateur) :
 - Option à activer (désactivée par défaut) : sans elle, rien ne change.
 - Expert-comptable : toujours attitré au dossier.
 - Dossiers TVA et dossiers « réguliers » (définis par le patron) : comptable FIXE, comme

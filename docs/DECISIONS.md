@@ -617,3 +617,35 @@ sur une seconde série jamais vue.
 - Toujours rien n'est conservé : ni la photo de travail, ni le texte lu, ni le numéro.
 - Nouvelles dépendances : `opencv-python-headless`, `numpy`.
 
+## D-063 — Accueil personnel selon la période, et gestion hybride des dossiers
+Validé par Jeremy sur maquettes (25/10).
+- **Accueil** (menu « Accueil », l'adresse d'arrivée `/`) ; « Ma journée » passe à
+  `/ma-journee/`. Chacun ne voit que **ses** dossiers : ceux où il est affecté (expert-comptable,
+  comptable…) et les dossiers hybrides qu'il a pris. Jamais de nom de collègue ; le total du
+  cabinet ira dans l'onglet Administrateur.
+- **L'écran suit la période** (`apps/core/accueil.py`), calculée à partir des échéances déjà
+  générées : une campagne = mes échéances d'une famille (TVA, listing, comptes annuels, ISOC,
+  IPP, AG) tombant le même mois. Elle est « en cours » du 1er du mois de sa date limite (IPP :
+  165 jours avant) jusqu'à la date limite. Au centre la grande campagne en cours ; **la TVA
+  passe toujours en premier** (« en mois TVA, c'est LE mois TVA », mensuels compris) ; un mois
+  avec seulement des mensuels n'est pas une grande période. Autres campagnes non terminées :
+  « Aussi en cours ». Sinon : **période calme** (mes échéances des 30 jours, la prochaine
+  grande période et la date où l'Accueil changera).
+- Calendrier fiscal du mois (mes dates limites fiscales seulement), compte à rebours, barre
+  « Mes déclarations déposées X / Y » et détail (trimestriels / mensuels), liste de mes dossiers
+  restants (pas commencé, en cours, en attente du client, **en retard**).
+- Sélecteur du haut : au clic, les **5** derniers dossiers ouverts.
+- **Gestion hybride** : option des réglages du cabinet (`CabinetSettings`, administrateurs,
+  coupée par défaut, historisée). Activée, le comptable (rôle « Assistant ») d'un dossier peut
+  être « Hybride » : pas de comptable fixe. L'expert-comptable (« Responsable ») reste attitré.
+  « Je le prends » (un seul à la fois, contrainte en base) : ses échéances ouvertes sans
+  responsable lui sont attribuées, rendues à « personne » quand il le rend. Tableau « Dossiers
+  hybrides » sous la période, sur l'Accueil : les dossiers libres et ceux que **j'ai** pris ;
+  ceux des collègues ne sont pas listés (seulement leur nombre). Dans le dossier : badge
+  « Hybride · libre / pris par X », pour ne pas travailler à deux dessus. Sans temps encodé
+  pendant N jours (14 par défaut, réglable), le dossier redevient libre et la personne est
+  prévenue dans la cloche. Événements `hybrid.taken`, `hybrid.released`,
+  `client.hybrid_changed`.
+- Pas construit : l'état des sites de l'administration (maquette F) — aucune source publique
+  fiable vérifiée ; ne rien afficher plutôt qu'un faux « vert ». À étudier.
+

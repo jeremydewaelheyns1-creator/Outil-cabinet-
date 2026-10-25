@@ -615,7 +615,7 @@ def dossier_switcher(request: AppRequest) -> HttpResponse:
         results = list(_visible_clients(request).search(query).select_related("portfolio")[:12])
         title = ""
     else:
-        results = dossier.recent(request, exclude=current)
+        results = dossier.recent(request, exclude=current)[:5]
         title = "Derniers dossiers ouverts"
     return render(
         request,
@@ -885,12 +885,52 @@ def assignments_edit(request: AppRequest, pk: int) -> HttpResponse:
     client = open_dossier(request, pk)
     form = AssignmentForm(request.POST or None, client=client)
     if request.method == "POST" and form.is_valid():
-        form.save()
+        form.save(actor=request.user)
         log_access(request, AccessLog.Action.UPDATE, client, details={"écran": "équipe"})
         events.emit("client.team_changed", subject=client, actor=request.user)
         messages.success(request, "Équipe mise à jour.")
         return redirect("clients:identity", pk=client.pk)
     return render(request, "clients/assignments_form.html", {"client": client, "form": form})
+
+
+# --- Gestion hybride (D-063) ------------------------------------------------------------------
+
+
+def _back(request: AppRequest, client: Client) -> str:
+    from django.utils.http import url_has_allowed_host_and_scheme
+
+    target = request.POST.get("retour", "")
+    if target and url_has_allowed_host_and_scheme(target, allowed_hosts={request.get_host()}):
+        return target
+    return str(client.get_absolute_url())
+
+
+@require_POST
+@require_capability(Capability.CLIENTS_EDIT)
+def hybrid_take(request: AppRequest, pk: int) -> HttpResponse:
+    from . import hybrid
+
+    client = _get_client(request, pk)
+    try:
+        hybrid.take(client, request.user)
+        messages.success(request, f"Vous avez pris « {client.display_name} ».")
+    except hybrid.HybridError as error:
+        messages.error(request, str(error))
+    return redirect(_back(request, client))
+
+
+@require_POST
+@require_capability(Capability.CLIENTS_EDIT)
+def hybrid_release(request: AppRequest, pk: int) -> HttpResponse:
+    from . import hybrid
+
+    client = _get_client(request, pk)
+    try:
+        hybrid.release(client, request.user)
+        messages.success(request, f"« {client.display_name} » est de nouveau libre.")
+    except hybrid.HybridError as error:
+        messages.error(request, str(error))
+    return redirect(_back(request, client))
 
 
 # --- BCE et TVA -----------------------------------------------------------------------------

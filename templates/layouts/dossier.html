@@ -20,6 +20,15 @@
           {% if c.reference %}<span>réf. {{ c.reference }}</span>{% endif %}
           <span>{{ c.portfolio.name }}</span>
           {% for a in c.assignments.all %}{% if a.role == "manager" %}<span>Responsable : {{ a.user.get_short_name }}</span>{% endif %}{% endfor %}
+          {% if dossier_hybrid %}
+            {% with claim=dossier_hybrid.claim %}
+              <span class="badge badge-hybrid" title="Gestion hybride : pas de comptable fixe">Hybride · {% if claim %}{% if claim.user_id == user.pk %}pris par moi{% else %}pris par {{ claim.user.get_short_name }}{% endif %}{% else %}libre{% endif %}</span>
+              {% if user|can:"clients.edit" %}
+                {% if not claim %}<form method="post" action="{% url 'clients:hybrid_take' c.pk %}" class="inline">{% csrf_token %}<input type="hidden" name="retour" value="{{ request.get_full_path }}"><button type="submit" class="button-small">Je le prends</button></form>
+                {% elif claim.user_id == user.pk or user.is_staff %}<form method="post" action="{% url 'clients:hybrid_release' c.pk %}" class="inline">{% csrf_token %}<input type="hidden" name="retour" value="{{ request.get_full_path }}"><button type="submit" class="link-button">{% if claim.user_id == user.pk %}Rendre{% else %}Le rendre libre{% endif %}</button></form>{% endif %}
+              {% endif %}
+            {% endwith %}
+          {% endif %}
         </div>
         {% with links=dossier_relations.0 more=dossier_relations.1 %}
           {% if links %}

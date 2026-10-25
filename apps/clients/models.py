@@ -200,6 +200,8 @@ class Client(models.Model):
     )
 
     notes = models.TextField("notes", blank=True)
+    # Gestion hybride (D-063) : pas de comptable fixe, le dossier est pris par qui a du temps.
+    accountant_hybrid = models.BooleanField("comptable hybride", default=False)
     created_at = models.DateTimeField("créé le", default=timezone.now, editable=False)
     updated_at = models.DateTimeField("modifié le", auto_now=True)
 
@@ -464,3 +466,21 @@ class Assignment(models.Model):
 
     def __str__(self) -> str:
         return f"{self.get_role_display()} : {self.user}"
+
+
+class HybridClaim(models.Model):
+    """Dossier « hybride » pris en charge par un comptable (D-063). Un seul à la fois."""
+
+    client = models.OneToOneField(Client, on_delete=models.CASCADE, related_name="hybrid_claim")
+    user = models.ForeignKey(
+        User, verbose_name="pris par", on_delete=models.CASCADE, related_name="hybrid_claims"
+    )
+    since = models.DateTimeField("pris le", default=timezone.now)
+    history = HistoricalRecords()
+
+    class Meta:
+        verbose_name = "dossier hybride pris"
+        verbose_name_plural = "dossiers hybrides pris"
+
+    def __str__(self) -> str:
+        return f"{self.client} — {self.user}"

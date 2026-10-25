@@ -119,6 +119,6 @@ def test_home_shows_my_compliance_counts(web, user):
     cache.clear()
     mine, _ = prepared_company()
     Assignment.objects.create(client=mine, user=user, role=Assignment.Role.MANAGER)
-    html = web.get(reverse("core:home")).content.decode()
+    html = web.get(reverse("core:today")).content.decode()
     assert "Incomplets (anti-blanchiment)" in html
     assert compliance.summary_for(user) == {"danger": 1, "warning": 0, "askable": 1}

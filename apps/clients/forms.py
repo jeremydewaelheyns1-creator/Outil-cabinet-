@@ -192,14 +192,37 @@ class AssignmentForm(forms.Form):
     def __init__(self, *args: Any, client: Client, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
         self.client = client
+        from . import hybrid
+
         current = {a.role: a.user_id for a in client.assignments.all()}
         users = User.objects.filter(is_active=True)
+        self.hybrid_enabled = hybrid.enabled()
         for role, label in Assignment.Role.choices:
             self.fields[role] = forms.ModelChoiceField(
                 queryset=users, required=False, label=label, initial=current.get(role)
             )
+            if role == hybrid.ACCOUNTANT_ROLE and self.hybrid_enabled:
+                self.fields[role].label = f"{label} (comptable)"
+                self.fields["hybride"] = forms.BooleanField(
+                    required=False, initial=client.accountant_hybrid,
+                    label="Comptable « Hybride » : pas de comptable fixe",
+                    help_text="Le dossier va dans « Dossiers hybrides » : un comptable qui a du "
+                    "temps le prend, les autres voient qu'il est pris.",
+                )  # fmt: skip
 
-    def save(self) -> None:
+    def clean(self) -> dict[str, Any]:
+        from . import hybrid
+
+        data = super().clean() or {}
+        if data.get("hybride") and data.get(hybrid.ACCOUNTANT_ROLE):
+            raise forms.ValidationError("Choisissez un comptable OU « Hybride », pas les deux.")
+        return data
+
+    def save(self, actor: User | None = None) -> None:
+        from . import hybrid
+
+        if self.hybrid_enabled and actor is not None:
+            hybrid.set_hybrid(self.client, bool(self.cleaned_data.get("hybride")), actor)
         for role, _label in Assignment.Role.choices:
             user = self.cleaned_data.get(role)
             if user is None:

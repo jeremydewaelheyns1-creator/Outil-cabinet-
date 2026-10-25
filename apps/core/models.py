@@ -311,3 +311,30 @@ class Notification(models.Model):
 
     def __str__(self) -> str:
         return self.title
+
+
+class CabinetSettings(models.Model):
+    """Réglages du cabinet (une seule ligne). Modifiables par un administrateur, historisés."""
+
+    hybrid_management = models.BooleanField(
+        "gestion hybride des dossiers",
+        default=False,
+        help_text="Permet de mettre le comptable d'un dossier sur « Hybride » : pas de comptable "
+        "fixe, le dossier est pris par un comptable qui a du temps.",
+    )
+    hybrid_release_days = models.PositiveSmallIntegerField(
+        "dossier hybride rendu libre après (jours sans temps encodé)", default=14
+    )
+    history = HistoricalRecords()
+
+    class Meta:
+        verbose_name = "réglages du cabinet"
+        verbose_name_plural = "réglages du cabinet"
+
+    def __str__(self) -> str:
+        return "Réglages du cabinet"
+
+    @classmethod
+    def current(cls) -> CabinetSettings:
+        settings, _ = cls.objects.get_or_create(pk=1)
+        return settings

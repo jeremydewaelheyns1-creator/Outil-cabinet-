@@ -1,5 +1,6 @@
 """Accueil et journal des consultations (la sonde de santé est dans `health.py`)."""
 
+from django.contrib import messages
 from django.core.exceptions import PermissionDenied
 from django.core.paginator import Paginator
 from django.http import HttpResponse
@@ -10,6 +11,7 @@ from django.views.decorators.http import require_POST
 
 from apps.clients.models import Client
 
+from .audit import log_access
 from .capabilities import Capability
 from .http import AppRequest
 from .models import AccessLog, Event, Notification
@@ -23,6 +25,13 @@ def _compliance(request: AppRequest) -> dict[str, int]:
 
 
 def home(request: AppRequest) -> HttpResponse:
+    """Accueil personnel (D-063) : la période en cours pour MES dossiers."""
+    from . import accueil
+
+    return render(request, "core/accueil.html", accueil.build(request.user, timezone.localdate()))
+
+
+def today_view(request: AppRequest) -> HttpResponse:
     """« Ma journée » (D-059) : ce qui est prêt à valider, à faire, et ce qui s'est fait seul."""
     from . import today
 
@@ -103,6 +112,12 @@ def settings_page(request: AppRequest) -> HttpResponse:
             "Comptes et droits",
             "Créer les comptes des collègues, leurs profils et les portefeuilles.",
             "admin:index",
+            request.user.is_staff,
+        ),
+        (
+            "Réglages du cabinet",
+            "Gestion hybride des dossiers (comptable « Hybride »).",
+            "core:cabinet_settings",
             request.user.is_staff,
         ),
     ]
@@ -189,3 +204,29 @@ def agenda_deadline(request: AppRequest) -> HttpResponse:
         return redirect(f"{back}&ajouter=echeance")
     messages.success(request, "Échéance ajoutée.")
     return redirect(back)
+
+
+def cabinet_settings(request: AppRequest) -> HttpResponse:
+    """Réglages du cabinet (administrateurs) : la gestion hybride des dossiers (D-063)."""
+    from django import forms
+
+    from .models import CabinetSettings
+
+    if not request.user.is_staff:
+        raise PermissionDenied
+
+    class SettingsForm(forms.ModelForm[CabinetSettings]):
+        class Meta:
+            model = CabinetSettings
+            fields = ("hybrid_management", "hybrid_release_days")
+
+    settings = CabinetSettings.current()
+    form = SettingsForm(request.POST or None, instance=settings)
+    if request.method == "POST" and form.is_valid():
+        form.save()
+        log_access(
+            request, AccessLog.Action.UPDATE, settings, details={"écran": "réglages du cabinet"}
+        )
+        messages.success(request, "Réglages enregistrés.")
+        return redirect("core:cabinet_settings")
+    return render(request, "core/cabinet_settings.html", {"form": form})

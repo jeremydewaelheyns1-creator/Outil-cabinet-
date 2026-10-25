@@ -1,0 +1,13 @@
+{% extends "layouts/app.html" %}
+{% block head_title %}Réglages du cabinet{% endblock %}
+{% block page_title %}Réglages du cabinet{% endblock %}
+{% block content %}
+<form method="post" class="card" style="max-width: 760px">
+  {% csrf_token %}
+  <h2>Gestion hybride des dossiers</h2>
+  <p class="muted">Coupée par défaut. Activée, le comptable d'un dossier peut être mis sur « Hybride » (dans l'équipe du dossier) : pas de comptable fixe, un comptable qui a du temps prend le dossier et les autres voient qu'il est pris. L'expert-comptable reste toujours attitré.</p>
+  <div class="form-grid">{% for field in form %}{{ field.as_field_group }}{% endfor %}</div>
+  <p class="small muted">Un dossier pris sans temps encodé dessus pendant ce nombre de jours redevient libre tout seul ; la personne est prévenue dans l'outil. Chaque changement est gardé dans l'historique.</p>
+  <div class="actions"><button type="submit">Enregistrer</button><a class="button button-secondary" href="{% url 'core:settings' %}">Retour</a></div>
+</form>
+{% endblock %}

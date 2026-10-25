@@ -1,0 +1,159 @@
+{% extends "layouts/app.html" %}
+{% block head_title %}Accueil{% endblock %}
+{% block page %}
+<div class="acc">
+  <div class="acc-head">
+    <div class="acc-title">
+      <span class="acc-hello">Bonjour {{ user.first_name|default:user.get_short_name }} · {{ today_label }}</span>
+      <h1>{% if center %}{{ center.family.headline }}{% else %}Une période calme{% endif %}</h1>
+      <p class="acc-sub">
+        {% if center %}{{ center.family.label }}{% if center.periods %} : {{ center.periods }}{% endif %}, au plus tard le {{ deadline_label }}.
+        {% elif upcoming %}Pas de grande échéance avant {{ upcoming.family.before }} du {{ upcoming_date }} : mes dossiers à traiter{% if hybrid %}, puis les dossiers hybrides que je peux prendre{% endif %}.
+        {% else %}Pas de grande échéance à venir pour mes dossiers.{% endif %}
+      </p>
+    </div>
+    {% if center %}
+      <div class="acc-countdown" role="timer">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+        <div>{% if countdown == "aujourd'hui" %}<strong>C'est aujourd'hui</strong>{% else %}<strong>{{ countdown }}</strong><span>avant le {{ deadline_short }}</span>{% endif %}</div>
+      </div>
+    {% endif %}
+  </div>
+
+  {% if not has_clients %}
+    <div class="card acc-empty">
+      <h2>Aucun dossier ne vous est affecté</h2>
+      <p class="muted">L'Accueil montre la période en cours pour <strong>vos</strong> dossiers : ceux où vous êtes expert-comptable ou comptable. Demandez à un administrateur de vous affecter à vos dossiers{% if hybrid %}, ou prenez un dossier hybride ci-dessous{% endif %}.</p>
+      <a class="button button-secondary" href="{% url 'clients:list' %}">Tous les clients</a>
+    </div>
+  {% endif %}
+
+  <div class="acc-layout">
+    <div class="acc-center">
+      {% if center %}
+        <section class="card acc-campaign" aria-labelledby="acc-campaign-title">
+          <div class="acc-campaign-head">
+            <h2 id="acc-campaign-title">{{ center.family.progress }}</h2>
+            <span class="acc-score"><strong>{{ center.done }}</strong> / {{ center.total }} · {{ center.percent }} %</span>
+          </div>
+          <div class="acc-bar acc-bar-big" role="progressbar" aria-valuemin="0" aria-valuemax="{{ center.total }}" aria-valuenow="{{ center.done }}" aria-label="{{ center.done }} sur {{ center.total }}"><span style="width: {{ center.percent }}%"></span></div>
+          {% if center.lines %}
+            <div class="acc-lines">
+              {% for name, done, total in center.lines %}
+                <div><div class="acc-line-head"><span>{{ name }}</span><span><strong>{{ done }}</strong> / {{ total }}</span></div>
+                  <div class="acc-bar"><span style="width: {% widthratio done total 100 %}%"></span></div></div>
+              {% endfor %}
+            </div>
+          {% endif %}
+          <div><a class="button acc-dark" href="{% url 'tasks:board' %}?qui=moi&amp;categorie={{ center.family.category }}&amp;quand=90">Ouvrir mes échéances</a></div>
+        </section>
+        <section class="card" aria-labelledby="acc-remaining">
+          <h2 id="acc-remaining" class="acc-h2">Mes dossiers encore à faire</h2>
+          {% with rows=center.remaining %}
+            {% if rows %}
+              <div class="table-wrap"><table class="acc-table">
+                <thead><tr><th>Dossier</th><th>Quoi</th><th>Pour le</th><th>Où on en est</th></tr></thead>
+                <tbody>{% for r in rows|slice:":8" %}
+                  <tr><td><a href="{% url 'clients:open' r.task.client_id %}"><strong>{{ r.task.client.display_name }}</strong></a></td>
+                    <td class="muted">{{ r.task.period_label|default:r.task.title }}</td>
+                    <td class="mono-num">{{ r.task.due_date|date:"d/m" }}</td>
+                    <td><span class="acc-pill acc-{{ r.tone }}">{{ r.state }}</span></td></tr>
+                {% endfor %}</tbody>
+              </table></div>
+              {% if rows|length > 8 %}<p class="small"><a href="{% url 'tasks:board' %}?qui=moi&amp;categorie={{ center.family.category }}&amp;quand=90">Voir les {{ rows|length }}</a></p>{% endif %}
+            {% else %}
+              <p class="muted">Tout est fait pour cette période. Bravo !</p>
+            {% endif %}
+          {% endwith %}
+        </section>
+      {% else %}
+        <section class="card" aria-labelledby="acc-todo">
+          <h2 id="acc-todo" class="acc-h2">Mes dossiers à traiter</h2>
+          <p class="muted acc-note">Les échéances de mes dossiers dans les 30 prochains jours.</p>
+          {% if todo %}
+            <div class="table-wrap"><table class="acc-table">
+              <thead><tr><th>Dossier</th><th>Quoi</th><th>Pour le</th><th>Où on en est</th></tr></thead>
+              <tbody>{% for r in todo %}
+                <tr><td><a href="{% url 'clients:open' r.task.client_id %}"><strong>{{ r.task.client.display_name }}</strong></a></td>
+                  <td class="muted">{{ r.task.title }}</td>
+                  <td class="mono-num">{{ r.task.due_date|date:"d/m" }}</td>
+                  <td><span class="acc-pill acc-{{ r.tone }}">{{ r.state }}</span></td></tr>
+              {% endfor %}</tbody>
+            </table></div>
+            {% if todo_more %}<p class="small"><a href="{% url 'tasks:board' %}?qui=moi&amp;quand=30">Et {{ todo_more }} autre{{ todo_more|pluralize }}</a></p>{% endif %}
+          {% else %}
+            <p class="muted">Rien d'urgent dans mes dossiers pour les 30 prochains jours.</p>
+          {% endif %}
+        </section>
+      {% endif %}
+
+      {% if hybrid %}
+        <section class="card acc-hybrid" aria-labelledby="acc-hybrid-title">
+          <div class="acc-hybrid-head">
+            <div>
+              <h2 id="acc-hybrid-title" class="acc-h2">Dossiers hybrides</h2>
+              <p class="muted acc-note">Sans comptable fixe : quand vous avez du temps, prenez-en un. Les autres voient qu'il est pris.</p>
+            </div>
+            <div class="acc-chips">
+              <span class="acc-pill acc-bleu">{{ hybrid.free }} libre{{ hybrid.free|pluralize }}</span>
+              <span class="acc-pill acc-vert">{{ hybrid.mine }} pris par moi</span>
+              <span class="acc-pill acc-gris">{{ hybrid.others }} pris par d'autres</span>
+            </div>
+          </div>
+          {% if hybrid.rows %}
+            <div class="table-wrap"><table class="acc-table">
+              <thead><tr><th>Dossier</th><th>À faire</th><th>Pour le</th><th><span class="visually-hidden">Action</span></th></tr></thead>
+              <tbody>{% for r in hybrid.rows %}
+                <tr><td><a href="{% url 'clients:open' r.client.pk %}"><strong>{{ r.client.display_name }}</strong></a></td>
+                  <td class="muted">{{ r.todo }}</td>
+                  <td class="mono-num">{% if r.due %}{{ r.due|date:"d/m" }}{% else %}—{% endif %}</td>
+                  <td class="acc-action">
+                    {% if r.mine %}
+                      <span class="acc-pill acc-vert">Pris par moi</span>
+                      <form method="post" action="{% url 'clients:hybrid_release' r.client.pk %}" class="inline">{% csrf_token %}<input type="hidden" name="retour" value="{% url 'core:home' %}"><button type="submit" class="link-button">Rendre</button></form>
+                    {% elif user|can:"clients.edit" %}
+                      <form method="post" action="{% url 'clients:hybrid_take' r.client.pk %}" class="inline">{% csrf_token %}<input type="hidden" name="retour" value="{% url 'core:home' %}"><button type="submit" class="button-small">Je le prends</button></form>
+                    {% endif %}
+                  </td></tr>
+              {% endfor %}</tbody>
+            </table></div>
+          {% else %}
+            <p class="muted">Aucun dossier hybride libre pour le moment.</p>
+          {% endif %}
+        </section>
+      {% endif %}
+    </div>
+
+    <aside class="acc-side">
+      <section class="card acc-cal" aria-label="Calendrier fiscal">
+        <div><div class="acc-eyebrow">Calendrier fiscal</div><h2 class="acc-h2">{{ calendar.name|capfirst }}</h2></div>
+        <div class="acc-cal-grid">
+          {% for d in "LMMJVSD" %}<span class="acc-cal-dow">{{ d }}</span>{% endfor %}
+          {% for c in calendar.cells %}{% if c.day %}<span class="acc-cal-day{% if c.mark %} is-mark{% endif %}{% if c.today %} is-today{% endif %}">{{ c.day }}</span>{% else %}<span></span>{% endif %}{% endfor %}
+        </div>
+        {% if calendar.legend %}
+          <ul class="acc-cal-legend">{% for day, text in calendar.legend %}<li><strong>{{ day }}</strong><span>{{ text }}</span></li>{% endfor %}</ul>
+        {% else %}<p class="muted small">Aucune échéance de mes dossiers ce mois-ci.</p>{% endif %}
+      </section>
+      {% if also %}
+        <section class="card acc-also" aria-labelledby="acc-also-title">
+          <h2 id="acc-also-title" class="acc-h2">Aussi en cours</h2>
+          {% for c in also %}
+            <div class="acc-also-item">
+              <div class="acc-line-head"><strong>{{ c.family.label }}{% if c.periods %} · {{ c.periods }}{% endif %}</strong><span class="muted">{{ c.deadline|date:"d/m" }}</span></div>
+              <div class="acc-bar acc-bar-soft"><span style="width: {{ c.percent }}%"></span></div>
+              <span class="small muted">{{ c.done }} sur {{ c.total }}</span>
+            </div>
+          {% endfor %}
+        </section>
+      {% endif %}
+      {% if not center and upcoming %}
+        <section class="card acc-next" aria-label="Prochaine grande période">
+          <div class="acc-next-box"><span>Dans {{ upcoming_days }} jour{{ upcoming_days|pluralize }}</span><strong>{{ upcoming.family.label }}</strong><span>{{ upcoming_date }}</span></div>
+          <p class="muted small">{{ upcoming_count }} de mes dossiers concerné{{ upcoming_count|pluralize }}. L'Accueil changera le {{ upcoming_switch|date:"j F" }}.</p>
+        </section>
+      {% endif %}
+    </aside>
+  </div>
+</div>
+{% endblock %}

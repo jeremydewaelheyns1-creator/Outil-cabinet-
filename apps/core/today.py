@@ -38,8 +38,10 @@ class Item:
 
 
 def my_clients(user: User) -> QuerySet[Client]:
+    from . import accueil  # mes dossiers = affectés + dossiers hybrides que j'ai pris (D-063)
+
     visible = Client.objects.visible_to(user).active()
-    mine = visible.filter(assignments__user=user).distinct()
+    mine = accueil.my_clients(user)
     return mine if mine.exists() else visible
 
 

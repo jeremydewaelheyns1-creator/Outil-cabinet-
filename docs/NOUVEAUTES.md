@@ -3,6 +3,21 @@
 Ce qui a été ajouté à l'outil, du plus récent au plus ancien. Toutes les données de la démo
 sont inventées.
 
+## 25 octobre 2026 — Nouvel Accueil personnel et gestion hybride
+
+- Nouvel onglet **Accueil** (le premier du menu) : il suit la période de l'année et ne montre
+  que **vos** dossiers. En mois TVA : « C'est le mois TVA », le compte à rebours, vos
+  déclarations déposées (trimestriels et mensuels) et vos dossiers encore à faire. Même chose
+  pour le listing clients, les comptes annuels, l'ISOC et la saison IPP.
+- Le reste du temps : « Une période calme », vos échéances des 30 prochains jours et la
+  prochaine grande période. Calendrier fiscal du mois à droite.
+- **Gestion hybride** (à activer dans Paramètres › Réglages du cabinet) : le comptable d'un
+  dossier peut être « Hybride ». Un comptable qui a du temps clique « Je le prends » ; les
+  autres voient que le dossier est pris. Sans travail dessus pendant 14 jours, il redevient
+  libre.
+- En cliquant sur « Choisir un client… » en haut : vos 5 derniers dossiers.
+- « Ma journée » reste dans le menu, juste sous l'Accueil.
+
 ## 25 octobre 2026 — Corrections après les premiers essais
 
 - **Cartes d'identité** : l'outil lit maintenant les vraies photos prises au téléphone (de
