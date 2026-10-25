@@ -237,3 +237,14 @@ def test_first_of_the_month_reads_premier():
 
     assert date_fr(date(2027, 1, 1)) == "1er janvier"
     assert date_fr(date(2027, 1, 2), "l j F") == "samedi 2 janvier"
+
+
+def test_hybrid_board_lists_only_the_most_urgent_free_dossiers(user, django_assert_max_num_queries):
+    enable_hybrid()
+    for i in range(hybrid.MAX_FREE_ROWS + 5):
+        dossier = ClientFactory(name=f"Hybride {i:02d}", accountant_hybrid=True)
+        task(dossier, "isoc", OCT + timedelta(days=i), label="2025")
+    with django_assert_max_num_queries(8):
+        board = hybrid.board(user)
+    assert board.free == hybrid.MAX_FREE_ROWS + 5 and board.hidden == 5
+    assert board.rows[0].client.name == "Hybride 00"

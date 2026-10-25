@@ -118,6 +118,7 @@
                   </td></tr>
               {% endfor %}</tbody>
             </table></div>
+            {% if hybrid.hidden %}<p class="muted small">Et {{ hybrid.hidden }} autre{{ hybrid.hidden|pluralize }} dossier{{ hybrid.hidden|pluralize }} libre{{ hybrid.hidden|pluralize }}, moins urgent{{ hybrid.hidden|pluralize }}.</p>{% endif %}
           {% else %}
             <p class="muted">Aucun dossier hybride libre pour le moment.</p>
           {% endif %}

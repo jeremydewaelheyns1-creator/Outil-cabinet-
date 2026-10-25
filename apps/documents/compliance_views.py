@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from django.contrib import messages
+from django.core.paginator import Paginator
 from django.http import HttpResponse
 from django.shortcuts import redirect, render
 from django.views.decorators.http import require_POST
@@ -15,6 +16,8 @@ from apps.core.models import AccessLog
 from apps.core.permissions import require_capability
 
 from . import compliance
+
+PER_PAGE = 50
 
 
 def _clients(request: AppRequest, who: str) -> list[Client]:
@@ -36,12 +39,14 @@ def board(request: AppRequest) -> HttpResponse:
     }
     if level in {"danger", "warning"}:
         rows = [r for r in rows if r.level == level]
+    page = Paginator(rows, PER_PAGE).get_page(request.GET.get("page"))
     log_access(request, AccessLog.Action.VIEW, None, details={"écran": "conformité", "qui": who})
     return render(
         request,
         "documents/compliance.html",
         {
-            "rows": rows,
+            "rows": page.object_list,
+            "page": page,
             "totals": totals,
             "who": who,
             "level": level,

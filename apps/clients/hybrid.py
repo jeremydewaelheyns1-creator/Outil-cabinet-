@@ -29,6 +29,7 @@ from apps.core.models import CabinetSettings, Notification, User
 from .models import Assignment, Client, HybridClaim
 
 ACCOUNTANT_ROLE = Assignment.Role.ASSISTANT  # le « comptable » du dossier
+MAX_FREE_ROWS = 15  # Accueil : les 15 dossiers libres les plus urgents (le total reste affiché)
 
 
 class HybridError(Exception):
@@ -166,6 +167,11 @@ class Board:
     mine: int
     others: int
 
+    @property
+    def hidden(self) -> int:
+        """Dossiers libres non listés (seuls les plus urgents le sont)."""
+        return self.free - sum(1 for r in self.rows if not r.mine)
+
 
 def board(user: User) -> Board | None:
     """Le tableau « Dossiers hybrides » de l'Accueil (None si l'option est coupée)."""
@@ -178,16 +184,22 @@ def board(user: User) -> Board | None:
     free = [c for c in clients if c.pk not in claims]
     mine = [c for c in clients if claims.get(c.pk) == user.pk]
     others = len(clients) - len(free) - len(mine)
+    from apps.tasks.models import Task
+
+    first_task: dict[int, Task] = {}
+    for task in Task.objects.open().filter(client__in=[*mine, *free]).order_by("due_date", "pk"):
+        first_task.setdefault(task.client_id, task)  # une seule requête pour tout le tableau
     rows = []
     for client in [*mine, *free]:
-        task = client.tasks.open().order_by("due_date").first()
+        found = first_task.get(client.pk)
         rows.append(
             Row(
                 client,
-                task.title if task else "Rien de daté : à voir",
-                task.due_date if task else None,
+                found.title if found else "Rien de daté : à voir",
+                found.due_date if found else None,
                 client.pk in claims,
             )
         )
     rows.sort(key=lambda r: (not r.mine, r.due or date.max))
-    return Board(rows, len(free), len(mine), others)
+    shown = [r for r in rows if r.mine] + [r for r in rows if not r.mine][:MAX_FREE_ROWS]
+    return Board(shown, len(free), len(mine), others)

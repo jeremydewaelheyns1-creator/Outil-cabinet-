@@ -23,6 +23,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import date, timedelta
 from pathlib import Path
+from typing import Any
 
 from django.conf import settings
 from django.db import transaction
@@ -262,9 +263,15 @@ class PersonCard:
         return self.card is not None and can_undo(self.card)
 
 
-def situation(person: Client, today: date | None = None) -> tuple[IdentityCard | None, str, str]:
+_NOT_LOADED: Any = object()
+
+
+def situation(
+    person: Client, today: date | None = None, card: IdentityCard | None = _NOT_LOADED
+) -> tuple[IdentityCard | None, str, str]:
     today = today or timezone.localdate()
-    card = person.identity_cards.order_by("-valid_until", "-created_at").first()
+    if card is _NOT_LOADED:
+        card = person.identity_cards.order_by("-valid_until", "-created_at").first()
     if card is None:
         return None, "danger", "Aucune carte enregistrée"
     if card.valid_until < today:
@@ -274,23 +281,66 @@ def situation(person: Client, today: date | None = None) -> tuple[IdentityCard |
     return card, "ok", f"Valable jusqu'au {card.valid_until:%d/%m/%Y}"
 
 
-def people_cards(client: Client, people: list[Client]) -> list[PersonCard]:
+@dataclass
+class Preloaded:
+    """Cartes et demandes de plusieurs dossiers chargées en une fois (tableau de conformité)."""
+
+    cards: dict[int, IdentityCard]  # personne → carte la plus récente
+    pending: dict[int, DocumentRequest]  # personne → demande de carte en attente
+    waiting: dict[int, set[int | None]]  # dossier → personnes dont une carte attend confirmation
+
+
+def preload(clients: list[Client], people: list[Client]) -> Preloaded:
+    person_ids = {p.pk for p in people}
+    cards: dict[int, IdentityCard] = {}
+    for card in IdentityCard.objects.filter(person_id__in=person_ids).order_by(
+        "person_id", "-valid_until", "-created_at"
+    ):
+        cards.setdefault(card.person_id, card)
     pending = {
         r.person_id: r
         for r in DocumentRequest.objects.filter(
             kind=DocumentRequest.Kind.IDENTITY_CARD,
             status=DocumentRequest.Status.PENDING,
-            person__in=people,
+            person_id__in=person_ids,
         )
+        if r.person_id is not None
     }
-    waiting = set(
-        Document.objects.filter(
-            client=client, case=CASE, archived_at__isnull=True, review_needed=True
-        ).values_list("person_id", flat=True)
-    )
+    waiting: dict[int, set[int | None]] = {}
+    for client_id, person_id in Document.objects.filter(
+        client__in=clients, case=CASE, archived_at__isnull=True, review_needed=True
+    ).values_list("client_id", "person_id"):
+        waiting.setdefault(client_id, set()).add(person_id)
+    return Preloaded(cards, pending, waiting)
+
+
+def people_cards(
+    client: Client, people: list[Client], preloaded: Preloaded | None = None
+) -> list[PersonCard]:
+    if preloaded is not None:
+        pending = preloaded.pending
+        waiting = preloaded.waiting.get(client.pk, set())
+    else:
+        pending = {
+            r.person_id: r
+            for r in DocumentRequest.objects.filter(
+                kind=DocumentRequest.Kind.IDENTITY_CARD,
+                status=DocumentRequest.Status.PENDING,
+                person__in=people,
+            )
+            if r.person_id is not None
+        }
+        waiting = set(
+            Document.objects.filter(
+                client=client, case=CASE, archived_at__isnull=True, review_needed=True
+            ).values_list("person_id", flat=True)
+        )
     rows = []
     for person in people:
-        card, level, text = situation(person)
+        if preloaded is not None:
+            card, level, text = situation(person, card=preloaded.cards.get(person.pk))
+        else:
+            card, level, text = situation(person)
         if person.pk in waiting and level != "ok":
             level, text = "warning", "Nouvelle carte reçue, à confirmer"
         rows.append(PersonCard(person, card, level, text, pending.get(person.pk)))

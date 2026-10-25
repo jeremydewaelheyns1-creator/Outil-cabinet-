@@ -122,3 +122,40 @@ def test_home_shows_my_compliance_counts(web, user):
     html = web.get(reverse("core:today")).content.decode()
     assert "Incomplets (anti-blanchiment)" in html
     assert compliance.summary_for(user) == {"danger": 1, "warning": 0, "askable": 1}
+
+
+def test_board_loaded_in_bulk_gives_the_same_result_with_few_queries(django_assert_max_num_queries):
+    from datetime import date
+
+    from apps.clients.models import Relation
+    from apps.core.testing.factories import PersonFactory
+    from apps.documents.models import IdentityCard
+
+    dossiers = []
+    for i in range(6):
+        company, manager = prepared_company()
+        partner = PersonFactory(name=f"Associé{i}")
+        Relation.objects.create(entity=company, person=partner, role="shareholder")
+        if i % 2:  # une carte expirée, une valable
+            IdentityCard.objects.create(
+                person=manager, valid_until=date(2020, 1, 1), source="manual"
+            )
+            IdentityCard.objects.create(
+                person=partner, valid_until=date(2040, 1, 1), source="manual"
+            )
+        dossiers.append(company)
+    services.create_bundle(dossiers[0], compliance.overview(dossiers[0]).askable, user=None)
+    dossiers.append(PersonFactory(name="Particulier"))
+    one_by_one = {c.pk: compliance.overview(c) for c in dossiers}
+    with django_assert_max_num_queries(25):
+        bulk = compliance.board(dossiers)
+    assert {r.client.pk for r in bulk} == {
+        pk for pk, o in one_by_one.items() if o.lines or o.pending
+    }
+    for row in bulk:
+        alone = one_by_one[row.client.pk]
+        assert [(line.label, line.level) for line in row.lines] == [
+            (line.label, line.level) for line in alone.lines
+        ]
+        assert row.askable_labels == alone.askable_labels
+        assert (row.pending, row.has_email) == (alone.pending, alone.has_email)

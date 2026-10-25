@@ -11,11 +11,12 @@ Un document jamais préparé n'est pas envoyé d'office : il faut d'abord le gé
 
 from __future__ import annotations
 
+from collections import defaultdict
 from dataclasses import dataclass, field
 from typing import Any
 
 from apps.clients import dossier
-from apps.clients.models import Client
+from apps.clients.models import Client, ContactPoint, Relation
 
 from . import identity, services, types
 from .models import Document, DocumentRequest
@@ -49,12 +50,85 @@ class Overview:
         return "danger" if self.missing else "warning" if self.soon else "ok"
 
 
-def overview(client: Client) -> Overview:
-    result = Overview(client=client, has_email=bool(services._recipient(client)))
-    pending = services.pending_requests(client)
+@dataclass
+class Batch:
+    """Tout ce que `overview` lit, chargé pour beaucoup de dossiers en une dizaine de requêtes
+    (au lieu d'une dizaine par dossier) : le tableau reste rapide avec 1 500 dossiers."""
+
+    documents: dict[int, list[Document]]
+    mandataires: dict[int, list[Client]]
+    people: dict[int, list[Client]]
+    emails: set[int]
+    pending: dict[int, list[DocumentRequest]]
+    cards: identity.Preloaded
+
+
+def load(clients: list[Client]) -> Batch:
+    ids = [c.pk for c in clients]
+    documents: dict[int, list[Document]] = defaultdict(list)
+    for document in (
+        Document.objects.filter(client_id__in=ids, case__in=types.TYPED_CASES,
+                                archived_at__isnull=True)
+        .select_related("person", "request")
+        .order_by("-uploaded_at")
+    ):  # fmt: skip
+        documents[document.client_id].append(document)
+    management = {*Relation.MANAGEMENT_ROLES, Relation.Role.PERMANENT_REPRESENTATIVE}
+    links = list(
+        Relation.objects.current()
+        .filter(entity_id__in=ids)
+        .values_list("entity_id", "person_id", "role", "person__kind")
+    )
+    persons = Client.objects.in_bulk({person for _, person, _, _ in links})
+    mandataires: dict[int, list[Client]] = defaultdict(list)
+    people: dict[int, list[Client]] = defaultdict(list)
+    for entity, person, role, kind in links:
+        if role in management and persons[person] not in mandataires[entity]:
+            mandataires[entity].append(persons[person])
+        if kind == Client.Kind.PERSON and persons[person] not in people[entity]:
+            people[entity].append(persons[person])
+
+    def by_name(c: Client) -> tuple[str, str]:
+        return (c.name, c.first_name)
+
+    for found in (mandataires, people):
+        for entity in found:
+            found[entity].sort(key=by_name)
+    for client in clients:
+        if client.is_person:
+            people[client.pk] = [client]
+    emails = set(
+        ContactPoint.objects.filter(client_id__in=ids, kind=ContactPoint.Kind.EMAIL).values_list(
+            "client_id", flat=True
+        )
+    )
+    pending: dict[int, list[DocumentRequest]] = defaultdict(list)
+    for request in (
+        DocumentRequest.objects.filter(client_id__in=ids, status=DocumentRequest.Status.PENDING)
+        .exclude(kind=DocumentRequest.Kind.BUNDLE)
+        .select_related("person", "bundle")
+    ):
+        pending[request.client_id].append(request)
+    everyone = [p for group in people.values() for p in group]
+    cards = identity.preload(clients, everyone)
+    return Batch(documents, mandataires, people, emails, pending, cards)
+
+
+def overview(client: Client, batch: Batch | None = None) -> Overview:
+    if batch is not None:
+        result = Overview(client=client, has_email=client.pk in batch.emails)
+        pending = batch.pending.get(client.pk, [])
+    else:
+        result = Overview(client=client, has_email=bool(services._recipient(client)))
+        pending = services.pending_requests(client)
     result.pending = len(pending)
     pending_keys = {(r.doc_type, r.person_id) for r in pending if r.doc_type}
-    every = types.all_rows(client)
+    every = (
+        types.all_rows(client, batch.documents.get(client.pk, []),
+                       batch.mandataires.get(client.pk, []))
+        if batch is not None
+        else types.all_rows(client)
+    )  # fmt: skip
     for case in dossier.document_cases_for(client):
         if case.slug not in every:
             continue
@@ -73,8 +147,12 @@ def overview(client: Client) -> Overview:
             ):
                 result.askable.append(("signature", draft))
                 result.askable_labels.append(f"{row.doc_type.label}{who} (à signer)")
-    people = services.people_concerned(client)
-    for card in identity.people_cards(client, people):
+    if batch is not None:
+        people = batch.people.get(client.pk, [])
+        cards = identity.people_cards(client, people, batch.cards)
+    else:
+        cards = identity.people_cards(client, services.people_concerned(client))
+    for card in cards:
         if card.level not in ("danger", "warning"):
             continue
         name = card.person.display_name
@@ -86,7 +164,8 @@ def overview(client: Client) -> Overview:
 
 
 def board(clients: list[Client]) -> list[Overview]:
-    rows = [overview(c) for c in clients]
+    batch = load(clients)
+    rows = [overview(c, batch) for c in clients]
     rows = [r for r in rows if r.lines or r.pending]
     order = {"danger": 0, "warning": 1, "ok": 2}
     return sorted(rows, key=lambda r: (order[r.level], -r.missing, r.client.display_name))

@@ -141,15 +141,22 @@ def _situation(doc_type: DocType, document: Document | None, today: date) -> tup
     return "ok", ""
 
 
-def all_rows(client: Client) -> dict[str, list[Row]]:
-    """Toutes les cases typées d'un client en deux requêtes (tableau de conformité)."""
+def all_rows(
+    client: Client,
+    documents: list[Document] | None = None,
+    people: list[Client] | None = None,
+) -> dict[str, list[Row]]:
+    """Toutes les cases typées d'un client en deux requêtes (tableau de conformité).
+    `documents` / `people` : déjà chargés pour plusieurs dossiers d'un coup (compliance.board)."""
     cases = sorted(TYPED_CASES)
-    documents = list(
-        Document.objects.filter(client=client, case__in=cases, archived_at__isnull=True)
-        .select_related("person", "request")
-        .order_by("-uploaded_at")
-    )
-    people = mandataires(client)
+    if documents is None:
+        documents = list(
+            Document.objects.filter(client=client, case__in=cases, archived_at__isnull=True)
+            .select_related("person", "request")
+            .order_by("-uploaded_at")
+        )
+    if people is None:
+        people = mandataires(client)
     return {
         case: rows(client, case, [d for d in documents if d.case == case], people) for case in cases
     }
