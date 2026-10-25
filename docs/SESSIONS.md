@@ -51,6 +51,21 @@ sur la fiche utilisateur (plusieurs comptes possibles), changement tracé.
 - Plus tard dans « Gestion » : un vrai module de vision du cabinet et de facturation.
 - Rapport personnel du temps passé sur les dossiers.
 
+**Gestion hybride des dossiers (idée du patron, à concevoir — 25/10)** :
+- Option à activer (désactivée par défaut) : sans elle, rien ne change.
+- Expert-comptable : toujours attitré au dossier.
+- Dossiers TVA et dossiers « réguliers » (définis par le patron) : comptable FIXE, comme
+  aujourd'hui.
+- Les autres (HTVA, dossiers qu'on ne travaille pas tous les mois) : PAS de comptable fixe.
+  Un comptable qui a du temps libre en prend un (« Je le prends ») ; tout le monde voit
+  « pris en charge par X » pour ne pas travailler à deux sur le même dossier. Exception
+  voulue à la règle « pas de nom de collègue » : ici le nom évite le travail en double.
+- Accueil en période calme : mes dossiers attitrés à traiter + les dossiers libres qu'on peut
+  prendre (avec qui a pris quoi). Maquette à faire.
+- Proposé par défaut (Jeremy sans préférence) : le patron choisit attitré / libre dossier par
+  dossier dans Gestion des dossiers ; liste triée par urgence, chacun choisit ; un dossier pris
+  sans avancée pendant X jours revient libre (à confirmer).
+
 **Ma boîte mail — à ajouter** : mise en forme comme une vraie messagerie (gras, souligné,
 listes…), envoi programmé (vérifier ce que Microsoft Graph permet), consultation des e-mails
 envoyés (le dossier « Envoyés » existe déjà, à enrichir). Attention sécurité : le texte mis en
