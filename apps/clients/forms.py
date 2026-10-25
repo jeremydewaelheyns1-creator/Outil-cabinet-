@@ -86,6 +86,13 @@ class ClientForm(forms.ModelForm[Client]):
             self.fields["new_national_number"].widget.attrs["placeholder"] = (
                 self.instance.national_number_masked
             )
+        else:  # rien d'enregistré : pas de « numéro à conserver »
+            self.fields["new_national_number"].help_text = "Personnes physiques : 11 chiffres."
+        if not self.instance.pk and not self.is_bound and "portfolio" not in self.initial:
+            # Nouvelle fiche : un portefeuille partagé par défaut plutôt qu'un bureau privé.
+            shared = portfolio_field.queryset.filter(is_private=False).order_by("name").first()
+            if shared is not None:
+                self.initial["portfolio"] = shared.pk
         self.fields["enterprise_number"].widget.attrs["placeholder"] = "0123.456.789"
 
     def clean_enterprise_number(self) -> str | None:

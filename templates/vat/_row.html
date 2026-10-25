@@ -57,7 +57,7 @@
       <div class="vat-pop">
         <div class="vat-pop-head">Remarque</div>
         <form method="post" action="{% url 'clients:vat_amounts' client.pk f.pk %}" hx-post="{% url 'clients:vat_amounts' client.pk f.pk %}" hx-target="closest tr" hx-swap="outerHTML">{% csrf_token %}
-          <textarea name="remark" rows="3" maxlength="1000">{{ f.remark }}</textarea>
+          <textarea name="remark" rows="3" maxlength="1000" aria-label="Remarque sur la période {{ f.period_label }}">{{ f.remark }}</textarea>
           <button type="submit">Enregistrer</button>
         </form>
       </div>

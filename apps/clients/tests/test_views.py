@@ -324,3 +324,18 @@ def test_identity_offers_bce_differences_to_take_over(web, monkeypatch):
     html = web.get(reverse("clients:identity", args=[company.pk])).content.decode()
     assert "La BCE indique d" in html and "Jambes" in html
     assert reverse("clients:bce_apply", args=[company.pk]) in html
+
+
+def test_new_client_form_defaults_to_a_shared_portfolio(make_user):
+    from apps.clients.forms import ClientForm
+    from apps.core.testing.factories import PortfolioFactory
+
+    user = make_user(capabilities=["clients.edit", "clients.sensitive"])
+    private = PortfolioFactory(name="A — bureau privé", is_private=True)
+    private.members.add(user)
+    PortfolioFactory(name="Cabinet partagé")
+    form = ClientForm(user=user)
+    from apps.core.models import Portfolio
+
+    assert not Portfolio.objects.get(pk=form.initial["portfolio"]).is_private
+    assert "conserver" not in form.fields["new_national_number"].help_text

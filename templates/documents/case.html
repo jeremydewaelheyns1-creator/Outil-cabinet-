@@ -89,7 +89,7 @@
               {% if can_edit %}
                 <details class="small"><summary>Reçu</summary>
                   <form method="post" action="{% url 'clients:request_receive' client.pk r.pk %}" enctype="multipart/form-data" style="margin-top:.35rem">
-                    {% csrf_token %}{{ receive_form.file }}
+                    {% csrf_token %}<input type="file" name="file" required aria-label="Document reçu : {{ r.title }}">
                     <button type="submit" class="small" style="margin-top:.35rem">Ranger le document</button>
                   </form>
                 </details>
