@@ -50,6 +50,21 @@ class Command(BaseCommand):
             f"Lignes : {report.rows} — à créer : {report.created} — à compléter : "
             f"{report.updated} — inchangées : {report.unchanged} — ignorées : {report.skipped}"
         )
+        self.stdout.write(
+            f"Coordonnées : {report.contacts_added} — affectations : {report.assignments_added}"
+            f" — comptable « Hybride » : {report.hybrid_set}"
+        )
+        if report.unknown_initials:
+            self.stdout.write(
+                self.style.WARNING(
+                    f"Collaborateurs inconnus : {', '.join(report.unknown_initials)}"
+                )
+            )
+        if report.relations_sheet:
+            self.stdout.write(
+                f"Relations (feuille « {report.relations_sheet} ») : {report.relations_rows} "
+                f"lignes — liens à créer : {report.relations_added}"
+            )
         for issue in report.issues:
             style = self.style.ERROR if issue.level == "error" else self.style.WARNING
             self.stdout.write(style(f"  ligne {issue.row} [{issue.field}] {issue.message}"))

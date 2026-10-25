@@ -205,3 +205,104 @@ def test_stale_uploads_are_purged(make_user):
     recent.refresh_from_db()
     assert old.content is None and old.status == ImportBatch.Status.EXPIRED
     assert recent.content is not None
+
+
+# --- Dossiers complets : personne de contact, comptable « Hybride », feuille Relations ------
+
+
+def complete_workbook() -> io.BytesIO:
+    wb = Workbook()
+    clients = wb.active
+    clients.title = "Clients"
+    clients.append(
+        [
+            "Code client",
+            "Nom",
+            "Prénom",
+            "Forme juridique",
+            "N° TVA",
+            "N° national",
+            "Civilité contact",
+            "Personne de contact",
+            "Expert-comptable",
+            "Comptable",
+        ]
+    )
+    clients.append(
+        [
+            "S1",
+            "Holding Fictive",
+            "",
+            "SRL",
+            enterprise_number(11),
+            "",
+            "Madame",
+            "Julie Exemple",
+            "AB",
+            "Hybride",
+        ]
+    )
+    clients.append(
+        ["S2", "Garage Fictif", "", "SRL", enterprise_number(12), "", "Docteur X", "", "AB", "CD"]
+    )
+    clients.append(["P1", "Exemple", "Paul", "", "", national_number(11), "", "", "AB", ""])
+    clients.append(["P2", "Exemple", "Julie", "", "", national_number(12), "", "", "", ""])
+    relations = wb.create_sheet("Relations")
+    relations.append(["Dossier", "Personne", "Rôle", "Part (%)", "Depuis"])
+    relations.append(["S1", "P1", "Gérant", "", "01/01/2020"])
+    relations.append(["S1", "P1", "Actionnaire", 0.6, ""])
+    relations.append([enterprise_number(12), "S1", "Actionnaire", "100 %", ""])
+    relations.append(["P1", "Paul Exemple", "Conjoint", "", ""])  # lui-même
+    relations.append(["P1", "P2", "Conjointe", "", ""])
+    relations.append(["S2", "Inconnu Fictif", "Gérant", "", ""])
+    relations.append(["S2", "P2", "Astronaute", "", ""])
+    buffer = io.BytesIO()
+    wb.save(buffer)
+    buffer.seek(0)
+    return buffer
+
+
+def test_complete_dossiers_with_contact_hybrid_and_relations():
+    from apps.clients.models import Relation
+
+    UserFactory(initials="AB")
+    UserFactory(initials="CD")
+    analysis = run_import(complete_workbook(), file_name="export.xlsx", apply=False)
+    assert Relation.objects.count() == 0 and analysis.relations_added == 4
+    report = run_import(complete_workbook(), file_name="export.xlsx", apply=True)
+    assert (report.created, report.hybrid_set, report.relations_sheet) == (4, 1, "Relations")
+    assert (report.relations_rows, report.relations_added) == (7, 4)
+    holding = Client.objects.get(reference="S1")
+    assert (holding.contact_title, holding.contact_name) == ("Madame", "Julie Exemple")
+    assert holding.accountant_hybrid
+    assert not holding.assignments.filter(role=Assignment.Role.ASSISTANT).exists()
+    assert holding.assignments.get(role=Assignment.Role.MANAGER).user.initials == "AB"
+    garage = Client.objects.get(reference="S2")
+    assert garage.contact_title == "" and not garage.accountant_hybrid
+    paul = Client.objects.get(reference="P1")
+    share = Relation.objects.get(entity=holding, person=paul, role="shareholder")
+    assert float(share.share_percentage) == 60
+    assert Relation.objects.get(entity=holding, person=paul, role="manager").start_date == date(
+        2020, 1, 1
+    )
+    assert float(Relation.objects.get(entity=garage, person=holding).share_percentage) == 100
+    assert Relation.objects.filter(entity=paul, role="spouse").count() == 1
+    messages = " ".join(i.message for i in report.issues)
+    assert "lié à lui-même" in messages and "introuvable" in messages
+    assert "Astronaute" in messages and "civilité" in messages
+    again = run_import(complete_workbook(), file_name="export.xlsx", apply=True)
+    assert again.relations_added == 0 and Relation.objects.count() == 4
+    assert national_number(11) not in str(again.as_json())
+
+
+def test_web_report_shows_relations_and_hybrid(make_user, client):
+    from apps.clients.models import Relation
+
+    importer = make_user(capabilities=["reprise.import"], initials="AB")
+    client.force_login(importer)
+    upload = SimpleUploadedFile("export.xlsx", complete_workbook().getvalue())
+    response = client.post(reverse("reprise:index"), {"file": upload})
+    page = client.get(response.url).content.decode()
+    assert "Relations" in page and "4 liens à créer" in page and "Comptable « Hybride »" in page
+    client.post(reverse("reprise:apply", args=[ImportBatch.objects.get().pk]))
+    assert Relation.objects.count() == 4

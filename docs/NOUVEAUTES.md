@@ -3,6 +3,16 @@
 Ce qui a été ajouté à l'outil, du plus récent au plus ancien. Toutes les données de la démo
 sont inventées.
 
+## 25 octobre 2026 — Reprise FID-Manager : dossiers complets
+
+- L'import du fichier Excel des clients (Paramètres › Reprise) reprend maintenant aussi la
+  **personne de contact** (Madame, Monsieur… + nom).
+- Dans la colonne « Comptable », le mot **« Hybride »** met le dossier en gestion hybride.
+- Une deuxième feuille **« Relations »** dans le même fichier crée les liens entre dossiers :
+  gérants, administrateurs, actionnaires (avec le %), conjoints, représentants permanents,
+  liquidateurs. Réimporter le même fichier ne crée pas de doublon.
+- Un fichier de test de 30 dossiers inventés est disponible pour essayer.
+
 ## 25 octobre 2026 — Nouvel Accueil personnel et gestion hybride
 
 - Nouvel onglet **Accueil** (le premier du menu) : il suit la période de l'année et ne montre

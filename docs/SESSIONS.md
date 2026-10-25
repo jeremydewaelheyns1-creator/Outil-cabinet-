@@ -23,6 +23,13 @@ ambitieux pour l'instant), adresse « support » pour les demandes automatiques,
 **module Administrateur** (onglet réservé, vue générale de ce qui se passe ; Conformité et
 le journal des consultations pourraient y aller — à décider avec Jeremy).
 
+**Reprise FID — dossiers complets (D-064)** : personne de contact, « Hybride » dans la
+colonne Comptable, feuille « Relations ». Fichier de test de 30 dossiers fictifs envoyé à
+Jeremy (script : à refaire depuis D-064 si besoin). Les tâches IPP n'apparaissent pas tant
+que la date limite IPP de l'année n'est pas indiquée dans config/taches/regles.yaml (voir
+l'idée « dates du SPF »). À faire plus tard : connaître la vraie structure de l'export FID
+(intitulés exacts) pour compléter clients.yaml.
+
 **Accueil — CONSTRUIT (D-063)**, d'après la maquette validée :
 - Personnel : chacun voit SA période et SES dossiers, jamais de nom de collègue. « Ses
   dossiers » = ceux où il est affecté (expert-comptable ou comptable, `Assignment`) : deux

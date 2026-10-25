@@ -649,3 +649,22 @@ Validé par Jeremy sur maquettes (25/10).
 - Pas construit : l'état des sites de l'administration (maquette F) — aucune source publique
   fiable vérifiée ; ne rien afficher plutôt qu'un faux « vert ». À étudier.
 
+
+## D-064 — Reprise FID : dossiers complets (contact, « Hybride », feuille Relations)
+
+- L'import de l'export clients (D-013) reprend aussi la **personne de contact**
+  (civilité + nom) et accepte « Expert-comptable » / « Comptable » comme intitulés de colonnes.
+- Dans la colonne du comptable, la valeur **« Hybride »** met le dossier en gestion hybride
+  (D-063) au lieu de chercher un collaborateur. Une fiche existante n'est passée en hybride
+  que si elle n'a pas de comptable fixe (jamais d'écrasement).
+- **Feuille « Relations »** facultative dans le même classeur (n'importe quelle feuille après
+  la première, reconnue par ses en-têtes, config/reprise/clients.yaml) : une ligne par lien
+  (dossier, personne, rôle, part %, depuis, jusqu'au). Chaque fiche est désignée par son code
+  client, son numéro d'entreprise ou national, ou son nom exact s'il est unique. Un lien déjà
+  présent (même dossier, même personne, même rôle) n'est jamais doublé : réimporter le fichier
+  ne change rien. Une part « 0,6 » (cellule Excel en %) vaut 60 %. Lignes non comprises :
+  signalées dans le rapport, jamais devinées. Source des liens : « reprise ».
+- Comme le reste de la reprise : analyse d'abord (rien n'est modifié), puis confirmation ;
+  le rapport ne contient jamais de numéro national.
+- Fichier de test : 30 dossiers fictifs (numéros d'entreprise dans la plage 0020.9xx.xxx,
+  jamais attribuée par la BCE ; numéros nationaux fictifs valides).

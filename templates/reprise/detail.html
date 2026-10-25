@@ -36,6 +36,8 @@
     <dl class="fields">
       <dt>Coordonnées</dt><dd>{{ report.contacts_added }} {% if report.applied %}ajoutée{{ report.contacts_added|pluralize }}{% else %}à ajouter{% endif %}</dd>
       <dt>Affectations</dt><dd>{{ report.assignments_added }} {% if report.applied %}ajoutée{{ report.assignments_added|pluralize }}{% else %}à ajouter{% endif %}</dd>
+      {% if report.hybrid_set %}<dt>Comptable « Hybride »</dt><dd>{{ report.hybrid_set }} dossier{{ report.hybrid_set|pluralize }} <span class="muted small">(visible si la gestion hybride est activée dans les réglages du cabinet)</span></dd>{% endif %}
+      {% if report.relations_sheet %}<dt>Relations</dt><dd>{{ report.relations_added }} lien{{ report.relations_added|pluralize }} {% if report.applied %}créé{{ report.relations_added|pluralize }}{% else %}à créer{% endif %} <span class="muted small">(feuille « {{ report.relations_sheet }} », {{ report.relations_rows }} ligne{{ report.relations_rows|pluralize }} ; un lien déjà présent n'est pas doublé)</span></dd>{% endif %}
       {% if report.portfolios_created %}<dt>Portefeuilles</dt><dd>{{ report.portfolios_created|join:", " }} ({% if report.applied %}créés{% else %}à créer{% endif %})</dd>{% endif %}
       {% if report.unknown_initials %}<dt>Collaborateurs inconnus</dt><dd>{{ report.unknown_initials|join:", " }} <span class="muted small">(créez les comptes avec ces initiales, puis relancez)</span></dd>{% endif %}
     </dl>

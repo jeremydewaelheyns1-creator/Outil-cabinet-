@@ -34,9 +34,12 @@ champs:
   client_until: ["Client jusqu'au", "Date de sortie", "Fin de mission", "Date fin"]
   portfolio: ["Portefeuille", "Bureau"]
   notes: ["Remarques", "Notes", "Commentaire", "Commentaires"]
+  contact_title: ["Civilité contact", "Civilité du contact", "Civilité"]
+  contact_name: ["Personne de contact", "Nom du contact", "Contact"]
   partner: ["Associé", "Associé responsable"]
-  manager: ["Responsable", "Gestionnaire", "Responsable dossier"]
-  assistant: ["Assistant", "Assistante", "Collaborateur"]
+  manager: ["Responsable", "Gestionnaire", "Responsable dossier", "Expert-comptable"]
+  assistant: ["Assistant", "Assistante", "Collaborateur", "Comptable"]
+  # Dans la colonne du comptable, la valeur « Hybride » met le dossier en gestion hybride (D-063).
 
 # Valeurs reconnues pour les champs à choix (comparaison sans accents ni majuscules).
 valeurs:
@@ -65,3 +68,26 @@ valeurs:
 
 # Formes juridiques qui désignent une ASBL ou une fondation.
 formes_non_marchandes: ["ASBL", "AISBL", "Fondation", "Fondation privée", "FUP", "VZW"]
+
+# ── Feuille « Relations » (facultative, 2e feuille du même classeur) ─────────────────────────
+# Une ligne par lien : qui (personne ou société) est gérant, administrateur, actionnaire… de
+# quel dossier. On désigne chaque fiche par son code client, son numéro d'entreprise, son
+# numéro national ou son nom exact.
+relations:
+  champs:
+    entity: ["Dossier", "Société", "Code dossier", "Code société", "Entité", "Client"]
+    person: ["Personne", "Associé / mandataire", "Mandataire", "Code personne", "Lié à", "Relation"]
+    role: ["Rôle", "Fonction", "Qualité", "Lien"]
+    share: ["Part (%)", "Parts", "Part", "% des parts", "% parts", "Pourcentage", "% détention", "Parts (%)", "Détention"]
+    start: ["Depuis", "Début", "Date de début", "Nommé le"]
+    end: ["Jusqu'au", "Fin", "Date de fin"]
+  roles:
+    manager: ["Gérant", "Gérante"]
+    director: ["Administrateur", "Administratrice"]
+    managing_director: ["Administrateur délégué", "Administratrice déléguée", "Administrateur-délégué"]
+    shareholder: ["Actionnaire", "Associé", "Associée", "Actionnaire ou associé"]
+    beneficial_owner: ["Bénéficiaire effectif", "Bénéficiaire effectif déclaré", "UBO"]
+    permanent_representative: ["Représentant permanent"]
+    liquidator: ["Liquidateur"]
+    spouse: ["Conjoint", "Conjointe", "Cohabitant légal", "Cohabitante légale", "Époux", "Épouse"]
+    other: ["Autre"]

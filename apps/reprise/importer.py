@@ -16,6 +16,8 @@ from __future__ import annotations
 
 import calendar
 import contextlib
+import functools
+import operator
 import re
 from collections.abc import Iterator
 from dataclasses import asdict, dataclass, field
@@ -28,11 +30,12 @@ import yaml
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import transaction
+from django.db.models import Q
 from openpyxl import load_workbook
 from stdnum.be import nn
 
 from apps.clients.identifiers import normalize_enterprise_number, normalize_national_number
-from apps.clients.models import Assignment, Client, ContactPoint, field_label
+from apps.clients.models import Assignment, Client, ContactPoint, Relation, field_label
 from apps.core import events
 from apps.core.models import Portfolio, User
 from apps.core.text import normalize_key, normalize_text
@@ -46,8 +49,9 @@ CLIENT_FIELDS = (
     "reference", "name", "first_name", "legal_form", "kind", "status", "enterprise_number",
     "national_number", "birth_date", "nationality", "language", "street", "house_number", "box",
     "postal_code", "city", "country", "vat_status", "vat_periodicity", "client_since",
-    "client_until", "notes",
+    "client_until", "notes", "contact_name", "contact_title", "accountant_hybrid",
 )  # fmt: skip
+HYBRID = "hybride"  # valeur de la colonne du comptable : gestion hybride (D-063)
 SENSITIVE_FIELDS = {"national_number"}
 CONTACT_FIELDS: dict[str, str] = {
     "email": ContactPoint.Kind.EMAIL,
@@ -99,6 +103,8 @@ class Mapping:
     aliases: dict[str, str]  # en-tête normalisé → champ
     values: dict[str, dict[str, str]]  # champ → valeur normalisée → code
     nonprofit_forms: frozenset[str]
+    relation_aliases: dict[str, str] = field(default_factory=dict)  # feuille « Relations »
+    relation_roles: dict[str, str] = field(default_factory=dict)  # valeur normalisée → rôle
 
 
 @cache
@@ -119,7 +125,18 @@ def load_mapping(path: Path = MAPPING_FILE) -> Mapping:
         for target, choices in data.get("valeurs", {}).items()
     }  # fmt: skip
     forms = frozenset(normalize_key(f) for f in data.get("formes_non_marchandes", []))
-    return Mapping(aliases, values, forms)
+    relations = data.get("relations", {})
+    relation_aliases = {
+        normalize_key(header): target
+        for target, headers in relations.get("champs", {}).items()
+        for header in headers
+    }
+    relation_roles = {
+        normalize_key(alias): code
+        for code, alias_list in relations.get("roles", {}).items()
+        for alias in alias_list
+    }
+    return Mapping(aliases, values, forms, relation_aliases, relation_roles)
 
 
 # --- Rapport --------------------------------------------------------------------------------
@@ -159,6 +176,10 @@ class Report:
     assignments_added: int = 0
     portfolios_created: list[str] = field(default_factory=list)
     unknown_initials: list[str] = field(default_factory=list)
+    hybrid_set: int = 0
+    relations_sheet: str = ""
+    relations_rows: int = 0
+    relations_added: int = 0
     issues: list[Issue] = field(default_factory=list)
     conflicts: list[Conflict] = field(default_factory=list)
     applied: bool = False
@@ -304,7 +325,8 @@ def parse_row(row_number: int, raw: dict[str, Any], mapping: Mapping, report: Re
         report.issues.append(Issue(row_number, field_name, message, "warning"))
 
     for name in ("reference", "name", "first_name", "legal_form", "nationality", "street",
-                 "house_number", "box", "postal_code", "city", "notes"):  # fmt: skip
+                 "house_number", "box", "postal_code", "city", "notes",
+                 "contact_name"):  # fmt: skip
         if name in raw:
             values[name] = _cell_text(raw[name])
     if "nationality" in values:
@@ -356,6 +378,14 @@ def parse_row(row_number: int, raw: dict[str, Any], mapping: Mapping, report: Re
             else:
                 values[name] = code
 
+    if "contact_title" in raw:
+        titles = {normalize_key(label): code for code, label in Client.Title.choices if code}
+        title = titles.get(normalize_key(_cell_text(raw["contact_title"])))
+        if title is None:
+            warn("contact_title", "civilité non reconnue, ignorée")
+        else:
+            values["contact_title"] = title
+
     if "country" in raw:
         country = _country(raw["country"])
         if country is None:
@@ -390,6 +420,9 @@ def parse_row(row_number: int, raw: dict[str, Any], mapping: Mapping, report: Re
     assignments = {
         role: _cell_text(raw[name]) for name, role in ASSIGNMENT_FIELDS.items() if name in raw
     }
+    if normalize_key(assignments.get(Assignment.Role.ASSISTANT, "")) == HYBRID:
+        assignments.pop(Assignment.Role.ASSISTANT)
+        values["accountant_hybrid"] = True
     return ParsedRow(values, contacts, assignments, _cell_text(raw.get("portfolio")))
 
 
@@ -489,6 +522,8 @@ class _Importer:
             self.report.unchanged += 1
         self.add_contacts(client, parsed.contacts)
         self.add_assignments(client, parsed.assignments)
+        if values.get("accountant_hybrid"):
+            self.report.hybrid_set += 1
 
     def complete(self, row_number: int, client: Client, values: dict[str, Any]) -> bool:
         changed = False
@@ -496,6 +531,12 @@ class _Importer:
             if value in (None, ""):
                 continue
             current = getattr(client, name)
+            if isinstance(current, bool):  # « Hybride » : seulement sans comptable fixe
+                fixed = client.assignments.filter(role=Assignment.Role.ASSISTANT).exists()
+                if value and not current and not fixed:
+                    setattr(client, name, value)
+                    changed = True
+                continue
             if current in (None, ""):
                 setattr(client, name, value)
                 changed = True
@@ -536,6 +577,122 @@ class _Importer:
             self.report.assignments_added += int(created)
 
 
+# --- Feuille « Relations » -------------------------------------------------------------------
+
+
+def _names(client: Client) -> set[str]:
+    first, name = client.first_name, client.name
+    return {normalize_text(n) for n in (client.display_name, name, f"{first} {name}",
+                                        f"{name} {first}")}  # fmt: skip
+
+
+def _find_client(text: str) -> Client | None:
+    """Une fiche désignée par son code client, son numéro d'entreprise ou national, ou son nom
+    exact (s'il est unique)."""
+    text = text.strip()
+    if not text:
+        return None
+    found = Client.objects.filter(reference__iexact=text).first()
+    if found is not None:
+        return found
+    for normalize, field_name in ((normalize_enterprise_number, "enterprise_number"),
+                                  (normalize_national_number, "national_number")):  # fmt: skip
+        with contextlib.suppress(ValidationError):
+            number = normalize(text)
+            if number:
+                found = Client.objects.filter(**{field_name: number}).first()
+                if found is not None:
+                    return found
+    wanted = normalize_text(text)
+    candidates = Client.objects.filter(
+        functools.reduce(operator.or_, (Q(name__icontains=w) for w in text.split()))
+    )
+    by_name = [c for c in candidates if wanted in _names(c)]
+    return by_name[0] if len(by_name) == 1 else None
+
+
+def import_relations(source: Path | IO[bytes], mapping: Mapping, report: Report) -> None:
+    """Feuille « Relations » (facultative) : gérants, administrateurs, actionnaires, conjoints.
+    Un lien déjà présent (même dossier, même personne, même rôle) n'est jamais doublé."""
+    if not mapping.relation_aliases:
+        return
+    if hasattr(source, "seek"):
+        source.seek(0)
+    workbook = load_workbook(source, read_only=True, data_only=True)
+    try:
+        for sheet in workbook.worksheets[1:]:
+            rows = list(sheet.iter_rows(values_only=True))
+            header_index = next((i for i, row in enumerate(rows[:HEADER_SCAN_ROWS])
+                                 if sum(1 for c in row if normalize_key(_cell_text(c))
+                                        in mapping.relation_aliases) >= 3), None)  # fmt: skip
+            if header_index is None:
+                continue
+            report.relations_sheet = sheet.title
+            positions = {
+                i: mapping.relation_aliases[normalize_key(_cell_text(c))]
+                for i, c in enumerate(rows[header_index])
+                if normalize_key(_cell_text(c)) in mapping.relation_aliases
+            }
+            for offset, row in enumerate(rows[header_index + 1 :], start=header_index + 2):
+                raw = {
+                    t: row[i] for i, t in positions.items() if i < len(row) and _cell_text(row[i])
+                }
+                if not raw:
+                    continue
+                report.relations_rows += 1
+                _import_relation(offset, raw, mapping, report)
+            return
+    finally:
+        workbook.close()
+
+
+def _import_relation(row: int, raw: dict[str, Any], mapping: Mapping, report: Report) -> None:
+    def error(message: str) -> None:
+        report.issues.append(Issue(row, "relations", f"Relations : {message}"))
+
+    entity = _find_client(_cell_text(raw.get("entity")))
+    person = _find_client(_cell_text(raw.get("person")))
+    role = mapping.relation_roles.get(normalize_key(_cell_text(raw.get("role"))))
+    if entity is None or person is None:
+        error("dossier ou personne introuvable (code client, numéro ou nom exact)")
+        return
+    if entity.pk == person.pk:
+        error("un dossier ne peut pas être lié à lui-même")
+        return
+    if role is None:
+        error(f"rôle « {_cell_text(raw.get('role'))} » non reconnu")
+        return
+    share = None
+    if raw.get("share") not in (None, ""):
+        text = _cell_text(raw["share"]).replace("%", "").replace(",", ".").strip()
+        try:
+            share = float(text)
+            if 0 < share <= 1 and isinstance(raw["share"], int | float):
+                share *= 100  # cellule Excel au format pourcentage (0,8 → 80 % ; 1 → 100 %)
+        except ValueError:
+            report.issues.append(
+                Issue(row, "relations", "Relations : pourcentage non reconnu, ignoré", "warning")
+            )
+    dates = {}
+    for name in ("start", "end"):
+        if raw.get(name):
+            with contextlib.suppress(ValueError):
+                dates[f"{name}_date"] = parse_date(raw[name])
+    if Relation.objects.filter(entity=entity, person=person, role=role).exists():
+        return
+    relation = Relation(entity=entity, person=person, role=role, source=SOURCE, **dates)
+    if share is not None:
+        relation.share_percentage = round(share, 2)
+    try:
+        with transaction.atomic():
+            relation.full_clean()
+            relation.save()
+    except ValidationError as exc:
+        error(" ".join(m for ms in exc.message_dict.values() for m in ms))
+        return
+    report.relations_added += 1
+
+
 def run_import(
     source: Path | IO[bytes], *, file_name: str, apply: bool, actor: User | None = None
 ) -> Report:
@@ -548,6 +705,7 @@ def run_import(
             for row_number, raw in _read_rows(source, mapping, report):
                 report.rows += 1
                 importer.import_row(row_number, parse_row(row_number, raw, mapping, report))
+            import_relations(source, mapping, report)
             if not apply:
                 raise _DryRun
     except _DryRun:
