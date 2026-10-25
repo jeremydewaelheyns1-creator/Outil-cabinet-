@@ -1372,3 +1372,9 @@ button:active, .button:active { transform: scale(.98); }
   .acc-table td, .acc-table th { padding: 9px 6px; }
   .acc-countdown { width: 100%; }
 }
+.acc-links { padding: 4px 6px; }
+.acc-links h2 { margin: 0 0 6px; font-size: 13px; font-weight: 700; color: var(--text-muted); }
+.acc-links ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 6px; font-size: .88rem; }
+.acc-links li { display: grid; }
+.acc-links a { font-weight: 600; }
+.acc-links li span:not([aria-hidden]) { color: var(--text-muted); font-size: .8rem; }

@@ -101,6 +101,7 @@ def test_home_page_renders_and_shows_no_colleague_name(web, user, make_user):
     task(mine(colleague, "Dossier du Collègue"), "tva_trimestrielle", today + timedelta(days=2))
     html = page(web)
     assert "Accueil" in html and "Boulangerie Fictive" in html
+    assert ", nous sommes le " in html and "Sites utiles" in html and "MyMinfin" in html
     assert "Dossier du Collègue" not in html and "Invisible" not in html
     assert "Dossiers hybrides" not in html  # option coupée par défaut
 
@@ -162,7 +163,7 @@ def test_take_and_release_a_hybrid_dossier(web, user, make_user):
     client.post(reverse("clients:hybrid_take", args=[dossier.pk]))
     assert HybridClaim.objects.get().user == user
     detail = unescape(client.get(reverse("clients:identity", args=[dossier.pk])).content.decode())
-    assert "Hybride · pris par" in detail
+    assert "Hybride · pris par" in detail and "Comptable : Hybride · pris par" in detail
     client.post(reverse("clients:hybrid_release", args=[dossier.pk]))
     assert HybridClaim.objects.exists()  # seul celui qui l'a pris (ou un administrateur)
     web.post(reverse("clients:hybrid_release", args=[dossier.pk]))

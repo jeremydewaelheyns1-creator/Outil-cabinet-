@@ -57,7 +57,8 @@
         <dt>Client depuis</dt><dd>{{ client.client_since|date:"d/m/Y"|default:"…" }}{% if client.client_until %} jusqu'au {{ client.client_until|date:"d/m/Y" }}{% endif %}</dd>
         <dt>Portefeuille</dt><dd>{{ client.portfolio.name }}</dd>
         <dt>Affectation</dt>
-        <dd>{% for a in assignments %}<span class="chip" title="{{ a.get_role_display }} : {{ a.user }}">{{ a.user.get_short_name }}</span>{% empty %}<span class="empty">personne</span>{% endfor %}
+        <dd>{% for a in assignments %}<span class="chip" title="{{ a.get_role_display }} : {{ a.user }}">{{ a.get_role_display }} : {{ a.user.get_short_name }}</span> {% empty %}{% if not dossier_hybrid %}<span class="empty">personne</span>{% endif %}{% endfor %}
+          {% if dossier_hybrid %}<span class="chip badge-hybrid" title="Gestion hybride : pas de comptable fixe">Comptable : Hybride · {% if dossier_hybrid.claim %}pris par {% if dossier_hybrid.claim.user_id == user.pk %}moi{% else %}{{ dossier_hybrid.claim.user.get_short_name }}{% endif %}{% else %}libre{% endif %}</span>{% endif %}
           {% if can_edit %}<a class="small" href="{% url 'clients:assignments' client.pk %}">modifier</a>{% endif %}</dd>
         {% if client.reference %}<dt>Référence</dt><dd>{{ client.reference }}</dd>{% endif %}
       </dl>

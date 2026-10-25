@@ -4,7 +4,7 @@
 <div class="acc">
   <div class="acc-head">
     <div class="acc-title">
-      <span class="acc-hello">Bonjour {{ user.first_name|default:user.get_short_name }} · {{ today_label }}</span>
+      <span class="acc-hello">Bonjour {{ user.first_name|default:user.get_short_name }}, nous sommes le {{ today_label }}</span>
       <h1>{% if center %}{{ center.family.headline }}{% else %}Une période calme{% endif %}</h1>
       <p class="acc-sub">
         {% if center %}{{ center.family.label }}{% if center.periods %} : {{ center.periods }}{% endif %}, au plus tard le {{ deadline_label }}.
@@ -153,6 +153,10 @@
           <p class="muted small">{{ upcoming_count }} de mes dossiers concerné{{ upcoming_count|pluralize }}. L'Accueil changera le {{ upcoming_switch|date:"j F" }}.</p>
         </section>
       {% endif %}
+      <section class="acc-links" aria-labelledby="acc-links-title">
+        <h2 id="acc-links-title">Sites utiles</h2>
+        <ul>{% for name, detail, url in links %}<li><a href="{{ url }}" target="_blank" rel="noopener noreferrer">{{ name }} <span aria-hidden="true">↗</span></a>{% if detail %}<span>{{ detail }}</span>{% endif %}</li>{% endfor %}</ul>
+      </section>
     </aside>
   </div>
 </div>

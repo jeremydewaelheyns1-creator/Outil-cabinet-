@@ -31,6 +31,17 @@ from apps.tasks.models import Task
 DONE = (Task.Status.DONE, Task.Status.NOT_APPLICABLE)
 MONTHS = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre",
           "octobre", "novembre", "décembre"]  # fmt: skip
+# Petit bonus en bas de l'Accueil : les sites officiels qu'on ouvre tout le temps. Adresses
+# déjà utilisées ailleurs dans l'outil (fiche client, sites officiels).
+LINKS = (
+    ("MyMinfin", "Intervat, Biztax, Tax-on-web, registre UBO",
+     "https://eservices.minfin.fgov.be/myminfin-web/"),
+    ("BCE publique", "Banque-Carrefour des Entreprises",
+     "https://kbopub.economie.fgov.be/"),
+    ("Centrale des bilans", "Banque Nationale : comptes annuels",
+     "https://consult.cbso.nbb.be/consult-enterprise/"),
+    ("Moniteur belge", "Publications des sociétés", "https://www.ejustice.just.fgov.be/cgi_tsv/list.pl"),
+)  # fmt: skip
 DAYS = ["lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche"]
 
 
@@ -229,6 +240,7 @@ def build(user: User, today: date) -> dict[str, object]:
         "also": also,
         "calendar": month_calendar(today, tasks),
         "hybrid": hybrid.board(user),
+        "links": LINKS,
     }
     if center is not None:
         days = (center.deadline - today).days

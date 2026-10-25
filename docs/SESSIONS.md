@@ -51,6 +51,14 @@ sur la fiche utilisateur (plusieurs comptes possibles), changement tracé.
 - Plus tard dans « Gestion » : un vrai module de vision du cabinet et de facturation.
 - Rapport personnel du temps passé sur les dossiers.
 
+**Dates officielles du SPF (à construire, demande de Jeremy 25/10)** : l'outil doit aller chercher
+chaque année les dates limites publiées par le SPF (IPP, ISOC…) et s'adapter aux délais
+supplémentaires accordés. Proposition : l'outil surveille les pages officielles et PROPOSE la
+nouvelle date ; un administrateur la valide (lien vers l'annonce gardé) ; les échéances et
+l'Accueil suivent. À vérifier : quelles pages publiques sont lisibles de façon fiable.
+
+**Test réel** (plus tard) : essayer l'Accueil avec de vraies échéances du cabinet.
+
 **Gestion hybride des dossiers — CONSTRUITE (D-063)** ; reste : la modification en masse dans
 « Gestion des dossiers » (onglet Administrateur) :
 - Option à activer (désactivée par défaut) : sans elle, rien ne change.

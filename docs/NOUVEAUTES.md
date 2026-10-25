@@ -17,6 +17,9 @@ sont inventées.
   libre.
 - En cliquant sur « Choisir un client… » en haut : vos 5 derniers dossiers.
 - « Ma journée » reste dans le menu, juste sous l'Accueil.
+- En bas à droite de l'Accueil, en petit : les sites utiles (MyMinfin, BCE, Centrale des
+  bilans, Moniteur belge).
+- Fiche client › Affectation : « Comptable : Hybride · pris par … » quand le dossier est hybride.
 
 ## 25 octobre 2026 — Corrections après les premiers essais
 
