@@ -3,6 +3,16 @@
 Ce qui a été ajouté à l'outil, du plus récent au plus ancien. Toutes les données de la démo
 sont inventées.
 
+## 25 octobre 2026 — Corrections après les premiers essais
+
+- **Cartes d'identité** : l'outil lit maintenant les vraies photos prises au téléphone (de
+  travers, un peu floues, avec un reflet, photo couchée). Il cherche lui-même les lignes codées
+  au dos de la carte et les redresse. Rien n'est envoyé ailleurs ; tout reste sur le serveur.
+- Les messages « … réussie », « … ajoutée » ne s'affichent plus qu'une fois et disparaissent
+  après 5 secondes.
+- Mon agenda : un créneau court (30 minutes) s'affiche proprement sur une ligne.
+- « Déposer des documents » ne figure plus dans le menu de gauche (le bouton est en haut).
+
 ## 25 octobre 2026 — Ma boîte mail
 
 - Nouvel onglet **Ma boîte mail** (à gauche) : vos e-mails Outlook dans l'outil, rangés par

@@ -13,7 +13,8 @@ from .models import TimeEntry, hours_label
 
 FIRST_HOUR = 7
 LAST_HOUR = 20
-HOUR_HEIGHT = 48  # pixels par heure dans le calendrier
+HOUR_HEIGHT = 60  # pixels par heure dans le calendrier
+SHORT_BLOCK = 44  # en dessous (moins de ~45 min) : le créneau s'affiche sur une seule ligne
 DAY_NAMES = ("Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim")
 
 
@@ -34,6 +35,10 @@ class Block:
     top: int
     height: int
     label: str
+
+    @property
+    def is_short(self) -> bool:
+        return self.height < SHORT_BLOCK
 
 
 @dataclass
@@ -136,9 +141,8 @@ def deadlines_of(user: User, day: date) -> dict[str, object]:
         end = end_time.hour * 60 + end_time.minute if end_time else start + 30
         end = min(end, LAST_HOUR * 60)
         top = (start - FIRST_HOUR * 60) * HOUR_HEIGHT // 60
-        timed.append(
-            {"task": task, "top": top, "height": max((end - start) * HOUR_HEIGHT // 60, 26)}
-        )
+        height = max((end - start) * HOUR_HEIGHT // 60, 26)
+        timed.append({"task": task, "top": top, "height": height, "short": height < SHORT_BLOCK})
     return {"timed_deadlines": timed, "allday_deadlines": [t for t in tasks if t.due_time is None]}
 
 

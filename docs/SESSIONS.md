@@ -18,8 +18,16 @@
 - AIPD + note d'information aux employés avant d'activer la lecture sur de vraies boîtes.
 
 **Idées gardées pour plus tard (pas commencées)** : fil du dossier (frise + échéances
-faites, sans documents), tableau de bord du cabinet, espace client, adresse « support »
-pour les demandes automatiques.
+faites, sans documents), tableau de bord du cabinet, espace client (mis de côté : trop
+ambitieux pour l'instant), adresse « support » pour les demandes automatiques,
+**module Administrateur** (onglet réservé, vue générale de ce qui se passe ; Conformité et
+le journal des consultations pourraient y aller — à décider avec Jeremy).
+
+**Accueil (à concevoir)** : Jeremy garde le calendrier fiscal, la grande barre de recherche,
+et peut-être « ce qui a déjà été fait ». Maquettes après discussion.
+
+**Kit de test** : cahier de recette (page en ligne, réponses lisibles par Claude) + fichiers
+fictifs. Jeremy n'a pas encore pu relier Mail.Read (écran d'erreur Microsoft).
 
 ## Session — 23 octobre 2026 : paperasse anti-blanchiment (mandat « révolutionne tout »)
 

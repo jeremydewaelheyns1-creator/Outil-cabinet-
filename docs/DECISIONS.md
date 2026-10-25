@@ -597,3 +597,23 @@ Idée de Jeremy (25/10), version 1 validée sur maquette. But : ne plus devoir o
 - Le jour J : bandeau « Rappel d'aujourd'hui » dans l'agenda et notification dans la cloche
   (une seule fois, `run_jobs`). Aucun e-mail.
 
+## D-062 — Lecture des cartes sur de vraies photos de téléphone
+Retour de Jeremy (25/10) : une photo nette de carte n'était pas lue. Mesure sur des photos
+FICTIVES « de téléphone » (carte de travers, perspective, flou, reflet, table, photo couchée
+avec l'orientation dans les métadonnées) : 1 sur 40 lue avant, 40 sur 40 après, et 54 sur 60
+sur une seconde série jamais vue.
+- `apps/documents/card_reader.py` : photo remise à l'endroit, recherche de la bande des lignes
+  « machine » par traitement d'image classique (OpenCV, local, sans IA), redressement,
+  agrandissement, quelques versions (contraste, noir et blanc), photo retournée ou couchée.
+  Arrêt dès qu'une lecture passe tous les contrôles ; 40 secondes au plus ; une lecture
+  bloquée est abandonnée sans planter.
+- Lecture plus tolérante (`mrz.py`) : « < » perdus ou lus K/L dans le remplissage, caractère
+  parasite, forme de chaque ligne vérifiée.
+- Garde-fou en plus : sur une carte belge, le numéro national lu doit passer son propre
+  contrôle (modulo 97). Un cas réel l'a montré utile : une lettre parasite décalait le numéro
+  et le contrôle global tombait juste par hasard.
+- Nom : une seule lettre mal lue est tolérée, et seulement si le numéro national lu est celui
+  de la fiche (c'est lui qui prouve l'identité). Sinon, « à confirmer » comme avant.
+- Toujours rien n'est conservé : ni la photo de travail, ni le texte lu, ni le numéro.
+- Nouvelles dépendances : `opencv-python-headless`, `numpy`.
+

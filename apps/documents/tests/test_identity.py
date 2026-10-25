@@ -85,12 +85,12 @@ def test_icao_official_example_is_valid():
 def test_belgian_long_card_number_and_national_number():
     lines = mrz.build_td1(
         document_number="592123456789", surname="FICTIF", given_names="ANNE",
-        birth="850730", expiry="310412", national_number="85073000123",
+        birth="850730", expiry="310412", national_number="85073000160",
     )  # fmt: skip
     result = mrz.read("\n".join(lines))
     assert result.valid and result.document_number == "592123456789"
-    assert result.national_number == "85073000123"
-    assert "85073000123" not in repr(result)  # jamais dans une trace
+    assert result.national_number == "85073000160"
+    assert "85073000160" not in repr(result)  # jamais dans une trace
 
 
 def test_a_single_misread_character_is_caught():
@@ -276,3 +276,54 @@ def test_real_ocr_on_a_fictive_specimen(settings, monkeypatch):
     )  # fmt: skip
     card = IdentityCard.objects.get()
     assert card.auto_applied and card.valid_until == date(2031, 4, 12)
+
+
+def test_shifted_national_number_is_caught():
+    """Une lettre parasite décale le numéro national : son propre contrôle (modulo 97) le voit,
+    même si le contrôle global tombe juste par hasard (cas réel trouvé sur une photo fictive)."""
+    lines = [
+        "IDBEL592754212<1190<<<<<<<<<<<",
+        "5412116F2904021BEFL54121145941",
+        "EXEMPLE<<MARC<<<<<<<<<<<<<<<<<",
+    ]
+    result = mrz.parse_td1(lines)
+    assert not result.valid and "numéro national" in result.failed_checks
+
+
+def test_one_misread_letter_in_the_name_is_tolerated_only_with_the_same_national_number():
+    person = PersonFactory(name="Lambert", first_name="Lucie", national_number=national_number(4))
+    good = mrz.read(card_text(person))
+    assert good is not None
+    good.surname = "YLAMBERT"  # une lettre parasite lue devant le nom
+    assert identity.problems(good, person, timezone.localdate()) == []
+    good.national_number = national_number(5)
+    assert "Le nom lu ne correspond pas à la fiche" in identity.problems(
+        good, person, timezone.localdate()
+    )
+
+
+@pytest.mark.skipif(not __import__("shutil").which("tesseract"), reason="Tesseract absent")
+def test_reads_a_phone_photo_taken_at_an_angle(settings):
+    """Photo de téléphone FICTIVE : carte de travers, floue, posée sur une table, enregistrée
+    « couchée » avec l'orientation dans les métadonnées (comme un iPhone)."""
+    from pathlib import Path
+
+    settings.IDENTITY_OCR_ENABLED = True
+    content = (
+        Path(__file__).parent / "fixtures" / "photo_telephone_carte_fictive.jpg"
+    ).read_bytes()
+    result = mrz.read(identity.ocr_bytes(content, "image/jpeg") or "")
+    assert result is not None and result.valid
+    assert result.document_number == "592669927874" and result.expiry_date == date(2029, 9, 6)
+
+
+def test_a_stuck_reading_does_not_block(monkeypatch):
+    import subprocess
+
+    from apps.documents import card_reader
+
+    def too_long(*args, **kwargs):
+        raise subprocess.TimeoutExpired("tesseract", 1)
+
+    monkeypatch.setattr(subprocess, "run", too_long)
+    assert card_reader.tesseract(__import__("numpy").zeros((10, 10), dtype="uint8")) == ""

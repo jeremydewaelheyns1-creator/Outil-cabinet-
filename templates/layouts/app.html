@@ -11,7 +11,6 @@
       <a href="{% url 'boite:inbox' %}" class="nav-with-count" {% nav_current request "boite:inbox" %}>Ma boîte mail{% if unread_mails %}<span class="nav-count">{{ unread_mails }}</span>{% endif %}</a>
       <a href="{% url 'clients:list' %}" {% nav_current request "clients:list" %}>Tous les clients</a>
       <a href="{% url 'conformite:board' %}" {% nav_current request "conformite:board" %}>Conformité</a>
-      {% if user|can:"clients.edit" %}<a href="{% url 'depot:index' %}" {% nav_current request "depot:index" %}>Déposer des documents</a>{% endif %}
     </nav>
   </aside>
 

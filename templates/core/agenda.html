@@ -2,7 +2,6 @@
 {% load static %}
 {% block head_title %}Mon agenda{% endblock %}
 {% block page %}
-{% include "components/_messages.html" %}
 <div class="day-head">
   <div>
     <div class="day-date">Ma journée</div>
@@ -43,13 +42,13 @@
       </div>
       <div class="ts-day ag-day{% if is_today %} is-today{% endif %}" style="height: {{ grid_height }}px" data-ts-day="{{ day|date:'Y-m-d' }}" title="Cliquer pour ajouter">
         {% for b in current.blocks %}
-          <a class="ts-block ts-{{ b.entry.activity }}{% if not b.entry.billable %} is-internal{% endif %}{% if editing and editing.pk == b.entry.pk %} is-editing{% endif %}" style="top: {{ b.top }}px; height: {{ b.height }}px" href="?jour={{ day|date:'Y-m-d' }}&amp;modifier={{ b.entry.pk }}#ts-form">
+          <a class="ts-block ts-{{ b.entry.activity }}{% if not b.entry.billable %} is-internal{% endif %}{% if editing and editing.pk == b.entry.pk %} is-editing{% endif %}{% if b.is_short %} is-short{% endif %}" style="top: {{ b.top }}px; height: {{ b.height }}px" href="?jour={{ day|date:'Y-m-d' }}&amp;modifier={{ b.entry.pk }}#ts-form">
             <strong>{{ b.label }} · {{ b.entry.start|time:"H:i" }}–{{ b.entry.end|time:"H:i" }}</strong>
             <span>{{ b.entry.get_activity_display }}{% if b.entry.description %} — {{ b.entry.description }}{% endif %}</span>
           </a>
         {% endfor %}
         {% for d in timed_deadlines %}
-          <a class="ag-deadline" style="top: {{ d.top }}px; height: {{ d.height }}px" href="{% url 'clients:tasks' d.task.client_id %}">
+          <a class="ag-deadline{% if d.short %} is-short{% endif %}" style="top: {{ d.top }}px; height: {{ d.height }}px" href="{% url 'clients:tasks' d.task.client_id %}">
             <strong>{% if d.task.remind %}<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-label="rappel"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/></svg> {% endif %}{{ d.task.due_time|time:"H:i" }}{% if d.task.end_time %}–{{ d.task.end_time|time:"H:i" }}{% endif %} · {{ d.task.title }}</strong>
             <span>{{ d.task.client.display_name }}</span>
           </a>

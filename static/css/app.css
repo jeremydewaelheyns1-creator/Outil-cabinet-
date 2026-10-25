@@ -1290,3 +1290,16 @@ button:active, .button:active { transform: scale(.98); }
 .ag-mode { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; background: var(--surface-muted); border-radius: 999px; padding: 4px; margin-bottom: .9rem; }
 .ag-mode a { text-align: center; padding: .5rem .4rem; border-radius: 999px; color: var(--text); font-weight: 600; font-size: .9rem; white-space: nowrap; }
 .ag-mode a[aria-current="page"] { background: var(--ink, var(--text)); color: #fff; }
+
+/* Créneaux courts (moins de ~45 min) : une seule ligne, rien de coupé. */
+.ts-block.is-short, .ag-day .ts-block.is-short, .ag-deadline.is-short {
+  flex-direction: row; align-items: center; gap: .45rem; padding-top: 0; padding-bottom: 0;
+}
+.ts-block.is-short strong, .ts-block.is-short span, .ag-day .ts-block.is-short span,
+.ag-deadline.is-short strong, .ag-deadline.is-short span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ts-block.is-short strong, .ag-deadline.is-short strong { flex-shrink: 0; max-width: 70%; }
+
+/* Messages de confirmation : disparaissent seuls après 5 secondes (app.js). */
+.messages .alert { transition: opacity .4s ease, transform .4s ease; }
+.messages .alert.is-leaving { opacity: 0; transform: translateY(-4px); }
+@media (prefers-reduced-motion: reduce) { .messages .alert { transition: none; } }

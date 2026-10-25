@@ -103,3 +103,17 @@ def test_my_agenda_tab_in_my_day(web, user):
         retour="/ma-journee/agenda/?jour=2026-10-19",
     )
     assert TimeEntry.objects.count() == 2
+
+
+def test_short_slot_is_shown_on_one_line_and_confirmation_only_once(web):
+    """Retours de Jeremy (25/10) : un créneau de 30 min était illisible, et « … ajouté »
+    s'affichait deux fois."""
+    web.post(reverse("temps:save"), {"day": "2026-10-20", "start": "08:30", "end": "09:00",
+             "activity": "tva", "description": "Encodage",
+             "retour": reverse("core:agenda") + "?jour=2026-10-20"})  # fmt: skip
+    page = web.get(reverse("core:agenda") + "?jour=2026-10-20").content.decode()
+    assert "is-short" in page
+    web.post(reverse("core:agenda_deadline"), {"jour": "2026-10-20", "commentaire": "Appel",
+                                               "dossier": ClientFactory().pk})  # fmt: skip
+    page = web.get(reverse("core:agenda") + "?jour=2026-10-20").content.decode()
+    assert page.count("Échéance ajoutée") == 1

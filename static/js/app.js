@@ -163,3 +163,25 @@ document.addEventListener("change", function (event) {
     other.checked = box.checked;
   });
 });
+
+// Messages de confirmation (« … réussie », « … ajoutée ») : ils s'effacent après 5 secondes.
+// Les erreurs et avertissements restent affichés, pour être lus.
+(function () {
+  function fade() {
+    document.querySelectorAll(".messages .alert-success, .messages .alert-info").forEach(function (item) {
+      if (item.dataset.fading) return;
+      item.dataset.fading = "1";
+      setTimeout(function () {
+        item.classList.add("is-leaving");
+        setTimeout(function () {
+          var list = item.parentNode;
+          item.remove();
+          if (list && !list.children.length) list.remove();
+        }, 450);
+      }, 5000);
+    });
+  }
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", fade);
+  else fade();
+  document.addEventListener("htmx:afterSwap", fade);
+})();

@@ -2,7 +2,6 @@
 {% load static %}
 {% block head_title %}Ma boîte mail{% endblock %}
 {% block page %}
-{% include "components/_messages.html" %}
 <div class="mb-head">
   <h1>Ma boîte mail</h1>
   <form class="mb-search" method="get" action="{% url 'boite:inbox' %}" role="search">

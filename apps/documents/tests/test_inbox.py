@@ -73,17 +73,17 @@ def test_card_goes_to_the_company_when_the_person_is_not_a_client(web, card_read
 
 def test_card_of_someone_without_a_file_waits_to_be_classified(web, card_reader):
     _, person = setup_company()
-    card_reader["text"] = card_text(person, nn="85073000155")  # numéro d'une autre personne
+    card_reader["text"] = card_text(person, nn="85073000655")  # numéro d'une autre personne
     web.post(reverse("depot:index"), {"files": [SimpleUploadedFile("scan.png", PNG)]})
     assert not Document.objects.exists()
     item = InboxItem.objects.get()
-    assert "aucune fiche" in item.reason and "85073000155" not in item.reason
+    assert "aucune fiche" in item.reason and "85073000655" not in item.reason
 
 
 def test_card_of_a_hidden_person_is_not_filed(web, card_reader):
     hidden = ClientFactory(portfolio=PortfolioFactory(is_private=True), kind="person",
                            name="Cachée", first_name="Anne", enterprise_number=None,
-                           national_number="85073000155")  # fmt: skip
+                           national_number="85073000655")  # fmt: skip
     card_reader["text"] = card_text(hidden)
     web.post(reverse("depot:index"), {"files": [SimpleUploadedFile("scan.png", PNG)]})
     assert not Document.objects.exists() and InboxItem.objects.count() == 1

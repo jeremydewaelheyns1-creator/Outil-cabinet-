@@ -39,7 +39,7 @@
       {% for d in days %}
         <div class="ts-day{% if d.is_today %} is-today{% endif %}{% if d.is_weekend %} is-weekend{% endif %}" style="height: {{ grid_height }}px" {% if mine %}data-ts-day="{{ d.day|date:'Y-m-d' }}" title="Cliquer pour ajouter un créneau"{% endif %}>
           {% for b in d.blocks %}
-            <a class="ts-block ts-{{ b.entry.activity }}{% if not b.entry.billable %} is-internal{% endif %}{% if editing and editing.pk == b.entry.pk %} is-editing{% endif %}" style="top: {{ b.top }}px; height: {{ b.height }}px" href="{% if mine %}?semaine={{ monday|date:'Y-m-d' }}&amp;modifier={{ b.entry.pk }}#ts-form{% else %}#{% endif %}">
+            <a class="ts-block ts-{{ b.entry.activity }}{% if not b.entry.billable %} is-internal{% endif %}{% if editing and editing.pk == b.entry.pk %} is-editing{% endif %}{% if b.is_short %} is-short{% endif %}" style="top: {{ b.top }}px; height: {{ b.height }}px" href="{% if mine %}?semaine={{ monday|date:'Y-m-d' }}&amp;modifier={{ b.entry.pk }}#ts-form{% else %}#{% endif %}">
               <strong>{{ b.label }}</strong>
               <span>{{ b.entry.start|time:"H:i" }}–{{ b.entry.end|time:"H:i" }}{% if b.entry.description %} · {{ b.entry.description }}{% endif %}</span>
             </a>

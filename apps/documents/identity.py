@@ -40,7 +40,6 @@ logger = logging.getLogger(__name__)
 CASE = "pieces-identite"
 UNDO_DAYS = 7
 WARN_DAYS = 15  # orange (et demande au client) quand la carte expire dans 15 jours (D-054)
-WHITELIST = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789<"
 
 
 # --- Lecture (OCR local) ---------------------------------------------------------------------
@@ -54,26 +53,34 @@ def _run(command: list[str], timeout: int = 60) -> str:
 
 
 def ocr_bytes(content: bytes, content_type: str) -> str | None:
-    """Texte lu par Tesseract sur l'image (ou les 2 premières pages du PDF). Tout se passe sur
-    le serveur du cabinet ; les fichiers temporaires sont effacés aussitôt."""
+    """Texte lu sur la photo (ou les 2 premières pages du PDF), en cherchant et redressant la
+    bande des lignes « machine » (`card_reader`). Tout se passe sur le serveur du cabinet ; les
+    fichiers temporaires sont effacés aussitôt."""
     if not settings.IDENTITY_OCR_ENABLED or not shutil.which("tesseract"):
         return None
     if content_type not in ("image/jpeg", "image/png", "application/pdf"):
         return None
+    from . import card_reader
+
+    def is_valid(text: str) -> bool:
+        result = mrz.read(text)
+        return bool(result and result.valid)
+
+    if content_type != "application/pdf":
+        return card_reader.read(content, is_valid)
+    if not shutil.which("pdftoppm"):
+        return None
     with tempfile.TemporaryDirectory(prefix="lecture-") as folder:
         source = Path(folder) / "source"
         source.write_bytes(content)
-        images = [source]
-        if content_type == "application/pdf":
-            if not shutil.which("pdftoppm"):
-                return None
-            _run(["pdftoppm", "-r", "300", "-png", "-f", "1", "-l", "2", str(source),
-                  f"{folder}/page"])  # fmt: skip
-            images = sorted(Path(folder).glob("page*.png"))
+        _run(["pdftoppm", "-r", "300", "-png", "-f", "1", "-l", "2", str(source),
+              f"{folder}/page"])  # fmt: skip
         texts = []
-        for image in images:
-            config = ["--psm", "6", "-c", f"tessedit_char_whitelist={WHITELIST}"]
-            texts.append(_run(["tesseract", str(image), "-", *config]))
+        for image in sorted(Path(folder).glob("page*.png")):
+            text = card_reader.read(image.read_bytes(), is_valid, budget=20.0)
+            if is_valid(text):
+                return text
+            texts.append(text)
         return "\n".join(texts)
 
 
@@ -90,6 +97,25 @@ READER: Callable[[Document], str | None] = ocr_text
 # --- Vérifications ---------------------------------------------------------------------------
 
 
+def _one_typo_apart(a: str, b: str) -> bool:
+    """Vrai si une seule lettre diffère (ajoutée, perdue ou changée)."""
+    if abs(len(a) - len(b)) > 1:
+        return False
+    if len(a) == len(b):
+        return sum(x != y for x, y in zip(a, b, strict=True)) <= 1
+    short, long = (a, b) if len(a) < len(b) else (b, a)
+    return any(long[:i] + long[i + 1 :] == short for i in range(len(long)))
+
+
+def _name_found(name: str, read_names: set[str], same_number: bool) -> bool:
+    """Le nom de la fiche est-il sur la carte ? Une seule lettre mal lue est tolérée, et
+    seulement quand le numéro national lu (vérifié par ses chiffres de contrôle) est celui de
+    la fiche : c'est lui qui prouve l'identité, le nom ne fait que confirmer."""
+    if name in read_names:
+        return True
+    return same_number and len(name) >= 4 and any(_one_typo_apart(name, r) for r in read_names)
+
+
 def problems(result: mrz.MrzResult | None, person: Client, today: date) -> list[str]:
     """Ce qui empêche d'appliquer la carte sans confirmation (liste vide = tout est vert)."""
     if result is None:
@@ -101,10 +127,11 @@ def problems(result: mrz.MrzResult | None, person: Client, today: date) -> list[
         issues.append("Ce document n'est pas une carte d'identité")
     read_names = set(normalize(f"{result.surname} {result.given_names}").split())
     file_names = set(normalize(f"{person.name} {person.first_name}").split())
-    if not file_names or not file_names <= read_names:
+    same_number = bool(person.national_number) and result.national_number == person.national_number
+    if not file_names or not all(_name_found(n, read_names, same_number) for n in file_names):
         issues.append("Le nom lu ne correspond pas à la fiche")
     if person.national_number:
-        if result.national_number != person.national_number:
+        if not same_number:
             issues.append("Le numéro national ne correspond pas à la fiche")
     elif person.birth_date:
         if result.birth_date != person.birth_date:

@@ -1,7 +1,6 @@
 {% extends "layouts/app.html" %}
 {% block head_title %}Ma journée{% endblock %}
 {% block page %}
-{% include "components/_messages.html" %}
 <div class="day-head">
   <div>
     <div class="day-date">{{ today|date:"l j F"|capfirst }}</div>

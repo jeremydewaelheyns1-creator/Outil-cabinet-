@@ -19,6 +19,8 @@ import re
 from dataclasses import dataclass, field
 from datetime import date
 
+from stdnum.be import nn as be_nn
+
 WEIGHTS = (7, 3, 1)
 LINE = re.compile(r"^[A-Z0-9<]{30}$")
 
@@ -73,19 +75,55 @@ class MrzResult:
         return [name for name, ok in self.checks.items() if not ok]
 
 
-def _windows(raw: str) -> list[str]:
-    """Morceaux de 30 caractères possibles d'une ligne lue (l'OCR ajoute parfois un caractère
-    parasite au début ou à la fin)."""
+# L'OCR lit parfois « < » comme K ou L dans le remplissage final. La suite doit commencer
+# par « < » : un K ou un L juste avant appartient au nom (PAUL<<<…).
+FILLER_RUN = re.compile(r"<[<KL]{3,}$")
+
+
+def _clean(raw: str) -> str:
     line = re.sub(r"\s+", "", raw.upper()).replace("«", "<").replace("‹", "<")
     line = re.sub(r"[^A-Z0-9<]", "", line)
+    # Remplissage final : une longue suite de < mêlée de K ou L lus par erreur → que des <.
+    found = FILLER_RUN.search(line)
+    if found and found.group().count("<") > len(found.group()) // 2:
+        line = line[: found.start()] + "<" * len(found.group())
+    return line
+
+
+def _windows(raw: str) -> list[str]:
+    """Morceaux de 30 caractères possibles d'une ligne lue : l'OCR ajoute parfois un caractère
+    parasite au début ou à la fin, ou perd un ou deux « < » du remplissage final."""
+    line = _clean(raw)
+    if 26 <= len(line) < 30 and line.endswith("<<"):
+        line = line.ljust(30, "<")
     if len(line) < 30 or len(line) > 34:
         return []
-    return [line[i : i + 30] for i in range(len(line) - 29)]
+    windows = [line[i : i + 30] for i in range(len(line) - 29)]
+    # Un caractère parasite au début et un « < » perdu à la fin.
+    if len(line) == 30 and line.endswith("<<"):
+        windows.append(line[1:] + "<")
+    return windows
+
+
+DIGITS = re.compile(r"^\d{7}[MF<X]\d{7}[A-Z<]{3}")
+NAME_LINE = re.compile(r"^[A-Z][A-Z<]*<<[A-Z<]*$")
+
+
+def _plausible(line1: str, line2: str, line3: str) -> bool:
+    """Forme attendue de chaque ligne : document, dates, nom (pas de chiffres)."""
+    return (
+        line1[:1] in "IAC"
+        and bool(DIGITS.match(line2))
+        and bool(NAME_LINE.match(line3))
+        and not line3.startswith(("ID", "I<"))
+    )
 
 
 def find_lines(text: str) -> list[str] | None:
     """Les trois lignes MRZ dans un texte lu (OCR). Si l'OCR a ajouté un caractère parasite,
-    on essaie chaque découpage et on garde celui dont tous les contrôles tombent juste."""
+    on essaie chaque découpage et on garde celui dont tous les contrôles tombent juste (et dont
+    les lignes ont la bonne forme). Pour le nom, qui n'a pas de chiffre de contrôle, on préfère
+    le découpage qui commence par une lettre et finit par le remplissage."""
     rows = [w for w in (_windows(raw) for raw in text.splitlines()) if w]
     fallback = None
     for i in range(len(rows) - 2):
@@ -93,9 +131,10 @@ def find_lines(text: str) -> list[str] | None:
             if line1[:1] not in "IAC":
                 continue
             for line2 in rows[i + 1]:
-                for line3 in rows[i + 2]:
+                names = sorted(rows[i + 2], key=lambda n: (not n.endswith("<"), n[:1] in "<"))
+                for line3 in names:
                     lines = [line1, line2, line3]
-                    if parse_td1(lines).valid:
+                    if _plausible(*lines) and parse_td1(lines).valid:
                         return lines
                     fallback = fallback or lines
     return fallback
@@ -119,6 +158,10 @@ def parse_td1(lines: list[str]) -> MrzResult:
     checks["date d'expiration"] = check_digit(expiry) == line2[14]
     composite = line1[5:30] + line2[0:7] + line2[8:15] + line2[18:29]
     checks["contrôle global"] = check_digit(composite) == line2[29]
+    optional2 = line2[18:29].rstrip("<")
+    if line1[2:5] == "BEL" and optional2:
+        # Carte belge : le numéro national a ses propres chiffres de contrôle (modulo 97).
+        checks["numéro national"] = optional2.isdigit() and be_nn.is_valid(optional2)
     names = line3.rstrip("<").split("<<", 1)
     surname = names[0].replace("<", " ").strip()
     given = names[1].replace("<", " ").strip() if len(names) > 1 else ""
