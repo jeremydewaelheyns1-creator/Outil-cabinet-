@@ -24,7 +24,11 @@ ambitieux pour l'instant), adresse « support » pour les demandes automatiques,
 le journal des consultations pourraient y aller — à décider avec Jeremy).
 
 **Accueil — VALIDÉ sur maquette (planche « Accueil selon la période »)** :
-- Personnel : chacun voit SA période et SES dossiers, jamais de nom de collègue.
+- Personnel : chacun voit SA période et SES dossiers, jamais de nom de collègue. « Ses
+  dossiers » = ceux où il est affecté (expert-comptable ou comptable, `Assignment`) : deux
+  personnes n'ont donc pas le même Accueil.
+- Période calme : la 1re maquette ne plaisait pas ; 3 propositions à choisir (prendre de
+  l'avance / mettre mes dossiers en ordre / mes 30 prochains jours).
 - L'écran suit la saison : au centre, la grande échéance la plus proche (en octobre : LE mois
   TVA, mensuels et trimestriels) ; les autres dans « Aussi en cours » ; bascule 10 jours avant.
   Maquettes : mois TVA, listing clients (mars), saison IPP, comptes annuels BNB, période calme.
