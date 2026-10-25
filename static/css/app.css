@@ -1092,3 +1092,101 @@ button:active, .button:active { transform: scale(.98); }
 .dossier-progress-label strong { color: var(--text); }
 .dossier-progress-bar { display: block; height: 8px; border-radius: 999px; background: #ece9f8; overflow: hidden; }
 .dossier-progress-bar > span { display: block; height: 100%; border-radius: 999px; background: var(--primary); }
+
+/* --- Feuille de temps (D-058) --------------------------------------------------------------- */
+.ts-nav { display: flex; flex-wrap: wrap; align-items: center; gap: .7rem; margin-bottom: 1rem; }
+.ts-week-total { margin-left: auto; color: var(--text-muted); }
+.ts-layout { display: flex; flex-wrap: wrap; gap: 1rem; align-items: flex-start; }
+.ts-calendar { flex: 999 1 640px; min-width: 0; overflow-x: auto; padding: 1rem; }
+.ts-side { flex: 1 1 300px; max-width: 380px; display: grid; gap: 1rem; }
+.ts-side .card + .card { margin-top: 0; }
+.ts-grid { display: grid; grid-template-columns: 48px repeat(5, minmax(96px, 1fr)) repeat(2, minmax(64px, .6fr)); min-width: 720px; }
+.ts-corner { border-bottom: 1px solid var(--border); }
+.ts-dayhead { display: flex; flex-direction: column; align-items: center; padding: .3rem 0 .55rem; border-bottom: 1px solid var(--border); font-weight: 700; }
+.ts-dayhead small { color: var(--text-muted); font-weight: 600; font-size: .75rem; }
+.ts-dayhead.is-today span { background: var(--ink, var(--text)); color: #fff; border-radius: 999px; padding: .1rem .6rem; }
+.ts-dayhead.is-weekend { color: var(--text-muted); }
+.ts-hours { position: relative; }
+.ts-hour { height: var(--hour); font-size: .72rem; color: var(--text-muted); text-align: right; padding-right: .5rem; transform: translateY(-.5em); }
+.ts-day {
+  position: relative; border-left: 1px solid var(--border); cursor: copy;
+  background-image: repeating-linear-gradient(to bottom, transparent 0, transparent calc(var(--hour) - 1px), var(--border) calc(var(--hour) - 1px), var(--border) var(--hour));
+}
+.ts-day:not([data-ts-day]) { cursor: default; }
+.ts-day.is-weekend { background-color: var(--surface-muted); }
+.ts-day.is-today { background-color: #f7f6fd; }
+.ts-block {
+  position: absolute; left: 4px; right: 4px; overflow: hidden; border-radius: 10px; padding: .25rem .45rem;
+  background: var(--primary-soft); color: var(--primary-text, var(--primary)); font-size: .76rem; line-height: 1.25;
+  display: flex; flex-direction: column; box-shadow: inset 3px 0 0 var(--primary);
+}
+.ts-block:hover { filter: brightness(.97); color: var(--primary-text, var(--primary)); }
+.ts-block span { color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ts-block strong { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ts-block.is-internal { background: #f1f0f6; color: var(--text); box-shadow: inset 3px 0 0 #a8a5bd; }
+.ts-block.ts-tva { background: #e0f2fe; box-shadow: inset 3px 0 0 #0284c7; color: #075985; }
+.ts-block.ts-cloture, .ts-block.ts-impots { background: #fef3c7; box-shadow: inset 3px 0 0 #d97706; color: #92400e; }
+.ts-block.ts-conseil { background: #dcfce7; box-shadow: inset 3px 0 0 #16a34a; color: #166534; }
+.ts-block.is-editing { outline: 2px solid var(--ink, var(--text)); }
+.ts-form { display: grid; gap: .2rem; }
+.ts-form label { margin-top: .45rem; }
+.ts-times { display: grid; grid-template-columns: 1fr 1fr; gap: .6rem; }
+.ts-form-actions { display: flex; align-items: center; gap: .8rem; margin-top: .8rem; }
+.ts-delete { margin-top: .8rem; }
+.ts-summary li { display: flex; justify-content: space-between; gap: .75rem; padding: .3rem 0; border-bottom: 1px solid var(--border); }
+.ts-summary li:last-child { border-bottom: none; }
+.ts-summary strong { white-space: nowrap; }
+
+/* --- Ma journée (D-059) --------------------------------------------------------------------- */
+.day-head { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 1rem; margin-bottom: 1.2rem; }
+.day-head h1 { margin: .2rem 0 0; font-size: 1.9rem; }
+.day-date { color: var(--text-muted); font-weight: 600; }
+.day-progress { display: grid; gap: .35rem; width: 240px; font-size: .85rem; color: var(--text-muted); }
+.day-layout { display: flex; flex-wrap: wrap; gap: 1.1rem; align-items: flex-start; }
+.day-main { flex: 999 1 560px; min-width: 0; display: grid; gap: .7rem; }
+.day-side { flex: 1 1 280px; max-width: 360px; display: grid; gap: 1rem; }
+.day-side .card + .card { margin-top: 0; }
+.day-section { font-size: .74rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--text-muted); margin: .8rem 0 .1rem; }
+.day-item { display: flex; flex-wrap: wrap; align-items: center; gap: 1rem; background: var(--surface); border-radius: var(--radius); padding: 1rem 1.2rem; color: var(--text); transition: transform .15s ease, box-shadow .15s ease; }
+.day-item:hover { color: var(--text); transform: translateY(-1px); box-shadow: 0 8px 24px rgb(30 27 58 / 7%); }
+.day-item.day-danger { box-shadow: inset 0 0 0 2px var(--danger-soft); }
+.day-item.day-warning { box-shadow: inset 0 0 0 2px var(--warning-soft); }
+.day-icon { width: 46px; height: 46px; flex-shrink: 0; border-radius: 14px; display: grid; place-items: center; font-weight: 800; font-size: .82rem; background: var(--primary-soft); color: var(--primary-hover); }
+.day-icon-carte { background: var(--success-soft); color: var(--success); }
+.day-icon-appel, .day-danger .day-icon { background: var(--danger-soft); color: var(--danger); }
+.day-icon-risque { background: var(--warning-soft); color: var(--warning); }
+.day-text { flex: 1 1 280px; display: grid; gap: .15rem; }
+.day-text strong { font-size: 1.02rem; }
+.day-text span { color: var(--text-muted); }
+.day-action { font-weight: 700; color: #fff; background: var(--primary); border-radius: 999px; padding: .55rem 1rem; white-space: nowrap; }
+.day-danger .day-action { background: var(--ink, var(--text)); }
+.day-chips { display: flex; flex-wrap: wrap; gap: .5rem; }
+.day-chips span { background: var(--surface); border-radius: 999px; padding: .5rem .9rem; font-weight: 600; }
+.day-empty-title { font-size: 1.15rem; font-weight: 800; }
+.day-week { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: .45rem; text-align: center; }
+.day-week-day { display: grid; gap: .1rem; border-radius: 14px; padding: .55rem 0; background: var(--surface-muted); color: var(--text); }
+.day-week-day span { font-size: .75rem; color: var(--text-muted); }
+.day-week-day strong { font-size: 1.3rem; font-weight: 800; }
+.day-week-day.is-today { background: var(--ink, var(--text)); color: #fff; }
+.day-week-day.is-today span { color: #c7c4e6; }
+.day-week-day.is-peak:not(.is-today) { background: var(--warning-soft); color: var(--warning); }
+.day-time { font-size: 1.35rem; font-weight: 800; }
+.day-row { display: flex; justify-content: space-between; padding: .45rem 0; border-bottom: 1px solid var(--border); color: var(--text); }
+.day-row:last-child { border-bottom: none; }
+
+/* Ma journée : sous-onglets et agenda du jour (D-059) */
+.day-tabs { margin: -.2rem 0 1.1rem; }
+.day-tab-count { display: inline-grid; place-items: center; min-width: 1.35rem; height: 1.35rem; margin-left: .3rem; padding: 0 .35rem; border-radius: 999px; background: var(--alarm, #e11d48); color: #fff; font-size: .72rem; font-weight: 800; }
+.ag-head { margin: 0 0 .8rem .3rem; color: var(--text-muted); }
+.ag-head strong { color: var(--text); font-size: 1.1rem; }
+.ag-grid { grid-template-columns: 56px minmax(0, 1fr); min-width: 0; }
+.ag-day { border-left: 1px solid var(--border); border-right: 1px solid var(--border); background-color: transparent; }
+.ag-day .ts-block { left: 8px; right: 8px; padding: .4rem .7rem; font-size: .86rem; }
+.ag-day .ts-block span { white-space: normal; }
+.ag-empty { position: absolute; top: 40%; left: 0; right: 0; text-align: center; color: var(--text-muted); pointer-events: none; }
+.ag-week { display: grid; gap: .3rem; }
+.ag-week-day { display: flex; justify-content: space-between; padding: .45rem .7rem; border-radius: 12px; color: var(--text); }
+.ag-week-day:hover { background: var(--surface-muted); color: var(--text); }
+.ag-week-day.is-current { background: var(--ink, var(--text)); color: #fff; }
+.ag-week-day.is-weekend span { color: var(--text-muted); }
+.ag-week-day.is-current span { color: #fff; }

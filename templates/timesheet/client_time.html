@@ -1,0 +1,52 @@
+{% extends "clients/sections/_base.html" %}
+{% block head_title %}Temps passé · {{ client.display_name }}{% endblock %}
+{% block page_title %}Temps passé{% endblock %}
+{% block content %}
+<div class="grid grid-3">
+  <div class="card"><div class="stat">{{ total }}</div><div class="stat-label">au total sur ce dossier</div></div>
+  <div class="card"><div class="stat">{{ billable }}</div><div class="stat-label">facturables</div></div>
+  <div class="card">
+    <div class="stat-label" style="margin-bottom: .3rem">Par activité</div>
+    {% if by_activity %}<ul class="plain ts-summary">{% for name, label, m in by_activity %}<li><span>{{ name }}</span><strong>{{ label }}</strong></li>{% endfor %}</ul>{% else %}<p class="empty">—</p>{% endif %}
+  </div>
+</div>
+
+<div class="ts-layout" style="margin-top: 1rem">
+  <section class="card">
+    <div class="card-header"><h2>Détail</h2>{% if by_month %}<span class="small muted">{% for m, label in by_month %}{{ m }} : {{ label }}{% if not forloop.last %} · {% endif %}{% endfor %}</span>{% endif %}</div>
+    {% if entries %}
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th>Jour</th><th>Heures</th><th>Qui</th><th>Activité</th><th>Ce qui a été fait</th></tr></thead>
+          <tbody>
+          {% for e in entries %}
+            <tr><td class="nowrap">{{ e.day|date:"d/m/Y" }}</td><td class="nowrap">{{ e.start|time:"H:i" }}–{{ e.end|time:"H:i" }}</td><td>{{ e.user.get_short_name|default:e.user }}</td><td>{{ e.get_activity_display }}{% if not e.billable %} <span class="badge">non facturable</span>{% endif %}</td><td>{{ e.description|default:"—" }}</td></tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <p class="empty">Aucune ligne à afficher.</p>
+    {% endif %}
+    {% if hidden %}<p class="small muted">{{ hidden }} ligne{{ hidden|pluralize }} de collègues comptée{{ hidden|pluralize }} dans les totaux (détail visible avec le droit « feuilles de temps de l'équipe »).</p>{% endif %}
+  </section>
+  <aside class="ts-side">
+    <section class="card">
+      <h2>Ajouter du temps</h2>
+      <form method="post" action="{% url 'temps:save' %}" class="ts-form">
+        {% csrf_token %}
+        <input type="hidden" name="retour" value="{{ request.get_full_path }}">
+        <input type="hidden" name="client" value="{{ client.pk }}">
+        <label for="{{ form.day.id_for_label }}">Jour</label>{{ form.day }}
+        <div class="ts-times">
+          <div><label for="{{ form.start.id_for_label }}">De</label>{{ form.start }}</div>
+          <div><label for="{{ form.end.id_for_label }}">À</label>{{ form.end }}</div>
+        </div>
+        <label for="{{ form.activity.id_for_label }}">Activité</label>{{ form.activity }}
+        <label for="{{ form.description.id_for_label }}">Ce qui a été fait</label>{{ form.description }}
+        <div class="ts-form-actions"><button type="submit">Ajouter</button><a class="small" href="{% url 'temps:week' %}">Ma feuille de temps</a></div>
+      </form>
+    </section>
+  </aside>
+</div>
+{% endblock %}

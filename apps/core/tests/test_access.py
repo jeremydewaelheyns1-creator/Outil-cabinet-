@@ -43,7 +43,7 @@ def test_user_without_second_factor_must_configure_it(client):
 def test_user_with_second_factor_reaches_home(web):
     response = web.get(reverse("core:home"))
     assert response.status_code == 200
-    assert "Mes dossiers" in response.content.decode()
+    assert "Ma journée" in response.content.decode()
 
 
 def test_signup_is_closed(client):

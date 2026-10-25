@@ -9,4 +9,5 @@ urlpatterns = [
     path("journal/", views.access_log, name="access_log"),
     path("parametres/", views.settings_page, name="settings"),
     path("notifications/", views.notifications, name="notifications"),
+    path("ma-journee/agenda/", views.my_agenda, name="agenda"),
 ]

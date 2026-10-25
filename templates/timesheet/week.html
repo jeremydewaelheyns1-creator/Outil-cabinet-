@@ -1,0 +1,89 @@
+{% extends "layouts/app.html" %}
+{% load static %}
+{% block head_title %}Feuille de temps{% endblock %}
+{% block page_title %}Ma journée · la semaine{% endblock %}
+{% block page_subtitle %}<div class="subtitle">{% if mine %}Ce que vous avez fait, heure par heure. Cliquez dans le calendrier pour ajouter un créneau.{% else %}Feuille de temps de {{ person }} (lecture seule).{% endif %}</div>{% endblock %}
+{% block page_actions %}
+  {% if colleagues %}
+    <form method="get" class="inline">
+      <input type="hidden" name="semaine" value="{{ monday|date:'Y-m-d' }}">
+      <label class="visually-hidden" for="ts-qui">Collaborateur</label>
+      <select id="ts-qui" name="qui" class="compact" onchange="this.form.submit()">
+        {% for u in colleagues %}<option value="{{ u.pk }}"{% if u.pk == person.pk %} selected{% endif %}>{{ u }}</option>{% endfor %}
+      </select>
+    </form>
+  {% endif %}
+{% endblock %}
+{% block content %}
+{% include "core/_day_tabs.html" %}
+<div class="ts-nav">
+  <a class="button button-secondary button-small" href="?semaine={{ previous|date:'Y-m-d' }}{% if not mine %}&amp;qui={{ person.pk }}{% endif %}" aria-label="Semaine précédente">‹</a>
+  <strong>Semaine du {{ monday|date:"j F" }} au {{ sunday|date:"j F Y" }}</strong>
+  <a class="button button-secondary button-small" href="?semaine={{ next|date:'Y-m-d' }}{% if not mine %}&amp;qui={{ person.pk }}{% endif %}" aria-label="Semaine suivante">›</a>
+  <a class="small" href="?{% if not mine %}qui={{ person.pk }}{% endif %}">Aujourd'hui</a>
+  <span class="ts-week-total">Total : <strong>{{ total }}</strong>{% if total != "0 h" %} · facturable {{ billable_percent }} %{% endif %}</span>
+</div>
+
+<div class="ts-layout">
+  <section class="card ts-calendar" aria-label="Calendrier de la semaine">
+    <div class="ts-grid" style="--hour: {{ hour_height }}px">
+      <div class="ts-corner"></div>
+      {% for d in days %}
+        <div class="ts-dayhead{% if d.is_today %} is-today{% endif %}{% if d.is_weekend %} is-weekend{% endif %}">
+          <span>{{ d.name }} {{ d.day|date:"j" }}</span><small>{{ d.total }}</small>
+        </div>
+      {% endfor %}
+      <div class="ts-hours" style="height: {{ grid_height }}px">
+        {% for h in hours %}<div class="ts-hour">{{ h }}h</div>{% endfor %}
+      </div>
+      {% for d in days %}
+        <div class="ts-day{% if d.is_today %} is-today{% endif %}{% if d.is_weekend %} is-weekend{% endif %}" style="height: {{ grid_height }}px" {% if mine %}data-ts-day="{{ d.day|date:'Y-m-d' }}" title="Cliquer pour ajouter un créneau"{% endif %}>
+          {% for b in d.blocks %}
+            <a class="ts-block ts-{{ b.entry.activity }}{% if not b.entry.billable %} is-internal{% endif %}{% if editing and editing.pk == b.entry.pk %} is-editing{% endif %}" style="top: {{ b.top }}px; height: {{ b.height }}px" href="{% if mine %}?semaine={{ monday|date:'Y-m-d' }}&amp;modifier={{ b.entry.pk }}#ts-form{% else %}#{% endif %}">
+              <strong>{{ b.label }}</strong>
+              <span>{{ b.entry.start|time:"H:i" }}–{{ b.entry.end|time:"H:i" }}{% if b.entry.description %} · {{ b.entry.description }}{% endif %}</span>
+            </a>
+          {% endfor %}
+        </div>
+      {% endfor %}
+    </div>
+  </section>
+
+  <aside class="ts-side">
+    {% if mine %}
+      <section class="card" id="ts-form">
+        <h2>{% if editing %}Modifier le créneau{% else %}Ajouter du temps{% endif %}</h2>
+        <form method="post" action="{% url 'temps:save' %}" class="ts-form">
+          {% csrf_token %}
+          {% if editing %}<input type="hidden" name="entry" value="{{ editing.pk }}">{% endif %}
+          <label for="{{ form.day.id_for_label }}">Jour</label>{{ form.day }}
+          <div class="ts-times">
+            <div><label for="{{ form.start.id_for_label }}">De</label>{{ form.start }}</div>
+            <div><label for="{{ form.end.id_for_label }}">À</label>{{ form.end }}</div>
+          </div>
+          <label for="{{ form.client.id_for_label }}">Dossier</label>{{ form.client }}
+          <label for="{{ form.activity.id_for_label }}">Activité</label>{{ form.activity }}
+          <label for="{{ form.description.id_for_label }}">Ce qui a été fait</label>{{ form.description }}
+          <p class="help">Pas de donnée sensible ici (numéro national, montants personnels…).</p>
+          <div class="ts-form-actions">
+            <button type="submit">{% if editing %}Enregistrer{% else %}Ajouter{% endif %}</button>
+            {% if editing %}<a class="small" href="?semaine={{ monday|date:'Y-m-d' }}">Annuler</a>{% endif %}
+          </div>
+        </form>
+        {% if editing %}
+          <form method="post" action="{% url 'temps:delete' editing.pk %}" class="ts-delete">{% csrf_token %}<button type="submit" class="danger small">Supprimer ce créneau</button></form>
+        {% endif %}
+      </section>
+    {% endif %}
+    <section class="card">
+      <h2>Cette semaine par dossier</h2>
+      {% if by_client %}
+        <ul class="plain ts-summary">{% for name, label, m in by_client %}<li><span>{{ name }}</span><strong>{{ label }}</strong></li>{% endfor %}</ul>
+      {% else %}
+        <p class="empty">Rien d'encodé cette semaine.</p>
+      {% endif %}
+    </section>
+  </aside>
+</div>
+<script src="{% static 'js/timesheet.js' %}" defer></script>
+{% endblock %}

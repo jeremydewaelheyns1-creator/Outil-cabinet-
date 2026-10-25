@@ -53,6 +53,7 @@ INSTALLED_APPS = [
     "apps.documents",
     "apps.vat",
     "apps.outlook",
+    "apps.timesheet",
 ]
 
 MIDDLEWARE = [

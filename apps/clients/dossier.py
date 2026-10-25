@@ -94,6 +94,7 @@ SIDE: tuple[Group, ...] = (
     Group(
         "Facturation",
         (
+            Section("time_spent", "Temps passé"),
             Section(WORK, "Honoraires", slug="honoraires"),
             Section(WORK, "Factures", slug="factures"),
         ),

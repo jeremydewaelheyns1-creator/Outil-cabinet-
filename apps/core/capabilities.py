@@ -17,6 +17,7 @@ class Capability(models.TextChoices):
     AML_VIEW = "aml.view", "Consulter les dossiers anti-blanchiment"
     AML_DECIDE = "aml.decide", "Décider en matière d'anti-blanchiment (AMLCO)"
     BILLING_VIEW = "billing.view", "Consulter la facturation"
+    TIMESHEET_ALL = "timesheet.all", "Voir les feuilles de temps de toute l'équipe"
     DATA_EXPORT = "data.export", "Exporter des données (Excel, archives)"
     AUDIT_VIEW = "audit.view", "Consulter le journal des consultations"
     REPRISE_IMPORT = "reprise.import", "Importer des données de reprise (FID-Manager)"

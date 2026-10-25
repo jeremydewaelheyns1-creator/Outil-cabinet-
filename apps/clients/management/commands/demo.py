@@ -161,6 +161,7 @@ class Command(BaseCommand):
         run = generate_all()
         self._vat(companies, user)
         self._compliance(companies, user)
+        self._timesheet(companies, user)
         self.stdout.write(
             self.style.SUCCESS(
                 f"{len(companies) + len(persons)} fiches fictives, {run.created} échéances. "
@@ -282,6 +283,38 @@ class Command(BaseCommand):
                 OfficialSnapshot.objects.create(
                     client=company, source=source, status=OfficialSnapshot.Status.OK, items=items
                 )
+
+    @staticmethod
+    def _timesheet(companies: list[Client], user: User) -> None:
+        """Feuille de temps fictive de la semaine en cours (D-058)."""
+        from datetime import time
+
+        from django.utils import timezone
+
+        from apps.timesheet.models import TimeEntry
+
+        today = timezone.localdate()
+        monday = today - timedelta(days=today.weekday())
+        plan = [
+            (0, 8, 30, 10, 0, companies[0], "tva", "Encodage des achats et ventes"),
+            (0, 10, 15, 12, 0, companies[6], "tva", "Déclaration TVA de septembre"),
+            (0, 13, 0, 14, 0, None, "interne", "Réunion d'équipe"),
+            (0, 14, 0, 16, 30, companies[2], "cloture", "Préparation du bilan"),
+            (1, 9, 0, 11, 30, companies[3], "compta", "Rapprochements bancaires"),
+            (1, 13, 30, 15, 0, companies[1], "conseil", "Rendez-vous avec le gérant"),
+            (2, 8, 30, 12, 0, companies[4], "cloture", "Comptes annuels"),
+            (2, 14, 0, 15, 0, None, "formation", "Formation ITAA anti-blanchiment"),
+            (3, 9, 0, 10, 30, companies[0], "admin", "Fiche de risque et identification"),
+        ]  # fmt: skip
+        for offset, h1, m1, h2, m2, client, activity, text in plan:
+            day = monday + timedelta(days=offset)
+            if day > today:
+                continue
+            TimeEntry.objects.create(
+                user=user, client=client, day=day, start=time(h1, m1), end=time(h2, m2),
+                activity=activity, description=text,
+                billable=client is not None and activity not in TimeEntry.NOT_BILLABLE,
+            )  # fmt: skip
 
     @staticmethod
     def _compliance(companies: list[Client], user: User) -> None:

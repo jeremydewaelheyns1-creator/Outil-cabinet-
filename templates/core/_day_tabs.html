@@ -1,0 +1,4 @@
+<nav class="subtabs day-tabs" aria-label="Ma journée">
+  <a href="{% url 'core:home' %}"{% if request.resolver_match.view_name == "core:home" %} aria-current="page"{% endif %}>À traiter{% if count %} <span class="day-tab-count">{{ count }}</span>{% endif %}</a>
+  <a href="{% url 'core:agenda' %}"{% if request.resolver_match.view_name == "core:agenda" or request.resolver_match.view_name == "temps:week" %} aria-current="page"{% endif %}>Mon agenda</a>
+</nav>

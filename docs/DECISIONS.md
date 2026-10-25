@@ -520,3 +520,29 @@ fonction changée).
   en-tête du dossier dans un bloc blanc avec pictogramme, bandeau « tout demander » foncé.
 - Nouveau dans l'en-tête du dossier : barre **« Dossier anti-blanchiment : NN % »**
   (documents en ordre / documents exigés, cartes d'identité comprises), lien vers Documents.
+
+## D-058 — Feuille de temps reliée aux dossiers
+Demande de Jeremy (25/10) : un calendrier où chacun note ce qu'il a fait, avec les heures,
+relié (ou non) à un dossier.
+- `TimeEntry` : jour, début, fin, dossier facultatif (seulement parmi les dossiers visibles),
+  activité (TVA, compta, clôture, impôts, juridique, conseil, social, administratif, interne,
+  formation, autre), description courte. Pas de chevauchement, 14 h maximum par entrée.
+  Interne, formation ou sans dossier = non facturable.
+- Vues : la journée (Ma journée › Mon agenda, clic à l'heure voulue pour ajouter), la semaine
+  (lien « Voir la semaine »), et dans le dossier la rubrique **Temps passé** (panneau de gauche,
+  groupe Facturation) : totaux, par activité, par mois, ajout rapide.
+- Vie privée des employés : chacun voit et modifie seulement ses heures. Voir celles d'un
+  collègue demande le nouveau droit « timesheet.all » et chaque consultation est journalisée.
+  Dans un dossier, tout le monde voit les totaux ; le détail des lignes des collègues demande
+  ce même droit. Historique des modifications conservé.
+
+## D-059 — « Ma journée » remplace l'accueil
+Idée retenue par Jeremy (maquette A). Deux sous-onglets :
+- **À traiter** : « Prêt à valider » (e-mail TVA prêt, PDF TVA à confirmer, carte reçue à
+  confirmer, risque élevé à valider pour l'AMLCO, fichiers à classer, pièces à demander en un
+  clic), « À faire vous-même » (échéances du jour ou en retard, clients sans réponse), « Fait
+  tout seul depuis hier » (rappels, demandes automatiques, pièces reçues, cartes classées).
+  Sur le côté : la semaine, le temps encodé aujourd'hui, l'état de mes dossiers, signaux BCE.
+- **Mon agenda** : la feuille de temps du jour, façon agenda (D-058).
+- « Mes dossiers » = ceux de mon équipe ; tous les dossiers visibles si je n'en ai aucun.
+  Tout passe par `visible_to`. L'entrée « Ma journée » remplace « Accueil » dans le menu.

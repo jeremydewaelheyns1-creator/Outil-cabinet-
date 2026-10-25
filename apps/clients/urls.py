@@ -3,6 +3,7 @@ from django.urls import path
 from apps.documents import risk_views
 from apps.documents import views as document_views
 from apps.tasks import views as task_views
+from apps.timesheet import views as timesheet_views
 from apps.vat import views as vat_views
 
 from . import views
@@ -29,6 +30,7 @@ urlpatterns = [
     path("<int:pk>/comptes-annuels/", views.client_annual_accounts, name="annual_accounts"),
     path("<int:pk>/echeances/", task_views.client_tasks, name="tasks"),
     path("<int:pk>/historique/", views.client_history, name="history"),
+    path("<int:pk>/temps-passe/", timesheet_views.client_time, name="time_spent"),
     path("<int:pk>/travail/<slug:slug>/", views.client_work, name="work"),
     # Déclaration TVA (D-040)
     path("<int:pk>/tva/", vat_views.vat_grid, name="vat"),

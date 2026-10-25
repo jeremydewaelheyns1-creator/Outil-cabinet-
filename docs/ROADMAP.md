@@ -22,7 +22,7 @@ son critère de fin est vérifié par des tests et sur l'environnement d'essai.
 | 15 | Signature électronique (itsme via eID Easy) | ⏳ |
 | 16 | Portail client | ⏳ |
 | 17 | Procédures internes | ⏳ |
-| 18 | Timesheet | ⏳ |
+| 18 | Timesheet | 🟡 première version (feuille de temps, temps passé par dossier) |
 | 19 | Facturation (Peppol via Billit) | ⏳ |
 | 20 | Envois et exports | ⏳ |
 | 21 | RH | ⏳ |

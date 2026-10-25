@@ -1,55 +1,89 @@
 {% extends "layouts/app.html" %}
-{% block head_title %}Accueil{% endblock %}
-{% block page_title %}Bonjour {{ user.first_name|default:"" }}{% endblock %}
-{% block page_subtitle %}<div class="subtitle">{% now "l j F Y" %}</div>{% endblock %}
-{% block page_actions %}{% endblock %}
-{% block content %}
-<div class="grid grid-4">
-  <a class="card" href="{% url 'clients:list' %}?statut=active"><div class="stat">{{ counts.active }}</div><div class="stat-label">clients actifs</div></a>
-  <a class="card" href="{% url 'clients:list' %}?statut=active&type=company"><div class="stat">{{ counts.companies }}</div><div class="stat-label">sociétés</div></a>
-  <a class="card" href="{% url 'clients:list' %}?statut=active&type=person"><div class="stat">{{ counts.persons }}</div><div class="stat-label">personnes physiques</div></a>
-  <a class="card" href="{% url 'clients:list' %}?statut=prospect"><div class="stat">{{ counts.prospect }}</div><div class="stat-label">prospects</div></a>
+{% block head_title %}Ma journée{% endblock %}
+{% block page %}
+{% include "components/_messages.html" %}
+<div class="day-head">
+  <div>
+    <div class="day-date">{{ today|date:"l j F"|capfirst }}</div>
+    <h1>Bonjour {{ user.first_name|default:"" }}{% if count %}, {{ count }} chose{{ count|pluralize }} pour vous aujourd'hui{% else %}, rien d'urgent aujourd'hui ✓{% endif %}</h1>
+  </div>
+  {% if total_today %}
+    <div class="day-progress" role="group" aria-label="Avancement de la journée">
+      <div class="dossier-progress-label"><span>Journée</span><strong>{{ done_today }} / {{ total_today }} faites</strong></div>
+      <span class="dossier-progress-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="{{ progress }}" aria-label="{{ progress }} % de la journée"><span style="width: {{ progress }}%"></span></span>
+    </div>
+  {% endif %}
 </div>
 
-<div class="grid grid-3" style="margin-top: 1rem">
-  <a class="card" href="{% url 'conformite:board' %}?qui=moi&niveau=danger"><div class="stat"{% if compliance.danger %} style="color: var(--danger)"{% endif %}>{{ compliance.danger }}</div><div class="stat-label">de mes dossiers incomplets (anti-blanchiment)</div></a>
-  <a class="card" href="{% url 'conformite:board' %}?qui=moi&niveau=warning"><div class="stat">{{ compliance.warning }}</div><div class="stat-label">à revoir bientôt</div></a>
-  <a class="card" href="{% url 'conformite:board' %}?qui=moi"><div class="stat">{{ compliance.askable }}</div><div class="stat-label">demande{{ compliance.askable|pluralize }} à envoyer en un clic</div></a>
-</div>
-
-<div class="grid grid-2" style="margin-top: 1rem">
-  <section class="card">
-    <div class="card-header"><h2>Mes dossiers</h2></div>
-    {% if my_clients %}
-      <ul class="timeline">
-        {% for client in my_clients %}<li><a href="{{ client.get_absolute_url }}">{{ client }}</a></li>{% endfor %}
-      </ul>
-    {% else %}
-      <p class="empty">Aucun dossier ne vous est encore affecté.</p>
+{% include "core/_day_tabs.html" %}
+<div class="day-layout">
+  <main class="day-main">
+    {% if ready %}
+      <h2 class="day-section">Prêt à valider — l'outil a tout préparé</h2>
+      {% for item in ready %}{% include "core/_day_item.html" %}{% endfor %}
     {% endif %}
-  </section>
 
-  <section class="card">
-    <div class="card-header"><h2>Signaux de la BCE</h2></div>
+    {% if todo %}
+      <h2 class="day-section">À faire vous-même</h2>
+      {% for item in todo %}{% include "core/_day_item.html" %}{% endfor %}
+    {% endif %}
+
+    {% if not ready and not todo %}
+      <section class="card day-empty">
+        <div class="day-empty-title">Tout est à jour.</div>
+        <p class="muted">Aucune validation en attente, aucune échéance en retard. Profitez-en pour encoder votre temps ou ouvrir un dossier.</p>
+      </section>
+    {% endif %}
+
+    <h2 class="day-section">Fait tout seul depuis hier</h2>
+    {% if overnight %}
+      <div class="day-chips">{% for chip in overnight %}<span>{{ chip }}</span>{% endfor %}</div>
+    {% else %}
+      <p class="muted small">Rien de particulier : l'outil continue à surveiller les échéances et les pièces.</p>
+    {% endif %}
+
+    {% if failed_events %}
+      <p class="alert alert-warning" style="margin-top: 1rem">
+        {{ failed_events }} automatisme{{ failed_events|pluralize }} en échec :
+        <a href="{% url 'admin:core_event_changelist' %}?status__exact=failed">voir le journal des événements</a>.
+      </p>
+    {% endif %}
+  </main>
+
+  <aside class="day-side">
+    <section class="card">
+      <h2>Cette semaine</h2>
+      <div class="day-week">
+        {% for d in week %}
+          <a class="day-week-day{% if d.today %} is-today{% endif %}{% if d.peak %} is-peak{% endif %}" href="{% url 'tasks:board' %}?qui=moi&amp;quand=7">
+            <span>{{ d.name }}</span><strong>{{ d.count }}</strong>
+          </a>
+        {% endfor %}
+      </div>
+      <p class="small muted" style="margin: .7rem 0 0">{% if peak %}{{ peak.day|date:"l"|capfirst }} est chargé : {{ peak.count }} échéances. Pensez à en avancer quelques-unes.{% else %}Vos échéances jour par jour.{% endif %}</p>
+    </section>
+
+    <section class="card">
+      <div class="card-header"><h2>Temps aujourd'hui</h2><strong class="day-time">{{ time_today }}</strong></div>
+      <a class="button button-small" href="{% url 'core:agenda' %}">Ouvrir mon agenda</a>
+    </section>
+
+    <section class="card">
+      <h2>Vos dossiers</h2>
+      <a class="day-row" href="{% url 'conformite:board' %}?qui=moi&amp;niveau=danger"><span>Incomplets (anti-blanchiment)</span><strong class="text-danger">{{ compliance.danger }}</strong></a>
+      <a class="day-row" href="{% url 'conformite:board' %}?qui=moi&amp;niveau=warning"><span>À revoir bientôt</span><strong>{{ compliance.warning }}</strong></a>
+      <a class="day-row" href="{% url 'clients:list' %}?statut=active"><span>Clients actifs du cabinet</span><strong>{{ counts.active }}</strong></a>
+    </section>
+
     {% if bce_alerts or bce_missing %}
-      <ul class="timeline">
-        {% for client in bce_alerts %}
-          <li><a href="{{ client.get_absolute_url }}">{{ client }}</a> <span class="badge badge-danger">{{ client.bce_juridical_situation }}</span></li>
-        {% endfor %}
-        {% for client in bce_missing %}
-          <li><a href="{{ client.get_absolute_url }}">{{ client }}</a> <span class="badge badge-warning">absent de la BCE</span></li>
-        {% endfor %}
-      </ul>
-    {% else %}
-      <p class="empty">Aucune faillite, liquidation ou radiation détectée parmi vos clients actifs.</p>
+      <section class="card">
+        <h2>Signaux de la BCE</h2>
+        <ul class="plain">
+          {% for client in bce_alerts %}<li><a href="{{ client.get_absolute_url }}">{{ client }}</a> <span class="badge badge-danger">{{ client.bce_juridical_situation }}</span></li>{% endfor %}
+          {% for client in bce_missing %}<li><a href="{{ client.get_absolute_url }}">{{ client }}</a> <span class="badge badge-warning">absent de la BCE</span></li>{% endfor %}
+        </ul>
+      </section>
     {% endif %}
-  </section>
+  </aside>
 </div>
-
-{% if failed_events %}
-  <p class="alert alert-warning" style="margin-top: 1rem">
-    {{ failed_events }} automatisme{{ failed_events|pluralize }} en échec :
-    <a href="{% url 'admin:core_event_changelist' %}?status__exact=failed">voir le journal des événements</a>.
-  </p>
-{% endif %}
 {% endblock %}

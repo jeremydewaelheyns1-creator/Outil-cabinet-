@@ -21,8 +21,12 @@ def _compliance(request: AppRequest) -> dict[str, int]:
 
 
 def home(request: AppRequest) -> HttpResponse:
+    """« Ma journée » (D-059) : ce qui est prêt à valider, à faire, et ce qui s'est fait seul."""
+    from . import today
+
     clients = Client.objects.visible_to(request.user)
     context = {
+        **today.build(request.user),
         "counts": {
             "active": clients.filter(status=Client.Status.ACTIVE).count(),
             "prospect": clients.filter(status=Client.Status.PROSPECT).count(),
@@ -113,3 +117,31 @@ def notifications(request: AppRequest) -> HttpResponse:
     response = render(request, "core/notifications.html", {"items": items, "unread": unread})
     Notification.objects.filter(pk__in=unread).update(read_at=timezone.now())
     return response
+
+
+def my_agenda(request: AppRequest) -> HttpResponse:
+    """« Ma journée » › Mon agenda : la journée heure par heure, on y ajoute son temps."""
+    from datetime import date as _date
+
+    from apps.timesheet import services as timesheet
+    from apps.timesheet.forms import TimeEntryForm
+    from apps.timesheet.models import TimeEntry
+
+    today = timezone.localdate()
+    try:
+        day = _date.fromisoformat(request.GET.get("jour", ""))
+    except ValueError:
+        day = today
+    editing = None
+    if request.GET.get("modifier", "").isdigit():
+        editing = TimeEntry.objects.filter(
+            user=request.user, pk=int(request.GET["modifier"])
+        ).first()
+    form = TimeEntryForm(instance=editing, initial={"day": day}, user=request.user)
+    context = {
+        **timesheet.day_view(request.user, day, today),
+        "form": form,
+        "editing": editing,
+        "today": today,
+    }
+    return render(request, "core/agenda.html", context)

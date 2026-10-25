@@ -1,0 +1,78 @@
+{% extends "layouts/app.html" %}
+{% load static %}
+{% block head_title %}Mon agenda{% endblock %}
+{% block page %}
+{% include "components/_messages.html" %}
+<div class="day-head">
+  <div>
+    <div class="day-date">Ma journée</div>
+    <h1>{{ day|date:"l j F"|capfirst }}</h1>
+  </div>
+  <div class="ts-nav" style="margin: 0">
+    <a class="button button-secondary button-small" href="?jour={{ previous_day|date:'Y-m-d' }}" aria-label="Jour précédent">‹</a>
+    {% if not is_today %}<a class="button button-secondary button-small" href="{% url 'core:agenda' %}">Aujourd'hui</a>{% endif %}
+    <a class="button button-secondary button-small" href="?jour={{ next_day|date:'Y-m-d' }}" aria-label="Jour suivant">›</a>
+    <a class="small" href="{% url 'temps:week' %}?semaine={{ day|date:'Y-m-d' }}">Voir la semaine</a>
+  </div>
+</div>
+{% include "core/_day_tabs.html" %}
+
+<div class="ts-layout">
+  <section class="card ts-calendar ag-calendar" aria-label="Agenda du {{ day|date:'j F' }}">
+    <div class="ag-head"><strong>{{ current.total }}</strong> encodé{{ current.minutes|pluralize }} ce jour-là</div>
+    <div class="ts-grid ag-grid" style="--hour: {{ hour_height }}px">
+      <div class="ts-hours" style="height: {{ grid_height }}px">
+        {% for h in hours %}<div class="ts-hour">{{ h }}h</div>{% endfor %}
+      </div>
+      <div class="ts-day ag-day{% if is_today %} is-today{% endif %}" style="height: {{ grid_height }}px" data-ts-day="{{ day|date:'Y-m-d' }}" title="Cliquer pour ajouter un créneau">
+        {% for b in current.blocks %}
+          <a class="ts-block ts-{{ b.entry.activity }}{% if not b.entry.billable %} is-internal{% endif %}{% if editing and editing.pk == b.entry.pk %} is-editing{% endif %}" style="top: {{ b.top }}px; height: {{ b.height }}px" href="?jour={{ day|date:'Y-m-d' }}&amp;modifier={{ b.entry.pk }}#ts-form">
+            <strong>{{ b.label }} · {{ b.entry.start|time:"H:i" }}–{{ b.entry.end|time:"H:i" }}</strong>
+            <span>{{ b.entry.get_activity_display }}{% if b.entry.description %} — {{ b.entry.description }}{% endif %}</span>
+          </a>
+        {% empty %}
+          <div class="ag-empty">Cliquez à l'heure voulue pour ajouter ce que vous avez fait.</div>
+        {% endfor %}
+      </div>
+    </div>
+  </section>
+
+  <aside class="ts-side">
+    <section class="card" id="ts-form">
+      <h2>{% if editing %}Modifier le créneau{% else %}Ajouter à la journée{% endif %}</h2>
+      <form method="post" action="{% url 'temps:save' %}" class="ts-form">
+        {% csrf_token %}
+        <input type="hidden" name="retour" value="{% url 'core:agenda' %}?jour={{ day|date:'Y-m-d' }}">
+        {% if editing %}<input type="hidden" name="entry" value="{{ editing.pk }}">{% endif %}
+        <label for="{{ form.day.id_for_label }}">Jour</label>{{ form.day }}
+        <div class="ts-times">
+          <div><label for="{{ form.start.id_for_label }}">De</label>{{ form.start }}</div>
+          <div><label for="{{ form.end.id_for_label }}">À</label>{{ form.end }}</div>
+        </div>
+        <label for="{{ form.client.id_for_label }}">Dossier</label>{{ form.client }}
+        <label for="{{ form.activity.id_for_label }}">Activité</label>{{ form.activity }}
+        <label for="{{ form.description.id_for_label }}">Ce qui a été fait</label>{{ form.description }}
+        <p class="help">Pas de donnée sensible ici (numéro national, montants personnels…).</p>
+        <div class="ts-form-actions">
+          <button type="submit">{% if editing %}Enregistrer{% else %}Ajouter{% endif %}</button>
+          {% if editing %}<a class="small" href="?jour={{ day|date:'Y-m-d' }}">Annuler</a>{% endif %}
+        </div>
+      </form>
+      {% if editing %}
+        <form method="post" action="{% url 'temps:delete' editing.pk %}" class="ts-delete">{% csrf_token %}<input type="hidden" name="retour" value="{% url 'core:agenda' %}?jour={{ day|date:'Y-m-d' }}"><button type="submit" class="danger small">Supprimer ce créneau</button></form>
+      {% endif %}
+    </section>
+    <section class="card">
+      <div class="card-header"><h2>La semaine</h2><span class="small muted">{{ total }}</span></div>
+      <div class="ag-week">
+        {% for d in days %}
+          <a class="ag-week-day{% if d.day == day %} is-current{% endif %}{% if d.is_weekend %} is-weekend{% endif %}" href="?jour={{ d.day|date:'Y-m-d' }}">
+            <span>{{ d.name }} {{ d.day|date:"j" }}</span><strong>{{ d.total }}</strong>
+          </a>
+        {% endfor %}
+      </div>
+    </section>
+  </aside>
+</div>
+<script src="{% static 'js/timesheet.js' %}" defer></script>
+{% endblock %}

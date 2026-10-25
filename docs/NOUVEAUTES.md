@@ -3,6 +3,16 @@
 Ce qui a été ajouté à l'outil, du plus récent au plus ancien. Toutes les données de la démo
 sont inventées.
 
+## 25 octobre 2026 — Ma journée et feuille de temps
+
+- **Ma journée** remplace l'accueil. Onglet **À traiter** : ce que l'outil a préparé et qui
+  attend un clic (e-mail TVA prêt, carte reçue à confirmer…), vos échéances du jour ou en
+  retard, les clients qui ne répondent plus, et ce que l'outil a fait seul depuis hier.
+- Onglet **Mon agenda** : votre journée heure par heure. Un clic à l'heure voulue, on choisit
+  le dossier et l'activité, c'est noté. Vue de la semaine en un clic.
+- Dans chaque dossier, nouvelle rubrique **Temps passé** (à gauche, Facturation) : total,
+  temps facturable, répartition par activité et par mois.
+
 ## 24 octobre 2026 — Nouveau look
 
 - L'outil fait peau neuve (maquette « moderne doux » choisie par Jeremy) : fond lavande clair,
