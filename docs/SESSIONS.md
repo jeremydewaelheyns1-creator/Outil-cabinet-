@@ -62,8 +62,11 @@ sur la fiche utilisateur (plusieurs comptes possibles), changement tracé.
   voulue à la règle « pas de nom de collègue » : ici le nom évite le travail en double.
 - Accueil en période calme : mes dossiers attitrés à traiter + les dossiers libres qu'on peut
   prendre (avec qui a pris quoi). Maquette à faire.
-- Proposé par défaut (Jeremy sans préférence) : le patron choisit attitré / libre dossier par
-  dossier dans Gestion des dossiers ; liste triée par urgence, chacun choisit ; un dossier pris
+- Fiche client › équipe : pour le comptable, on choisit une personne OU « Hybride » (idée de
+  Jeremy). « Hybride » = dossier sans comptable fixe, pris par qui est libre ; badge visible
+  dans l'en-tête du dossier. Le choix « Hybride » n'apparaît que si l'option est activée.
+  Modifiable aussi en masse dans Gestion des dossiers.
+- Proposé par défaut (Jeremy sans préférence) : liste triée par urgence, chacun choisit ; un dossier pris
   sans avancée pendant X jours revient libre (à confirmer).
 
 **Ma boîte mail — à ajouter** : mise en forme comme une vraie messagerie (gras, souligné,
