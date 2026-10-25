@@ -23,8 +23,27 @@ ambitieux pour l'instant), adresse « support » pour les demandes automatiques,
 **module Administrateur** (onglet réservé, vue générale de ce qui se passe ; Conformité et
 le journal des consultations pourraient y aller — à décider avec Jeremy).
 
-**Accueil (à concevoir)** : Jeremy garde le calendrier fiscal, la grande barre de recherche,
-et peut-être « ce qui a déjà été fait ». Maquettes après discussion.
+**Accueil — VALIDÉ sur maquette (planche « Accueil selon la période »)** :
+- Personnel : chacun voit SA période et SES dossiers, jamais de nom de collègue.
+- L'écran suit la saison : au centre, la grande échéance la plus proche (en octobre : LE mois
+  TVA, mensuels et trimestriels) ; les autres dans « Aussi en cours » ; bascule 10 jours avant.
+  Maquettes : mois TVA, listing clients (mars), saison IPP, comptes annuels BNB, période calme.
+- Campagne : barre « mes déclarations déposées X / Y » + liste de mes dossiers restants (état).
+- Calendrier fiscal du mois ; état des sites de l'administration (Intervat, MyMinfin, Biztax,
+  dépôt BNB) — à tester (vérifier que l'info publique est exploitable).
+- Dates IPP/ISOC : à vérifier chaque année auprès du SPF.
+- Barre de recherche du haut (existante) : au clic, les 5 derniers dossiers ouverts.
+
+**Module / onglet Administrateur (à construire)** : total du cabinet et détail par personne
+des campagnes, Conformité, journal des consultations, tableau de bord. Case « Administrateur »
+sur la fiche utilisateur (plusieurs comptes possibles), changement tracé.
+
+**Onglet TVA (idée)** : e-mail « l'échéance TVA approche » aux clients dont « Doc. reçus » est
+vide (texte proposé, envoi au clic ; bouton ou automatique : à décider).
+
+**Écarté** : mur d'annonces, « qui est là », compteurs « 12 cartes reçues », « à nous / on attend
+le client », bouton dossier suivant, capture rapide, charge 8 semaines, rendez-vous du jour,
+aide-mémoire fiscal, mémo de saison, rythme projeté (gardé seulement ce qui est listé ci-dessus).
 
 **Kit de test** : cahier de recette (page en ligne, réponses lisibles par Claude) + fichiers
 fictifs. Jeremy n'a pas encore pu relier Mail.Read (écran d'erreur Microsoft).
