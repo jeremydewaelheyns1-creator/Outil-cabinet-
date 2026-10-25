@@ -38,6 +38,20 @@ le journal des consultations pourraient y aller — à décider avec Jeremy).
 des campagnes, Conformité, journal des consultations, tableau de bord. Case « Administrateur »
 sur la fiche utilisateur (plusieurs comptes possibles), changement tracé.
 
+**Administrateur › « Gestion des dossiers » (idée validée par Jeremy, 25/10)** :
+- Grand tableau de tous les clients (avec l'expert-comptable et le comptable affectés).
+- Bouton « Affecter temporairement des dossiers » : tableau avec recherche, on coche les
+  dossiers, « Affecter à » une personne, date « jusqu'au » facultative. Sans date : définitif.
+  Avec date : à la date, les dossiers reviennent seuls à la personne d'origine. Le remplaçant
+  prend le POSTE de la personne remplacée (expert-comptable ou comptable). Tout est tracé.
+- Plus tard dans « Gestion » : un vrai module de vision du cabinet et de facturation.
+- Rapport personnel du temps passé sur les dossiers.
+
+**Ma boîte mail — à ajouter** : mise en forme comme une vraie messagerie (gras, souligné,
+listes…), envoi programmé (vérifier ce que Microsoft Graph permet), consultation des e-mails
+envoyés (le dossier « Envoyés » existe déjà, à enrichir). Attention sécurité : le texte mis en
+forme doit être nettoyé (seulement des balises sûres) avant envoi et affichage.
+
 **Onglet TVA (idée)** : e-mail « l'échéance TVA approche » aux clients dont « Doc. reçus » est
 vide (texte proposé, envoi au clic ; bouton ou automatique : à décider).
 
