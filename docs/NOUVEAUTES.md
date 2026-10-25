@@ -12,6 +12,8 @@ sont inventées.
   gérants, administrateurs, actionnaires (avec le %), conjoints, représentants permanents,
   liquidateurs. Réimporter le même fichier ne crée pas de doublon.
 - Un fichier de test de 30 dossiers inventés est disponible pour essayer.
+- Nouveau lien **Paramètres** en haut à droite (à côté de « Sécurité »), pour ceux qui y ont
+  accès : reprise FID, données BCE, journal des consultations, comptes, réglages du cabinet.
 
 ## 25 octobre 2026 — Nouvel Accueil personnel et gestion hybride
 

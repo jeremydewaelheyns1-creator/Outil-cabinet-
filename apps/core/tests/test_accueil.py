@@ -215,3 +215,10 @@ def test_cabinet_settings_are_for_administrators(web, make_user):
                                                     "hybrid_release_days": "10"})  # fmt: skip
     settings = CabinetSettings.current()
     assert settings.hybrid_management and settings.hybrid_release_days == 10
+
+
+def test_settings_link_in_the_top_bar_only_for_those_who_can(web, make_user):
+    assert ">Paramètres<" not in page(web)
+    browser = Browser()
+    browser.force_login(make_user(capabilities=["reprise.import"]))
+    assert ">Paramètres<" in unescape(browser.get(reverse("core:home")).content.decode())
