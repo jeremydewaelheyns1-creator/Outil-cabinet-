@@ -79,6 +79,11 @@ class Task(models.Model):
         related_name="tasks",
     )
     generated = models.BooleanField("créée automatiquement", default=False)
+    # D-061 : échéance à une heure précise (rendez-vous…), affichée dans « Mon agenda ».
+    due_time = models.TimeField("heure", null=True, blank=True)
+    end_time = models.TimeField("jusqu'à", null=True, blank=True)
+    remind = models.BooleanField("me rappeler le jour J", default=False)
+    reminded_at = models.DateTimeField("rappel envoyé le", null=True, blank=True)
     notes = models.TextField("remarques", blank=True)
     completed_at = models.DateTimeField("terminée le", null=True, blank=True)
     completed_by = models.ForeignKey(

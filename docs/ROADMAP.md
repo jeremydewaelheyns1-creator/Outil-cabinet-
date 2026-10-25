@@ -12,7 +12,7 @@ son critère de fin est vérifié par des tests et sur l'environnement d'essai.
 | 5 | Tâches TVA (déclarations, listings, relevé intracom.) | ⏳ |
 | 6 | Documents (Cloud Storage, classement, conservation) | ⏳ |
 | 7 | Reconnaissance (IA Vertex : lecture et classement des pièces, cartes d'identité) | ⏳ |
-| 8 | Communication (Microsoft 365 : e-mails entrants/sortants, modèles) | ⏳ |
+| 8 | Communication (Microsoft 365 : e-mails entrants/sortants, modèles) | 🟡 envoi depuis Outlook (D-044) + « Ma boîte mail » : lecture, classement par dossier, recherche (D-060) |
 | 9 | Anti-blanchiment (KYC, grille de risque, sanctions UE, pièces d'identité) | ⏳ |
 | 10 | Migration FID-Manager complète (FID-Drive, autres exports) | 🟡 import des clients fait |
 | 11 | Clôtures annuelles | ⏳ |

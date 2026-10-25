@@ -3,8 +3,10 @@
 from django.core.exceptions import PermissionDenied
 from django.core.paginator import Paginator
 from django.http import HttpResponse
-from django.shortcuts import render
+from django.shortcuts import redirect, render
+from django.urls import reverse
 from django.utils import timezone
+from django.views.decorators.http import require_POST
 
 from apps.clients.models import Client
 
@@ -137,11 +139,53 @@ def my_agenda(request: AppRequest) -> HttpResponse:
         editing = TimeEntry.objects.filter(
             user=request.user, pk=int(request.GET["modifier"])
         ).first()
-    form = TimeEntryForm(instance=editing, initial={"day": day}, user=request.user)
+    initial: dict[str, object] = {"day": day}
+    if request.GET.get("dossier", "").isdigit():
+        initial["client"] = int(request.GET["dossier"])
+    if request.GET.get("texte"):
+        initial["description"] = request.GET["texte"][:200]
+    form = TimeEntryForm(instance=editing, initial=initial, user=request.user)
+    visible = Client.objects.visible_to(request.user).exclude(status=Client.Status.FORMER)
     context = {
         **timesheet.day_view(request.user, day, today),
+        **timesheet.deadlines_of(request.user, day),
         "form": form,
         "editing": editing,
         "today": today,
+        "mode": "echeance" if request.GET.get("ajouter") == "echeance" else "temps",
+        "deadline_clients": visible.order_by("name", "first_name"),
+        "reminders": timesheet.reminders_today(request.user, today),
     }
     return render(request, "core/agenda.html", context)
+
+
+@require_POST
+def agenda_deadline(request: AppRequest) -> HttpResponse:
+    """« Créer une échéance » depuis l'agenda (D-061)."""
+    from datetime import date as _date
+    from datetime import time as _time
+
+    from django.contrib import messages
+    from django.core.exceptions import ValidationError
+
+    from apps.tasks import deadlines
+
+    back = f"{reverse('core:agenda')}?jour={request.POST.get('jour', '')}"
+    client = (
+        Client.objects.visible_to(request.user).filter(pk=request.POST.get("dossier") or 0).first()
+    )
+    try:
+        if client is None:
+            raise ValidationError("Choisissez le dossier.")
+        day = _date.fromisoformat(request.POST.get("jour", ""))
+        at = _time.fromisoformat(request.POST["heure"]) if request.POST.get("heure") else None
+        until = _time.fromisoformat(request.POST["fin"]) if request.POST.get("fin") else None
+        deadlines.add(request.user, client=client, day=day, at=at, until=until,
+                      comment=request.POST.get("commentaire", ""),
+                      remind=request.POST.get("rappel") == "1")  # fmt: skip
+    except (ValidationError, ValueError) as error:
+        text = " ".join(error.messages) if isinstance(error, ValidationError) else "Date invalide."
+        messages.error(request, f"Échéance non créée : {text}")
+        return redirect(f"{back}&ajouter=echeance")
+    messages.success(request, "Échéance ajoutée.")
+    return redirect(back)

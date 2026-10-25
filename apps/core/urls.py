@@ -10,4 +10,5 @@ urlpatterns = [
     path("parametres/", views.settings_page, name="settings"),
     path("notifications/", views.notifications, name="notifications"),
     path("ma-journee/agenda/", views.my_agenda, name="agenda"),
+    path("ma-journee/agenda/echeance/", views.agenda_deadline, name="agenda_deadline"),
 ]

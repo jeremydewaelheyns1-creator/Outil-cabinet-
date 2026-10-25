@@ -1,5 +1,26 @@
 # Journal des sessions
 
+## Session — 25 octobre 2026 : Ma journée, feuille de temps, Ma boîte mail
+
+**Fait** (D-056 à D-061)
+- Nouveau look « moderne doux » sur tout l'outil ; barre « Dossier anti-blanchiment NN % ».
+- Feuille de temps reliée aux dossiers ; « Ma journée » (À traiter / Mon agenda) remplace
+  l'accueil.
+- **Ma boîte mail** (V1 validée sur maquette) : lecture de la boîte de chaque employé (sur
+  activation), réception avec dossier proposé, « Traité : classer », arborescence société ›
+  personne physique › pièces jointes, clic droit (échéance, reclasser, timesheet, privé),
+  pièces reconnues et rangées dans le vrai dossier, réponse écrite par l'employé, « en
+  attente de réponse », recherche surlignée. Aucune IA.
+- Échéances avec heure et rappel le jour J dans Mon agenda.
+
+**À faire par Jeremy / le cabinet**
+- Ajouter `Mail.Read` (déléguée) dans Entra et accorder le consentement (docs/OUTLOOK.md).
+- AIPD + note d'information aux employés avant d'activer la lecture sur de vraies boîtes.
+
+**Idées gardées pour plus tard (pas commencées)** : fil du dossier (frise + échéances
+faites, sans documents), tableau de bord du cabinet, espace client, adresse « support »
+pour les demandes automatiques.
+
 ## Session — 23 octobre 2026 : paperasse anti-blanchiment (mandat « révolutionne tout »)
 
 **Fait** (D-048 à D-051)

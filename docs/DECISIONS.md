@@ -546,3 +546,54 @@ Idée retenue par Jeremy (maquette A). Deux sous-onglets :
 - **Mon agenda** : la feuille de temps du jour, façon agenda (D-058).
 - « Mes dossiers » = ceux de mon équipe ; tous les dossiers visibles si je n'en ai aucun.
   Tout passe par `visible_to`. L'entrée « Ma journée » remplace « Accueil » dans le menu.
+
+## D-060 — « Ma boîte mail » : les e-mails de l'employé rangés par dossier, sans IA
+Idée de Jeremy (25/10), version 1 validée sur maquette. But : ne plus devoir ouvrir Outlook.
+- **Qui voit quoi.** Chaque employé active lui-même la lecture de *sa* boîte (« Activer avec
+  Microsoft », droit délégué `Mail.Read` en plus de `Mail.Send`). Seul lui voit ses e-mails
+  dans l'outil : pas de partage entre collègues, pas d'accès par l'administrateur de l'outil.
+  Outlook reste la boîte d'origine. Rien n'est lu avant la date d'activation.
+- **Où va la donnée.** Copie dans la base du cabinet (Belgique) : texte simple du corps
+  (jamais de HTML affiché, donc ni image espion ni script), pièces jointes dans le stockage
+  des documents, servies avec les en-têtes de sécurité habituels. Aucun service externe en
+  dehors de Microsoft ; **aucune IA**, ni pour classer, ni pour répondre (choix de Jeremy).
+- **Classement par règles vérifiables**, dans l'ordre : référence d'une de nos demandes dans
+  l'objet ; adresse connue (adresse d'une société → la société ; adresse privée d'un
+  dirigeant → petit choix « société » ou « personne physique », sous-dossier de la
+  société) ; numéro d'entreprise connu dans le texte (courriers du SPF…) ; sinon « à classer
+  vous-même ». Seuls les dossiers visibles de l'employé (`visible_to`) sont proposés.
+- **L'humain décide.** L'e-mail reste dans la boîte de réception avec l'endroit proposé ; il
+  n'est rangé que quand l'employé clique « Traité : classer ». Après une réponse, il reste
+  aussi en réception jusqu'au clic. Les e-mails envoyés sont rangés d'office quand il n'y a
+  pas de choix à faire.
+- **Clic droit / « ⋯ »** : Ajouter une échéance (D-061), Reclasser dans…, Ajouter à la
+  timesheet (agenda pré-rempli), Privé : retirer (copie effacée et jamais recopiée).
+- **Pièces jointes** : rangées dans un sous-dossier « Pièces jointes » personnel. L'outil
+  reconnaît (sans IA) déclaration TVA, carte d'identité, extrait UBO, avertissement-extrait
+  de rôle, facture et propose « Ranger dans le dossier » (le vrai dossier, via le dépôt
+  unique D-041 pour TVA et cartes). Le numéro national lu sur une carte ne sert qu'à trouver
+  la personne : ni gardé, ni affiché, ni journalisé.
+- **Répondre / écrire** depuis l'outil : texte écrit par l'employé, envoyé par sa boîte
+  Outlook. Case « J'attends une réponse » → liste « En attente de réponse », fermée seule
+  quand la réponse arrive.
+- **Recherche** : un dossier + des mots ; recherche plein texte PostgreSQL (accents ignorés,
+  pluriels compris), résultats classés et mots surlignés.
+- **Traçabilité** : ouverture d'un e-mail, activation, désactivation journalisées.
+- **Durée de conservation** : copie non rangée effacée après 1 an ; rangée, 10 ans après la
+  fin de la relation client. Désactiver la lecture efface toutes les copies.
+- Relève toutes les 5 minutes (`run_jobs`), 200 e-mails au plus par passage.
+- **À faire avant l'usage réel** : analyse d'impact (AIPD) et note d'information aux
+  employés (lecture de leur boîte professionnelle) ; ajout de `Mail.Read` dans Entra
+  (docs/OUTLOOK.md).
+- Pas retenu pour l'instant : partage d'une boîte entre collègues, modèles de réponse, toute
+  IA. Plus tard : adresse « support » distincte pour les demandes automatiques.
+
+## D-061 — Échéances personnelles et rappel le jour J
+- Une échéance (`Task` manuelle) peut avoir une heure de début et de fin et l'option « me
+  rappeler le jour J ». Créée depuis un e-mail (clic droit) ou depuis Ma journée › Mon agenda
+  (« Une échéance »). Elle est attribuée à l'employé qui la crée, dans un dossier visible.
+- Dans l'agenda : en pointillés avec une cloche, à l'heure prévue ; sans heure, en haut
+  (« Toute la journée »).
+- Le jour J : bandeau « Rappel d'aujourd'hui » dans l'agenda et notification dans la cloche
+  (une seule fois, `run_jobs`). Aucun e-mail.
+

@@ -1,0 +1,33 @@
+{% extends "layouts/app.html" %}
+{% block head_title %}Ma boîte mail{% endblock %}
+{% block page_title %}Ma boîte mail{% endblock %}
+{% block page_subtitle %}<div class="subtitle">Lire et traiter vos e-mails ici, rangés par dossier, sans ouvrir Outlook.</div>{% endblock %}
+{% block content %}
+<section class="card mb-activate">
+  <h2>Activer la lecture de ma boîte</h2>
+  <p>Une fois activée, l'outil relève votre boîte Outlook toutes les 5 minutes :</p>
+  <ul>
+    <li>vos e-mails arrivent ici, avec le dossier où ils seront classés ;</li>
+    <li>vous répondez d'ici, depuis votre propre adresse ;</li>
+    <li>quand vous cliquez « Traité : classer », l'e-mail rejoint le dossier du client.</li>
+  </ul>
+  <h3>Vos données</h3>
+  <ul class="small">
+    <li><strong>Vous seul</strong> voyez votre boîte dans l'outil. Aucun collègue n'y a accès.</li>
+    <li>Seuls les e-mails reçus <strong>à partir de l'activation</strong> sont lus (pas l'historique).</li>
+    <li>Un e-mail personnel ? « Privé : retirer » efface sa copie, l'outil ne le reprendra plus.</li>
+    <li>Les copies sont gardées sur le serveur européen du cabinet : 1 an si l'e-mail n'est pas classé, sinon aussi longtemps que le dossier (10 ans après la fin de la relation).</li>
+    <li>Vous pouvez désactiver la lecture à tout moment : toutes les copies sont alors effacées de l'outil (vos e-mails restent dans Outlook).</li>
+    <li>Aucune intelligence artificielle ne lit vos e-mails : le classement suit des règles simples (adresse connue, numéro d'entreprise…).</li>
+  </ul>
+  {% if not configured %}
+    <p class="alert alert-warning">La connexion Outlook n'est pas encore configurée pour le cabinet.</p>
+  {% else %}
+    <form method="post" action="{% url 'outlook:connect' %}">{% csrf_token %}
+      <input type="hidden" name="lecture" value="1">
+      <button type="submit">Activer avec Microsoft</button>
+      <span class="small muted">Microsoft vous demandera d'accepter le droit « lire vos e-mails ».</span>
+    </form>
+  {% endif %}
+</section>
+{% endblock %}

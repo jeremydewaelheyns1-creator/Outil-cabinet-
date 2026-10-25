@@ -19,6 +19,7 @@ from .models import MailboxLink
 
 SESSION_STATE = "outlook_etat"
 SESSION_VERIFIER = "outlook_verif"
+SESSION_READ = "outlook_lecture"
 
 
 def _redirect_uri(request: AppRequest) -> str:
@@ -45,9 +46,13 @@ def connect(request: AppRequest) -> HttpResponse:
         return redirect("outlook:mailbox")
     state = secrets.token_urlsafe(32)
     verifier, challenge = graph.pkce()
+    read = request.POST.get("lecture") == "1"
     request.session[SESSION_STATE] = state
     request.session[SESSION_VERIFIER] = verifier
-    url = graph.authorize_url(_redirect_uri(request), state, challenge, request.user.email)
+    request.session[SESSION_READ] = read
+    url = graph.authorize_url(
+        _redirect_uri(request), state, challenge, request.user.email, read=read
+    )
     return redirect(url)
 
 
@@ -56,6 +61,7 @@ def callback(request: AppRequest) -> HttpResponse:
     """Retour de Microsoft après la connexion de l'employé."""
     expected = request.session.pop(SESSION_STATE, "")
     verifier = request.session.pop(SESSION_VERIFIER, "")
+    read = bool(request.session.pop(SESSION_READ, False))
     state = request.GET.get("state", "")
     if not expected or not secrets.compare_digest(str(expected), state):
         messages.error(request, "Connexion refusée (demande expirée) : recommencez.")
@@ -69,12 +75,19 @@ def callback(request: AppRequest) -> HttpResponse:
             code=request.GET["code"],
             redirect_uri=_redirect_uri(request),
             verifier=str(verifier),
+            read=read,
         )
     except graph.MailboxError as error:
         messages.error(request, f"Boîte non reliée : {error}")
         return redirect("outlook:mailbox")
     log_access(request, AccessLog.Action.CREATE, None, object_type="boîte Outlook reliée",
                object_repr=link.address)  # fmt: skip
+    if link.read_enabled:
+        log_access(request, AccessLog.Action.UPDATE, None, object_type="lecture de la boîte",
+                   object_repr="activée")  # fmt: skip
+        messages.success(request, "Lecture activée : vos nouveaux e-mails arrivent dans "
+                         "« Ma boîte mail » (premier passage dans quelques minutes).")  # fmt: skip
+        return redirect("boite:inbox")
     messages.success(request, f"Boîte {link.address} reliée : vos e-mails partiront d'elle.")
     return redirect("outlook:mailbox")
 
@@ -83,6 +96,11 @@ def callback(request: AppRequest) -> HttpResponse:
 def disconnect(request: AppRequest) -> HttpResponse:
     link = MailboxLink.objects.filter(user=request.user).first()
     if link is not None:
+        from apps.mailbox.models import MailMessage
+        from apps.mailbox.sync import delete
+
+        for message in MailMessage.objects.filter(owner=request.user):
+            delete(message)  # délier = plus aucune copie d'e-mail dans l'outil
         graph.disconnect(request.user)
         log_access(request, AccessLog.Action.DELETE, None, object_type="boîte Outlook reliée",
                    object_repr=link.address)  # fmt: skip

@@ -1,6 +1,6 @@
 {% extends "layouts/app.html" %}
-{% block head_title %}Ma boîte mail{% endblock %}
-{% block page_title %}Ma boîte mail{% endblock %}
+{% block head_title %}Liaison Outlook{% endblock %}
+{% block page_title %}Liaison Outlook{% endblock %}
 {% block page_subtitle %}<p class="muted" style="margin:.2rem 0 0">Les e-mails que vous envoyez depuis l'outil partent de votre propre adresse Outlook.</p>{% endblock %}
 {% block content %}
 <section class="card" style="max-width:46rem">
@@ -10,6 +10,14 @@
     {% if not link.usable %}
       <p class="alert alert-warning">Microsoft n'accepte plus l'accès (mot de passe changé ou accès retiré). Reliez la boîte à nouveau.</p>
       {% if configured %}<form method="post" action="{% url 'outlook:connect' %}">{% csrf_token %}<button type="submit">Relier à nouveau</button></form>{% endif %}
+    {% endif %}
+    <h2 style="margin-top:1.5rem">Lecture de la boîte (« Ma boîte mail »)</h2>
+    {% if link.read_enabled %}
+      <p>Activée depuis le {{ link.read_since|date:"d/m/Y" }}{% if link.last_sync_at %} · dernière lecture le {{ link.last_sync_at|date:"d/m/Y H:i" }}{% endif %}.</p>
+      <p class="small muted">Désactiver efface de l'outil toutes les copies de vos e-mails (ils restent dans Outlook).</p>
+      <form method="post" action="{% url 'boite:desactiver' %}">{% csrf_token %}<button type="submit" class="button-danger">Désactiver la lecture et effacer les copies</button></form>
+    {% else %}
+      <p>Pas activée. <a href="{% url 'boite:inbox' %}">Voir ce que fait « Ma boîte mail »</a>.</p>
     {% endif %}
     <form method="post" action="{% url 'outlook:disconnect' %}" style="margin-top:1rem">{% csrf_token %}
       <button type="submit" class="button-danger">Délier ma boîte</button>
@@ -26,7 +34,8 @@
   <h2 style="margin-top:1.5rem">Ce que l'outil peut faire, et ne peut pas faire</h2>
   <ul class="small">
     <li>Vous vous connectez chez Microsoft : l'outil ne voit jamais votre mot de passe.</li>
-    <li>Il peut <strong>seulement envoyer</strong> les e-mails que vous validez (bouton « Envoyer »). Il ne peut pas lire votre boîte.</li>
+    <li>Il envoie seulement les e-mails que vous validez (bouton « Envoyer »).</li>
+    <li>Il ne lit votre boîte que si vous activez vous-même « Ma boîte mail » ; vous seul voyez alors vos e-mails dans l'outil.</li>
     <li>Chaque e-mail envoyé reste dans vos « Éléments envoyés » et dans l'historique du dossier.</li>
     <li>Vous pouvez délier votre boîte ici à tout moment ; l'administrateur Microsoft du cabinet peut aussi retirer l'accès.</li>
   </ul>

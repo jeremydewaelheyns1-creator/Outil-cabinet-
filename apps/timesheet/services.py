@@ -116,3 +116,37 @@ def day_view(user: User, day: date, today: date) -> dict[str, object]:
         "next_day": day + timedelta(days=1),
         "is_today": day == today,
     }
+
+
+def deadlines_of(user: User, day: date) -> dict[str, object]:
+    """Échéances du jour (D-061) : celles à une heure dans le calendrier (pointillé), les
+    autres en haut (« toute la journée »)."""
+    from apps.tasks.models import Task
+
+    tasks = list(
+        Task.objects.visible_to(user).open().filter(assignee=user, due_date=day)
+        .select_related("client").order_by("due_time", "title")
+    )  # fmt: skip
+    timed = []
+    for task in tasks:
+        if task.due_time is None:
+            continue
+        start = max(task.due_time.hour * 60 + task.due_time.minute, FIRST_HOUR * 60)
+        end_time = task.end_time
+        end = end_time.hour * 60 + end_time.minute if end_time else start + 30
+        end = min(end, LAST_HOUR * 60)
+        top = (start - FIRST_HOUR * 60) * HOUR_HEIGHT // 60
+        timed.append(
+            {"task": task, "top": top, "height": max((end - start) * HOUR_HEIGHT // 60, 26)}
+        )
+    return {"timed_deadlines": timed, "allday_deadlines": [t for t in tasks if t.due_time is None]}
+
+
+def reminders_today(user: User, today: date) -> list[object]:
+    from apps.tasks.models import Task
+
+    return list(
+        Task.objects.visible_to(user).open()
+        .filter(assignee=user, due_date=today, remind=True)
+        .select_related("client").order_by("due_time")
+    )  # fmt: skip

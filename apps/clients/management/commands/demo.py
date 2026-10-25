@@ -162,6 +162,7 @@ class Command(BaseCommand):
         self._vat(companies, user)
         self._compliance(companies, user)
         self._timesheet(companies, user)
+        self._mailbox(companies, persons, user)
         self.stdout.write(
             self.style.SUCCESS(
                 f"{len(companies) + len(persons)} fiches fictives, {run.created} échéances. "
@@ -315,6 +316,106 @@ class Command(BaseCommand):
                 activity=activity, description=text,
                 billable=client is not None and activity not in TimeEntry.NOT_BILLABLE,
             )  # fmt: skip
+
+    @staticmethod
+    def _mailbox(companies: list[Client], persons: list[Client], user: User) -> None:
+        """Boîte mail fictive (D-060) et échéances avec rappel (D-061).
+
+        Les e-mails passent par la vraie relève, avec un faux Microsoft local : aucun appel
+        réseau, aucun vrai e-mail.
+        """
+        import base64
+        import json
+        from datetime import time
+        from urllib.parse import parse_qs
+
+        import httpx
+        from django.utils import timezone
+
+        from apps.mailbox import services as mail_services
+        from apps.mailbox import sync
+        from apps.mailbox.models import MailMessage
+        from apps.outlook import graph
+        from apps.outlook.models import MailboxLink
+        from apps.tasks import deadlines
+
+        bakery, garage, holding, medical, *_rest, brewery, _transport = companies
+        sophie = persons[0]
+        ContactPoint.objects.create(client=sophie, kind="email", value="sophie.l@exemple.test")
+        now = timezone.now()
+
+        def at(hours: float) -> str:
+            return (now - timedelta(hours=hours)).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+        def item(key: str, hours: float, sender: str, name: str, subject: str, body: str,
+                 files: bool = False, to: str = "") -> dict[str, Any]:  # fmt: skip
+            return {
+                "id": key, "conversationId": f"conv-{key}", "subject": subject,
+                "from": {"emailAddress": {"address": sender, "name": name}},
+                "toRecipients": [{"emailAddress": {"address": to or "demo@cabinet.test"}}],
+                "receivedDateTime": at(hours), "sentDateTime": at(hours), "hasAttachments": files,
+                "body": {"contentType": "text", "content": body},
+            }  # fmt: skip
+
+        inbox = [
+            item("d1", 0.5, "compta0@exemple.test", "Boulangerie du Moulin Fictif",
+                 "Factures de septembre", "Bonjour,\n\nVoici les factures d'achat de septembre."
+                 "\nPouvez-vous me confirmer la réception ?\n\nBonne journée", files=True),
+            item("d2", 2, "sophie.l@exemple.test", "Sophie Lambert", "Question sur ma déclaration",
+                 "Bonjour,\n\nJ'ai reçu un courrier pour ma déclaration personnelle."
+                 "\nPouvons-nous en parler mardi ?\n\nSophie"),
+            item("d3", 4, "info@spf-fictif.test", "SPF Finances (fictif)",
+                 "Demande de renseignements",
+                 f"Madame, Monsieur,\n\nConcerne l'entreprise {brewery.enterprise_number}."
+                 "\nMerci de nous transmettre le détail du compte 6100 pour le 15."),
+            item("d4", 26, "compta1@exemple.test", "Garage des Trois Ponts Fictif",
+                 "Rendez-vous bilan", "Bonjour,\n\nJeudi 14h30 vous conviendrait-il pour le "
+                 "bilan ?\n\nMarc"),
+            item("d5", 30, "newsletter@exemple.test", "Lettre d'information (fictive)",
+                 "Nouveautés fiscales du mois", "Les nouveautés fiscales du mois en bref."),
+        ]  # fmt: skip
+        sent = [
+            item("s1", 50, "demo@cabinet.test", "Camille Démo", "Documents manquants",
+                 "Bonjour,\n\nIl nous manque encore les extraits bancaires de juin.",
+                 to="compta3@exemple.test"),
+        ]  # fmt: skip
+        invoice = base64.b64encode(demo_pdf("Facture fictive n° 2025-114")).decode()
+
+        def answer(request: httpx.Request) -> httpx.Response:
+            path = request.url.path
+            if path.endswith("/token"):
+                scope = parse_qs(request.content.decode())["scope"][0]
+                return httpx.Response(200, json={"access_token": "demo", "scope": scope})
+            if path.endswith("/inbox/messages"):
+                return httpx.Response(200, json={"value": inbox})
+            if path.endswith("/sentitems/messages"):
+                return httpx.Response(200, json={"value": sent})
+            if path.endswith("/attachments"):
+                return httpx.Response(200, json={"value": [{
+                    "@odata.type": "#microsoft.graph.fileAttachment",
+                    "name": "facture-septembre.pdf", "contentBytes": invoice}]})  # fmt: skip
+            return httpx.Response(404, content=json.dumps({}).encode())
+
+        link = MailboxLink.objects.create(
+            user=user, address="demo@cabinet.test", token=graph.encrypt("demo"),
+            scopes=graph.READ_SCOPES, read_enabled=True, read_since=now - timedelta(days=7),
+        )  # fmt: skip
+        sync.sync_link(link, httpx.Client(transport=httpx.MockTransport(answer)))
+        # Lecture coupée pour la démo : la relève automatique ne contactera jamais Microsoft.
+        link.broken_at = now
+        link.save(update_fields=["broken_at"])
+        mails = {m.graph_id: m for m in MailMessage.objects.filter(owner=user)}
+        for key in ("d4", "d5"):
+            mail_services.mark_read(mails[key])
+        mail_services.file_message(mails["d5"], holding, None)
+        mail_services.wait_for(user, address="compta3@exemple.test",
+                               subject="Documents manquants", client=medical,
+                               conversation_id="conv-s1")  # fmt: skip
+        today = timezone.localdate()
+        deadlines.add(user, client=garage, day=today, at=time(14, 30), until=time(15, 30),
+                      comment="Rendez-vous bilan", remind=True)  # fmt: skip
+        deadlines.add(user, client=bakery, day=today, at=None, until=None,
+                      comment="Rappeler pour les factures", remind=False)  # fmt: skip
 
     @staticmethod
     def _compliance(companies: list[Client], user: User) -> None:

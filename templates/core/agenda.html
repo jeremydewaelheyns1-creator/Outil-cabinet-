@@ -17,49 +17,93 @@
 </div>
 {% include "core/_day_tabs.html" %}
 
+{% if is_today and reminders %}
+  <div class="ag-reminder" role="status">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>
+    <strong>Rappel{{ reminders|length|pluralize }} d'aujourd'hui :</strong>
+    {% for t in reminders %}<span>{{ t.title }} — {{ t.client.display_name }}{% if t.due_time %} ({{ t.due_time|time:"H:i" }}){% endif %}</span>{% if not forloop.last %} · {% endif %}{% endfor %}
+  </div>
+{% endif %}
+
 <div class="ts-layout">
   <section class="card ts-calendar ag-calendar" aria-label="Agenda du {{ day|date:'j F' }}">
-    <div class="ag-head"><strong>{{ current.total }}</strong> encodé{{ current.minutes|pluralize }} ce jour-là</div>
+    <div class="ag-head">
+      <span><strong>{{ current.total }}</strong> encodé{{ current.minutes|pluralize }} ce jour-là</span>
+      <span class="ag-legend"><span class="ag-key ag-key-time"></span>Temps passé <span class="ag-key ag-key-deadline"></span>Échéance ou rendez-vous</span>
+    </div>
+    {% if allday_deadlines %}
+      <div class="ag-allday">
+        <span class="small muted">Toute la journée :</span>
+        {% for t in allday_deadlines %}<a class="ag-deadline-chip" href="{% url 'clients:tasks' t.client_id %}">{% if t.remind %}Rappel · {% endif %}{{ t.title }} · {{ t.client.display_name }}</a>{% endfor %}
+      </div>
+    {% endif %}
     <div class="ts-grid ag-grid" style="--hour: {{ hour_height }}px">
       <div class="ts-hours" style="height: {{ grid_height }}px">
         {% for h in hours %}<div class="ts-hour">{{ h }}h</div>{% endfor %}
       </div>
-      <div class="ts-day ag-day{% if is_today %} is-today{% endif %}" style="height: {{ grid_height }}px" data-ts-day="{{ day|date:'Y-m-d' }}" title="Cliquer pour ajouter un créneau">
+      <div class="ts-day ag-day{% if is_today %} is-today{% endif %}" style="height: {{ grid_height }}px" data-ts-day="{{ day|date:'Y-m-d' }}" title="Cliquer pour ajouter">
         {% for b in current.blocks %}
           <a class="ts-block ts-{{ b.entry.activity }}{% if not b.entry.billable %} is-internal{% endif %}{% if editing and editing.pk == b.entry.pk %} is-editing{% endif %}" style="top: {{ b.top }}px; height: {{ b.height }}px" href="?jour={{ day|date:'Y-m-d' }}&amp;modifier={{ b.entry.pk }}#ts-form">
             <strong>{{ b.label }} · {{ b.entry.start|time:"H:i" }}–{{ b.entry.end|time:"H:i" }}</strong>
             <span>{{ b.entry.get_activity_display }}{% if b.entry.description %} — {{ b.entry.description }}{% endif %}</span>
           </a>
-        {% empty %}
-          <div class="ag-empty">Cliquez à l'heure voulue pour ajouter ce que vous avez fait.</div>
         {% endfor %}
+        {% for d in timed_deadlines %}
+          <a class="ag-deadline" style="top: {{ d.top }}px; height: {{ d.height }}px" href="{% url 'clients:tasks' d.task.client_id %}">
+            <strong>{% if d.task.remind %}<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-label="rappel"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/></svg> {% endif %}{{ d.task.due_time|time:"H:i" }}{% if d.task.end_time %}–{{ d.task.end_time|time:"H:i" }}{% endif %} · {{ d.task.title }}</strong>
+            <span>{{ d.task.client.display_name }}</span>
+          </a>
+        {% endfor %}
+        {% if not current.blocks and not timed_deadlines %}
+          <div class="ag-empty">Cliquez à l'heure voulue pour ajouter ce que vous avez fait.</div>
+        {% endif %}
       </div>
     </div>
   </section>
 
   <aside class="ts-side">
     <section class="card" id="ts-form">
-      <h2>{% if editing %}Modifier le créneau{% else %}Ajouter à la journée{% endif %}</h2>
-      <form method="post" action="{% url 'temps:save' %}" class="ts-form">
-        {% csrf_token %}
-        <input type="hidden" name="retour" value="{% url 'core:agenda' %}?jour={{ day|date:'Y-m-d' }}">
-        {% if editing %}<input type="hidden" name="entry" value="{{ editing.pk }}">{% endif %}
-        <label for="{{ form.day.id_for_label }}">Jour</label>{{ form.day }}
-        <div class="ts-times">
-          <div><label for="{{ form.start.id_for_label }}">De</label>{{ form.start }}</div>
-          <div><label for="{{ form.end.id_for_label }}">À</label>{{ form.end }}</div>
-        </div>
-        <label for="{{ form.client.id_for_label }}">Dossier</label>{{ form.client }}
-        <label for="{{ form.activity.id_for_label }}">Activité</label>{{ form.activity }}
-        <label for="{{ form.description.id_for_label }}">Ce qui a été fait</label>{{ form.description }}
-        <p class="help">Pas de donnée sensible ici (numéro national, montants personnels…).</p>
-        <div class="ts-form-actions">
-          <button type="submit">{% if editing %}Enregistrer{% else %}Ajouter{% endif %}</button>
-          {% if editing %}<a class="small" href="?jour={{ day|date:'Y-m-d' }}">Annuler</a>{% endif %}
-        </div>
-      </form>
-      {% if editing %}
-        <form method="post" action="{% url 'temps:delete' editing.pk %}" class="ts-delete">{% csrf_token %}<input type="hidden" name="retour" value="{% url 'core:agenda' %}?jour={{ day|date:'Y-m-d' }}"><button type="submit" class="danger small">Supprimer ce créneau</button></form>
+      <nav class="ag-mode" aria-label="Que voulez-vous ajouter ?">
+        <a href="?jour={{ day|date:'Y-m-d' }}#ts-form"{% if mode == "temps" %} aria-current="page"{% endif %}>Temps passé</a>
+        <a href="?jour={{ day|date:'Y-m-d' }}&amp;ajouter=echeance#ts-form"{% if mode == "echeance" %} aria-current="page"{% endif %}>Une échéance</a>
+      </nav>
+      {% if mode == "echeance" %}
+        <form method="post" action="{% url 'core:agenda_deadline' %}" class="ts-form ag-deadline-form">
+          {% csrf_token %}
+          <div class="ts-times">
+            <div><label for="d-jour">Jour</label><input id="d-jour" type="date" name="jour" value="{{ day|date:'Y-m-d' }}" required></div>
+            <div><label for="d-heure">Heure</label><input id="d-heure" type="time" name="heure" step="300"></div>
+          </div>
+          <label for="d-fin">Jusqu'à (facultatif)</label><input id="d-fin" type="time" name="fin" step="300">
+          <label for="d-dossier">Dossier</label>
+          <select id="d-dossier" name="dossier" required><option value="">— Choisir —</option>{% for c in deadline_clients %}<option value="{{ c.pk }}">{{ c.display_name }}</option>{% endfor %}</select>
+          <label for="d-texte">Commentaire</label><input id="d-texte" type="text" name="commentaire" maxlength="200" placeholder="Ex. : Rendez-vous" required>
+          <label class="mb-check"><input type="checkbox" name="rappel" value="1" checked> Me rappeler le jour J</label>
+          <div class="ts-form-actions"><button type="submit">Créer l'échéance</button></div>
+        </form>
+      {% else %}
+        <h2 class="visually-hidden">{% if editing %}Modifier le créneau{% else %}Ajouter du temps passé{% endif %}</h2>
+        <form method="post" action="{% url 'temps:save' %}" class="ts-form">
+          {% csrf_token %}
+          <input type="hidden" name="retour" value="{% url 'core:agenda' %}?jour={{ day|date:'Y-m-d' }}">
+          {% if editing %}<input type="hidden" name="entry" value="{{ editing.pk }}">{% endif %}
+          <label for="{{ form.day.id_for_label }}">Jour</label>{{ form.day }}
+          <div class="ts-times">
+            <div><label for="{{ form.start.id_for_label }}">De</label>{{ form.start }}</div>
+            <div><label for="{{ form.end.id_for_label }}">À</label>{{ form.end }}</div>
+          </div>
+          <label for="{{ form.client.id_for_label }}">Dossier</label>{{ form.client }}
+          <label for="{{ form.activity.id_for_label }}">Activité</label>{{ form.activity }}
+          <label for="{{ form.description.id_for_label }}">Ce qui a été fait</label>{{ form.description }}
+          <p class="help">Pas de donnée sensible ici (numéro national, montants personnels…).</p>
+          <div class="ts-form-actions">
+            <button type="submit">{% if editing %}Enregistrer{% else %}Ajouter{% endif %}</button>
+            {% if editing %}<a class="small" href="?jour={{ day|date:'Y-m-d' }}">Annuler</a>{% endif %}
+          </div>
+        </form>
+        {% if editing %}
+          <form method="post" action="{% url 'temps:delete' editing.pk %}" class="ts-delete">{% csrf_token %}<input type="hidden" name="retour" value="{% url 'core:agenda' %}?jour={{ day|date:'Y-m-d' }}"><button type="submit" class="danger small">Supprimer ce créneau</button></form>
+        {% endif %}
       {% endif %}
     </section>
     <section class="card">

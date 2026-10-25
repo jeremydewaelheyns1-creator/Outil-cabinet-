@@ -1,7 +1,8 @@
 # Relier Outlook à l'outil (D-044) — guide de mise en route
 
 But : les e-mails envoyés depuis l'outil partent de la boîte Outlook de l'employé qui clique
-sur « Envoyer », et restent dans ses « Éléments envoyés ».
+sur « Envoyer », et restent dans ses « Éléments envoyés ». Depuis D-060, chaque employé peut
+aussi, s'il le veut, faire lire sa boîte par l'outil (onglet « Ma boîte mail »).
 
 ## Ce qu'il faut avant
 
@@ -19,8 +20,11 @@ sur « Envoyer », et restent dans ses « Éléments envoyés ».
 4. Sur la page de l'application, noter **ID d'application (client)** et **ID de l'annuaire
    (locataire)** : ce ne sont pas des secrets.
 5. **API autorisées** → Ajouter → Microsoft Graph → **Autorisations déléguées** : cocher
-   `Mail.Send`, `User.Read`, `offline_access`. Puis **Accorder un consentement
-   d'administrateur**. Ne rien ajouter d'autre (surtout pas `Mail.Read`).
+   `Mail.Send`, `Mail.Read`, `User.Read`, `offline_access`. Puis **Accorder un consentement
+   d'administrateur**. Ne rien ajouter d'autre (surtout pas `Mail.ReadWrite`,
+   `Mail.Read.Shared` ni aucune autorisation « d'application »).
+   - Déjà inscrite avant D-060 ? Il suffit d'ajouter `Mail.Read` (déléguée) et de cliquer à
+     nouveau sur **Accorder un consentement d'administrateur**.
 6. **Certificats et secrets** → **Nouveau secret client** (durée : 24 mois, noter la date de
    fin). ⚠️ La valeur du secret ne s'affiche qu'une fois : la coller **directement** dans le
    gestionnaire de secrets de Google Cloud (étape 2). Ne jamais l'envoyer par e-mail, chat,
@@ -46,12 +50,21 @@ gcloud run services update outil --region=europe-west1 --update-secrets=OUTLOOK_
 
 ## Étape 3 — Chaque employé relie sa boîte
 
-En haut de l'écran : **Ma boîte mail** → **Se connecter avec Microsoft**. Il se connecte chez
+En haut de l'écran : **Liaison Outlook** → **Se connecter avec Microsoft**. Il se connecte chez
 Microsoft (l'outil ne voit pas son mot de passe). C'est fait.
+
+## Étape 4 (facultative) — Faire lire sa boîte par l'outil
+
+Menu de gauche : **Ma boîte mail** → **Activer avec Microsoft**. L'employé accepte chez
+Microsoft le droit de lecture. Seuls les e-mails reçus **à partir de ce moment** sont copiés.
+Désactiver à tout moment depuis **Liaison Outlook** : toutes les copies sont effacées.
+⚠️ Avant l'usage réel : analyse d'impact (AIPD) et note d'information aux employés.
 
 ## Sécurité, en bref
 
-- Droits : envoyer seulement. L'outil ne peut pas lire les boîtes.
+- Droits : envoyer ; lire seulement pour l'employé qui l'a activé, et seulement sa boîte.
+  L'outil ne peut ni modifier, ni supprimer, ni déplacer un e-mail dans Outlook.
+- Chaque employé est seul à voir ses e-mails dans l'outil.
 - L'outil garde l'adresse et un jeton chiffré ; jamais de mot de passe.
 - Délier : depuis « Ma boîte mail », ou par l'administrateur Microsoft (Applications
   d'entreprise → Outil cabinet → Utilisateurs / Révoquer).

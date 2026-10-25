@@ -1,0 +1,226 @@
+{% extends "layouts/app.html" %}
+{% load static %}
+{% block head_title %}Ma boîte mail{% endblock %}
+{% block page %}
+{% include "components/_messages.html" %}
+<div class="mb-head">
+  <h1>Ma boîte mail</h1>
+  <form class="mb-search" method="get" action="{% url 'boite:inbox' %}" role="search">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+    <label class="visually-hidden" for="mb-q">Rechercher un e-mail</label>
+    <input id="mb-q" type="search" name="q" value="{{ q }}" placeholder="Rechercher un e-mail…">
+    <label class="visually-hidden" for="mb-dossier">Dans quel dossier</label>
+    <select id="mb-dossier" name="dossier" class="mb-search-dossier">
+      <option value="">Tous les dossiers</option>
+      {% for c in all_clients %}<option value="{{ c.pk }}"{% if dossier and dossier.pk == c.pk %} selected{% endif %}>{{ c.display_name }}</option>{% endfor %}
+    </select>
+    <button type="submit" class="small">Chercher</button>
+  </form>
+  <div class="mb-head-actions">
+    <form method="post" action="{% url 'boite:relever' %}" class="inline">{% csrf_token %}<button type="submit" class="secondary small" title="Dernière lecture : {{ link.last_sync_at|date:'d/m H:i'|default:'jamais' }}">Relever</button></form>
+    <a class="button" href="?ouvrir=nouveau">Nouveau message</a>
+  </div>
+</div>
+{% if link.sync_error %}<p class="alert alert-warning">Dernière lecture interrompue : {{ link.sync_error }}{% if not link.usable %} — <a href="{% url 'outlook:mailbox' %}">reliez votre boîte à nouveau</a>{% endif %}</p>{% endif %}
+
+<div class="mb-layout">
+  <nav class="mb-tree" aria-label="Rangements">
+    <a href="?vue=reception"{% if view == "reception" %} aria-current="page"{% endif %}><span>Boîte de réception</span>{% if counts.inbox %}<span class="mb-badge">{{ counts.inbox }}</span>{% endif %}</a>
+    <a href="?vue=attente"{% if view == "attente" %} aria-current="page"{% endif %}><span>En attente de réponse</span>{% if counts.awaiting %}<span class="mb-count">{{ counts.awaiting }}</span>{% endif %}</a>
+    <a href="?vue=envoyes"{% if view == "envoyes" %} aria-current="page"{% endif %}><span>Envoyés</span></a>
+    <div class="mb-tree-title">Mes dossiers</div>
+    {% for d in tree %}
+      <details class="mb-folder"{% if dossier and dossier.pk == d.client.pk %} open{% endif %}>
+        <summary><a href="?vue=dossier&amp;dossier={{ d.client.pk }}"{% if view == "dossier" and dossier.pk == d.client.pk %} aria-current="page"{% endif %}><span>{{ d.client.display_name }}</span><span class="mb-count">{{ d.count }}</span></a></summary>
+        {% for p in d.persons %}
+          <a class="mb-sub" href="?vue=personne&amp;dossier={{ d.client.pk }}&amp;personne={{ p.pk }}"{% if view == "personne" and person.pk == p.pk and dossier.pk == d.client.pk %} aria-current="page"{% endif %}><span>{% client_icon p %} {{ p.display_name }}</span></a>
+        {% endfor %}
+        <a class="mb-sub" href="?vue=pj&amp;dossier={{ d.client.pk }}"{% if view == "pj" and dossier.pk == d.client.pk %} aria-current="page"{% endif %}><span>Pièces jointes</span>{% if d.files %}<span class="mb-count">{{ d.files }}</span>{% endif %}</a>
+      </details>
+    {% empty %}
+      <p class="small muted mb-tree-empty">Vos dossiers apparaîtront ici dès le premier e-mail classé.</p>
+    {% endfor %}
+  </nav>
+
+  <section class="mb-list" aria-label="{{ title }}">
+    <h2 class="mb-list-title">{{ title }}</h2>
+    {% if view == "attente" %}
+      {% for a in awaiting %}
+        <div class="mb-wait">
+          <div><strong>{{ a.subject|default:"(sans objet)" }}</strong></div>
+          <div class="small muted">À {{ a.address }}{% if a.client %} · {{ a.client.display_name }}{% endif %} · depuis le {{ a.since|date:"d/m" }}</div>
+          <form method="post" action="{% url 'boite:plus_attendre' a.pk %}">{% csrf_token %}<button type="submit" class="secondary small">Ne plus attendre</button></form>
+        </div>
+      {% empty %}
+        <p class="empty">Aucune réponse attendue. Cochez « J'attends une réponse » quand vous écrivez à un client.</p>
+      {% endfor %}
+    {% elif view == "pj" %}
+      {% for a in attachments %}
+        <a class="mb-item" href="{{ a.url }}">
+          <span class="mb-line"><strong>{{ a.name }}</strong><span class="mb-date">{{ a.message.received_at|date:"j M" }}</span></span>
+          <span class="mb-hint">{{ a.label|default:a.get_kind_display }}{% if a.filed_at %} · <span class="mb-ok">rangé dans le dossier ✓</span>{% endif %}</span>
+        </a>
+      {% empty %}
+        <p class="empty">Aucune pièce jointe dans ce dossier.</p>
+      {% endfor %}
+    {% else %}
+      <ul class="mb-items">
+      {% for m in items %}
+        <li class="mb-item-wrap" data-mb-item>
+          <a class="mb-item{% if selected and selected.pk == m.pk %} is-selected{% endif %}{% if m.is_unread %} is-unread{% endif %}" href="{{ m.url }}">
+            <span class="mb-line"><strong>{% if m.folder == "sent" %}À {{ m.to_addresses.0|default:"—" }}{% else %}{{ m.sender }}{% endif %}</strong><span class="mb-date">{% if m.received_at|date:"Y-m-d" == today|date:"Y-m-d" %}{{ m.received_at|time:"H:i" }}{% else %}{{ m.received_at|date:"j M" }}{% endif %}</span></span>
+            <span class="mb-subject">{{ m.subject|default:"(sans objet)" }}</span>
+            {% if view == "recherche" %}
+              {% if m.excerpt_html %}<span class="mb-excerpt">… {{ m.excerpt_html }} …</span>{% endif %}
+              <span class="mb-hint">{% if m.client %}{{ m.client.display_name }}{% else %}Boîte de réception{% endif %}</span>
+            {% elif view == "reception" %}
+              <span class="mb-hint">{% if m.suggested_client %}→ {{ m.suggested_client.display_name }}{% if m.choice_needed %} · <strong class="mb-warn">adresse privée : à choisir</strong>{% endif %}{% else %}<strong class="mb-warn">dossier à choisir</strong>{% endif %}{% if m.replied_at %} · <span class="mb-ok">répondu ✓</span>{% endif %}{% if m.n_files %} · <svg class="mb-clip" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-label="pièce jointe"><path d="M21 12.5 12.5 21a5 5 0 0 1-7-7L14 5.5a3.5 3.5 0 0 1 5 5L10.5 19a2 2 0 0 1-3-3L15 8.5"/></svg>{% endif %}</span>
+            {% endif %}
+          </a>
+          <button type="button" class="mb-more" aria-label="Actions sur cet e-mail" data-mb-toggle>⋯</button>
+          <div class="mb-menu" role="menu" hidden>
+            <a role="menuitem" href="{{ m.url }}&amp;ouvrir=echeance">Ajouter une échéance…</a>
+            <a role="menuitem" href="{{ m.url }}&amp;ouvrir=reclasser">Reclasser dans…</a>
+            <a role="menuitem" href="{{ m.url }}&amp;ouvrir=timesheet">Ajouter à la timesheet</a>
+            <a role="menuitem" href="{{ m.url }}&amp;ouvrir=prive">Privé : retirer de l'outil</a>
+          </div>
+        </li>
+      {% empty %}
+        <li class="empty">{% if view == "reception" %}Boîte de réception vide. Bravo !{% elif view == "recherche" %}Aucun e-mail ne correspond.{% else %}Aucun e-mail ici.{% endif %}</li>
+      {% endfor %}
+      </ul>
+    {% endif %}
+  </section>
+
+  <article class="mb-read" aria-label="E-mail ouvert">
+    {% if selected %}
+      <header class="mb-read-head">
+        <h2>{{ selected.subject|default:"(sans objet)" }}</h2>
+        <div class="muted">{% if selected.folder == "sent" %}À {{ selected.to_addresses|join:", " }}{% else %}De {{ selected.sender }}{% if selected.from_name %} &lt;{{ selected.from_address }}&gt;{% endif %}{% endif %} · {{ selected.received_at|date:"l j F à H:i" }}</div>
+      </header>
+      <div class="mb-body">{{ selected.body|linebreaksbr }}</div>
+
+      {% if selected.attachments.all %}
+        <div class="mb-files">
+          {% for a in attachments %}
+            <div class="mb-file">
+              <a href="{% url 'boite:piece' a.pk %}" target="_blank" rel="noopener"><strong>{{ a.name }}</strong></a>
+              <span class="small muted">{{ a.label|default:a.get_kind_display }}</span>
+              <div class="mb-file-action">
+                {% if a.filed_at %}<span class="mb-ok">Rangé dans le dossier ✓</span>
+                {% elif a.kind == "tva" or a.kind == "carte" %}
+                  <form method="post" action="{% url 'boite:ranger_piece' a.pk %}">{% csrf_token %}<input type="hidden" name="retour" value="{{ here }}"><button type="submit" class="small">Ranger dans le dossier</button></form>
+                {% elif places %}
+                  <form method="post" action="{% url 'boite:ranger_piece' a.pk %}" class="mb-file-place">{% csrf_token %}<input type="hidden" name="retour" value="{{ here }}">
+                    <label class="visually-hidden" for="place-{{ a.pk }}">Où ranger</label>
+                    <select id="place-{{ a.pk }}" name="endroit" class="compact"><option value="">Ranger dans…</option>{% for value, label in places %}<option value="{{ value }}"{% if value == a.suggested_place %} selected{% endif %}>{{ label }}</option>{% endfor %}</select>
+                    <button type="submit" class="button-secondary button-small">Ranger</button>
+                  </form>
+                {% endif %}
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+
+      {% if brief %}
+        <a class="mb-brief" href="{% url 'clients:detail' brief.client.pk %}">
+          <strong>Le dossier en bref</strong>
+          {% if brief.task %}<span>Prochaine échéance : {{ brief.task.title }} ({{ brief.task.due_date|date:"d/m" }})</span>{% endif %}
+          <span>Anti-blanchiment : {{ brief.progress }} %</span>
+          {% if brief.pending %}<span>{{ brief.pending }} document{{ brief.pending|pluralize }} demandé{{ brief.pending|pluralize }} au client</span>{% endif %}
+          <span class="mb-brief-open">Ouvrir ›</span>
+        </a>
+      {% endif %}
+
+      <details class="mb-reply"{% if open == "repondre" %} open{% endif %}>
+        <summary class="button">Répondre</summary>
+        <form method="post" action="{% url 'boite:repondre' selected.pk %}">{% csrf_token %}
+          <input type="hidden" name="retour" value="{{ here }}">
+          <label for="mb-reply-text">Votre réponse à {{ selected.sender }}</label>
+          <textarea id="mb-reply-text" name="texte" rows="7" required></textarea>
+          <label class="mb-check"><input type="checkbox" name="attente" value="1"> J'attends une réponse</label>
+          <button type="submit">Envoyer depuis ma boîte Outlook</button>
+        </form>
+      </details>
+
+      {% if selected.folder == "inbox" and not selected.classed_at %}
+        <form method="post" action="{% url 'boite:classer' selected.pk %}" class="mb-classer">{% csrf_token %}
+          <input type="hidden" name="retour" value="{{ here }}">
+          {% if choices %}
+            <fieldset class="mb-choice">
+              <legend>Envoyé depuis une adresse privée. Classer dans :</legend>
+              {% for c in choices %}<label><input type="radio" name="choix" value="{{ c.value }}"{% if forloop.first %} checked{% endif %}> {{ c.label }}</label>{% endfor %}
+            </fieldset>
+          {% elif selected.suggested_client %}
+            <p class="mb-where">Sera classé dans <strong>{{ selected.suggested_client.display_name }}</strong> <span class="small muted">({{ selected.reason }})</span></p>
+          {% else %}
+            <p class="mb-where">Aucun dossier trouvé : <a href="{{ selected_url }}&amp;ouvrir=reclasser">choisissez-le</a>.</p>
+          {% endif %}
+          <div class="mb-actions">
+            <button type="submit" class="mb-done"{% if not selected.suggested_client and not choices %} disabled{% endif %}>Traité : classer</button>
+            <a class="button button-secondary" href="{{ selected_url }}&amp;ouvrir=echeance">Ajouter une échéance</a>
+            <a class="button button-secondary" href="{{ selected_url }}&amp;ouvrir=timesheet">Ajouter à la timesheet</a>
+            <a class="button button-secondary" href="{{ selected_url }}&amp;ouvrir=reclasser">Reclasser dans…</a>
+          </div>
+        </form>
+      {% else %}
+        <div class="mb-actions">
+          {% if selected.client %}<span class="mb-where">Classé dans <strong>{{ selected.client.display_name }}{% if selected.person %} › {{ selected.person.display_name }}{% endif %}</strong></span>{% endif %}
+          <a class="button button-secondary" href="{{ selected_url }}&amp;ouvrir=echeance">Ajouter une échéance</a>
+          <a class="button button-secondary" href="{{ selected_url }}&amp;ouvrir=timesheet">Ajouter à la timesheet</a>
+          <a class="button button-secondary" href="{{ selected_url }}&amp;ouvrir=reclasser">Reclasser dans…</a>
+          {% if selected.folder == "inbox" %}<form method="post" action="{% url 'boite:remettre' selected.pk %}" class="inline">{% csrf_token %}<input type="hidden" name="retour" value="{{ here }}"><button type="submit" class="secondary">Remettre dans la réception</button></form>{% endif %}
+        </div>
+      {% endif %}
+
+      <dialog class="mb-dialog" id="mb-echeance"{% if open == "echeance" %} data-open{% endif %} aria-labelledby="mb-echeance-titre">
+        <form method="post" action="{% url 'boite:echeance' selected.pk %}">{% csrf_token %}
+          <input type="hidden" name="retour" value="{{ here }}">
+          <h2 id="mb-echeance-titre">Ajouter une échéance</h2>
+          <div class="ts-times"><div><label for="e-jour">Jour</label><input id="e-jour" type="date" name="jour" value="{{ today|date:'Y-m-d' }}" required></div><div><label for="e-heure">Heure</label><input id="e-heure" type="time" name="heure" step="300"></div></div>
+          <label for="e-fin">Jusqu'à (facultatif)</label><input id="e-fin" type="time" name="fin" step="300">
+          <label for="e-dossier">Dossier</label>
+          <select id="e-dossier" name="dossier" required>{% for c in all_clients %}<option value="{{ c.pk }}"{% if brief and brief.client.pk == c.pk %} selected{% endif %}>{{ c.display_name }}</option>{% endfor %}</select>
+          <label for="e-texte">Commentaire</label><input id="e-texte" type="text" name="commentaire" maxlength="200" placeholder="Ex. : Rendez-vous" required>
+          <label class="mb-check"><input type="checkbox" name="rappel" value="1" checked> Me rappeler le jour J</label>
+          <div class="mb-dialog-actions"><button type="submit">Créer l'échéance</button><a class="button button-secondary" href="{{ selected_url }}">Annuler</a></div>
+        </form>
+      </dialog>
+      <dialog class="mb-dialog" id="mb-reclasser"{% if open == "reclasser" %} data-open{% endif %} aria-labelledby="mb-reclasser-titre">
+        <form method="post" action="{% url 'boite:reclasser' selected.pk %}">{% csrf_token %}
+          <input type="hidden" name="retour" value="{{ here }}">
+          <h2 id="mb-reclasser-titre">Reclasser dans…</h2>
+          <label for="r-cible">Dossier (ou personne physique sous une société)</label>
+          <select id="r-cible" name="cible" required><option value="">— Choisir —</option>{% for value, label in reclass_options %}<option value="{{ value }}">{{ label }}</option>{% endfor %}</select>
+          <div class="mb-dialog-actions"><button type="submit">Classer ici</button><a class="button button-secondary" href="{{ selected_url }}">Annuler</a></div>
+        </form>
+      </dialog>
+      <dialog class="mb-dialog" id="mb-prive"{% if open == "prive" %} data-open{% endif %} aria-labelledby="mb-prive-titre">
+        <form method="post" action="{% url 'boite:prive' selected.pk %}">{% csrf_token %}
+          <input type="hidden" name="retour" value="{% url 'boite:inbox' %}">
+          <h2 id="mb-prive-titre">Retirer cet e-mail de l'outil ?</h2>
+          <p>La copie et ses pièces jointes sont effacées de l'outil, et il ne sera plus jamais recopié. Il reste dans votre Outlook.</p>
+          <div class="mb-dialog-actions"><button type="submit" class="danger">Oui, c'est privé : retirer</button><a class="button button-secondary" href="{{ selected_url }}">Annuler</a></div>
+        </form>
+      </dialog>
+    {% else %}
+      <div class="mb-read-empty"><p>Choisissez un e-mail à gauche pour le lire.</p></div>
+    {% endif %}
+  </article>
+</div>
+
+<dialog class="mb-dialog" id="mb-nouveau"{% if open == "nouveau" %} data-open{% endif %} aria-labelledby="mb-nouveau-titre">
+  <form method="post" action="{% url 'boite:nouveau' %}">{% csrf_token %}
+    <h2 id="mb-nouveau-titre">Nouveau message</h2>
+    <label for="n-a">À</label><input id="n-a" type="email" name="a" required>
+    <label for="n-objet">Objet</label><input id="n-objet" type="text" name="objet" maxlength="300">
+    <label for="n-dossier">Dossier (facultatif)</label>
+    <select id="n-dossier" name="dossier"><option value="">—</option>{% for c in all_clients %}<option value="{{ c.pk }}">{{ c.display_name }}</option>{% endfor %}</select>
+    <label for="n-texte">Message</label><textarea id="n-texte" name="texte" rows="8" required></textarea>
+    <label class="mb-check"><input type="checkbox" name="attente" value="1"> J'attends une réponse</label>
+    <div class="mb-dialog-actions"><button type="submit">Envoyer depuis ma boîte Outlook</button><a class="button button-secondary" href="{% url 'boite:inbox' %}">Annuler</a></div>
+  </form>
+</dialog>
+<script src="{% static 'js/mailbox.js' %}" defer></script>
+{% endblock %}

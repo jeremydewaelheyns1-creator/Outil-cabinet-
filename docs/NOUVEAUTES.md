@@ -3,6 +3,23 @@
 Ce qui a été ajouté à l'outil, du plus récent au plus ancien. Toutes les données de la démo
 sont inventées.
 
+## 25 octobre 2026 — Ma boîte mail
+
+- Nouvel onglet **Ma boîte mail** (à gauche) : vos e-mails Outlook dans l'outil, rangés par
+  dossier client. Chacun l'active pour sa propre boîte ; personne d'autre ne voit vos e-mails.
+- Chaque e-mail arrive avec l'endroit où il sera classé (« → Boulangerie… »). Un clic sur
+  **Traité : classer** et il rejoint le dossier. E-mail venu de l'adresse privée d'un
+  dirigeant : vous choisissez « société » ou « personne physique ».
+- Clic droit sur un e-mail : ajouter une échéance, reclasser, ajouter à la timesheet, retirer
+  un e-mail privé.
+- Pièces jointes : l'outil reconnaît les déclarations TVA, cartes d'identité, extraits UBO,
+  factures… et propose de les ranger dans le vrai dossier.
+- Répondre ou écrire depuis l'outil (c'est vous qui écrivez), case « J'attends une réponse ».
+- Recherche : un dossier + quelques mots, les passages trouvés sont surlignés.
+- **Mon agenda** : bouton « Une échéance » (rendez-vous, appel…) avec rappel le jour J
+  (bandeau et cloche).
+- Pas d'intelligence artificielle : tout se fait avec des règles simples.
+
 ## 25 octobre 2026 — Ma journée et feuille de temps
 
 - **Ma journée** remplace l'accueil. Onglet **À traiter** : ce que l'outil a préparé et qui

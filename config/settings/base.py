@@ -54,6 +54,7 @@ INSTALLED_APPS = [
     "apps.vat",
     "apps.outlook",
     "apps.timesheet",
+    "apps.mailbox",
 ]
 
 MIDDLEWARE = [
@@ -216,6 +217,9 @@ OUTLOOK_TENANT_ID = env("OUTLOOK_TENANT_ID", default="")
 OUTLOOK_CLIENT_ID = env("OUTLOOK_CLIENT_ID", default="")
 OUTLOOK_CLIENT_SECRET = env("OUTLOOK_CLIENT_SECRET", default="")
 OUTLOOK_TIMEOUT_SECONDS = env.int("OUTLOOK_TIMEOUT_SECONDS", default=20)
+# D-060 : « Ma boîte mail » — conservation des copies d'e-mails.
+MAIL_UNCLASSED_DAYS = env.int("MAIL_UNCLASSED_DAYS", default=365)
+MAIL_KEEP_YEARS_AFTER_CLIENT = env.int("MAIL_KEEP_YEARS_AFTER_CLIENT", default=10)
 # Clé qui chiffre les jetons Microsoft en base (Fernet). Vide : dérivée de DJANGO_SECRET_KEY.
 MAILBOX_TOKEN_KEY = env("MAILBOX_TOKEN_KEY", default="")
 

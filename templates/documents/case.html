@@ -77,7 +77,7 @@
                 {% for e in src.emails.all %}
                   <div class="email-preview">
                     <div><strong>{{ e.subject }}</strong></div>
-                    <div class="muted">{{ e.created_at|date:"d/m/Y H:i" }} · {% if e.delivered %}envoyé{% if e.sent_from %} depuis {{ e.sent_from }}{% endif %} · copie dans Archives › Courriels{% else %}préparé, pas envoyé : aucune boîte Outlook reliée (<a href="{% url 'outlook:mailbox' %}">Ma boîte mail</a>){% endif %}</div>
+                    <div class="muted">{{ e.created_at|date:"d/m/Y H:i" }} · {% if e.delivered %}envoyé{% if e.sent_from %} depuis {{ e.sent_from }}{% endif %} · copie dans Archives › Courriels{% else %}préparé, pas envoyé : aucune boîte Outlook reliée (<a href="{% url 'outlook:mailbox' %}">Liaison Outlook</a>){% endif %}</div>
                     <div style="white-space: pre-line; margin-top:.35rem">{{ e.body }}</div>
                   </div>
                 {% endfor %}
