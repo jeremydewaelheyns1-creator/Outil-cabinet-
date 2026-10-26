@@ -31,6 +31,7 @@ class TimeEntryForm(forms.ModelForm[TimeEntry]):
         visible = visible.exclude(status=Client.Status.FORMER) | visible.filter(pk=current or 0)
         field.queryset = visible.order_by("name", "first_name")
         field.empty_label = "— Sans dossier (interne, formation…) —"
+        field.widget.attrs["data-searchable"] = ""  # liste « à taper » (static/js/app.js)
         field.label_from_instance = lambda c: (  # type: ignore[method-assign,assignment]
             f"{c.display_name}{f' · {c.reference}' if c.reference else ''}"
         )

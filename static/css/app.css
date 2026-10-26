@@ -1423,3 +1423,9 @@ button:active, .button:active { transform: scale(.98); }
 .mb-signature { display: grid; gap: .3rem; margin: .4rem 0; }
 .mb-signature-preview { font-size: .88rem; color: var(--text-muted); border-left: 3px solid var(--border); padding: .2rem .7rem; }
 .mb-signature-preview p { margin: 0; }
+.combo { position: relative; }
+.combo-list { position: absolute; z-index: 30; left: 0; right: 0; top: calc(100% + 4px); margin: 0; padding: .3rem; list-style: none; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; box-shadow: 0 10px 30px rgba(20, 20, 50, .15); max-height: 18rem; overflow-y: auto; }
+.combo-list li { padding: .45rem .7rem; border-radius: 8px; cursor: pointer; }
+.combo-list li:hover, .combo-list li.is-active { background: var(--primary-soft); color: var(--primary); }
+.combo-list .combo-none { color: var(--text-muted); cursor: default; }
+.combo-list .combo-none:hover { background: none; color: var(--text-muted); }

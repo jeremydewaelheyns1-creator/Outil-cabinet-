@@ -192,3 +192,112 @@ document.addEventListener("change", function (event) {
   var field = event.target;
   if (field.matches && field.matches("[data-autosubmit]") && field.form) field.form.submit();
 });
+
+// Liste de dossiers « à taper » : on écrit quelques lettres, l'outil propose les dossiers qui
+// correspondent (sans tenir compte des accents). La vraie liste reste dans la page (sans
+// JavaScript, elle s'affiche telle quelle).
+(function () {
+  function plain(text) {
+    return text.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+  }
+  var counter = 0;
+  document.querySelectorAll("select[data-searchable]").forEach(function (select) {
+    counter += 1;
+    var listId = "choix-" + counter;
+    var box = document.createElement("div");
+    box.className = "combo";
+    var input = document.createElement("input");
+    input.type = "text";
+    input.autocomplete = "off";
+    input.placeholder = "Tapez un nom…";
+    input.setAttribute("role", "combobox");
+    input.setAttribute("aria-autocomplete", "list");
+    input.setAttribute("aria-expanded", "false");
+    input.setAttribute("aria-controls", listId);
+    if (select.id) {
+      input.id = select.id;
+      select.id = select.id + "-liste";
+    }
+    var list = document.createElement("ul");
+    list.className = "combo-list";
+    list.id = listId;
+    list.setAttribute("role", "listbox");
+    list.hidden = true;
+    select.parentNode.insertBefore(box, select);
+    box.appendChild(input);
+    box.appendChild(list);
+    box.appendChild(select);
+    select.hidden = true;
+    select.tabIndex = -1;
+    var options = Array.prototype.filter.call(select.options, function (o) { return o.value; });
+    var current = select.options[select.selectedIndex];
+    if (current && current.value) input.value = current.textContent.trim();
+    var active = -1;
+    function close() { list.hidden = true; input.setAttribute("aria-expanded", "false"); active = -1; }
+    function choose(option) {
+      select.value = option.value;
+      input.value = option.textContent.trim();
+      input.setCustomValidity("");
+      close();
+    }
+    function show() {
+      var words = plain(input.value).split(/\s+/).filter(Boolean);
+      var found = options.filter(function (o) {
+        var label = plain(o.textContent);
+        return words.every(function (w) { return label.indexOf(w) !== -1; });
+      }).slice(0, 8);
+      list.innerHTML = "";
+      found.forEach(function (o, i) {
+        var item = document.createElement("li");
+        item.setAttribute("role", "option");
+        item.id = listId + "-" + i;
+        item.textContent = o.textContent.trim();
+        item.addEventListener("mousedown", function (e) { e.preventDefault(); choose(o); });
+        list.appendChild(item);
+      });
+      if (!found.length) {
+        var none = document.createElement("li");
+        none.className = "combo-none";
+        none.textContent = "Aucun dossier ne correspond";
+        list.appendChild(none);
+      }
+      list.hidden = false;
+      input.setAttribute("aria-expanded", "true");
+      active = -1;
+      return found;
+    }
+    var shown = [];
+    input.addEventListener("focus", function () { shown = show(); });
+    input.addEventListener("input", function () {
+      select.value = "";
+      shown = show();
+    });
+    input.addEventListener("blur", function () {
+      close();
+      if (!select.value) input.value = "";
+      if (select.required && !select.value) input.setCustomValidity("Choisissez un dossier dans la liste.");
+    });
+    input.addEventListener("keydown", function (e) {
+      var items = list.querySelectorAll("[role=option]");
+      if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+        e.preventDefault();
+        if (list.hidden) shown = show();
+        active = Math.max(0, Math.min(items.length - 1, active + (e.key === "ArrowDown" ? 1 : -1)));
+        items.forEach(function (it, i) { it.classList.toggle("is-active", i === active); });
+        if (items[active]) input.setAttribute("aria-activedescendant", items[active].id);
+      } else if (e.key === "Enter" && !list.hidden && shown.length) {
+        e.preventDefault();
+        choose(shown[Math.max(0, active)]);
+      } else if (e.key === "Escape") {
+        close();
+      }
+    });
+    if (select.required) {
+      input.required = true;
+      var form = select.form;
+      if (form) form.addEventListener("submit", function (e) {
+        if (!select.value) { e.preventDefault(); input.setCustomValidity("Choisissez un dossier dans la liste."); input.reportValidity(); }
+      });
+    }
+  });
+})();

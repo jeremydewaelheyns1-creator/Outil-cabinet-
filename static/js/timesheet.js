@@ -20,6 +20,8 @@
     if (entry) entry.remove();
     var client = form.querySelector("[name=client]");
     form.scrollIntoView({ behavior: "smooth", block: "nearest" });
-    if (client) client.focus();
+    var combo = client && client.closest(".combo");
+    var target = combo ? combo.querySelector("input[role=combobox]") : client;
+    if (target) target.focus();
   });
 })();

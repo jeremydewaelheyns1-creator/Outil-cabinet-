@@ -15,6 +15,8 @@ sont inventées.
 - Correction : les heures des e-mails s'affichent à l'heure belge.
 - **Ma signature** (bouton dans « Ma boîte mail ») : votre nom, fonction, téléphone… avec
   mise en forme. Elle s'ajoute en bas de vos messages ; décochez-la pour un message précis.
+- Choisir un dossier en **tapant quelques lettres** (nouveau message, échéance, reclasser,
+  feuille de temps) : l'outil propose les dossiers qui correspondent, accents ignorés.
 - **Logo du cabinet** sous la signature : l'administrateur le dépose une fois dans Paramètres ›
   Réglages du cabinet. Il voyage avec l'e-mail, le client le voit tout de suite.
 

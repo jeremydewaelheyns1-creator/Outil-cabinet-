@@ -198,7 +198,7 @@
           <div class="ts-times"><div><label for="e-jour">Jour</label><input id="e-jour" type="date" name="jour" value="{{ today|date:'Y-m-d' }}" required></div><div><label for="e-heure">Heure</label><input id="e-heure" type="time" name="heure" step="300"></div></div>
           <label for="e-fin">Jusqu'à (facultatif)</label><input id="e-fin" type="time" name="fin" step="300">
           <label for="e-dossier">Dossier</label>
-          <select id="e-dossier" name="dossier" required>{% for c in all_clients %}<option value="{{ c.pk }}"{% if brief and brief.client.pk == c.pk %} selected{% endif %}>{{ c.display_name }}</option>{% endfor %}</select>
+          <select id="e-dossier" name="dossier" required data-searchable>{% for c in all_clients %}<option value="{{ c.pk }}"{% if brief and brief.client.pk == c.pk %} selected{% endif %}>{{ c.display_name }}</option>{% endfor %}</select>
           <label for="e-texte">Commentaire</label><input id="e-texte" type="text" name="commentaire" maxlength="200" placeholder="Ex. : Rendez-vous" required>
           <label class="mb-check"><input type="checkbox" name="rappel" value="1" checked> Me rappeler le jour J</label>
           <div class="mb-dialog-actions"><button type="submit">Créer l'échéance</button><a class="button button-secondary" href="{{ selected_url }}">Annuler</a></div>
@@ -209,7 +209,7 @@
           <input type="hidden" name="retour" value="{{ here }}">
           <h2 id="mb-reclasser-titre">Reclasser dans…</h2>
           <label for="r-cible">Dossier (ou personne physique sous une société)</label>
-          <select id="r-cible" name="cible" required><option value="">— Choisir —</option>{% for value, label in reclass_options %}<option value="{{ value }}">{{ label }}</option>{% endfor %}</select>
+          <select id="r-cible" name="cible" required data-searchable><option value="">— Choisir —</option>{% for value, label in reclass_options %}<option value="{{ value }}">{{ label }}</option>{% endfor %}</select>
           <div class="mb-dialog-actions"><button type="submit">Classer ici</button><a class="button button-secondary" href="{{ selected_url }}">Annuler</a></div>
         </form>
       </dialog>
@@ -233,7 +233,7 @@
     <label for="n-a">À</label><input id="n-a" type="email" name="a" required>
     <label for="n-objet">Objet</label><input id="n-objet" type="text" name="objet" maxlength="300">
     <label for="n-dossier">Dossier (facultatif)</label>
-    <select id="n-dossier" name="dossier"><option value="">—</option>{% for c in all_clients %}<option value="{{ c.pk }}">{{ c.display_name }}</option>{% endfor %}</select>
+    <select id="n-dossier" name="dossier" data-searchable><option value="">—</option>{% for c in all_clients %}<option value="{{ c.pk }}">{{ c.display_name }}</option>{% endfor %}</select>
     <label for="n-texte">Message</label>
     {% include "mailbox/_editor.html" with id="n-texte" label="Message" rows=8 %}
     {% include "mailbox/_signature_choice.html" %}
