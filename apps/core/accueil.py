@@ -31,16 +31,26 @@ from apps.tasks.models import Task
 DONE = (Task.Status.DONE, Task.Status.NOT_APPLICABLE)
 MONTHS = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre",
           "octobre", "novembre", "décembre"]  # fmt: skip
-# Petit bonus en bas de l'Accueil : les sites officiels qu'on ouvre tout le temps. Adresses
-# déjà utilisées ailleurs dans l'outil (fiche client, sites officiels).
+# Petit bonus en bas de l'Accueil : les sites officiels qu'on ouvre tout le temps, par groupe.
+# Liens directs publiés par l'ITAA et le SPF Finances (vérifiés le 26/10/2026). Tax-on-web
+# (version mandataire), Belcotax-on-web et le registre UBO s'ouvrent depuis MyMinfin : leurs
+# adresses directes changent (année dans l'adresse), le lien MyMinfin, lui, reste valable.
+MYMINFIN = "https://eservices.minfin.fgov.be/myminfin-web/pages/public"
 LINKS = (
-    ("MyMinfin", "Intervat, Biztax, Tax-on-web, registre UBO",
-     "https://eservices.minfin.fgov.be/myminfin-web/"),
-    ("BCE publique", "Banque-Carrefour des Entreprises",
-     "https://kbopub.economie.fgov.be/"),
-    ("Centrale des bilans", "Banque Nationale : comptes annuels",
-     "https://consult.cbso.nbb.be/consult-enterprise/"),
-    ("Moniteur belge", "Publications des sociétés", "https://www.ejustice.just.fgov.be/cgi_tsv/list.pl"),
+    ("SPF Finances", (
+        ("MyMinfin", "Accès à toutes les applications", MYMINFIN),
+        ("Intervat", "Déclarations et listings TVA", "https://eservices.minfin.fgov.be/InterVAT/extra/home"),
+        ("Biztax", "Déclarations ISOC et INR", "https://eservices.minfin.fgov.be/BizTaxFO/home.action"),
+        ("Tax-on-web", "IPP — via MyMinfin, onglet mandataire", MYMINFIN),
+        ("Belcotax-on-web", "Fiches 281 — via MyMinfin", MYMINFIN),
+        ("Registre UBO", "Bénéficiaires effectifs — via MyMinfin", MYMINFIN),
+        ("Finprof", "Mandats et procurations du cabinet", "https://eservices.minfin.fgov.be/FINPROF2/extra/login.do"),
+    )),
+    ("Entreprises", (
+        ("BCE publique", "Banque-Carrefour des Entreprises", "https://kbopub.economie.fgov.be/"),
+        ("Centrale des bilans", "Comptes annuels (BNB)", "https://consult.cbso.nbb.be/consult-enterprise/"),
+        ("Moniteur belge", "Publications des sociétés", "https://www.ejustice.just.fgov.be/cgi_tsv/list.pl"),
+    )),
 )  # fmt: skip
 DAYS = ["lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche"]
 
@@ -77,6 +87,8 @@ FAMILIES = (
 )  # fmt: skip
 BY_KIND = {kind: f for f in FAMILIES for kind in f.kinds}
 SUB_LINES = {"tva_trimestrielle": "Trimestriels", "tva_mensuelle": "Mensuels"}
+# Calendrier : préciser la TVA (mensuels le 20, trimestriels le 25 depuis 2025).
+CALENDAR_LABELS = {"tva_mensuelle": "TVA mensuelle", "tva_trimestrielle": "TVA trimestrielle"}
 STATE: dict[str, tuple[str, str]] = {
     Task.Status.TODO: ("pas commencé", "gris"),
     Task.Status.IN_PROGRESS: ("en cours", "orange"),
@@ -202,7 +214,7 @@ def month_calendar(today: date, tasks: list[Task]) -> dict[str, object]:
     for task in tasks:
         family = BY_KIND.get(task.kind)  # seulement les échéances fiscales (pas les rappels perso)
         if family and task.due_date.year == today.year and task.due_date.month == today.month:
-            label = family.label
+            label = CALENDAR_LABELS.get(task.kind, family.label)
             if label not in marks[task.due_date.day]:
                 marks[task.due_date.day].append(label)
     cells: list[dict[str, object]] = [{"day": 0} for _ in range(first_weekday)]

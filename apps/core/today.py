@@ -128,7 +128,7 @@ def _todo(user: User, clients: QuerySet[Client], today: date) -> list[Item]:
             "tache", f"{task.title}",
             f"{task.client.display_name} · "
             + (f"en retard de {late} j" if late else "pour aujourd'hui"),
-            reverse("clients:tasks", args=[task.client_id]), "Ouvrir",
+            task.work_url, "Ouvrir",
             "danger" if late else "primary",
         ))  # fmt: skip
     silent = unanswered().filter(client__in=clients).values("client").annotate(n=Count("pk"))

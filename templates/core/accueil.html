@@ -7,7 +7,7 @@
       <span class="acc-hello">Bonjour {{ user.first_name|default:user.get_short_name }}, nous sommes le {{ today_label }}</span>
       <h1>{% if center %}{{ center.family.headline }}{% else %}Une période calme{% endif %}</h1>
       <p class="acc-sub">
-        {% if center %}{{ center.family.label }}{% if center.periods %} : {{ center.periods }}{% endif %}, au plus tard le {{ deadline_label }}.
+        {% if center %}{{ center.family.label }}{% if center.periods %} : {{ center.periods }}{% endif %}, au plus tard le <span class="nowrap">{{ deadline_label }}</span>.
         {% elif upcoming %}Pas de grande échéance avant {{ upcoming.family.before }} du {{ upcoming_date }} : mes dossiers à traiter{% if hybrid %}, puis les dossiers hybrides que je peux prendre{% endif %}.
         {% else %}Pas de grande échéance à venir pour mes dossiers.{% endif %}
       </p>
@@ -55,7 +55,7 @@
               <div class="table-wrap"><table class="acc-table">
                 <thead><tr><th>Dossier</th><th>Quoi</th><th>Pour le</th><th>Où on en est</th></tr></thead>
                 <tbody>{% for r in rows|slice:":8" %}
-                  <tr><td><a href="{% url 'clients:open' r.task.client_id %}"><strong>{{ r.task.client.display_name }}</strong></a></td>
+                  <tr><td><a href="{{ r.task.work_url }}"><strong>{{ r.task.client.display_name }}</strong></a></td>
                     <td class="muted">{{ r.task.period_label|default:r.task.title }}</td>
                     <td class="mono-num">{{ r.task.due_date|date:"d/m" }}</td>
                     <td><span class="acc-pill acc-{{ r.tone }}">{{ r.state }}</span></td></tr>
@@ -75,7 +75,7 @@
             <div class="table-wrap"><table class="acc-table">
               <thead><tr><th>Dossier</th><th>Quoi</th><th>Pour le</th><th>Où on en est</th></tr></thead>
               <tbody>{% for r in todo %}
-                <tr><td><a href="{% url 'clients:open' r.task.client_id %}"><strong>{{ r.task.client.display_name }}</strong></a></td>
+                <tr><td><a href="{{ r.task.work_url }}"><strong>{{ r.task.client.display_name }}</strong></a></td>
                   <td class="muted">{{ r.task.title }}</td>
                   <td class="mono-num">{{ r.task.due_date|date:"d/m" }}</td>
                   <td><span class="acc-pill acc-{{ r.tone }}">{{ r.state }}</span></td></tr>
@@ -157,7 +157,10 @@
       {% endif %}
       <section class="acc-links" aria-labelledby="acc-links-title">
         <h2 id="acc-links-title">Sites utiles</h2>
-        <ul>{% for name, detail, url in links %}<li><a href="{{ url }}" target="_blank" rel="noopener noreferrer">{{ name }} <span aria-hidden="true">↗</span></a>{% if detail %}<span>{{ detail }}</span>{% endif %}</li>{% endfor %}</ul>
+        {% for group, items in links %}
+          <h3>{{ group }}</h3>
+          <ul>{% for name, detail, url in items %}<li><a href="{{ url }}" target="_blank" rel="noopener noreferrer">{{ name }} <span aria-hidden="true">↗</span></a>{% if detail %}<span>{{ detail }}</span>{% endif %}</li>{% endfor %}</ul>
+        {% endfor %}
       </section>
     </aside>
   </div>

@@ -158,6 +158,18 @@ class Task(models.Model):
         steps = list(self.steps.all())
         return sum(1 for s in steps if s.done), len(steps)
 
+    # Où l'on travaille vraiment cette échéance (le reste : la liste des échéances du dossier).
+    WORK_PAGES: ClassVar[dict[str, str]] = {
+        "tva_mensuelle": "clients:vat",
+        "tva_trimestrielle": "clients:vat",
+    }
+
+    @property
+    def work_url(self) -> str:
+        from django.urls import reverse
+
+        return reverse(self.WORK_PAGES.get(self.kind, "clients:tasks"), args=[self.client_id])
+
     @property
     def is_untouched(self) -> bool:
         """Tâche générée que personne n'a encore travaillée : peut être retirée sans perte."""

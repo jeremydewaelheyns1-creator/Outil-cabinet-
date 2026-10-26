@@ -3,7 +3,9 @@
 Idempotent : relancer la génération ne crée jamais de doublon (clé client + règle + période)
 et ne touche jamais une tâche déjà travaillée. Pour chaque client et chaque règle :
 - client concerné : les tâches manquantes de la fenêtre (passé récent → 12 mois) sont créées ;
-- client plus concerné : ses tâches futures encore intactes sont retirées.
+- client plus concerné : ses tâches futures encore intactes sont retirées ;
+- règle modifiée (ex. date limite déplacée) : les tâches futures encore intactes prennent la
+  nouvelle date limite ; une tâche déjà travaillée garde la sienne.
 """
 
 from __future__ import annotations
@@ -25,9 +27,11 @@ from .rules import Rule, RuleSet, load_rules
 class Result:
     created: int = 0
     removed: int = 0
+    moved: int = 0
 
     def __iadd__(self, other: Result) -> Result:
         self.created += other.created
+        self.moved += other.moved
         self.removed += other.removed
         return self
 
@@ -62,14 +66,20 @@ def generate_for_client(
         if not rule.applies_to(client):
             result.removed += _remove_untouched(client, rule, today)
             continue
-        existing = set(
-            Task.objects.filter(client=client, kind=rule.code, generated=True).values_list(
-                "period_key", flat=True
-            )
-        )
+        tasks = {
+            t.period_key: t
+            for t in Task.objects.filter(client=client, kind=rule.code, generated=True)
+        }
+        existing = set(tasks)
         # Les échéances tombent jusqu'à ~8 mois après la période : on part d'un an plus tôt.
         for period in rule.periods(client, window_start.year - 1, window_end.year):
             if period.key in existing:
+                task = tasks[period.key]
+                due = rule.due_date(period)
+                if due and due != task.due_date and task.due_date >= today and task.is_untouched:
+                    task.due_date = due
+                    task.save(update_fields=["due_date", "updated_at"])
+                    result.moved += 1
                 continue
             due = rule.due_date(period)
             if due is None or not (window_start <= due <= window_end):

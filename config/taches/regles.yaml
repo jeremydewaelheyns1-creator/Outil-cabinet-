@@ -52,7 +52,8 @@ regles:
     conditions:
       statut_tva: [subject, mixed]
       periodicite_tva: [quarterly]
-    echeance: {type: jour_du_mois_suivant, mois_apres: 1, jour: 20}
+    # Trimestriels : le 25 du mois suivant (nouvelle « chaîne TVA », depuis le 1er janvier 2025).
+    echeance: {type: jour_du_mois_suivant, mois_apres: 1, jour: 25}
     report_jour_ouvrable: true
     responsable: assistant
     etapes:

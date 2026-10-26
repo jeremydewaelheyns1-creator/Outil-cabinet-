@@ -3,6 +3,17 @@
 Ce qui a été ajouté à l'outil, du plus récent au plus ancien. Toutes les données de la démo
 sont inventées.
 
+## 26 octobre 2026 — Petites corrections de l'Accueil
+
+- TVA : les **trimestriels sont dus le 25** du mois suivant (règle depuis 2025), les mensuels le
+  20. Le calendrier les distingue (« TVA mensuelle », « TVA trimestrielle »). Les échéances
+  déjà créées et pas encore travaillées prennent la nouvelle date toutes seules.
+- « Sites utiles » plus complets, en deux groupes : SPF Finances (MyMinfin, Intervat, Biztax,
+  Tax-on-web, Belcotax-on-web, registre UBO, Finprof) et Entreprises (BCE, Centrale des bilans,
+  Moniteur belge).
+- Une échéance TVA ouvre directement l'onglet « Déclaration TVA » du dossier.
+- La date limite du titre ne se coupe plus en deux lignes.
+
 ## 26 octobre 2026 — Ma boîte mail : mise en forme et envoi programmé
 
 - En répondant ou en écrivant un nouveau message : **gras**, *italique*, souligné, listes à

@@ -46,12 +46,12 @@ def company(**fields):
     return Client(name="Fictive", **defaults)
 
 
-def test_vat_quarterly_due_the_20th_of_following_month_shifted_to_business_day():
+def test_vat_quarterly_due_the_25th_of_following_month_shifted_to_business_day():
     r = rule("tva_trimestrielle")
     periods = {p.key: p for p in r.periods(company(), 2026, 2026)}
-    assert r.due_date(periods["2026-T3"]) == date(2026, 10, 20)  # mardi
-    # 20 juillet 2026 = lundi ; 20 avril 2026 = lundi ; 20 janvier 2027 = mercredi.
-    assert r.due_date(periods["2026-T2"]) == date(2026, 7, 20)
+    # Trimestriels : le 25 depuis 2025. Le 25 octobre 2026 est un dimanche → lundi 26.
+    assert r.due_date(periods["2026-T3"]) == date(2026, 10, 26)
+    assert r.due_date(periods["2026-T2"]) == date(2026, 7, 27)  # 25 juillet = samedi
     assert periods["2026-T3"].label == "3e trimestre 2026"
 
 

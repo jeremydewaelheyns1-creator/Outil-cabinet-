@@ -88,7 +88,7 @@ def test_ipp_season_then_annual_accounts_in_july(user):
 def test_calendar_marks_my_deadlines_of_the_month(user):
     task(mine(user), "tva_trimestrielle", date(2026, 10, 20))
     cal = accueil.month_calendar(OCT, list(Task.objects.all()))
-    assert cal["name"] == "octobre 2026" and cal["legend"] == [(20, "TVA")]
+    assert cal["name"] == "octobre 2026" and cal["legend"] == [(20, "TVA trimestrielle")]
     marked = [c["day"] for c in cal["cells"] if c.get("mark")]
     assert marked == [20] and cal["cells"][3]["day"] == 1  # le 1er octobre 2026 est un jeudi
 
@@ -263,3 +263,11 @@ def test_dates_in_words_are_in_belgian_time():
     winter = datetime(2026, 10, 28, 8, 0, tzinfo=UTC)  # 9 h à Bruxelles
     html = Template('{{ d|date_fr:"j F à H:i" }}').render(Context({"d": winter}))
     assert html == "28 octobre à 09:00"
+
+
+def test_vat_deadline_opens_the_vat_tab(user):
+    client = mine(user)
+    vat = task(client, "tva_trimestrielle", OCT, label="3e trimestre 2026")
+    other = task(client, "isoc", OCT, label="2025")
+    assert vat.work_url == reverse("clients:vat", args=[client.pk])
+    assert other.work_url == reverse("clients:tasks", args=[client.pk])

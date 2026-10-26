@@ -1429,3 +1429,4 @@ button:active, .button:active { transform: scale(.98); }
 .combo-list li:hover, .combo-list li.is-active { background: var(--primary-soft); color: var(--primary); }
 .combo-list .combo-none { color: var(--text-muted); cursor: default; }
 .combo-list .combo-none:hover { background: none; color: var(--text-muted); }
+.acc-links h3 { margin: .7rem 0 .35rem; font-size: .72rem; text-transform: uppercase; letter-spacing: .06em; color: var(--text-muted); font-weight: 700; }

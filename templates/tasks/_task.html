@@ -8,7 +8,7 @@
   <div class="task-main">
     <div class="task-title">{{ t.title }}</div>
     <div class="task-meta">
-      {% if show_client %}<a href="{% url 'clients:tasks' t.client_id %}">{{ t.client.display_name }}</a> ·{% endif %}
+      {% if show_client %}<a href="{{ t.work_url }}">{{ t.client.display_name }}</a> ·{% endif %}
       <span class="badge">{{ t.get_category_display }}</span>
       {% if p.1 %}<span>{{ p.0 }}/{{ p.1 }} étapes</span>{% endif %}
       {% if not t.generated %}<span class="muted">ajoutée à la main</span>{% endif %}

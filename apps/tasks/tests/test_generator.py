@@ -37,7 +37,7 @@ def test_generation_creates_expected_tasks_once():
         "assemblee_generale", "comptes_annuels", "isoc", "listing_clients_tva", "tva_trimestrielle"
     ]  # fmt: skip
     q3 = client.tasks.get(kind="tva_trimestrielle", period_key="2026-T3")
-    assert q3.due_date == date(2026, 10, 20)
+    assert q3.due_date == date(2026, 10, 26)  # le 25 (dimanche) → lundi 26
     assert q3.steps.count() == 5
     # Fenêtre : rien avant 60 jours en arrière, rien au-delà d'environ 12 mois.
     assert not client.tasks.filter(due_date__lt=date(2026, 8, 14)).exists()
@@ -103,3 +103,22 @@ def test_generate_all_runs_once_a_day():
     run = generate_all()
     assert run.created > 0 and run.clients == 1
     assert generate_all_if_due() is None
+
+
+def test_new_deadline_rule_moves_untouched_future_tasks_only(monkeypatch):
+    from apps.core.testing.factories import ClientFactory
+    from apps.tasks import generator
+    from apps.tasks.models import Task
+
+    client = ClientFactory(vat_status="subject", vat_periodicity="quarterly")
+    today = date(2026, 10, 1)
+    generator.generate_for_client(client, today)
+    q3 = client.tasks.get(kind="tva_trimestrielle", period_key="2026-T3")
+    q4 = client.tasks.get(kind="tva_trimestrielle", period_key="2026-T4")
+    Task.objects.filter(pk=q3.pk).update(due_date=date(2026, 10, 20))  # ancienne règle (le 20)
+    Task.objects.filter(pk=q4.pk).update(due_date=date(2027, 1, 20), notes="déjà travaillée")
+    result = generator.generate_for_client(client, today)
+    q3.refresh_from_db()
+    q4.refresh_from_db()
+    assert q3.due_date == date(2026, 10, 26) and result.moved == 1
+    assert q4.due_date == date(2027, 1, 20)  # travaillée : on n'y touche pas
