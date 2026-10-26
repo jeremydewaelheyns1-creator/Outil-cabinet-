@@ -223,3 +223,32 @@ class Signature(models.Model):
 
     def __str__(self) -> str:
         return f"Signature de {self.user}"
+
+
+class MailDraft(models.Model):
+    """Brouillon : message en cours d'écriture, enregistré tout seul pendant la frappe.
+
+    Seul son auteur le voit. Effacé dès que le message part (ou est programmé), quand l'auteur
+    le supprime, ou après 30 jours sans modification.
+    """
+
+    KEEP_DAYS = 30
+
+    owner = models.ForeignKey(User, on_delete=models.CASCADE, related_name="mail_drafts")
+    reply_to = models.ForeignKey(
+        MailMessage, on_delete=models.CASCADE, null=True, blank=True, related_name="+",
+        verbose_name="réponse à",
+    )  # fmt: skip
+    to = models.CharField("à", max_length=254, blank=True)
+    subject = models.CharField("objet", max_length=300, blank=True)
+    html = models.TextField("message", blank=True)  # déjà nettoyé (richtext.clean)
+    client = models.ForeignKey(Client, on_delete=models.SET_NULL, null=True, blank=True)
+    created_at = models.DateTimeField(default=timezone.now, editable=False)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering: ClassVar = ["-updated_at"]
+        verbose_name = "brouillon"
+
+    def __str__(self) -> str:
+        return self.subject or self.to or "(brouillon)"

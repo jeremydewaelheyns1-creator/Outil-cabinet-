@@ -17,7 +17,14 @@ from apps.core.models import User
 from apps.outlook import graph
 
 from . import classify, richtext
-from .models import Awaiting, MailAttachment, MailExclusion, MailMessage, ScheduledMail
+from .models import (
+    Awaiting,
+    MailAttachment,
+    MailDraft,
+    MailExclusion,
+    MailMessage,
+    ScheduledMail,
+)
 from .sync import delete
 
 
@@ -258,3 +265,46 @@ def file_attachment(attachment: MailAttachment, user: User, place: str = "") -> 
     attachment.filed_at = timezone.now()
     attachment.save(update_fields=["filed_document", "filed_at"])
     return f"« {attachment.name} » rangé dans le dossier {client.display_name}."
+
+
+# --- Brouillons --------------------------------------------------------------------------------
+
+
+def save_draft(
+    owner: User,
+    *,
+    draft_id: str,
+    html: str,
+    to: str = "",
+    subject: str = "",
+    client: Client | None = None,
+    reply_to: MailMessage | None = None,
+) -> MailDraft | None:
+    """Enregistre (ou met à jour) le brouillon de l'auteur. Rien d'écrit : rien d'enregistré."""
+    draft = (
+        MailDraft.objects.filter(pk=int(draft_id), owner=owner).first()
+        if draft_id.isdigit()
+        else None
+    )
+    if draft_id.isdigit() and draft is None:
+        return None  # déjà envoyé ou supprimé entre-temps : ne pas le recréer
+    if not richtext.to_text(html) and not to.strip() and not subject.strip():
+        return draft
+    if draft is None:
+        draft = MailDraft(owner=owner, reply_to=reply_to)
+    draft.to, draft.subject = to.strip()[:254], subject.strip()[:300]
+    draft.html, draft.client = html, client
+    draft.save()
+    return draft
+
+
+def discard_draft(owner: User, draft_id: str) -> None:
+    if draft_id.isdigit():
+        MailDraft.objects.filter(pk=int(draft_id), owner=owner).delete()
+
+
+def purge_drafts(now: datetime | None = None) -> int:
+    """Brouillons oubliés (30 jours sans modification) : effacés."""
+    limit = (now or timezone.now()) - timedelta(days=MailDraft.KEEP_DAYS)
+    deleted, _ = MailDraft.objects.filter(updated_at__lt=limit).delete()
+    return deleted

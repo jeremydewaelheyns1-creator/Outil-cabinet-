@@ -15,7 +15,7 @@ from django.contrib import messages
 from django.contrib.postgres.search import SearchHeadline, SearchQuery, SearchRank
 from django.core.exceptions import ValidationError
 from django.db.models import Count, F, Q, QuerySet
-from django.http import FileResponse, Http404, HttpResponse
+from django.http import FileResponse, Http404, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
@@ -31,7 +31,7 @@ from apps.outlook import graph
 from apps.outlook.models import MailboxLink
 
 from . import classify, richtext, services
-from .models import Awaiting, MailAttachment, MailMessage, ScheduledMail, Signature
+from .models import Awaiting, MailAttachment, MailDraft, MailMessage, ScheduledMail, Signature
 from .sync import SEARCH_CONFIG, sync_link
 
 MARK_START, MARK_END = "⁣[[", "]]⁣"  # repères invisibles, remplacés par <mark>
@@ -178,11 +178,15 @@ def inbox(request: AppRequest) -> HttpResponse:
     )
     title, items, attachments, awaiting = "Boîte de réception", [], [], []
     scheduled: list[ScheduledMail] = []
+    drafts: list[MailDraft] = []
     if text:
         view, title = "recherche", f"Résultats pour « {text} »"
         items = _search(request, text, dossier)
     elif view == "envoyes":
         title, items = "Envoyés", list(mine.filter(folder=MailMessage.Folder.SENT)[:100])
+    elif view == "brouillons":
+        title = "Brouillons"
+        drafts = list(request.user.mail_drafts.select_related("reply_to", "client"))
     elif view == "programmes":
         title = "Programmés"
         scheduled = list(
@@ -230,6 +234,12 @@ def inbox(request: AppRequest) -> HttpResponse:
         "attachments": attachments,
         "awaiting": awaiting,
         "scheduled": scheduled,
+        "drafts": drafts,
+        "draft": (
+            request.user.mail_drafts.filter(pk=int(request.GET["brouillon"])).first()
+            if request.GET.get("brouillon", "").isdigit()
+            else None
+        ),
         "selected": selected,
         "dossier": dossier,
         "person": person,
@@ -240,6 +250,7 @@ def inbox(request: AppRequest) -> HttpResponse:
             .filter(folder="inbox", classed_at__isnull=True, read_at__isnull=True)
             .count(),
             "awaiting": request.user.awaiting.filter(done_at__isnull=True).count(),
+            "drafts": request.user.mail_drafts.count(),
             "scheduled": request.user.scheduled_mails.filter(
                 sent_at__isnull=True, cancelled_at__isnull=True, failed_at__isnull=True
             ).count(),
@@ -417,6 +428,7 @@ def repondre(request: AppRequest, message_id: str) -> HttpResponse:
         if send_at is not None:
             item = services.schedule(request.user, send_at=send_at, html=html,
                                      reply_to=message, wait=wait)  # fmt: skip
+            services.discard_draft(request.user, request.POST.get("brouillon", ""))
             _log(request, "réponse programmée", str(message.pk))
             messages.success(request, _scheduled_message(item))
             return redirect(_query_for(request, message))
@@ -425,6 +437,7 @@ def repondre(request: AppRequest, message_id: str) -> HttpResponse:
         text = " ".join(error.messages) if isinstance(error, ValidationError) else str(error)
         messages.error(request, f"Réponse non envoyée : {text}")
         return redirect(f"{_query_for(request, message)}&ouvrir=repondre")
+    services.discard_draft(request.user, request.POST.get("brouillon", ""))
     _log(request, "réponse envoyée", str(message.pk))
     messages.success(request, "Réponse envoyée depuis votre boîte Outlook. L'e-mail reste "
                      "ici jusqu'à « Traité : classer ».")  # fmt: skip
@@ -446,6 +459,7 @@ def nouveau(request: AppRequest) -> HttpResponse:
         if send_at is not None:
             item = services.schedule(request.user, send_at=send_at, to=to, subject=subject,
                                      html=html, client=client, wait=wait)  # fmt: skip
+            services.discard_draft(request.user, request.POST.get("brouillon", ""))
             _log(request, "nouveau message programmé", "—")
             messages.success(request, _scheduled_message(item))
             return redirect(f"{reverse('boite:inbox')}?vue=programmes")
@@ -455,9 +469,41 @@ def nouveau(request: AppRequest) -> HttpResponse:
         text = " ".join(error.messages) if isinstance(error, ValidationError) else str(error)
         messages.error(request, f"Message non envoyé : {text}")
         return redirect(f"{reverse('boite:inbox')}?ouvrir=nouveau")
+    services.discard_draft(request.user, request.POST.get("brouillon", ""))
     _log(request, "nouveau message envoyé", "—")
     messages.success(request, "Message envoyé depuis votre boîte Outlook.")
     return redirect("boite:inbox")
+
+
+@require_POST
+def brouillon_enregistrer(request: AppRequest) -> HttpResponse:
+    """Enregistrement automatique pendant la frappe (appelé par la page, sans la recharger)."""
+    reply_to = None
+    if request.POST.get("repondre"):
+        reply_to = _message(request, request.POST["repondre"])
+    client = None
+    if request.POST.get("dossier", "").isdigit():
+        client = (
+            Client.objects.visible_to(request.user).filter(pk=int(request.POST["dossier"])).first()
+        )
+    html, _ = richtext.body(request.POST.get("html", ""), request.POST.get("texte", ""))
+    draft = services.save_draft(
+        request.user, draft_id=request.POST.get("brouillon", ""), html=html,
+        to=request.POST.get("a", ""), subject=request.POST.get("objet", ""),
+        client=client, reply_to=reply_to,
+    )  # fmt: skip
+    if draft is None:
+        return JsonResponse({"id": ""})
+    return JsonResponse(
+        {"id": draft.pk, "heure": timezone.localtime(draft.updated_at).strftime("%H:%M")}
+    )
+
+
+@require_POST
+def brouillon_supprimer(request: AppRequest, draft_id: int) -> HttpResponse:
+    services.discard_draft(request.user, str(draft_id))
+    messages.success(request, "Brouillon supprimé.")
+    return redirect(f"{reverse('boite:inbox')}?vue=brouillons")
 
 
 def _scheduled(request: AppRequest, item_id: int) -> ScheduledMail:

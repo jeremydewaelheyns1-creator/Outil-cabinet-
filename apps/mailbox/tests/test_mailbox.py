@@ -619,3 +619,61 @@ def test_logo_removed_before_a_scheduled_send_leaves_no_broken_image(user, link,
     services.send_due(timezone.now() + delta(hours=2))
     message = fake.sent_mails[0]["message"]
     assert "cid:" not in message["body"]["content"] and "attachments" not in message
+
+
+# --- Brouillons ----------------------------------------------------------------------------------
+
+
+def test_draft_saved_while_typing_resumed_then_erased_when_sent(web, user, link, fake, make_user):
+    from django.test import Client as Browser
+
+    from apps.mailbox.models import MailDraft
+
+    url = reverse("boite:brouillon_enregistrer")
+    assert web.post(url, {"html": "<p> </p>"}).json() == {"id": ""}  # rien d'écrit
+    first = web.post(
+        url, {"a": "client@exemple.test", "objet": "Bilan", "html": "<p>Bon<b>jour</b></p>"}
+    ).json()
+    again = web.post(url, {"brouillon": first["id"], "a": "client@exemple.test", "objet": "Bilan",
+                           "html": "<p>Bonjour, voici</p><script>x</script>"}).json()  # fmt: skip
+    draft = MailDraft.objects.get()
+    assert again["id"] == first["id"] == draft.pk and draft.html == "<p>Bonjour, voici</p>"
+    assert "Bilan" in inbox_html(web, vue="brouillons")
+    assert (
+        "Bonjour, voici"
+        in web.get(
+            reverse("boite:inbox"), {"ouvrir": "nouveau", "brouillon": draft.pk}
+        ).content.decode()
+    )
+    # Personne d'autre ne le voit ni ne le modifie.
+    colleague = Browser()
+    colleague.force_login(make_user())
+    colleague.post(url, {"brouillon": draft.pk, "html": "<p>piraté</p>"})
+    colleague.post(reverse("boite:brouillon_supprimer", args=[draft.pk]))
+    draft.refresh_from_db()
+    assert draft.html == "<p>Bonjour, voici</p>"
+    web.post(reverse("boite:nouveau"), {"a": "client@exemple.test", "objet": "Bilan",
+                                        "html": draft.html, "brouillon": draft.pk})  # fmt: skip
+    assert fake.sent_mails and not MailDraft.objects.exists()
+    # Un enregistrement en retard (après l'envoi) ne recrée pas le brouillon.
+    web.post(url, {"brouillon": draft.pk, "html": "<p>Bonjour, voici</p>"})
+    assert not MailDraft.objects.exists()
+
+
+def test_reply_draft_and_forgotten_drafts_purged(web, user, link, fake, bakery):
+    from datetime import timedelta as delta
+
+    from apps.mailbox import services
+    from apps.mailbox.models import MailDraft
+
+    fake.inbox = [mail("m1", sender="compta@boulangerie.test", subject="Question")]
+    sync.sync_link(link)
+    message = MailMessage.objects.get()
+    web.post(reverse("boite:brouillon_enregistrer"), {"repondre": message.pk, "html": "<p>Oui</p>"})
+    draft = MailDraft.objects.get()
+    assert draft.reply_to == message
+    page = web.get(reverse("boite:inbox"), {"message": message.pk, "ouvrir": "repondre",
+                                             "brouillon": draft.pk}).content.decode()  # fmt: skip
+    assert "<p>Oui</p>" in page
+    MailDraft.objects.update(updated_at=timezone.now() - delta(days=31))
+    assert services.purge_drafts() == 1

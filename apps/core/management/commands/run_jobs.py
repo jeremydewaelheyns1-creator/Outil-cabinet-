@@ -41,6 +41,7 @@ class Command(BaseCommand):
             self.stdout.write(f"Documents à revoir : {freshness.follow_up()} tâches créées")
             self.stdout.write(f"Résumés mensuels : {digest.monthly()} employés")
             self.stdout.write(f"Copies d'e-mails expirées effacées : {mail_sync.purge()}")
+            self.stdout.write(f"Brouillons oubliés effacés : {mail_services.purge_drafts()}")
             self.stdout.write(f"Dossiers hybrides rendus libres : {hybrid.release_stale()}")
         self.stdout.write(f"Relances préparées : {documents.send_due_reminders()}")
         self.stdout.write(f"Cartes d'identité demandées : {identity.request_renewals()}")

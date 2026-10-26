@@ -3,6 +3,14 @@
 Ce qui a été ajouté à l'outil, du plus récent au plus ancien. Toutes les données de la démo
 sont inventées.
 
+## 26 octobre 2026 — Brouillons dans Ma boîte mail
+
+- Ce que vous écrivez (nouveau message ou réponse) est **enregistré tout seul** pendant la
+  frappe : « Brouillon enregistré à 20:53 ». Rien n'est perdu si vous fermez la fenêtre.
+- Nouvelle rubrique **« Brouillons »** : « Reprendre » rouvre le message là où vous l'aviez
+  laissé ; « Supprimer » l'efface. Envoyé ou programmé, le brouillon disparaît.
+- Un brouillon oublié est effacé après 30 jours.
+
 ## 26 octobre 2026 — Petites corrections de l'Accueil
 
 - TVA : les **trimestriels sont dus le 25** du mois suivant (règle depuis 2025), les mensuels le

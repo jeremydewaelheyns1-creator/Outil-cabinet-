@@ -145,3 +145,52 @@
     update();
   });
 })();
+
+// Brouillons : ce qui est écrit est enregistré tout seul (2 secondes après la dernière frappe,
+// et en quittant un champ). Rien n'est perdu si la fenêtre se ferme.
+(function () {
+  "use strict";
+  document.querySelectorAll("form[data-draft]").forEach(function (form) {
+    var status = form.querySelector("[data-draft-status]");
+    var idField = form.querySelector("input[name=brouillon]");
+    var timer = null;
+    var last = "";
+    function payload() {
+      var data = new FormData();
+      ["csrfmiddlewaretoken", "html", "texte", "a", "objet", "dossier"].forEach(function (name) {
+        var field = form.elements[name];
+        if (field && field.value !== undefined) data.append(name, field.value);
+      });
+      data.append("brouillon", idField.value);
+      if (form.dataset.reply) data.append("repondre", form.dataset.reply);
+      return data;
+    }
+    function save() {
+      timer = null;
+      var data = payload();
+      var key = [data.get("html"), data.get("a"), data.get("objet"), data.get("dossier")].join("|");
+      if (key === last) return;
+      last = key;
+      fetch(form.dataset.draft, { method: "POST", body: data, credentials: "same-origin",
+                                  headers: { "X-Requested-With": "fetch" } })
+        .then(function (response) { return response.ok ? response.json() : null; })
+        .then(function (answer) {
+          if (!answer || !answer.id) return;
+          idField.value = answer.id;
+          if (status) status.textContent = "Brouillon enregistré à " + answer.heure + ".";
+        })
+        .catch(function () { if (status) status.textContent = "Brouillon non enregistré (connexion ?)."; });
+    }
+    function later() {
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(save, 2000);
+    }
+    form.addEventListener("input", later);
+    form.addEventListener("focusout", function (event) {
+      var next = event.relatedTarget;
+      if (next && next.type === "submit" && next.form === form) return; // on envoie : pas de brouillon
+      if (timer) { clearTimeout(timer); save(); }
+    });
+    form.addEventListener("submit", function () { if (timer) clearTimeout(timer); });
+  });
+})();

@@ -746,3 +746,9 @@ client ne passe par Claude ; l'IA propose, l'humain décide.
 - Les envois d'e-mails doivent partir d'une vraie boîte professionnelle (Microsoft 365 avec le
   domaine du cabinet, SPF/DKIM/DMARC) : un compte Outlook personnel relié à une adresse Gmail
   arrive en indésirables (constaté le 26/10/2026).
+- **Brouillons** (`MailDraft`) : ce qu'on écrit dans « Nouveau message » ou « Répondre » est
+  enregistré tout seul (2 secondes après la dernière frappe, et en quittant un champ).
+  Rubrique « Brouillons » : reprendre ou supprimer. Seul l'auteur les voit. Effacé dès que le
+  message part ou est programmé, quand l'auteur le supprime, ou après 30 jours sans
+  modification (`run_jobs`). Un enregistrement arrivé après l'envoi ne recrée pas le
+  brouillon. Le brouillon d'une réponse disparaît si l'e-mail d'origine est retiré (« Privé »).

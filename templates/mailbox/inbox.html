@@ -27,6 +27,7 @@
   <nav class="mb-tree" aria-label="Rangements">
     <a href="?vue=reception"{% if view == "reception" %} aria-current="page"{% endif %}><span>Boîte de réception</span>{% if counts.inbox %}<span class="mb-badge">{{ counts.inbox }}</span>{% endif %}</a>
     <a href="?vue=attente"{% if view == "attente" %} aria-current="page"{% endif %}><span>En attente de réponse</span>{% if counts.awaiting %}<span class="mb-count">{{ counts.awaiting }}</span>{% endif %}</a>
+    <a href="?vue=brouillons"{% if view == "brouillons" %} aria-current="page"{% endif %}><span>Brouillons</span>{% if counts.drafts %}<span class="mb-count">{{ counts.drafts }}</span>{% endif %}</a>
     <a href="?vue=programmes"{% if view == "programmes" %} aria-current="page"{% endif %}><span>Programmés</span>{% if counts.scheduled %}<span class="mb-count">{{ counts.scheduled }}</span>{% endif %}</a>
     <a href="?vue=envoyes"{% if view == "envoyes" %} aria-current="page"{% endif %}><span>Envoyés</span></a>
     <div class="mb-tree-title">Mes dossiers</div>
@@ -54,6 +55,19 @@
         </div>
       {% empty %}
         <p class="empty">Aucune réponse attendue. Cochez « J'attends une réponse » quand vous écrivez à un client.</p>
+      {% endfor %}
+    {% elif view == "brouillons" %}
+      {% for d in drafts %}
+        <div class="mb-wait">
+          <div><strong>{{ d.subject|default:"(sans objet)" }}</strong></div>
+          <div class="small muted">{% if d.reply_to %}Réponse à {{ d.reply_to.sender }}{% elif d.to %}À {{ d.to }}{% else %}Destinataire à choisir{% endif %}{% if d.client %} · {{ d.client.display_name }}{% endif %} · modifié le {{ d.updated_at|date_fr:"j F à H:i" }}</div>
+          <div class="mb-wait-actions">
+            <a class="button button-small" href="{% if d.reply_to %}?message={{ d.reply_to.pk }}&amp;ouvrir=repondre&amp;brouillon={{ d.pk }}{% else %}?ouvrir=nouveau&amp;brouillon={{ d.pk }}{% endif %}">Reprendre</a>
+            <form method="post" action="{% url 'boite:brouillon_supprimer' d.pk %}" class="inline">{% csrf_token %}<button type="submit" class="secondary small">Supprimer</button></form>
+          </div>
+        </div>
+      {% empty %}
+        <p class="empty">Aucun brouillon. Ce que vous écrivez est enregistré tout seul pendant la frappe : rien n'est perdu si vous fermez la fenêtre.</p>
       {% endfor %}
     {% elif view == "programmes" %}
       {% for p in scheduled %}
@@ -150,10 +164,12 @@
 
       <details class="mb-reply"{% if open == "repondre" %} open{% endif %}>
         <summary class="button">Répondre</summary>
-        <form method="post" action="{% url 'boite:repondre' selected.pk %}">{% csrf_token %}
+        <form method="post" action="{% url 'boite:repondre' selected.pk %}" data-draft="{% url 'boite:brouillon_enregistrer' %}" data-reply="{{ selected.pk }}">{% csrf_token %}
           <input type="hidden" name="retour" value="{{ here }}">
+          <input type="hidden" name="brouillon" value="{% if draft and draft.reply_to_id == selected.pk %}{{ draft.pk }}{% endif %}">
           <label for="mb-reply-text">Votre réponse à {{ selected.sender }}</label>
-          {% include "mailbox/_editor.html" with id="mb-reply-text" label="Votre réponse" %}
+          {% if draft and draft.reply_to_id == selected.pk %}{% include "mailbox/_editor.html" with id="mb-reply-text" label="Votre réponse" initial=draft.html %}{% else %}{% include "mailbox/_editor.html" with id="mb-reply-text" label="Votre réponse" %}{% endif %}
+          <p class="small muted" data-draft-status aria-live="polite"></p>
           {% include "mailbox/_signature_choice.html" %}
           <label class="mb-check"><input type="checkbox" name="attente" value="1"> J'attends une réponse</label>
           {% include "mailbox/_send_when.html" %}
@@ -228,14 +244,16 @@
 </div>
 
 <dialog class="mb-dialog" id="mb-nouveau"{% if open == "nouveau" %} data-open{% endif %} aria-labelledby="mb-nouveau-titre">
-  <form method="post" action="{% url 'boite:nouveau' %}">{% csrf_token %}
+  <form method="post" action="{% url 'boite:nouveau' %}" data-draft="{% url 'boite:brouillon_enregistrer' %}">{% csrf_token %}
     <h2 id="mb-nouveau-titre">Nouveau message</h2>
-    <label for="n-a">À</label><input id="n-a" type="email" name="a" required>
-    <label for="n-objet">Objet</label><input id="n-objet" type="text" name="objet" maxlength="300">
+    <input type="hidden" name="brouillon" value="{% if draft and not draft.reply_to_id %}{{ draft.pk }}{% endif %}">
+    <label for="n-a">À</label><input id="n-a" type="email" name="a" required value="{% if draft and not draft.reply_to_id %}{{ draft.to }}{% endif %}">
+    <label for="n-objet">Objet</label><input id="n-objet" type="text" name="objet" maxlength="300" value="{% if draft and not draft.reply_to_id %}{{ draft.subject }}{% endif %}">
     <label for="n-dossier">Dossier (facultatif)</label>
-    <select id="n-dossier" name="dossier" data-searchable><option value="">—</option>{% for c in all_clients %}<option value="{{ c.pk }}">{{ c.display_name }}</option>{% endfor %}</select>
+    <select id="n-dossier" name="dossier" data-searchable><option value="">—</option>{% for c in all_clients %}<option value="{{ c.pk }}"{% if draft and not draft.reply_to_id and draft.client_id == c.pk %} selected{% endif %}>{{ c.display_name }}</option>{% endfor %}</select>
     <label for="n-texte">Message</label>
-    {% include "mailbox/_editor.html" with id="n-texte" label="Message" rows=8 %}
+    {% if draft and not draft.reply_to_id %}{% include "mailbox/_editor.html" with id="n-texte" label="Message" rows=8 initial=draft.html %}{% else %}{% include "mailbox/_editor.html" with id="n-texte" label="Message" rows=8 %}{% endif %}
+    <p class="small muted" data-draft-status aria-live="polite"></p>
     {% include "mailbox/_signature_choice.html" %}
     <label class="mb-check"><input type="checkbox" name="attente" value="1"> J'attends une réponse</label>
     {% include "mailbox/_send_when.html" %}
