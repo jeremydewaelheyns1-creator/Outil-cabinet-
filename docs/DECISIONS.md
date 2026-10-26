@@ -723,3 +723,25 @@ Validé par Jeremy sur maquettes (25/10).
   un brouillon de réponse Outlook (créer, compléter, joindre, envoyer). Logo retiré avant un
   envoi programmé : la balise est enlevée (pas d'image cassée). Le logo n'est pas copié dans
   l'historique des réglages (seuls les autres réglages le sont).
+
+## D-067 — Cap sur la commercialisation (26 octobre 2026)
+
+Décision de Jeremy : l'outil n'est plus seulement un outil interne ; le but est de le vendre à
+d'autres cabinets. Remplace l'intention « un seul cabinet, pas un SaaS » des débuts (D-001 et
+suivantes restent valables pour l'existant).
+
+Ce qui ne change pas : la sécurité des données reste la priorité ; aucune donnée réelle de
+client ne passe par Claude ; l'IA propose, l'humain décide.
+
+À décider avec Jeremy avant de construire (rien n'est lancé) :
+- **Modèle de mise à disposition** : une installation séparée par cabinet (données jamais
+  mélangées, comme aujourd'hui ; recommandé au départ) ou une installation commune.
+- **Paramétrage par cabinet** : nom, logo, règles d'échéances, droits — sans toucher au code.
+- **Exigences avant la vente** : relecture du code par un développeur indépendant, test
+  d'intrusion par une société spécialisée, contrat de sous-traitance RGPD avec chaque cabinet,
+  conditions générales, assurance, support et engagement de disponibilité.
+- **Exploitation** : mises à jour de toutes les installations, sauvegardes, supervision,
+  facturation des clients.
+- Les envois d'e-mails doivent partir d'une vraie boîte professionnelle (Microsoft 365 avec le
+  domaine du cabinet, SPF/DKIM/DMARC) : un compte Outlook personnel relié à une adresse Gmail
+  arrive en indésirables (constaté le 26/10/2026).

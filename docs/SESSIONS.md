@@ -23,6 +23,9 @@ ambitieux pour l'instant), adresse « support » pour les demandes automatiques,
 **module Administrateur** (onglet réservé, vue générale de ce qui se passe ; Conformité et
 le journal des consultations pourraient y aller — à décider avec Jeremy).
 
+**26/10/2026 — Cap sur la commercialisation (D-067)** : annoncé par Jeremy. Questions à
+trancher listées dans D-067 (modèle d'installation, audit, RGPD, support). Rien de construit.
+
 **Ma boîte mail — mise en forme et envoi programmé (D-066)** : fait le 26 octobre au soir.
 Reste des idées boîte mail : rien (la vue « Envoyés » existait déjà).
 

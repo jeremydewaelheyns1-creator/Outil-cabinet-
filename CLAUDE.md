@@ -1,7 +1,9 @@
 # Outil cabinet — instructions pour Claude
 
-Outil interne de gestion d'**un seul** cabinet comptable belge (Wallonie), destiné à remplacer
-FID-Manager (au moins à parité), avec des automatismes en plus. Pas un SaaS.
+Outil de gestion pour cabinet comptable belge (Wallonie), destiné à remplacer FID-Manager (au
+moins à parité), avec des automatismes en plus. Construit d'abord pour le cabinet de Jeremy ;
+**objectif depuis le 26/10/2026 : le commercialiser** à d'autres cabinets (D-067). Tant que
+D-067 n'a pas fixé le modèle, garder l'architecture actuelle (une installation par cabinet).
 Le porteur du projet (Jeremy) ne code pas : Claude écrit tout le code, les tests et la doc
 technique. Parler en français, simplement, sans jargon.
 
