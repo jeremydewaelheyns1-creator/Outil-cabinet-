@@ -4,6 +4,7 @@ vues (sans le contenu des e-mails)."""
 
 from __future__ import annotations
 
+import re
 from datetime import datetime, timedelta
 from typing import Any
 
@@ -65,6 +66,21 @@ def wait_for(owner: User, *, address: str, subject: str, client: Client | None,
     )  # fmt: skip
 
 
+def _inline(html: str) -> tuple[str, list[graph.Attachment]]:
+    """Le logo du cabinet joint au message s'il est dans la signature (retiré entre-temps :
+    la balise est enlevée pour ne pas montrer d'image cassée)."""
+    from apps.core import logo
+    from apps.core.models import CabinetSettings
+
+    marker = f'src="cid:{logo.CONTENT_ID}"'
+    if marker not in html:
+        return html, []
+    data = bytes(CabinetSettings.current().signature_logo or b"")
+    if not data:
+        return re.sub(r'<img src="cid:[^"]*"[^>]*>', "", html), []
+    return html, [graph.Attachment("logo.png", data, "image/png", content_id=logo.CONTENT_ID)]
+
+
 def reply(message: MailMessage, html: str, *, wait: bool) -> None:
     """Réponse écrite par l'employé, envoyée depuis sa boîte Outlook (fil de discussion
     gardé). L'e-mail reste dans la boîte de réception jusqu'à « Traité : classer ».
@@ -74,7 +90,8 @@ def reply(message: MailMessage, html: str, *, wait: bool) -> None:
     link = graph.mailbox_for(message.owner)
     if link is None:
         raise ValidationError("Votre boîte Outlook n'est pas reliée.")
-    graph.Session(link).reply(message.graph_id, html)
+    html, inline = _inline(html)
+    graph.Session(link).reply(message.graph_id, html, inline)
     message.replied_at = timezone.now()
     message.save(update_fields=["replied_at"])
     if wait and message.from_address:
@@ -96,7 +113,9 @@ def send_new(owner: User, *, to: str, subject: str, html: str, client: Client | 
     link = graph.mailbox_for(owner)
     if link is None:  # déjà vérifié : boîte déliée entre-temps
         raise ValidationError("Votre boîte Outlook n'est pas reliée.")
-    graph.send(link, to=to.strip(), subject=subject.strip()[:300], body=html, html=True)
+    html, inline = _inline(html)
+    graph.send(link, to=to.strip(), subject=subject.strip()[:300], body=html, html=True,
+               attachments=inline)  # fmt: skip
     if wait:
         wait_for(owner, address=to.strip(), subject=subject, client=client)
 

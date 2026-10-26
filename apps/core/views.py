@@ -1,9 +1,11 @@
 """Accueil et journal des consultations (la sonde de santé est dans `health.py`)."""
 
+from typing import Any
+
 from django.contrib import messages
 from django.core.exceptions import PermissionDenied
 from django.core.paginator import Paginator
-from django.http import HttpResponse
+from django.http import Http404, HttpResponse
 from django.shortcuts import redirect, render
 from django.urls import reverse
 from django.utils import timezone
@@ -221,6 +223,8 @@ def cabinet_settings(request: AppRequest) -> HttpResponse:
             fields = ("hybrid_management", "hybrid_release_days")
 
     settings = CabinetSettings.current()
+    if request.method == "POST" and request.POST.get("action") in {"logo", "retirer_logo"}:
+        return _logo_change(request, settings)
     form = SettingsForm(request.POST or None, instance=settings)
     if request.method == "POST" and form.is_valid():
         form.save()
@@ -229,4 +233,42 @@ def cabinet_settings(request: AppRequest) -> HttpResponse:
         )
         messages.success(request, "Réglages enregistrés.")
         return redirect("core:cabinet_settings")
-    return render(request, "core/cabinet_settings.html", {"form": form})
+    return render(request, "core/cabinet_settings.html", {"form": form, "settings": settings})
+
+
+def _logo_change(request: AppRequest, settings: Any) -> HttpResponse:
+    """Logo des signatures : déposé (refait en PNG propre) ou retiré, par un administrateur."""
+    from django.core.exceptions import ValidationError
+
+    from . import logo
+
+    if request.POST["action"] == "retirer_logo":
+        settings.signature_logo = b""
+        settings.save(update_fields=["signature_logo"])
+        messages.success(request, "Logo retiré des signatures.")
+    else:
+        upload = request.FILES.get("logo")
+        try:
+            if upload is None:
+                raise ValidationError("Choisissez une image.")
+            settings.signature_logo = logo.prepare(upload.read())
+        except ValidationError as error:
+            messages.error(request, " ".join(error.messages))
+            return redirect("core:cabinet_settings")
+        settings.save(update_fields=["signature_logo"])
+        messages.success(request, "Logo enregistré : il apparaît dans les signatures d'e-mails.")
+    details = {"écran": "réglages du cabinet", "logo": request.POST["action"]}
+    log_access(request, AccessLog.Action.UPDATE, settings, details=details)
+    return redirect("core:cabinet_settings")
+
+
+def signature_logo(request: AppRequest) -> HttpResponse:
+    """Le logo des signatures, pour l'aperçu dans l'outil (employés connectés)."""
+    from .models import CabinetSettings
+
+    data = bytes(CabinetSettings.current().signature_logo or b"")
+    if not data:
+        raise Http404
+    response = HttpResponse(data, content_type="image/png")
+    response["Cache-Control"] = "private, max-age=300"
+    return response

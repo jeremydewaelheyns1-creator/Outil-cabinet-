@@ -8,7 +8,13 @@
   <form method="post">{% csrf_token %}
     <label for="sig-texte">Votre signature</label>
     {% include "mailbox/_editor.html" with id="sig-texte" label="Votre signature" rows=6 initial=current.html %}
-    <p class="small muted">Par exemple : votre nom, votre fonction, le nom du cabinet, votre téléphone. Pas de logo ni de lien : l'outil n'envoie que du texte mis en forme.</p>
+    <p class="small muted">Par exemple : votre nom, votre fonction, le nom du cabinet, votre téléphone.</p>
+    {% if has_logo %}
+      <label class="mb-check"><input type="checkbox" name="logo" value="1"{% if not current or current.with_logo %} checked{% endif %}> Ajouter le logo du cabinet en dessous</label>
+      <p><img src="{% url 'core:signature_logo' %}" alt="Logo du cabinet" style="max-height: 60px"></p>
+    {% elif user.is_staff %}
+      <p class="small muted">Pas encore de logo : déposez-le dans <a href="{% url 'core:cabinet_settings' %}">Réglages du cabinet</a>.</p>
+    {% endif %}
     <div class="actions"><button type="submit">Enregistrer</button><a class="button button-secondary" href="{% url 'boite:inbox' %}">Retour à ma boîte mail</a></div>
   </form>
 </section>

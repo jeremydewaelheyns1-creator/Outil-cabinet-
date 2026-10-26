@@ -62,6 +62,7 @@ class FakeGraph:
         self.replies: list[tuple[str, dict]] = []
         self.sent_mails: list[dict] = []
         self.prefer: list[str] = []
+        self.drafts: list[dict] = []
 
     def handler(self, request: httpx.Request) -> httpx.Response:
         path = request.url.path
@@ -69,6 +70,21 @@ class FakeGraph:
             form = {k: v[0] for k, v in parse_qs(request.content.decode()).items()}
             return httpx.Response(200, json={"access_token": "acces", "scope": form["scope"],
                                              "refresh_token": "renouv"})  # fmt: skip
+        if path.endswith("/createReply"):
+            self.drafts.append({"of": path.split("/")[-2], "patches": [], "attachments": []})
+            quoted = {"content": "<p>— message cité —</p>"}
+            return httpx.Response(201, json={"id": "brouillon-1", "body": quoted})
+        if "/me/messages/brouillon-1" in path:
+            draft = self.drafts[-1]
+            if request.method == "PATCH":
+                draft["patches"].append(json.loads(request.content))
+                return httpx.Response(200, json={})
+            if path.endswith("/attachments"):
+                draft["attachments"].append(json.loads(request.content))
+                return httpx.Response(201, json={})
+            if path.endswith("/send"):
+                draft["sent"] = True
+                return httpx.Response(202)
         if path.endswith("/me"):
             return httpx.Response(200, json={"mail": "camille@cabinet-fictif.test"})
         if path.endswith("/mailFolders/inbox/messages"):
@@ -524,3 +540,80 @@ def test_personal_signature_added_unless_unticked(web, user, link, fake):
 
 def test_editor_comment_is_not_shown(web, user, link):
     assert "Zone de texte avec mise en forme" not in inbox_html(web, ouvrir="nouveau")
+
+
+def logo_png(size=(900, 300)):
+    import io
+
+    from PIL import Image
+
+    out = io.BytesIO()
+    Image.new("RGB", size, (31, 78, 140)).save(out, format="PNG")
+    return out.getvalue()
+
+
+def test_cabinet_logo_is_rebuilt_and_only_for_administrators(web, make_user):
+    from django.core.files.uploadedfile import SimpleUploadedFile
+    from django.test import Client as Browser
+
+    from apps.core import logo
+    from apps.core.models import CabinetSettings
+
+    url = reverse("core:cabinet_settings")
+    assert web.post(url, {"action": "logo"}).status_code == 403
+    admin = Browser()
+    admin.force_login(make_user(is_staff=True))
+    fake_image = SimpleUploadedFile("logo.png", b"<svg onload=alert(1)>", "image/png")
+    admin.post(url, {"action": "logo", "logo": fake_image})
+    assert not CabinetSettings.current().signature_logo
+    admin.post(url, {"action": "logo", "logo": SimpleUploadedFile("logo.png", logo_png())})
+    stored = bytes(CabinetSettings.current().signature_logo)
+    assert stored.startswith(b"\x89PNG") and logo.size(stored) == (600, 200)
+    assert web.get(reverse("core:signature_logo"))["Content-Type"] == "image/png"
+
+
+def test_signature_with_logo_travels_inside_the_email(web, user, link, fake, bakery):
+    from apps.core import logo
+    from apps.core.models import CabinetSettings
+
+    settings_row = CabinetSettings.current()
+    settings_row.signature_logo = logo.prepare(logo_png((300, 100)))
+    settings_row.save()
+    web.post(reverse("boite:signature"), {"html": "<p>Camille Fictive</p>", "logo": "1"})
+    web.post(reverse("boite:nouveau"), {"a": "client@exemple.test", "objet": "A",
+                                        "html": "<p>Bonjour</p>", "signature": "1"})  # fmt: skip
+    message = fake.sent_mails[0]["message"]
+    assert 'src="cid:logo-cabinet"' in message["body"]["content"]
+    piece = message["attachments"][0]
+    assert piece["isInline"] and piece["contentId"] == "logo-cabinet"
+    # Réponse avec logo : brouillon de réponse, logo joint, puis envoi.
+    fake.inbox = [mail("m1", sender="compta@boulangerie.test", subject="Question")]
+    sync.sync_link(link)
+    reply_to = MailMessage.objects.get()
+    web.post(reverse("boite:repondre", args=[reply_to.pk]),
+             {"html": "<p>Oui</p>", "signature": "1"})  # fmt: skip
+    draft = fake.drafts[0]
+    assert draft["of"] == "m1" and draft.get("sent")
+    body = draft["patches"][0]["body"]["content"]
+    assert body.startswith("<p>Oui</p>") and body.endswith("— message cité —</p>")
+    assert draft["attachments"][0]["contentId"] == "logo-cabinet"
+
+
+def test_logo_removed_before_a_scheduled_send_leaves_no_broken_image(user, link, fake):
+    from datetime import timedelta as delta
+
+    from apps.core import logo
+    from apps.core.models import CabinetSettings
+    from apps.mailbox import richtext, services
+
+    settings_row = CabinetSettings.current()
+    settings_row.signature_logo = logo.prepare(logo_png((300, 100)))
+    settings_row.save()
+    html = richtext.with_signature("<p>Bonjour</p>", "<p>Camille</p>", logo=richtext.logo_tag())
+    services.schedule(user, send_at=timezone.now() + delta(hours=1), html=html,
+                      to="client@exemple.test", subject="Plus tard")  # fmt: skip
+    settings_row.signature_logo = b""
+    settings_row.save()
+    services.send_due(timezone.now() + delta(hours=2))
+    message = fake.sent_mails[0]["message"]
+    assert "cid:" not in message["body"]["content"] and "attachments" not in message

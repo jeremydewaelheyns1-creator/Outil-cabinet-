@@ -10,4 +10,19 @@
   <p class="small muted">Un dossier pris sans temps encodé dessus pendant ce nombre de jours redevient libre tout seul ; la personne est prévenue dans l'outil. Chaque changement est gardé dans l'historique.</p>
   <div class="actions"><button type="submit">Enregistrer</button><a class="button button-secondary" href="{% url 'core:settings' %}">Retour</a></div>
 </form>
+
+<section class="card" style="max-width: 760px; margin-top: 1rem">
+  <h2>Logo des signatures d'e-mails</h2>
+  <p class="muted">Le logo du cabinet, ajouté sous la signature de chacun dans « Ma boîte mail ». Il part joint à l'e-mail et s'affiche directement chez le client. L'outil refait l'image (PNG, 600 × 200 pixels au plus) : rien d'autre que l'image n'est gardé.</p>
+  {% if settings.signature_logo %}
+    <p><img src="{% url 'core:signature_logo' %}" alt="Logo actuel" style="max-height: 60px"></p>
+    <form method="post" class="inline">{% csrf_token %}<input type="hidden" name="action" value="retirer_logo"><button type="submit" class="secondary">Retirer le logo</button></form>
+  {% endif %}
+  <form method="post" enctype="multipart/form-data" style="margin-top: .8rem">{% csrf_token %}
+    <input type="hidden" name="action" value="logo">
+    <label for="logo-file">{% if settings.signature_logo %}Remplacer par une autre image{% else %}Image du logo (PNG ou JPEG, 2 Mo au plus){% endif %}</label>
+    <input id="logo-file" type="file" name="logo" accept="image/png,image/jpeg" required>
+    <div class="actions" style="margin-top: .6rem"><button type="submit">Enregistrer le logo</button></div>
+  </form>
+</section>
 {% endblock %}

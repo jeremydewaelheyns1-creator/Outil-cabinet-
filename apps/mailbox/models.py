@@ -215,6 +215,7 @@ class Signature(models.Model):
 
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="mail_signature")
     html = models.TextField("signature", blank=True)  # déjà nettoyée (richtext.clean)
+    with_logo = models.BooleanField("avec le logo du cabinet", default=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:

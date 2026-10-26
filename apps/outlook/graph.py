@@ -51,6 +51,19 @@ class Attachment:
     name: str
     content: bytes
     content_type: str = "application/pdf"
+    content_id: str = ""  # image affichée dans le texte (« cid: ») : le logo de la signature
+
+
+def _attachment_json(a: Attachment) -> dict[str, Any]:
+    data: dict[str, Any] = {
+        "@odata.type": "#microsoft.graph.fileAttachment",
+        "name": a.name,
+        "contentType": a.content_type,
+        "contentBytes": base64.b64encode(a.content).decode(),
+    }
+    if a.content_id:
+        data.update({"isInline": True, "contentId": a.content_id})
+    return data
 
 
 def configured() -> bool:
@@ -244,15 +257,7 @@ def send(
         "toRecipients": [{"emailAddress": {"address": to}}],
     }
     if attachments:
-        message["attachments"] = [
-            {
-                "@odata.type": "#microsoft.graph.fileAttachment",
-                "name": a.name,
-                "contentType": a.content_type,
-                "contentBytes": base64.b64encode(a.content).decode(),
-            }
-            for a in attachments
-        ]
+        message["attachments"] = [_attachment_json(a) for a in attachments]
     try:
         response = http.post(
             f"{GRAPH}/me/sendMail",
@@ -298,7 +303,35 @@ class Session:
             raise MailboxError("Microsoft a refusé la lecture de la boîte.")
         return response.json()
 
-    def reply(self, message_id: str, comment_html: str) -> None:
+    def _call(self, method: str, path: str, expected: int, payload: Any = None) -> Any:
+        try:
+            response = self.http.request(
+                method, f"{GRAPH}{path}", json=payload,
+                headers={"Authorization": f"Bearer {self.token}"},
+            )  # fmt: skip
+        except httpx.HTTPError as exc:
+            raise MailboxError("Microsoft ne répond pas : la réponse n'est pas partie.") from exc
+        if response.status_code != expected:
+            logger.warning("Réponse Outlook refusée (code %s)", response.status_code)
+            raise MailboxError("Microsoft a refusé l'envoi : la réponse n'est pas partie.")
+        return response.json() if response.content else None
+
+    def reply(
+        self, message_id: str, comment_html: str, attachments: list[Attachment] | None = None
+    ) -> None:
+        if attachments:
+            # Avec une image dans le texte (logo) : brouillon de réponse, pièce, puis envoi.
+            draft = self._call("POST", f"/me/messages/{message_id}/createReply", 201)
+            quoted = str(((draft.get("body") or {}).get("content")) or "")
+            body = {"contentType": "HTML", "content": comment_html + quoted}
+            self._call("PATCH", f"/me/messages/{draft['id']}", 200, {"body": body})
+            for attachment in attachments:
+                self._call("POST", f"/me/messages/{draft['id']}/attachments", 201,
+                           _attachment_json(attachment))  # fmt: skip
+            self._call("POST", f"/me/messages/{draft['id']}/send", 202)
+            self.link.last_used_at = timezone.now()
+            self.link.save(update_fields=["last_used_at"])
+            return
         try:
             response = self.http.post(
                 f"{GRAPH}/me/messages/{message_id}/reply",

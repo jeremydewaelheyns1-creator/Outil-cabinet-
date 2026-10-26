@@ -43,8 +43,25 @@ def body(html_field: str, text_field: str) -> tuple[str, str]:
 SIGNATURE_MAX = 5_000
 
 
-def with_signature(message_html: str, signature_html: str) -> str:
-    """Le message suivi de la signature (déjà nettoyée), séparés par une ligne vide."""
-    if not signature_html or not to_text(signature_html):
+LOGO_TAG = '<img src="cid:{cid}" alt="{alt}" height="{height}">'
+
+
+def with_signature(message_html: str, signature_html: str, *, logo: str = "") -> str:
+    """Le message suivi de la signature (déjà nettoyée) et du logo du cabinet (`logo` : la
+    balise image produite par l'outil lui-même, jamais un texte saisi)."""
+    if (not signature_html or not to_text(signature_html)) and not logo:
         return message_html
-    return f"{message_html}<br><div>{signature_html}</div>"
+    return f"{message_html}<br><div>{signature_html}{logo}</div>"
+
+
+def logo_tag() -> str:
+    """Balise du logo (affiché depuis la pièce jointe « cid: »), vide sans logo déposé."""
+    from django.conf import settings
+
+    from apps.core import logo
+    from apps.core.models import CabinetSettings
+
+    if not CabinetSettings.current().signature_logo:
+        return ""
+    return LOGO_TAG.format(cid=logo.CONTENT_ID, alt=escape(settings.CABINET_NAME),
+                           height=logo.DISPLAY_HEIGHT)  # fmt: skip

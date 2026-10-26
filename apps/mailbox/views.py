@@ -26,7 +26,7 @@ from django.views.decorators.http import require_GET, require_POST
 from apps.clients.models import Client, Relation
 from apps.core.audit import log_access
 from apps.core.http import AppRequest
-from apps.core.models import AccessLog
+from apps.core.models import AccessLog, CabinetSettings
 from apps.outlook import graph
 from apps.outlook.models import MailboxLink
 
@@ -249,6 +249,7 @@ def inbox(request: AppRequest) -> HttpResponse:
         "today": timezone.localdate(),
         "now_local": timezone.localtime().strftime("%Y-%m-%dT%H:%M"),
         "signature": Signature.objects.filter(user=request.user).first(),
+        "cabinet_logo": bool(CabinetSettings.current().signature_logo),
         "all_clients": visible.exclude(status=Client.Status.FORMER).order_by("name", "first_name"),
     }
     if selected is not None:
@@ -365,24 +366,29 @@ def _message_html(request: AppRequest) -> str:
     if html and request.POST.get("signature") == "1":
         found = Signature.objects.filter(user=request.user).first()
         if found is not None:
-            html = richtext.with_signature(html, found.html)
+            logo = richtext.logo_tag() if found.with_logo else ""
+            html = richtext.with_signature(html, found.html, logo=logo)
     return html
 
 
 def signature(request: AppRequest) -> HttpResponse:
     """« Ma signature » : ajoutée en bas des e-mails écrits dans l'outil (case à décocher)."""
     current = Signature.objects.filter(user=request.user).first()
+    has_logo = bool(CabinetSettings.current().signature_logo)
     if request.method == "POST":
         html, _ = richtext.body(request.POST.get("html", ""), request.POST.get("texte", ""))
         html = richtext.clean(html[: richtext.SIGNATURE_MAX])
-        if richtext.to_text(html):
-            Signature.objects.update_or_create(user=request.user, defaults={"html": html})
+        with_logo = request.POST.get("logo") == "1"
+        if richtext.to_text(html) or (with_logo and has_logo):
+            Signature.objects.update_or_create(
+                user=request.user, defaults={"html": html, "with_logo": with_logo}
+            )
             messages.success(request, "Signature enregistrée.")
         else:
             Signature.objects.filter(user=request.user).delete()
             messages.success(request, "Signature retirée.")
         return redirect("boite:signature")
-    return render(request, "mailbox/signature.html", {"current": current})
+    return render(request, "mailbox/signature.html", {"current": current, "has_logo": has_logo})
 
 
 def _when(request: AppRequest) -> Any:

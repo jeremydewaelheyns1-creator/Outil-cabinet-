@@ -715,3 +715,11 @@ Validé par Jeremy sur maquettes (25/10).
   au plus ; ajoutée en bas des messages et réponses écrits dans l'outil (case cochée par
   défaut, décochable pour un message). Pas de logo ni de lien. Les e-mails automatiques aux
   clients (demandes de pièces, TVA) gardent leur formule actuelle.
+- **Logo du cabinet dans les signatures** : déposé une fois par un administrateur (Réglages du
+  cabinet), commun à tous. L'image est refaite par l'outil (PNG, 600 × 200 au plus, 200 Ko au
+  plus : seuls les pixels sont gardés). Elle part **jointe** à l'e-mail (« image dans le
+  texte », `cid:`) : rien n'est chargé depuis Internet, donc pas d'image bloquée ni de
+  « mouchard » d'ouverture. Chacun peut l'ôter de sa signature. Une réponse avec logo passe par
+  un brouillon de réponse Outlook (créer, compléter, joindre, envoyer). Logo retiré avant un
+  envoi programmé : la balise est enlevée (pas d'image cassée). Le logo n'est pas copié dans
+  l'historique des réglages (seuls les autres réglages le sont).

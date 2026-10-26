@@ -325,7 +325,9 @@ class CabinetSettings(models.Model):
     hybrid_release_days = models.PositiveSmallIntegerField(
         "dossier hybride rendu libre après (jours sans temps encodé)", default=14
     )
-    history = HistoricalRecords()
+    # Logo des signatures d'e-mails (PNG refait par l'outil, apps/core/logo.py).
+    signature_logo = models.BinaryField("logo des signatures", blank=True, default=b"")
+    history = HistoricalRecords(excluded_fields=["signature_logo"])
 
     class Meta:
         verbose_name = "réglages du cabinet"
