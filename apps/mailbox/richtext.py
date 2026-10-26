@@ -43,7 +43,11 @@ def body(html_field: str, text_field: str) -> tuple[str, str]:
 SIGNATURE_MAX = 5_000
 
 
-LOGO_TAG = '<img src="cid:{cid}" alt="{alt}" height="{height}">'
+# Le logo sur sa propre ligne, sous le texte de la signature (jamais à côté).
+LOGO_TAG = (
+    '<div style="margin-top:8px"><img src="cid:{cid}" alt="{alt}" height="{height}" '
+    'style="display:block;height:{height}px;width:auto;border:0"></div>'
+)
 
 
 def with_signature(message_html: str, signature_html: str, *, logo: str = "") -> str:

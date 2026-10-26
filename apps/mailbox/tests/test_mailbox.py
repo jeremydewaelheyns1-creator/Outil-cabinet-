@@ -584,6 +584,8 @@ def test_signature_with_logo_travels_inside_the_email(web, user, link, fake, bak
                                         "html": "<p>Bonjour</p>", "signature": "1"})  # fmt: skip
     message = fake.sent_mails[0]["message"]
     assert 'src="cid:logo-cabinet"' in message["body"]["content"]
+    # Le logo sur sa propre ligne, sous « Camille Fictive » (pas à côté du texte).
+    assert '<p>Camille Fictive</p><div style="margin-top:8px"><img' in message["body"]["content"]
     piece = message["attachments"][0]
     assert piece["isInline"] and piece["contentId"] == "logo-cabinet"
     # Réponse avec logo : brouillon de réponse, logo joint, puis envoi.
