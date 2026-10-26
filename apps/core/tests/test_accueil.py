@@ -253,3 +253,13 @@ def test_hybrid_board_lists_only_the_most_urgent_free_dossiers(user, django_asse
 def test_pages_forbid_inline_scripts_and_framing(web):
     policy = web.get(reverse("core:home"))["Content-Security-Policy"]
     assert "script-src 'self'" in policy and "frame-ancestors 'none'" in policy
+
+
+def test_dates_in_words_are_in_belgian_time():
+    from datetime import UTC, datetime
+
+    from django.template import Context, Template
+
+    winter = datetime(2026, 10, 28, 8, 0, tzinfo=UTC)  # 9 h à Bruxelles
+    html = Template('{{ d|date_fr:"j F à H:i" }}').render(Context({"d": winter}))
+    assert html == "28 octobre à 09:00"

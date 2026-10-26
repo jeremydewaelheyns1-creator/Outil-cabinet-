@@ -229,8 +229,10 @@ def send(
     body: str,
     attachments: list[Attachment] | None = None,
     http: httpx.Client | None = None,
+    html: bool = False,
 ) -> None:
-    """Envoie depuis la boîte de l'employé ; copie gardée dans ses « Éléments envoyés »."""
+    """Envoie depuis la boîte de l'employé ; copie gardée dans ses « Éléments envoyés ».
+    `html=True` : `body` est du HTML déjà nettoyé (mise en forme de « Ma boîte mail »)."""
     attachments = attachments or []
     if sum(len(a.content) for a in attachments) > MAX_ATTACHMENTS_BYTES:
         raise MailboxError("Pièce jointe trop lourde pour un envoi (3 Mo au maximum).")
@@ -238,7 +240,7 @@ def send(
     token = _access_token(link, http)
     message: dict[str, Any] = {
         "subject": subject,
-        "body": {"contentType": "Text", "content": body},
+        "body": {"contentType": "HTML" if html else "Text", "content": body},
         "toRecipients": [{"emailAddress": {"address": to}}],
     }
     if attachments:

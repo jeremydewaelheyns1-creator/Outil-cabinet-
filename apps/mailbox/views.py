@@ -30,8 +30,8 @@ from apps.core.models import AccessLog
 from apps.outlook import graph
 from apps.outlook.models import MailboxLink
 
-from . import classify, services
-from .models import Awaiting, MailAttachment, MailMessage
+from . import classify, richtext, services
+from .models import Awaiting, MailAttachment, MailMessage, ScheduledMail
 from .sync import SEARCH_CONFIG, sync_link
 
 MARK_START, MARK_END = "⁣[[", "]]⁣"  # repères invisibles, remplacés par <mark>
@@ -177,11 +177,19 @@ def inbox(request: AppRequest) -> HttpResponse:
         .annotate(n_files=Count("attachments"))
     )
     title, items, attachments, awaiting = "Boîte de réception", [], [], []
+    scheduled: list[ScheduledMail] = []
     if text:
         view, title = "recherche", f"Résultats pour « {text} »"
         items = _search(request, text, dossier)
     elif view == "envoyes":
         title, items = "Envoyés", list(mine.filter(folder=MailMessage.Folder.SENT)[:100])
+    elif view == "programmes":
+        title = "Programmés"
+        scheduled = list(
+            request.user.scheduled_mails.filter(
+                sent_at__isnull=True, cancelled_at__isnull=True, failed_at__isnull=True
+            ).select_related("client")
+        )
     elif view == "attente":
         title = "En attente de réponse"
         awaiting = list(request.user.awaiting.filter(done_at__isnull=True).select_related("client"))
@@ -221,6 +229,7 @@ def inbox(request: AppRequest) -> HttpResponse:
         "items": items,
         "attachments": attachments,
         "awaiting": awaiting,
+        "scheduled": scheduled,
         "selected": selected,
         "dossier": dossier,
         "person": person,
@@ -231,10 +240,14 @@ def inbox(request: AppRequest) -> HttpResponse:
             .filter(folder="inbox", classed_at__isnull=True, read_at__isnull=True)
             .count(),
             "awaiting": request.user.awaiting.filter(done_at__isnull=True).count(),
+            "scheduled": request.user.scheduled_mails.filter(
+                sent_at__isnull=True, cancelled_at__isnull=True, failed_at__isnull=True
+            ).count(),
         },
         "open": request.GET.get("ouvrir", ""),
         "here": request.get_full_path(),
         "today": timezone.localdate(),
+        "now_local": timezone.localtime().strftime("%Y-%m-%dT%H:%M"),
         "all_clients": visible.exclude(status=Client.Status.FORMER).order_by("name", "first_name"),
     }
     if selected is not None:
@@ -345,17 +358,40 @@ def prive(request: AppRequest, message_id: str) -> HttpResponse:
     return _back(request)
 
 
+def _when(request: AppRequest) -> Any:
+    """Heure d'envoi programmé choisie (None : envoyer tout de suite)."""
+    if request.POST.get("quand") != "plus-tard":
+        return None
+    send_at = services.parse_send_at(request.POST.get("programmer", ""))
+    if send_at is None:
+        raise ValidationError("Choisissez le jour et l'heure de l'envoi.")
+    return send_at
+
+
+def _scheduled_message(item: Any) -> str:
+    when = timezone.localtime(item.send_at)
+    return (f"Envoi programmé le {when:%d/%m/%Y} à {when:%H:%M}, depuis votre boîte Outlook. "
+            "Vous pouvez l'annuler dans « Programmés ».")  # fmt: skip
+
+
 @require_POST
 def repondre(request: AppRequest, message_id: str) -> HttpResponse:
     message = _message(request, message_id)
+    html, _ = richtext.body(request.POST.get("html", ""), request.POST.get("texte", ""))
+    wait = request.POST.get("attente") == "1"
     try:
-        services.reply(
-            message, request.POST.get("texte", ""), wait=request.POST.get("attente") == "1"
-        )
+        send_at = _when(request)
+        if send_at is not None:
+            item = services.schedule(request.user, send_at=send_at, html=html,
+                                     reply_to=message, wait=wait)  # fmt: skip
+            _log(request, "réponse programmée", str(message.pk))
+            messages.success(request, _scheduled_message(item))
+            return redirect(_query_for(request, message))
+        services.reply(message, html, wait=wait)
     except (ValidationError, graph.MailboxError) as error:
         text = " ".join(error.messages) if isinstance(error, ValidationError) else str(error)
         messages.error(request, f"Réponse non envoyée : {text}")
-        return redirect(_query_for(request, message))
+        return redirect(f"{_query_for(request, message)}&ouvrir=repondre")
     _log(request, "réponse envoyée", str(message.pk))
     messages.success(request, "Réponse envoyée depuis votre boîte Outlook. L'e-mail reste "
                      "ici jusqu'à « Traité : classer ».")  # fmt: skip
@@ -369,12 +405,19 @@ def nouveau(request: AppRequest) -> HttpResponse:
         client = (
             Client.objects.visible_to(request.user).filter(pk=int(request.POST["dossier"])).first()
         )
+    html, _ = richtext.body(request.POST.get("html", ""), request.POST.get("texte", ""))
+    to, subject = request.POST.get("a", ""), request.POST.get("objet", "")
+    wait = request.POST.get("attente") == "1"
     try:
-        services.send_new(
-            request.user, to=request.POST.get("a", ""), subject=request.POST.get("objet", ""),
-            body=request.POST.get("texte", ""), client=client,
-            wait=request.POST.get("attente") == "1",
-        )  # fmt: skip
+        send_at = _when(request)
+        if send_at is not None:
+            item = services.schedule(request.user, send_at=send_at, to=to, subject=subject,
+                                     html=html, client=client, wait=wait)  # fmt: skip
+            _log(request, "nouveau message programmé", "—")
+            messages.success(request, _scheduled_message(item))
+            return redirect(f"{reverse('boite:inbox')}?vue=programmes")
+        services.send_new(request.user, to=to, subject=subject, html=html, client=client,
+                          wait=wait)  # fmt: skip
     except (ValidationError, graph.MailboxError) as error:
         text = " ".join(error.messages) if isinstance(error, ValidationError) else str(error)
         messages.error(request, f"Message non envoyé : {text}")
@@ -382,6 +425,33 @@ def nouveau(request: AppRequest) -> HttpResponse:
     _log(request, "nouveau message envoyé", "—")
     messages.success(request, "Message envoyé depuis votre boîte Outlook.")
     return redirect("boite:inbox")
+
+
+def _scheduled(request: AppRequest, item_id: int) -> ScheduledMail:
+    return get_object_or_404(ScheduledMail, pk=item_id, owner=request.user)
+
+
+@require_POST
+def programme_annuler(request: AppRequest, item_id: int) -> HttpResponse:
+    item = _scheduled(request, item_id)
+    services.cancel(item)
+    _log(request, "envoi programmé annulé", str(item.pk))
+    messages.success(request, "Envoi annulé : le message ne partira pas.")
+    return redirect(f"{reverse('boite:inbox')}?vue=programmes")
+
+
+@require_POST
+def programme_envoyer(request: AppRequest, item_id: int) -> HttpResponse:
+    item = _scheduled(request, item_id)
+    try:
+        services.deliver(item)
+    except (ValidationError, graph.MailboxError) as error:
+        text = " ".join(error.messages) if isinstance(error, ValidationError) else str(error)
+        messages.error(request, f"Message non envoyé : {text}")
+        return redirect(f"{reverse('boite:inbox')}?vue=programmes")
+    _log(request, "envoi programmé envoyé maintenant", str(item.pk))
+    messages.success(request, "Message envoyé depuis votre boîte Outlook.")
+    return redirect(f"{reverse('boite:inbox')}?vue=programmes")
 
 
 @require_POST

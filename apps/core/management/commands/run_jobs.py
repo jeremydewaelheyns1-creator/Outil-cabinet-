@@ -21,6 +21,7 @@ from apps.core import events
 from apps.documents import digest, freshness, identity, inbox
 from apps.documents import services as documents
 from apps.integrations import official
+from apps.mailbox import services as mail_services
 from apps.mailbox import sync as mail_sync
 from apps.reprise.models import purge_stale_uploads
 from apps.tasks import deadlines
@@ -45,6 +46,7 @@ class Command(BaseCommand):
         self.stdout.write(f"Cartes d'identité demandées : {identity.request_renewals()}")
         self.stdout.write(f"Rappels d'échéances : {deadlines.send_reminders()}")
         self.stdout.write(f"E-mails relevés : {mail_sync.sync_all()}")
+        self.stdout.write(f"Envois programmés partis : {mail_services.send_due()}")
         self.stdout.write(f"Fichiers non classés effacés : {inbox.purge()}")
         self.stdout.write(f"Sites officiels consultés : {official.refresh_due()} sociétés")
         call_command("procrastinate", "worker", "--one-shot")

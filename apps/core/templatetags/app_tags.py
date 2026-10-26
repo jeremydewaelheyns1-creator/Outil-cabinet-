@@ -111,7 +111,7 @@ def euros(value: object) -> str:
     return f"{sign}{whole.replace(',', ' ')},{cents} €"
 
 
-@register.filter
+@register.filter(expects_localtime=True)
 def date_fr(value: date | datetime | None, fmt: str = "j F") -> str:
     """Comme `date`, mais « 1er octobre » le premier du mois (usage français)."""
     if value is None:

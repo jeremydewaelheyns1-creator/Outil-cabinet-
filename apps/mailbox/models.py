@@ -165,3 +165,46 @@ class Awaiting(models.Model):
 
     def __str__(self) -> str:
         return self.subject or self.address
+
+
+class ScheduledMail(models.Model):
+    """Message écrit maintenant, envoyé plus tard depuis la boîte Outlook de son auteur.
+
+    - Seul l'auteur le voit, peut l'annuler ou l'envoyer tout de suite.
+    - Envoyé par le passage périodique de l'outil (toutes les 5 minutes) : à quelques minutes
+      près de l'heure choisie.
+    - Une fois parti (ou annulé), son contenu est effacé de l'outil : la copie de référence
+      est dans les « Éléments envoyés » d'Outlook. Il n'en reste que l'objet et les dates.
+    """
+
+    MAX_ATTEMPTS = 3
+
+    owner = models.ForeignKey(User, on_delete=models.CASCADE, related_name="scheduled_mails")
+    reply_to = models.ForeignKey(
+        MailMessage, on_delete=models.SET_NULL, null=True, blank=True, related_name="+",
+        verbose_name="réponse à",
+    )  # fmt: skip
+    to = models.EmailField("à", blank=True)
+    subject = models.CharField("objet", max_length=300, blank=True)
+    html = models.TextField("message", blank=True)
+    client = models.ForeignKey(Client, on_delete=models.SET_NULL, null=True, blank=True)
+    wait = models.BooleanField("j'attends une réponse", default=False)
+    send_at = models.DateTimeField("à envoyer le", db_index=True)
+    sent_at = models.DateTimeField("envoyé le", null=True, blank=True)
+    cancelled_at = models.DateTimeField("annulé le", null=True, blank=True)
+    failed_at = models.DateTimeField("abandonné le", null=True, blank=True)
+    attempts = models.PositiveSmallIntegerField(default=0)
+    error = models.CharField(max_length=200, blank=True)
+    created_at = models.DateTimeField(default=timezone.now, editable=False)
+
+    class Meta:
+        ordering: ClassVar = ["send_at"]
+        verbose_name = "envoi programmé"
+        verbose_name_plural = "envois programmés"
+
+    def __str__(self) -> str:
+        return self.subject or self.to
+
+    @property
+    def pending(self) -> bool:
+        return self.sent_at is None and self.cancelled_at is None and self.failed_at is None

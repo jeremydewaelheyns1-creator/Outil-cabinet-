@@ -23,6 +23,9 @@ ambitieux pour l'instant), adresse « support » pour les demandes automatiques,
 **module Administrateur** (onglet réservé, vue générale de ce qui se passe ; Conformité et
 le journal des consultations pourraient y aller — à décider avec Jeremy).
 
+**Ma boîte mail — mise en forme et envoi programmé (D-066)** : fait le 26 octobre au soir.
+Reste des idées boîte mail : rien (la vue « Envoyés » existait déjà).
+
 **Recette de nuit du 25 au 26 octobre (D-065)** — faite seule, à la demande de Jeremy
 (« teste tout, améliore »). Corrigé : heures vides (erreur 500), lenteur à 1 500 dossiers
 (Conformité / Ma journée), téléphone (menus, tableaux, recherche boîte mail), visualiseur

@@ -394,3 +394,109 @@ def test_recognizes_an_ic_listing_attachment(bakery):
 </ns2:IntraConsignment>"""
     kind, label = recognize.recognize("ic.xml", listing, "application/xml", Client.objects.all())
     assert kind == "tva" and label.startswith("Listing intracommunautaire")
+
+
+# --- Mise en forme et envoi programmé ------------------------------------------------------------
+
+
+def test_formatting_is_kept_and_anything_dangerous_removed(web, user, link, fake):
+    from apps.mailbox import richtext
+
+    dirty = (
+        '<p><b onclick="x()">Gras</b> <u>souligné</u></p><ul><li>un</li></ul>'
+        '<img src=x onerror=alert(1)><a href="javascript:x">lien</a><script>x()</script>'
+    )
+    html, text = richtext.body(dirty, "")
+    assert html == "<p><b>Gras</b> <u>souligné</u></p><ul><li>un</li></ul>lien"
+    assert text.startswith("Gras souligné")
+    web.post(reverse("boite:nouveau"), {"a": "client@exemple.test", "objet": "Bilan",
+                                        "html": dirty, "texte": "ignoré"})  # fmt: skip
+    body = fake.sent_mails[0]["message"]["body"]
+    assert body["contentType"] == "HTML" and "<u>souligné</u>" in body["content"]
+    assert "onclick" not in body["content"] and "script" not in body["content"]
+
+
+def test_formatted_reply(web, user, link, fake, bakery):
+    fake.inbox = [mail("m1", sender="compta@boulangerie.test", subject="Question")]
+    sync.sync_link(link)
+    message = MailMessage.objects.get()
+    web.post(reverse("boite:repondre", args=[message.pk]),
+             {"html": "<p>Oui, <strong>demain</strong>.</p>", "texte": "Oui, demain."})  # fmt: skip
+    assert fake.replies[0][1]["comment"] == "<p>Oui, <strong>demain</strong>.</p>"
+
+
+def later(**delta):
+    return timezone.localtime(timezone.now() + timedelta(**delta)).strftime("%Y-%m-%dT%H:%M")
+
+
+def test_scheduled_message_leaves_at_its_time_then_its_content_is_erased(web, user, link, fake):
+    from apps.mailbox import services
+    from apps.mailbox.models import ScheduledMail
+
+    response = web.post(reverse("boite:nouveau"), {
+        "a": "client@exemple.test", "objet": "Rappel bilan", "html": "<p>Bonjour</p>",
+        "quand": "plus-tard", "programmer": later(hours=2), "attente": "1"})  # fmt: skip
+    assert response.url.endswith("vue=programmes") and not fake.sent_mails
+    item = ScheduledMail.objects.get()
+    assert item.pending and "Rappel bilan" in inbox_html(web, vue="programmes")
+    assert services.send_due() == 0  # pas encore l'heure
+    assert services.send_due(timezone.now() + timedelta(hours=3)) == 1
+    item.refresh_from_db()
+    assert (
+        item.sent_at
+        and item.html == ""
+        and fake.sent_mails[0]["message"]["subject"] == "Rappel bilan"
+    )
+    assert Awaiting.objects.get().address == "client@exemple.test"
+    assert services.send_due(timezone.now() + timedelta(hours=4)) == 0  # jamais deux fois
+
+
+def test_scheduled_reply_cancel_and_send_now(web, user, link, fake, bakery, make_user):
+    from django.test import Client as Browser
+
+    from apps.mailbox.models import ScheduledMail
+
+    fake.inbox = [mail("m1", sender="compta@boulangerie.test", subject="Question")]
+    sync.sync_link(link)
+    message = MailMessage.objects.get()
+    for _ in range(2):
+        data = {"texte": "Réponse", "quand": "plus-tard", "programmer": later(days=1)}
+        web.post(reverse("boite:repondre", args=[message.pk]), data)
+    first, second = ScheduledMail.objects.all()
+    assert first.to == "compta@boulangerie.test" and first.subject == "RE: Question"
+    # Un collègue ne peut ni annuler ni envoyer mes messages programmés.
+    colleague = Browser()
+    colleague.force_login(make_user())
+    assert colleague.post(reverse("boite:programme_annuler", args=[first.pk])).status_code == 404
+    web.post(reverse("boite:programme_annuler", args=[first.pk]))
+    first.refresh_from_db()
+    assert first.cancelled_at and first.html == ""
+    web.post(reverse("boite:programme_envoyer", args=[second.pk]))
+    assert len(fake.replies) == 1 and fake.replies[0][0] == "m1"
+
+
+def test_scheduling_in_the_past_is_refused(web, user, link, fake):
+    from apps.mailbox.models import ScheduledMail
+
+    data = {"a": "client@exemple.test", "texte": "Bonjour", "quand": "plus-tard",
+            "programmer": later(hours=-1)}  # fmt: skip
+    web.post(reverse("boite:nouveau"), data)
+    assert not ScheduledMail.objects.exists() and not fake.sent_mails
+
+
+def test_scheduled_message_given_up_after_three_failures(user, link, fake, monkeypatch):
+    from apps.mailbox import services
+
+    item = services.schedule(user, send_at=timezone.now() + timedelta(hours=1), html="<p>x</p>",
+                             to="client@exemple.test", subject="Bilan")  # fmt: skip
+
+    def refuse(*args, **kwargs):
+        raise graph.MailboxError("Microsoft a refusé l'envoi.")
+
+    monkeypatch.setattr(graph, "send", refuse)
+    soon = timezone.now() + timedelta(hours=2)
+    for _ in range(3):
+        services.send_due(soon)
+    item.refresh_from_db()
+    assert item.failed_at and item.html == "" and item.attempts == 3
+    assert Notification.objects.get(user=user).title == "Message programmé non envoyé : Bilan"

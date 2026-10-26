@@ -4,17 +4,19 @@ vues (sans le contenu des e-mails)."""
 
 from __future__ import annotations
 
+from datetime import datetime, timedelta
+from typing import Any
+
 from django.core.exceptions import ValidationError
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.utils import timezone
-from django.utils.html import escape, linebreaks
 
 from apps.clients.models import Client
 from apps.core.models import User
 from apps.outlook import graph
 
-from . import classify
-from .models import Awaiting, MailAttachment, MailExclusion, MailMessage
+from . import classify, richtext
+from .models import Awaiting, MailAttachment, MailExclusion, MailMessage, ScheduledMail
 from .sync import delete
 
 
@@ -63,16 +65,16 @@ def wait_for(owner: User, *, address: str, subject: str, client: Client | None,
     )  # fmt: skip
 
 
-def reply(message: MailMessage, text: str, *, wait: bool) -> None:
+def reply(message: MailMessage, html: str, *, wait: bool) -> None:
     """Réponse écrite par l'employé, envoyée depuis sa boîte Outlook (fil de discussion
-    gardé). L'e-mail reste dans la boîte de réception jusqu'à « Traité : classer »."""
-    text = text.strip()
-    if not text:
+    gardé). L'e-mail reste dans la boîte de réception jusqu'à « Traité : classer ».
+    `html` : message déjà nettoyé (`richtext.body`)."""
+    if not richtext.to_text(html):
         raise ValidationError("Écrivez votre réponse.")
     link = graph.mailbox_for(message.owner)
     if link is None:
         raise ValidationError("Votre boîte Outlook n'est pas reliée.")
-    graph.Session(link).reply(message.graph_id, linebreaks(escape(text)))
+    graph.Session(link).reply(message.graph_id, html)
     message.replied_at = timezone.now()
     message.save(update_fields=["replied_at"])
     if wait and message.from_address:
@@ -81,16 +83,128 @@ def reply(message: MailMessage, text: str, *, wait: bool) -> None:
                  conversation_id=message.conversation_id)  # fmt: skip
 
 
-def send_new(owner: User, *, to: str, subject: str, body: str, client: Client | None,
-             wait: bool) -> None:  # fmt: skip
-    link = graph.mailbox_for(owner)
-    if link is None:
+def _check_new(owner: User, to: str, html: str) -> None:
+    if graph.mailbox_for(owner) is None:
         raise ValidationError("Votre boîte Outlook n'est pas reliée.")
-    if not to or "@" not in to or not body.strip():
+    if not to or "@" not in to or not richtext.to_text(html):
         raise ValidationError("Indiquez le destinataire et le message.")
-    graph.send(link, to=to.strip(), subject=subject.strip()[:300], body=body)
+
+
+def send_new(owner: User, *, to: str, subject: str, html: str, client: Client | None,
+             wait: bool) -> None:  # fmt: skip
+    _check_new(owner, to.strip(), html)
+    link = graph.mailbox_for(owner)
+    if link is None:  # déjà vérifié : boîte déliée entre-temps
+        raise ValidationError("Votre boîte Outlook n'est pas reliée.")
+    graph.send(link, to=to.strip(), subject=subject.strip()[:300], body=html, html=True)
     if wait:
         wait_for(owner, address=to.strip(), subject=subject, client=client)
+
+
+# --- Envoi programmé ------------------------------------------------------------------------
+
+LATEST = timedelta(days=366)
+
+
+def parse_send_at(value: str) -> datetime | None:
+    """« 2026-10-27T08:30 » (champ date et heure du navigateur), heure belge. Vide : None."""
+    value = (value or "").strip()
+    if not value:
+        return None
+    try:
+        naive = datetime.fromisoformat(value)
+    except ValueError as exc:
+        raise ValidationError("Date et heure d'envoi non reconnues.") from exc
+    if timezone.is_aware(naive):
+        return naive
+    return timezone.make_aware(naive, timezone.get_current_timezone())
+
+
+def schedule(owner: User, *, send_at: datetime, html: str, to: str = "", subject: str = "",
+             reply_to: MailMessage | None = None, client: Client | None = None,
+             wait: bool = False) -> ScheduledMail:  # fmt: skip
+    """Programme un nouveau message (ou une réponse) : envoyé à l'heure choisie."""
+    now = timezone.now()
+    if send_at <= now + timedelta(minutes=1):
+        raise ValidationError("Choisissez une heure d'envoi dans le futur.")
+    if send_at > now + LATEST:
+        raise ValidationError("Un envoi se programme au plus un an à l'avance.")
+    if reply_to is not None:
+        if reply_to.owner_id != owner.pk:
+            raise ValidationError("E-mail introuvable.")
+        if not richtext.to_text(html):
+            raise ValidationError("Écrivez votre réponse.")
+        if graph.mailbox_for(owner) is None:
+            raise ValidationError("Votre boîte Outlook n'est pas reliée.")
+        to = reply_to.from_address
+        subject = (
+            reply_to.subject
+            if reply_to.subject.lower().startswith(("re:", "re :"))
+            else (f"RE: {reply_to.subject}" if reply_to.subject else "")
+        )
+        client = client or reply_to.client or reply_to.suggested_client
+    else:
+        _check_new(owner, to.strip(), html)
+    return ScheduledMail.objects.create(
+        owner=owner, reply_to=reply_to, to=to.strip()[:254], subject=subject.strip()[:300],
+        html=html, client=client, wait=wait, send_at=send_at,
+    )  # fmt: skip
+
+
+def _forget(item: ScheduledMail, **fields: Any) -> None:
+    """Parti, annulé ou abandonné : le contenu quitte l'outil (Outlook garde l'original)."""
+    for name, value in fields.items():
+        setattr(item, name, value)
+    item.html = ""
+    item.save()
+
+
+def deliver(item: ScheduledMail) -> None:
+    """Envoie maintenant un message programmé (lève MailboxError / ValidationError)."""
+    if not item.pending:
+        return
+    if item.reply_to_id is not None and item.reply_to is not None:
+        reply(item.reply_to, item.html, wait=item.wait)
+    else:
+        send_new(item.owner, to=item.to, subject=item.subject, html=item.html,
+                 client=item.client, wait=item.wait)  # fmt: skip
+    _forget(item, sent_at=timezone.now(), error="")
+
+
+def cancel(item: ScheduledMail) -> None:
+    if item.pending:
+        _forget(item, cancelled_at=timezone.now())
+
+
+def send_due(now: datetime | None = None) -> int:
+    """Passage périodique (`run_jobs`) : envoie les messages dont l'heure est venue. Après
+    trois échecs, le message est abandonné et son auteur prévenu dans la cloche."""
+    from apps.core.models import Notification
+
+    now = now or timezone.now()
+    sent = 0
+    due = ScheduledMail.objects.filter(
+        send_at__lte=now, sent_at__isnull=True, cancelled_at__isnull=True, failed_at__isnull=True
+    ).select_related("owner", "reply_to", "client")
+    for item in due:
+        try:
+            deliver(item)
+            sent += 1
+        except (ValidationError, graph.MailboxError) as error:
+            item.attempts += 1
+            item.error = (" ".join(error.messages) if isinstance(error, ValidationError)
+                          else str(error))[:200]  # fmt: skip
+            if item.attempts < ScheduledMail.MAX_ATTEMPTS:
+                item.save(update_fields=["attempts", "error"])
+                continue
+            _forget(item, failed_at=now)
+            Notification.objects.get_or_create(
+                user=item.owner, key=f"programme:{item.pk}",
+                defaults={"title": f"Message programmé non envoyé : {item}"[:200],
+                          "lines": [item.error, "Il n'est pas parti : réécrivez-le si besoin."],
+                          "link": "/boite-mail/?vue=programmes"},
+            )  # fmt: skip
+    return sent
 
 
 def file_attachment(attachment: MailAttachment, user: User, place: str = "") -> str:

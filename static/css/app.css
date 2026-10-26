@@ -316,7 +316,7 @@ table.table { width: 100%; border-collapse: collapse; background: var(--surface)
 label { display: block; font-weight: 600; font-size: 0.9rem; margin-bottom: 0.25rem; }
 
 input[type="text"], input[type="email"], input[type="password"], input[type="number"],
-input[type="date"], input[type="time"], input[type="search"], input[type="url"], input[type="tel"],
+input[type="date"], input[type="datetime-local"], input[type="time"], input[type="search"], input[type="url"], input[type="tel"],
 input[type="file"], select, textarea {
   width: 100%;
   padding: 0.5rem 0.6rem;
@@ -974,7 +974,7 @@ table.table { background: transparent; }
 /* Formulaires */
 label { font-weight: 600; }
 input[type="text"], input[type="email"], input[type="password"], input[type="number"],
-input[type="date"], input[type="time"], input[type="search"], input[type="url"], input[type="tel"],
+input[type="date"], input[type="datetime-local"], input[type="time"], input[type="search"], input[type="url"], input[type="tel"],
 input[type="file"], select, textarea {
   border: 1px solid var(--border-strong);
   border-radius: var(--radius-small);
@@ -1405,3 +1405,18 @@ button:active, .button:active { transform: scale(.98); }
   .mb-search input[type="search"] { flex: 1 1 100%; }
   .mb-search-dossier { flex: 1 1 auto; max-width: none; }
 }
+
+/* --- Ma boîte mail : mise en forme et envoi programmé ------------------------------------ */
+.rt { display: grid; gap: .35rem; }
+.rt-bar { display: flex; flex-wrap: wrap; gap: .3rem; align-items: center; }
+.rt-bar button { background: var(--surface-muted); color: var(--text); border: 1px solid var(--border); border-radius: 8px; padding: .25rem .6rem; font-size: .88rem; min-width: 2.1rem; }
+.rt-bar button[aria-pressed="true"] { background: var(--primary-soft); color: var(--primary); border-color: var(--primary); }
+.rt-sep { width: 1px; align-self: stretch; background: var(--border); margin: 0 .2rem; }
+.rt-area { min-height: 9rem; max-height: 22rem; overflow-y: auto; padding: .7rem .85rem; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); line-height: 1.5; }
+.rt-area:focus { outline: 2px solid var(--primary); outline-offset: 1px; }
+.rt-area.rt-empty { border-color: var(--danger); }
+.rt-area ul, .rt-area ol { margin: .3rem 0; padding-left: 1.4rem; }
+.mb-when { border: none; padding: 0; margin: .5rem 0; display: flex; flex-wrap: wrap; gap: .4rem 1rem; align-items: center; }
+.mb-when label { display: inline-flex; gap: .35rem; align-items: center; font-weight: 500; }
+.mb-when input[type="datetime-local"] { width: auto; }
+.mb-wait-actions { display: flex; gap: .5rem; margin-top: .4rem; flex-wrap: wrap; }

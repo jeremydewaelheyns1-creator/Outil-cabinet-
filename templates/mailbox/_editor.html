@@ -1,0 +1,14 @@
+{# Zone de texte avec mise en forme (gras, italique, souligné, listes). Sans JavaScript : simple zone de texte. #}
+<div class="rt" data-rt>
+  <div class="rt-bar" role="toolbar" aria-label="Mise en forme" hidden>
+    <button type="button" data-rt-cmd="bold" aria-label="Gras" title="Gras (Ctrl+B)"><strong>G</strong></button>
+    <button type="button" data-rt-cmd="italic" aria-label="Italique" title="Italique (Ctrl+I)"><em>I</em></button>
+    <button type="button" data-rt-cmd="underline" aria-label="Souligné" title="Souligné (Ctrl+U)"><u>S</u></button>
+    <span class="rt-sep" aria-hidden="true"></span>
+    <button type="button" data-rt-cmd="insertUnorderedList" aria-label="Liste à puces" title="Liste à puces">• Liste</button>
+    <button type="button" data-rt-cmd="insertOrderedList" aria-label="Liste numérotée" title="Liste numérotée">1. Liste</button>
+  </div>
+  <div class="rt-area" contenteditable="true" role="textbox" aria-multiline="true" aria-label="{{ label }}" hidden></div>
+  <textarea id="{{ id }}" name="texte" rows="{{ rows|default:7 }}" required></textarea>
+  <input type="hidden" name="html" value="">
+</div>

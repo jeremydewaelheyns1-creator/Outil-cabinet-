@@ -26,6 +26,7 @@
   <nav class="mb-tree" aria-label="Rangements">
     <a href="?vue=reception"{% if view == "reception" %} aria-current="page"{% endif %}><span>Boîte de réception</span>{% if counts.inbox %}<span class="mb-badge">{{ counts.inbox }}</span>{% endif %}</a>
     <a href="?vue=attente"{% if view == "attente" %} aria-current="page"{% endif %}><span>En attente de réponse</span>{% if counts.awaiting %}<span class="mb-count">{{ counts.awaiting }}</span>{% endif %}</a>
+    <a href="?vue=programmes"{% if view == "programmes" %} aria-current="page"{% endif %}><span>Programmés</span>{% if counts.scheduled %}<span class="mb-count">{{ counts.scheduled }}</span>{% endif %}</a>
     <a href="?vue=envoyes"{% if view == "envoyes" %} aria-current="page"{% endif %}><span>Envoyés</span></a>
     <div class="mb-tree-title">Mes dossiers</div>
     {% for d in tree %}
@@ -52,6 +53,20 @@
         </div>
       {% empty %}
         <p class="empty">Aucune réponse attendue. Cochez « J'attends une réponse » quand vous écrivez à un client.</p>
+      {% endfor %}
+    {% elif view == "programmes" %}
+      {% for p in scheduled %}
+        <div class="mb-wait">
+          <div><strong>{{ p.subject|default:"(sans objet)" }}</strong></div>
+          <div class="small muted">À {{ p.to }}{% if p.client %} · {{ p.client.display_name }}{% endif %} · part le {{ p.send_at|date_fr:"l j F à H:i" }}{% if p.reply_to_id %} · réponse{% endif %}</div>
+          {% if p.error %}<div class="small mb-warn">Dernier essai : {{ p.error }} (nouvel essai dans 5 minutes)</div>{% endif %}
+          <div class="mb-wait-actions">
+            <form method="post" action="{% url 'boite:programme_envoyer' p.pk %}" class="inline">{% csrf_token %}<button type="submit" class="small">Envoyer maintenant</button></form>
+            <form method="post" action="{% url 'boite:programme_annuler' p.pk %}" class="inline">{% csrf_token %}<button type="submit" class="secondary small">Annuler l'envoi</button></form>
+          </div>
+        </div>
+      {% empty %}
+        <p class="empty">Aucun envoi programmé. En écrivant un message, choisissez « Programmer le » et l'heure d'envoi.</p>
       {% endfor %}
     {% elif view == "pj" %}
       {% for a in attachments %}
@@ -137,9 +152,10 @@
         <form method="post" action="{% url 'boite:repondre' selected.pk %}">{% csrf_token %}
           <input type="hidden" name="retour" value="{{ here }}">
           <label for="mb-reply-text">Votre réponse à {{ selected.sender }}</label>
-          <textarea id="mb-reply-text" name="texte" rows="7" required></textarea>
+          {% include "mailbox/_editor.html" with id="mb-reply-text" label="Votre réponse" %}
           <label class="mb-check"><input type="checkbox" name="attente" value="1"> J'attends une réponse</label>
-          <button type="submit">Envoyer depuis ma boîte Outlook</button>
+          {% include "mailbox/_send_when.html" %}
+          <button type="submit" data-send-label="Programmer l'envoi">Envoyer depuis ma boîte Outlook</button>
         </form>
       </details>
 
@@ -216,9 +232,11 @@
     <label for="n-objet">Objet</label><input id="n-objet" type="text" name="objet" maxlength="300">
     <label for="n-dossier">Dossier (facultatif)</label>
     <select id="n-dossier" name="dossier"><option value="">—</option>{% for c in all_clients %}<option value="{{ c.pk }}">{{ c.display_name }}</option>{% endfor %}</select>
-    <label for="n-texte">Message</label><textarea id="n-texte" name="texte" rows="8" required></textarea>
+    <label for="n-texte">Message</label>
+    {% include "mailbox/_editor.html" with id="n-texte" label="Message" rows=8 %}
     <label class="mb-check"><input type="checkbox" name="attente" value="1"> J'attends une réponse</label>
-    <div class="mb-dialog-actions"><button type="submit">Envoyer depuis ma boîte Outlook</button><a class="button button-secondary" href="{% url 'boite:inbox' %}">Annuler</a></div>
+    {% include "mailbox/_send_when.html" %}
+    <div class="mb-dialog-actions"><button type="submit" data-send-label="Programmer l'envoi">Envoyer depuis ma boîte Outlook</button><a class="button button-secondary" href="{% url 'boite:inbox' %}">Annuler</a></div>
   </form>
 </dialog>
 <script src="{% static 'js/mailbox.js' %}" defer></script>

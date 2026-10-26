@@ -689,3 +689,24 @@ Validé par Jeremy sur maquettes (25/10).
   droits (aucune écriture, sauf l'actualisation des données publiques BCE / Moniteur / BNB),
   fiches d'un portefeuille privé demandées par adresse (aucune fuite), numéro national
   recherché dans les pages, journaux et tables techniques (jamais en clair).
+
+## D-066 — « Ma boîte mail » : mise en forme et envoi programmé
+
+- **Mise en forme** (gras, italique, souligné, listes à puces ou numérotées) dans « Répondre »
+  et « Nouveau message ». Éditeur du navigateur, sans bibliothèque externe (script de l'outil,
+  compatible avec la politique de sécurité du contenu). Avant l'envoi, le serveur ne garde
+  que ces balises, **sans aucun attribut** (ni lien, ni image, ni script : bibliothèque `nh3`).
+  Sans JavaScript : la zone de texte simple d'avant. Le corps gardé dans l'outil reste du
+  texte simple (D-060).
+- **Envoi programmé** (`ScheduledMail`) : « Programmer le » + jour et heure (heure belge), au
+  plus un an à l'avance. Parti par le passage périodique (`run_jobs`, toutes les 5 minutes),
+  donc à quelques minutes près. Rubrique « Programmés » : envoyer maintenant ou annuler ;
+  seul l'auteur les voit. Une fois parti, annulé ou abandonné, **le contenu est effacé** de
+  l'outil (l'original est dans les Éléments envoyés d'Outlook). Trois refus de Microsoft :
+  abandon et notification dans la cloche (titre = objet, jamais le contenu).
+- Si l'envoi est refusé (boîte déliée, heure passée…), le message tapé est remis dans la
+  fenêtre (brouillon gardé le temps de l'envoi dans l'onglet du navigateur, effacé dès que
+  l'envoi a réussi) et le motif s'affiche dans la fenêtre elle-même.
+- Correction : le filtre `date_fr` affiche les dates et heures **à l'heure belge** (il les
+  affichait à l'heure universelle, une heure de moins en hiver).
+- Les e-mails envoyés étaient déjà visibles dans « Envoyés » (copie relevée dans Outlook).

@@ -3,6 +3,17 @@
 Ce qui a été ajouté à l'outil, du plus récent au plus ancien. Toutes les données de la démo
 sont inventées.
 
+## 26 octobre 2026 — Ma boîte mail : mise en forme et envoi programmé
+
+- En répondant ou en écrivant un nouveau message : **gras**, *italique*, souligné, listes à
+  puces ou numérotées (boutons au-dessus du texte, ou Ctrl+B / Ctrl+I / Ctrl+U).
+- **Programmer l'envoi** : cochez « Programmer le », choisissez le jour et l'heure. Le message
+  part tout seul depuis votre boîte Outlook (à quelques minutes près).
+- Nouvelle rubrique **« Programmés »** : envoyer tout de suite ou annuler. Après l'envoi, le
+  texte n'est plus gardé dans l'outil (il est dans vos Éléments envoyés d'Outlook).
+- Si un envoi est refusé, votre texte n'est plus perdu et le motif s'affiche dans la fenêtre.
+- Correction : les heures des e-mails s'affichent à l'heure belge.
+
 ## 26 octobre 2026 — Recette complète de nuit
 
 - Testé avec 1 500 dossiers inventés : « Conformité » et « Ma journée » s'ouvrent maintenant en

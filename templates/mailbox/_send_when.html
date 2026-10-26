@@ -1,0 +1,7 @@
+{# Envoyer maintenant ou programmer l'envoi (heure belge, à quelques minutes près). #}
+<fieldset class="mb-when" data-when>
+  <legend class="visually-hidden">Quand envoyer</legend>
+  <label><input type="radio" name="quand" value="maintenant" checked> Maintenant</label>
+  <label><input type="radio" name="quand" value="plus-tard"> Programmer le</label>
+  <input type="datetime-local" name="programmer" min="{{ now_local }}" aria-label="Jour et heure de l'envoi">
+</fieldset>
