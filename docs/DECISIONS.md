@@ -726,8 +726,9 @@ Validé par Jeremy sur maquettes (25/10).
 
 ## D-067 — Cap sur la commercialisation (26 octobre 2026)
 
-Décision de Jeremy : l'outil n'est plus seulement un outil interne ; le but est de le vendre à
-d'autres cabinets. Remplace l'intention « un seul cabinet, pas un SaaS » des débuts (D-001 et
+Décision de Jeremy : l'outil n'est plus seulement un outil interne ; le but, **à terme**, est
+de le vendre à d'autres cabinets. Information de cap seulement : on n'en est pas à préparer la
+vente (précision de Jeremy, même jour) ; les questions ci-dessous attendront qu'il le décide. Remplace l'intention « un seul cabinet, pas un SaaS » des débuts (D-001 et
 suivantes restent valables pour l'existant).
 
 Ce qui ne change pas : la sécurité des données reste la priorité ; aucune donnée réelle de
