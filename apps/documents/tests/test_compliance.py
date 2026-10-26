@@ -159,3 +159,35 @@ def test_board_loaded_in_bulk_gives_the_same_result_with_few_queries(django_asse
         ]
         assert row.askable_labels == alone.askable_labels
         assert (row.pending, row.has_email) == (alone.pending, alone.has_email)
+
+
+def test_identification_forms_follow_the_itaa_models(user):
+    from django.template.loader import render_to_string
+
+    from apps.core.testing.factories import PersonFactory
+    from apps.core.testing.numbers import national_number
+    from apps.documents.generation import _context
+
+    company, manager = company_with_manager()
+    html = render_to_string("documents/modeles/identification_client.html",
+                            _context(company, "identification_client", None, user))  # fmt: skip
+    parts = (
+        "Identification client personne morale",
+        "I. Client occasionnel",
+        "V. Gestion du client",
+        "VI. Nature et objet",
+        "personne responsable de l'acceptation",
+    )
+    for part in parts:
+        assert part in html
+    person = PersonFactory(national_number=national_number(5))
+    html = render_to_string("documents/modeles/identification_client.html",
+                            _context(person, "identification_client", None, user))  # fmt: skip
+    assert "Identification client personne physique" in html
+    assert national_number(5) not in html  # jamais en clair
+    context = _context(company, "identification_mandataire", manager, user)
+    html = render_to_string("documents/modeles/identification_mandataire.html", context)
+    assert (
+        "Identification mandataire personne physique" in html
+        and "IV. Pouvoirs de représentation" in html
+    )

@@ -3,6 +3,14 @@
 Ce qui a été ajouté à l'outil, du plus récent au plus ancien. Toutes les données de la démo
 sont inventées.
 
+## 26 octobre 2026 — Identifications sur le modèle de l'ITAA
+
+- Les fiches **« Identification du client »** (personne physique ou société) et
+  **« Identification mandataire »** reprennent maintenant exactement les rubriques du modèle de
+  l'ITAA (celui que génère FID-Manager) : niveau de risque, vérification de l'identité,
+  dirigeants et publication au Moniteur, nature de la mission, date de vérification et de fin
+  de mission. Préremplies, signées par la personne qui accepte le client, rangées seules.
+
 ## 26 octobre 2026 — Brouillons dans Ma boîte mail
 
 - Ce que vous écrivez (nouveau message ou réponse) est **enregistré tout seul** pendant la

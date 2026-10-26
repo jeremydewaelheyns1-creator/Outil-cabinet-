@@ -87,6 +87,12 @@ def _context(
     if person is not None and person.is_person:
         card, _, card_text = situation(person, today)
         context["card"], context["card_text"] = card, card_text
+    if doc_type.startswith("identification_"):
+        from .models import RiskAssessment
+
+        context["risk"] = (
+            RiskAssessment.objects.filter(client=client).order_by("-created_at").first()
+        )
     if doc_type == "declaration_ubo" and not client.is_person:
         context["ubo"] = ubo.analyse(client)
     return context

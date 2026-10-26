@@ -752,3 +752,21 @@ client ne passe par Claude ; l'IA propose, l'humain décide.
   message part ou est programmé, quand l'auteur le supprime, ou après 30 jours sans
   modification (`run_jobs`). Un enregistrement arrivé après l'envoi ne recrée pas le
   brouillon. Le brouillon d'une réponse disparaît si l'e-mail d'origine est retiré (« Privé »).
+
+## D-068 — Documents anti-blanchiment calqués sur les modèles de l'ITAA
+
+Validé avec Jeremy, document par document (maquettes « Documents, un par un »).
+- **Identification du client** (personne physique pour l'IPP, personne morale pour l'ISOC) et
+  **identification mandataire** (personne physique ou morale, choisie selon la fiche) : mêmes
+  rubriques que les modèles de l'ITAA et que FID-Manager (client occasionnel, risque,
+  identité, vérification, gestion, nature de la relation, bénéficiaires effectifs, date de
+  vérification, fin de mission, conservation 10 ans). Document interne : une seule signature,
+  celle de la personne responsable de l'acceptation du client (l'employé qui valide). Créé,
+  signé, rangé par le parcours existant (générer → valider).
+- **Lettre de mission** (décidé, pas encore construit) : chaque cabinet dépose son modèle
+  Word tel quel ; l'outil repère les trous (XXX, ……, [à compléter], surlignage), propose leur
+  contenu, l'utilisateur confirme ou désigne à la souris ; passages à options choisis de même.
+  Contrôle des éléments obligatoires de l'ITAA avant d'accepter le modèle (bloquant), éléments
+  recommandés en avertissement. Le modèle d'un cabinet n'entre jamais dans le dépôt.
+- Ensuite (à valider) : déclaration UBO pour le cabinet, registre UBO (MyMinfin), fiche de
+  risque (modèle ITAA 5.1/5.2, révision 3 ans / 1 an), mandats SPF électroniques.
