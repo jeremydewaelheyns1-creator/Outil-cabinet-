@@ -31,7 +31,7 @@ from apps.outlook import graph
 from apps.outlook.models import MailboxLink
 
 from . import classify, richtext, services
-from .models import Awaiting, MailAttachment, MailMessage, ScheduledMail
+from .models import Awaiting, MailAttachment, MailMessage, ScheduledMail, Signature
 from .sync import SEARCH_CONFIG, sync_link
 
 MARK_START, MARK_END = "⁣[[", "]]⁣"  # repères invisibles, remplacés par <mark>
@@ -248,6 +248,7 @@ def inbox(request: AppRequest) -> HttpResponse:
         "here": request.get_full_path(),
         "today": timezone.localdate(),
         "now_local": timezone.localtime().strftime("%Y-%m-%dT%H:%M"),
+        "signature": Signature.objects.filter(user=request.user).first(),
         "all_clients": visible.exclude(status=Client.Status.FORMER).order_by("name", "first_name"),
     }
     if selected is not None:
@@ -358,6 +359,32 @@ def prive(request: AppRequest, message_id: str) -> HttpResponse:
     return _back(request)
 
 
+def _message_html(request: AppRequest) -> str:
+    """Texte écrit (mis en forme et nettoyé), suivi de la signature si elle est cochée."""
+    html, _ = richtext.body(request.POST.get("html", ""), request.POST.get("texte", ""))
+    if html and request.POST.get("signature") == "1":
+        found = Signature.objects.filter(user=request.user).first()
+        if found is not None:
+            html = richtext.with_signature(html, found.html)
+    return html
+
+
+def signature(request: AppRequest) -> HttpResponse:
+    """« Ma signature » : ajoutée en bas des e-mails écrits dans l'outil (case à décocher)."""
+    current = Signature.objects.filter(user=request.user).first()
+    if request.method == "POST":
+        html, _ = richtext.body(request.POST.get("html", ""), request.POST.get("texte", ""))
+        html = richtext.clean(html[: richtext.SIGNATURE_MAX])
+        if richtext.to_text(html):
+            Signature.objects.update_or_create(user=request.user, defaults={"html": html})
+            messages.success(request, "Signature enregistrée.")
+        else:
+            Signature.objects.filter(user=request.user).delete()
+            messages.success(request, "Signature retirée.")
+        return redirect("boite:signature")
+    return render(request, "mailbox/signature.html", {"current": current})
+
+
 def _when(request: AppRequest) -> Any:
     """Heure d'envoi programmé choisie (None : envoyer tout de suite)."""
     if request.POST.get("quand") != "plus-tard":
@@ -377,7 +404,7 @@ def _scheduled_message(item: Any) -> str:
 @require_POST
 def repondre(request: AppRequest, message_id: str) -> HttpResponse:
     message = _message(request, message_id)
-    html, _ = richtext.body(request.POST.get("html", ""), request.POST.get("texte", ""))
+    html = _message_html(request)
     wait = request.POST.get("attente") == "1"
     try:
         send_at = _when(request)
@@ -405,7 +432,7 @@ def nouveau(request: AppRequest) -> HttpResponse:
         client = (
             Client.objects.visible_to(request.user).filter(pk=int(request.POST["dossier"])).first()
         )
-    html, _ = richtext.body(request.POST.get("html", ""), request.POST.get("texte", ""))
+    html = _message_html(request)
     to, subject = request.POST.get("a", ""), request.POST.get("objet", "")
     wait = request.POST.get("attente") == "1"
     try:

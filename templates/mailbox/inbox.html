@@ -17,6 +17,7 @@
   </form>
   <div class="mb-head-actions">
     <form method="post" action="{% url 'boite:relever' %}" class="inline">{% csrf_token %}<button type="submit" class="secondary small" title="Dernière lecture : {{ link.last_sync_at|date:'d/m H:i'|default:'jamais' }}">Relever</button></form>
+    <a class="button button-secondary small" href="{% url 'boite:signature' %}">Ma signature</a>
     <a class="button" href="?ouvrir=nouveau">Nouveau message</a>
   </div>
 </div>
@@ -153,6 +154,7 @@
           <input type="hidden" name="retour" value="{{ here }}">
           <label for="mb-reply-text">Votre réponse à {{ selected.sender }}</label>
           {% include "mailbox/_editor.html" with id="mb-reply-text" label="Votre réponse" %}
+          {% include "mailbox/_signature_choice.html" %}
           <label class="mb-check"><input type="checkbox" name="attente" value="1"> J'attends une réponse</label>
           {% include "mailbox/_send_when.html" %}
           <button type="submit" data-send-label="Programmer l'envoi">Envoyer depuis ma boîte Outlook</button>
@@ -234,6 +236,7 @@
     <select id="n-dossier" name="dossier"><option value="">—</option>{% for c in all_clients %}<option value="{{ c.pk }}">{{ c.display_name }}</option>{% endfor %}</select>
     <label for="n-texte">Message</label>
     {% include "mailbox/_editor.html" with id="n-texte" label="Message" rows=8 %}
+    {% include "mailbox/_signature_choice.html" %}
     <label class="mb-check"><input type="checkbox" name="attente" value="1"> J'attends une réponse</label>
     {% include "mailbox/_send_when.html" %}
     <div class="mb-dialog-actions"><button type="submit" data-send-label="Programmer l'envoi">Envoyer depuis ma boîte Outlook</button><a class="button button-secondary" href="{% url 'boite:inbox' %}">Annuler</a></div>

@@ -38,3 +38,13 @@ def body(html_field: str, text_field: str) -> tuple[str, str]:
         return safe, text
     text = (text_field or "").strip()[:MAX_LENGTH]
     return (linebreaks(escape(text)) if text else ""), text
+
+
+SIGNATURE_MAX = 5_000
+
+
+def with_signature(message_html: str, signature_html: str) -> str:
+    """Le message suivi de la signature (déjà nettoyée), séparés par une ligne vide."""
+    if not signature_html or not to_text(signature_html):
+        return message_html
+    return f"{message_html}<br><div>{signature_html}</div>"

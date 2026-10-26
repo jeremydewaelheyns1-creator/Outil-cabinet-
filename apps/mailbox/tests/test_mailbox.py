@@ -500,3 +500,27 @@ def test_scheduled_message_given_up_after_three_failures(user, link, fake, monke
     item.refresh_from_db()
     assert item.failed_at and item.html == "" and item.attempts == 3
     assert Notification.objects.get(user=user).title == "Message programmé non envoyé : Bilan"
+
+
+def test_personal_signature_added_unless_unticked(web, user, link, fake):
+    from apps.mailbox.models import Signature
+
+    web.post(
+        reverse("boite:signature"),
+        {"html": '<p><b>Camille Fictive</b></p><p onclick="x">Comptable</p>'},
+    )
+    assert Signature.objects.get(user=user).html == "<p><b>Camille Fictive</b></p><p>Comptable</p>"
+    assert "Camille Fictive" in inbox_html(web, ouvrir="nouveau")
+    web.post(reverse("boite:nouveau"), {"a": "client@exemple.test", "objet": "A",
+                                        "html": "<p>Bonjour</p>", "signature": "1"})  # fmt: skip
+    web.post(reverse("boite:nouveau"), {"a": "client@exemple.test", "objet": "B",
+                                        "html": "<p>Bonjour</p>"})  # fmt: skip
+    with_sig, without = (m["message"]["body"]["content"] for m in fake.sent_mails)
+    assert with_sig.endswith("<b>Camille Fictive</b></p><p>Comptable</p></div>")
+    assert "Camille" not in without
+    web.post(reverse("boite:signature"), {"html": "<p> </p>"})
+    assert not Signature.objects.exists()
+
+
+def test_editor_comment_is_not_shown(web, user, link):
+    assert "Zone de texte avec mise en forme" not in inbox_html(web, ouvrir="nouveau")

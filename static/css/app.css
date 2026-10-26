@@ -1420,3 +1420,6 @@ button:active, .button:active { transform: scale(.98); }
 .mb-when label { display: inline-flex; gap: .35rem; align-items: center; font-weight: 500; }
 .mb-when input[type="datetime-local"] { width: auto; }
 .mb-wait-actions { display: flex; gap: .5rem; margin-top: .4rem; flex-wrap: wrap; }
+.mb-signature { display: grid; gap: .3rem; margin: .4rem 0; }
+.mb-signature-preview { font-size: .88rem; color: var(--text-muted); border-left: 3px solid var(--border); padding: .2rem .7rem; }
+.mb-signature-preview p { margin: 0; }

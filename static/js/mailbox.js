@@ -75,6 +75,7 @@
     area.hidden = false;
     textarea.hidden = true;
     textarea.required = false;
+    sync(box);
     area.addEventListener("input", function () { sync(box); });
     area.addEventListener("keyup", function () { refresh(box); });
     area.addEventListener("mouseup", function () { refresh(box); });

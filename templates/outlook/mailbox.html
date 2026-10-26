@@ -19,6 +19,7 @@
     {% else %}
       <p>Pas activée. <a href="{% url 'boite:inbox' %}">Voir ce que fait « Ma boîte mail »</a>.</p>
     {% endif %}
+    <p style="margin-top:1rem"><a href="{% url 'boite:signature' %}">Ma signature</a> <span class="small muted">— ajoutée en bas des e-mails écrits dans l'outil.</span></p>
     <form method="post" action="{% url 'outlook:disconnect' %}" style="margin-top:1rem">{% csrf_token %}
       <button type="submit" class="button-danger">Délier ma boîte</button>
     </form>

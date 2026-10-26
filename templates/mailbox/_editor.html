@@ -1,4 +1,5 @@
-{# Zone de texte avec mise en forme (gras, italique, souligné, listes). Sans JavaScript : simple zone de texte. #}
+{% comment %}Zone de texte avec mise en forme (gras, italique, souligné, listes). Sans JavaScript : simple zone de texte.
+`initial` : HTML déjà nettoyé par l'outil (richtext.clean), jamais un texte saisi tel quel.{% endcomment %}
 <div class="rt" data-rt>
   <div class="rt-bar" role="toolbar" aria-label="Mise en forme" hidden>
     <button type="button" data-rt-cmd="bold" aria-label="Gras" title="Gras (Ctrl+B)"><strong>G</strong></button>
@@ -8,7 +9,7 @@
     <button type="button" data-rt-cmd="insertUnorderedList" aria-label="Liste à puces" title="Liste à puces">• Liste</button>
     <button type="button" data-rt-cmd="insertOrderedList" aria-label="Liste numérotée" title="Liste numérotée">1. Liste</button>
   </div>
-  <div class="rt-area" contenteditable="true" role="textbox" aria-multiline="true" aria-label="{{ label }}" hidden></div>
+  <div class="rt-area" contenteditable="true" role="textbox" aria-multiline="true" aria-label="{{ label }}" hidden>{% if initial %}{{ initial|safe }}{% endif %}</div>
   <textarea id="{{ id }}" name="texte" rows="{{ rows|default:7 }}" required></textarea>
   <input type="hidden" name="html" value="">
 </div>

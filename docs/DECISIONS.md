@@ -710,3 +710,8 @@ Validé par Jeremy sur maquettes (25/10).
 - Correction : le filtre `date_fr` affiche les dates et heures **à l'heure belge** (il les
   affichait à l'heure universelle, une heure de moins en hiver).
 - Les e-mails envoyés étaient déjà visibles dans « Envoyés » (copie relevée dans Outlook).
+- **Signature personnelle** (`Signature`, une par employé, « Ma boîte mail › Ma signature »,
+  aussi depuis « Liaison Outlook ») : même éditeur, mêmes balises autorisées, 5 000 caractères
+  au plus ; ajoutée en bas des messages et réponses écrits dans l'outil (case cochée par
+  défaut, décochable pour un message). Pas de logo ni de lien. Les e-mails automatiques aux
+  clients (demandes de pièces, TVA) gardent leur formule actuelle.

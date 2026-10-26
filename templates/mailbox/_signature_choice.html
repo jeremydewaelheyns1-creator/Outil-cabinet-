@@ -1,0 +1,9 @@
+{# Signature ajoutée en bas du message (case à décocher). #}
+{% if signature %}
+  <div class="mb-signature">
+    <label class="mb-check"><input type="checkbox" name="signature" value="1" checked> Ajouter ma signature</label>
+    <div class="mb-signature-preview">{{ signature.html|safe }}</div>
+  </div>
+{% else %}
+  <p class="small muted"><a href="{% url 'boite:signature' %}">Créer ma signature</a> : elle s'ajoutera en bas de vos messages.</p>
+{% endif %}

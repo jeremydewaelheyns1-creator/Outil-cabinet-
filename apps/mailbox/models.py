@@ -208,3 +208,17 @@ class ScheduledMail(models.Model):
     @property
     def pending(self) -> bool:
         return self.sent_at is None and self.cancelled_at is None and self.failed_at is None
+
+
+class Signature(models.Model):
+    """Signature personnelle ajoutée aux e-mails écrits dans « Ma boîte mail »."""
+
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="mail_signature")
+    html = models.TextField("signature", blank=True)  # déjà nettoyée (richtext.clean)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "signature"
+
+    def __str__(self) -> str:
+        return f"Signature de {self.user}"

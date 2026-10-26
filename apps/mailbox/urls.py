@@ -9,6 +9,7 @@ urlpatterns = [
     path("relever/", views.relever, name="relever"),
     path("desactiver/", views.desactiver, name="desactiver"),
     path("nouveau/", views.nouveau, name="nouveau"),
+    path("signature/", views.signature, name="signature"),
     path("programmes/<int:item_id>/annuler/", views.programme_annuler, name="programme_annuler"),
     path("programmes/<int:item_id>/envoyer/", views.programme_envoyer, name="programme_envoyer"),
     path("attente/<int:awaiting_id>/fin/", views.plus_attendre, name="plus_attendre"),
