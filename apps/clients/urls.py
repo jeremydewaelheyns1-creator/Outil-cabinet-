@@ -1,6 +1,6 @@
 from django.urls import path
 
-from apps.documents import risk_views
+from apps.documents import letter_views, risk_views
 from apps.documents import views as document_views
 from apps.tasks import views as task_views
 from apps.timesheet import views as timesheet_views
@@ -60,6 +60,11 @@ urlpatterns = [
         "<int:pk>/documents/apercu/<uuid:document_id>/page-<int:number>.png",
         document_views.document_page,
         name="document_page",
+    ),
+    path(
+        "<int:pk>/documents/lettre-de-mission/preparer/",
+        letter_views.prepare,
+        name="letter_prepare",
     ),
     path(
         "<int:pk>/documents/generer/<slug:doc_type>/",

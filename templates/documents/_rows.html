@@ -23,7 +23,9 @@
               {% if row.person %}<input type="hidden" name="person" value="{{ row.person.pk }}">{% endif %}
               <button type="submit" class="link-button small">Demander au client</button></form>
           {% endif %}
-          {% if row.can_generate and not row.draft %}
+          {% if row.can_generate and not row.draft and row.doc_type.slug == "lettre_mission" %}
+            <a class="button small" href="{% url 'clients:letter_prepare' client.pk %}">{% if row.document %}Mettre à jour{% else %}Générer{% endif %}</a>
+          {% elif row.can_generate and not row.draft %}
             <form class="inline" method="post" action="{% url 'clients:document_generate' client.pk row.doc_type.slug %}" hx-post="{% url 'clients:document_generate' client.pk row.doc_type.slug %}" hx-target="#doc-viewer-content" hx-swap="innerHTML">{% csrf_token %}
               {% if row.person %}<input type="hidden" name="person" value="{{ row.person.pk }}">{% endif %}
               <button type="submit" class="small">{% if row.document %}Mettre à jour{% else %}Générer{% endif %}</button></form>

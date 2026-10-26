@@ -24,9 +24,11 @@ ambitieux pour l'instant), adresse « support » pour les demandes automatiques,
 le journal des consultations pourraient y aller — à décider avec Jeremy).
 
 **26/10/2026 soir — fait (D-068)** : identifications client (PP/PM) et mandataire sur le modèle
-ITAA. **Prochaine étape** : construire le dépôt du modèle Word de lettre de mission (détection
-des trous + clic + contrôle ITAA), puis valider avec Jeremy l'UBO, la fiche de risque et les
-mandats SPF, un par un (format court : il préfère des réponses brèves).
+ITAA. **Fait ensuite (D-069)** : lettre de mission sur le modèle Word du cabinet (dépôt, trous,
+options, contrôle ITAA, génération, signature). **À tester par Jeremy** avec le modèle de son
+cabinet, directement dans l'outil en ligne. **Prochaine étape** : valider avec Jeremy l'UBO,
+la fiche de risque et les mandats SPF, un par un (format court : il préfère des réponses
+brèves).
 
 **26/10/2026 — Onglet Documents : maquettes « un document à la fois »** (page « Documents, un par
 un » des pistes de design). Recherche faite sur sources ITAA (recueil de modèles AML 3.1–5.2,

@@ -1,0 +1,26 @@
+{% extends "clients/sections/_base.html" %}
+{% block head_title %}Lettre de mission · {{ client.display_name }}{% endblock %}
+{% block page_title %}<a href="{% url 'clients:documents' client.pk %}" class="muted">Documents</a> › <a href="{% url 'clients:document_case' client.pk 'lettre-de-mission' %}" class="muted">Lettre de mission</a> › Préparer{% endblock %}
+{% block content %}
+<section class="card" style="max-width: 760px">
+  <div class="card-header"><h2>Préparer la lettre de mission</h2></div>
+  {% if template %}
+    <p class="small muted" style="margin-top:0">Sur le modèle du cabinet (« {{ template.name }} »). L'outil remplit tout seul ce qu'il connaît (nom, siège, numéro, représentant…) et garde ou retire les passages à options selon le dossier. Il ne reste que ceci :</p>
+  {% else %}
+    <p class="small muted" style="margin-top:0">Aucun modèle du cabinet n'est encore activé : la lettre sera faite sur le modèle provisoire de l'outil. Un administrateur peut déposer le modèle du cabinet dans Paramètres › Réglages du cabinet.</p>
+  {% endif %}
+  <form method="post">
+    {% csrf_token %}
+    {% for key, label in questions %}
+      {% if key|slice:":5" == "trou:" %}
+        <label for="q-{{ forloop.counter }}">{{ label }}</label>
+        <input id="q-{{ forloop.counter }}" name="{{ key }}" value="{{ values|get_item:key|default:'' }}" maxlength="300" required>
+      {% else %}
+        <label class="checkbox"><input type="checkbox" name="{{ key }}" value="1"{% if values|get_item:key == "1" %} checked{% endif %}> {{ label }}</label>
+      {% endif %}
+    {% endfor %}
+    <div class="actions" style="margin-top: .8rem"><button type="submit">Générer le brouillon</button><a class="button button-secondary" href="{% url 'clients:document_case' client.pk 'lettre-de-mission' %}">Annuler</a></div>
+    <p class="small muted">Le brouillon s'ouvre ensuite : relisez-le, puis envoyez-le au client pour signature en ligne.</p>
+  </form>
+</section>
+{% endblock %}

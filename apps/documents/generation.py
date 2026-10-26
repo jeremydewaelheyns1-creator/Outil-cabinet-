@@ -109,13 +109,28 @@ def render_pdf(client: Client, doc_type: str, person: Client | None, user: User 
 
 
 def generate(
-    client: Client, doc_type: str, *, person: Client | None = None, user: User | None = None
+    client: Client,
+    doc_type: str,
+    *,
+    person: Client | None = None,
+    user: User | None = None,
+    answers: dict[str, str] | None = None,
 ) -> Document:
-    """Produit un brouillon du document (nouveau, ou mise à jour de celui en place)."""
+    """Produit un brouillon du document (nouveau, ou mise à jour de celui en place).
+
+    Lettre de mission : sur le modèle Word du cabinet s'il y en a un d'activé (D-069), avec
+    les réponses du comptable (`answers`) ; sinon sur le modèle provisoire."""
+    from . import letter
+
     if not can_generate(doc_type):
         raise ValueError("Ce document ne peut pas être généré.")
     kind = types.BY_SLUG[doc_type]
-    content = render_pdf(client, doc_type, person, user)
+    template = letter.active() if doc_type == "lettre_mission" else None
+    if template is not None:
+        word = letter.fill(template, client, answers or {})
+        content = letter.to_pdf(word, kind.label)
+    else:
+        content = render_pdf(client, doc_type, person, user)
     today = timezone.localdate()
     who = f" — {person.display_name}" if person is not None and kind.per else ""
     with transaction.atomic():

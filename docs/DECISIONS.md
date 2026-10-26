@@ -770,3 +770,24 @@ Validé avec Jeremy, document par document (maquettes « Documents, un par un »
   recommandés en avertissement. Le modèle d'un cabinet n'entre jamais dans le dépôt.
 - Ensuite (à valider) : déclaration UBO pour le cabinet, registre UBO (MyMinfin), fiche de
   risque (modèle ITAA 5.1/5.2, révision 3 ans / 1 an), mandats SPF électroniques.
+
+## D-069 — Lettre de mission sur le modèle Word du cabinet
+
+Construit selon D-068. Un administrateur dépose le .docx du cabinet (Paramètres › Réglages du
+cabinet › Modèle de lettre de mission), **sans rien y changer** :
+- trous repérés : « XXX », « …… », « ____ », « [texte] », texte surligné ; contenu proposé
+  d'après les mots qui précèdent (siège, numéro, représenté par, honoraires, fait à…) ;
+  l'administrateur corrige par une liste. « À demander » = le comptable le donne à chaque
+  lettre (honoraires, lieu, début…) ;
+- passages à options, par paragraphe : toujours / assujetti TVA / société / personne
+  physique / coché par le comptable ;
+- éléments obligatoires (parties, début, fin, honoraires, documents, litiges, représentant,
+  signature) retrouvés par mots-clés et confirmés à la main : un absent ou non confirmé
+  bloque l'activation. Blanchiment, RGPD, secret professionnel : conseillés, signalés ;
+- un seul modèle actif. Un modèle modifié qui n'est plus complet est désactivé.
+Génération : seuls les trous sont remplacés (la mise en forme du reste est gardée), les
+passages non retenus sont retirés, puis Word → HTML (mammoth) → PDF (WeasyPrint, aucune
+ressource extérieure chargée). Brouillon puis signature en ligne par le parcours existant.
+Sans modèle actif : modèle provisoire de l'outil. Aucune IA. Le modèle est gardé dans la base
+du cabinet (jamais dans le dépôt) ; dépôt, réglage, suppression et génération sont journalisés.
+

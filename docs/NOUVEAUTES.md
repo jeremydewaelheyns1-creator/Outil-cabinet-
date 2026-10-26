@@ -3,6 +3,16 @@
 Ce qui a été ajouté à l'outil, du plus récent au plus ancien. Toutes les données de la démo
 sont inventées.
 
+## 26 octobre 2026 — Lettre de mission sur votre propre modèle
+
+- Dans **Réglages du cabinet**, déposez votre lettre de mission Word telle quelle. L'outil
+  repère les endroits à compléter (« XXX », pointillés, texte surligné…), propose ce qu'il
+  faut y mettre (nom du client, siège, numéro, gérant…) et vérifie que les mentions
+  obligatoires de l'ITAA sont présentes. Vous confirmez, vous activez.
+- Dans le dossier, **« Générer »** ne demande plus que les honoraires et ce que l'outil ne
+  connaît pas, garde ou retire les passages à options (TVA, société…), et prépare le
+  brouillon à envoyer au client pour signature en ligne.
+
 ## 26 octobre 2026 — Identifications sur le modèle de l'ITAA
 
 - Les fiches **« Identification du client »** (personne physique ou société) et

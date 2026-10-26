@@ -332,3 +332,28 @@ class RiskAssessment(models.Model):
     @property
     def awaiting_approval(self) -> bool:
         return self.level == self.Level.HIGH and self.approved_at is None
+
+
+class LetterTemplate(models.Model):
+    """Modèle Word de lettre de mission propre au cabinet (D-069).
+
+    Déposé tel quel par un administrateur. L'outil y repère les trous (XXX, ……, [à compléter],
+    texte surligné) ; `holes` dit ce que chacun contient, `options` quels paragraphes ne sont
+    gardés que sous condition, `checks` quels éléments obligatoires de l'ITAA ont été confirmés.
+    Un seul modèle actif à la fois ; les anciennes versions restent pour l'historique."""
+
+    name = models.CharField("nom du fichier", max_length=200)
+    content = models.BinaryField("fichier Word")
+    holes = models.JSONField("trous et leur contenu", default=dict, blank=True)
+    options = models.JSONField("paragraphes à options", default=dict, blank=True)
+    checks = models.JSONField("éléments obligatoires confirmés", default=list, blank=True)
+    active = models.BooleanField("utilisé pour les nouvelles lettres", default=False)
+    uploaded_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name="+")
+    uploaded_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        ordering: ClassVar = ["-uploaded_at"]
+        verbose_name = "modèle de lettre de mission"
+
+    def __str__(self) -> str:
+        return self.name

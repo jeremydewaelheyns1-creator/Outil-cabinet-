@@ -1,0 +1,89 @@
+{% extends "layouts/app.html" %}
+{% block head_title %}{{ template.name }}{% endblock %}
+{% block page_title %}<a href="{% url 'core:cabinet_settings' %}" class="muted">Réglages du cabinet</a> › <a href="{% url 'lettre:models' %}" class="muted">Modèle de lettre de mission</a> › {{ template.name }}{% endblock %}
+{% block content %}
+<form method="post" style="max-width: 980px">
+  {% csrf_token %}
+  <section class="card">
+    <div class="card-header"><h2>{{ template.name }}</h2>{% if template.active %}<span class="badge badge-success">utilisé pour les nouvelles lettres</span>{% endif %}</div>
+    {% if problems %}
+      <p><strong>Avant de pouvoir l'utiliser :</strong></p>
+      <ul class="small">{% for p in problems %}<li>{{ p }}</li>{% endfor %}</ul>
+    {% else %}
+      <p class="small">Tout est en ordre{% if not template.active %} : vous pouvez l'activer{% endif %}.</p>
+    {% endif %}
+  </section>
+
+  <section class="card" style="margin-top: 1rem">
+    <h2>1. Les trous à compléter ({{ holes|length }})</h2>
+    <p class="small muted" style="margin-top:0">L'outil propose ce qu'il faut mettre d'après le texte qui précède. Corrigez si besoin. « À demander » : le comptable le donne à chaque lettre (donnez alors la question à afficher).</p>
+    <table class="table">
+      <thead><tr><th>Dans le texte</th><th>Contenu</th></tr></thead>
+      <tbody>
+      {% for item in holes %}
+        <tr>
+          <td class="small">…{{ item.hole.before|slice:"-60:" }} <mark>{{ item.hole.text }}</mark> {{ item.hole.after|truncatechars:40 }}</td>
+          <td>
+            <select name="trou-{{ item.hole.key }}" aria-label="Contenu du trou">
+              <option value="">— à choisir —</option>
+              {% for code, label in choices %}<option value="{{ code }}"{% if code == item.field %} selected{% endif %}>{{ label }}</option>{% endfor %}
+            </select>
+            <input name="libelle-{{ item.hole.key }}" value="{{ item.label }}" maxlength="120" placeholder="Question si « à demander » (ex. Honoraires annuels HTVA)" aria-label="Question à poser" style="margin-top:.3rem">
+          </td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="2" class="muted">Aucun trou repéré. Marquez les endroits à compléter par « XXX » ou surlignez-les dans Word, puis redéposez le modèle.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </section>
+
+  <section class="card" style="margin-top: 1rem">
+    <h2>2. Les éléments obligatoires (ITAA)</h2>
+    <p class="small muted" style="margin-top:0">Retrouvés dans votre texte. Cochez après avoir vérifié l'extrait. Un élément obligatoire absent empêche d'utiliser le modèle ; un élément conseillé absent est seulement signalé.</p>
+    <table class="table">
+      <tbody>
+      {% for c in checks %}
+        <tr>
+          <td class="nowrap">{% if c.excerpt %}{% if c.required %}<input type="checkbox" name="verifie" value="{{ c.code }}" aria-label="Vérifié"{% if c.code in template.checks %} checked{% endif %}>{% else %}<span class="badge badge-success">présent</span>{% endif %}{% else %}<span class="badge {% if c.required %}badge-danger{% else %}badge-warning{% endif %}">{% if c.required %}absent{% else %}conseillé{% endif %}</span>{% endif %}</td>
+          <td><strong>{{ c.label }}</strong>{% if not c.required %} <span class="small muted">(conseillé)</span>{% endif %}<div class="small muted">{% if c.excerpt %}« {{ c.excerpt }} »{% elif c.code == "parties" %}Indiquez quel trou reçoit le nom du client.{% else %}Rien trouvé dans le modèle.{% endif %}</div></td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </section>
+
+  <section class="card" style="margin-top: 1rem">
+    <h2>3. Les passages à options (facultatif)</h2>
+    <p class="small muted" style="margin-top:0">Par défaut tout le texte est gardé. Pour un passage qui ne vaut pas pour tous les clients (mission TVA, IPP du dirigeant, frais d'ouverture…), choisissez quand le garder.</p>
+    <details>
+      <summary>Voir les {{ paragraphs|length }} paragraphes</summary>
+      <table class="table">
+        <tbody>
+        {% for p in paragraphs %}
+          <tr>
+            <td class="small">{{ p.text|truncatechars:220 }}</td>
+            <td style="min-width: 260px">
+              <select name="option-{{ p.index }}" aria-label="Quand garder ce passage">
+                {% for code, label in conditions %}<option value="{{ code }}"{% if code == p.condition %} selected{% endif %}>{{ label }}</option>{% endfor %}
+              </select>
+              <input name="question-{{ p.index }}" value="{{ p.label }}" maxlength="160" placeholder="Question si « le comptable le coche »" aria-label="Question à cocher" style="margin-top:.3rem">
+            </td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </details>
+  </section>
+
+  <div class="actions" style="margin-top: 1rem">
+    <button type="submit" name="action" value="enregistrer" class="secondary">Enregistrer</button>
+    {% if template.active %}
+      <button type="submit" name="action" value="desactiver" class="secondary">Désactiver</button>
+    {% else %}
+      <button type="submit" name="action" value="activer">Enregistrer et activer</button>
+    {% endif %}
+    <button type="submit" name="action" value="supprimer" class="secondary">Supprimer ce modèle</button>
+  </div>
+</form>
+{% endblock %}

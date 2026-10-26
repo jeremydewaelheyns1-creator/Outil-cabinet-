@@ -1,0 +1,31 @@
+{% extends "layouts/app.html" %}
+{% block head_title %}Modèle de lettre de mission{% endblock %}
+{% block page_title %}<a href="{% url 'core:cabinet_settings' %}" class="muted">Réglages du cabinet</a> › Modèle de lettre de mission{% endblock %}
+{% block content %}
+<section class="card" style="max-width: 860px">
+  <h2>Déposer le modèle du cabinet</h2>
+  <p class="muted">Déposez votre lettre de mission Word (.docx) telle que vous l'utilisez. Rien à changer dedans : l'outil repère les endroits à compléter (« XXX », « …… », « ____ », « [à compléter] » ou du texte surligné) et propose ce qu'il faut y mettre. Vous vérifiez, puis vous activez.</p>
+  <form method="post" enctype="multipart/form-data">{% csrf_token %}
+    <label for="modele-file">Fichier Word (5 Mo au plus)</label>
+    <input id="modele-file" type="file" name="modele" accept=".docx" required>
+    <div class="actions" style="margin-top: .6rem"><button type="submit">Déposer</button></div>
+  </form>
+</section>
+<section class="card" style="max-width: 860px; margin-top: 1rem">
+  <h2>Modèles déposés</h2>
+  {% if templates %}
+  <table class="table">
+    <thead><tr><th>Fichier</th><th>Déposé</th><th>État</th></tr></thead>
+    <tbody>
+    {% for t in templates %}
+      <tr>
+        <td><a href="{% url 'lettre:model' t.pk %}">{{ t.name }}</a></td>
+        <td class="small">{{ t.uploaded_at|date:"d/m/Y" }}{% if t.uploaded_by %} · {{ t.uploaded_by }}{% endif %}</td>
+        <td>{% if t.active %}<span class="badge badge-success">utilisé</span>{% else %}<span class="badge">pas activé</span>{% endif %}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% else %}<p class="muted">Aucun modèle : les lettres sont faites sur le modèle provisoire de l'outil.</p>{% endif %}
+</section>
+{% endblock %}
