@@ -23,6 +23,15 @@ ambitieux pour l'instant), adresse « support » pour les demandes automatiques,
 **module Administrateur** (onglet réservé, vue générale de ce qui se passe ; Conformité et
 le journal des consultations pourraient y aller — à décider avec Jeremy).
 
+**26/10/2026 — Onglet Documents : maquettes « un document à la fois »** (page « Documents, un par
+un » des pistes de design). Recherche faite sur sources ITAA (recueil de modèles AML 3.1–5.2,
+manuel AML, note « lettre de mission »), loi du 18/09/2017, SPF (registre UBO, mandats CSAM),
+règlement (UE) 2024/1624 (10/07/2027). Changements retenus : procuration papier → suivi des
+mandats SPF électroniques ; fiches calquées sur les modèles ITAA (PEP, nature et but de la
+relation, pouvoirs, révision 3 ans / 1 an) ; chaque cabinet dépose SON modèle Word de lettre de
+mission (champs + blocs à options). Rien de construit : attente de la validation de Jeremy et
+relecture par l'AMLCO. Ensuite : les démarches faites directement dans MyMinfin.
+
 **26/10/2026 — Cap sur la commercialisation (D-067)** : annoncé par Jeremy. Questions à
 trancher listées dans D-067 (modèle d'installation, audit, RGPD, support). Rien de construit.
 
