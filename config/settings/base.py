@@ -215,9 +215,10 @@ OUTGOING_EMAIL_ENABLED = env.bool("OUTGOING_EMAIL_ENABLED", default=False)
 # D-044 : envoi depuis la boîte Outlook de chaque employé (Microsoft 365, droit d'envoi seul).
 # Les trois valeurs viennent de l'inscription de l'application dans Microsoft Entra ; le secret
 # est placé directement dans le gestionnaire de secrets de l'hébergement, jamais dans le dépôt.
-OUTLOOK_TENANT_ID = env("OUTLOOK_TENANT_ID", default="")
-OUTLOOK_CLIENT_ID = env("OUTLOOK_CLIENT_ID", default="")
-OUTLOOK_CLIENT_SECRET = env("OUTLOOK_CLIENT_SECRET", default="")
+# `.strip()` : un retour à la ligne collé avec la valeur (Entrée avant Ctrl+D) ne casse rien.
+OUTLOOK_TENANT_ID = env("OUTLOOK_TENANT_ID", default="").strip()
+OUTLOOK_CLIENT_ID = env("OUTLOOK_CLIENT_ID", default="").strip()
+OUTLOOK_CLIENT_SECRET = env("OUTLOOK_CLIENT_SECRET", default="").strip()
 OUTLOOK_TIMEOUT_SECONDS = env.int("OUTLOOK_TIMEOUT_SECONDS", default=20)
 # D-060 : « Ma boîte mail » — conservation des copies d'e-mails.
 MAIL_UNCLASSED_DAYS = env.int("MAIL_UNCLASSED_DAYS", default=365)

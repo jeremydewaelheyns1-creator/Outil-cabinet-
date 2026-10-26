@@ -34,7 +34,17 @@ aussi, s'il le veut, faire lire sa boîte par l'outil (onglet « Ma boîte mail 
 
 Les trois valeurs sont rangées dans Secret Manager (Belgique) ; l'installateur les reprend à
 chaque mise à jour. Pour chacune : coller la commande, Entrée, coller la valeur, Entrée, puis
-Ctrl+D (rien ne s'affiche à l'écran ni dans l'historique).
+Ctrl+D. La valeur collée s'affiche à l'écran (pas dans l'historique des commandes) : taper
+`clear` ensuite.
+
+**Secret expiré (renouvellement)** : créer un nouveau secret dans Entra, puis dans Cloud Shell
+(la valeur collée reste invisible) :
+
+```bash
+read -rs S && printf '%s' "$S" | gcloud secrets versions add OUTLOOK_CLIENT_SECRET --data-file=- ; unset S
+```
+
+Coller la valeur, Entrée. Puis la commande `gcloud run services update` ci-dessous.
 
 ```bash
 gcloud secrets create OUTLOOK_TENANT_ID --replication-policy=user-managed --locations=europe-west1 --data-file=-
