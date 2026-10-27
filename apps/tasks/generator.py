@@ -1,11 +1,12 @@
 """Création automatique des échéances à partir des règles.
 
-Idempotent : relancer la génération ne crée jamais de doublon (clé client + règle + période)
-et ne touche jamais une tâche déjà travaillée. Pour chaque client et chaque règle :
+Idempotent : relancer la génération ne crée jamais de doublon (clé client + règle + période).
+Pour chaque client et chaque règle :
 - client concerné : les tâches manquantes de la fenêtre (passé récent → 12 mois) sont créées ;
 - client plus concerné : ses tâches futures encore intactes sont retirées ;
-- règle modifiée (ex. date limite déplacée) : les tâches futures encore intactes prennent la
-  nouvelle date limite ; une tâche déjà travaillée garde la sienne.
+- règle modifiée (ex. date limite déplacée) : chaque tâche prend la nouvelle date limite
+  (c'est une date légale, pas un choix) ; « task.rescheduled » prévient les autres modules
+  (ligne TVA).
 """
 
 from __future__ import annotations
@@ -17,10 +18,11 @@ from django.db import transaction
 from django.utils import timezone
 
 from apps.clients.models import Assignment, Client
+from apps.core import events
 from apps.core.models import User
 
 from .models import GenerationRun, Task, TaskStep
-from .rules import Rule, RuleSet, load_rules
+from .rules import Rule, RuleSet, load_rules, rules_hash
 
 
 @dataclass
@@ -76,9 +78,17 @@ def generate_for_client(
             if period.key in existing:
                 task = tasks[period.key]
                 due = rule.due_date(period)
-                if due and due != task.due_date and task.due_date >= today and task.is_untouched:
+                # Date légale changée (ex. TVA trimestrielle au 25) : l'échéance suit, même
+                # commencée, passée ou terminée (c'est un fait, pas un choix du cabinet).
+                if due and due != task.due_date:
+                    old = task.due_date
                     task.due_date = due
                     task.save(update_fields=["due_date", "updated_at"])
+                    events.emit(
+                        "task.rescheduled", subject=client,
+                        payload={"tache": task.pk, "avant": old.isoformat(),
+                                 "apres": due.isoformat()},
+                    )  # fmt: skip
                     result.moved += 1
                 continue
             due = rule.due_date(period)
@@ -123,7 +133,7 @@ def reassign_open_tasks(client: Client) -> int:
 
 def generate_all(today: date | None = None) -> GenerationRun:
     """Tous les clients (les anciens clients et prospects voient leurs tâches futures retirées)."""
-    run = GenerationRun.objects.create()
+    run = GenerationRun.objects.create(rules_hash=rules_hash())
     rules = load_rules()
     total = Result()
     clients = Client.objects.prefetch_related("assignments__user")
@@ -137,8 +147,12 @@ def generate_all(today: date | None = None) -> GenerationRun:
 
 
 def generate_all_if_due() -> GenerationRun | None:
-    """Une génération complète par jour au plus (appelé par `run_jobs` toutes les 5 minutes)."""
+    """Une génération complète par jour (appelé par `run_jobs` toutes les 5 minutes), et une de
+    plus dès que le fichier de règles change (mise à jour de l'outil)."""
     today = timezone.localdate()
-    if GenerationRun.objects.filter(started_at__date=today, finished_at__isnull=False).exists():
+    done = GenerationRun.objects.filter(
+        started_at__date=today, finished_at__isnull=False, rules_hash=rules_hash()
+    )
+    if done.exists():  # déjà fait aujourd'hui avec les règles actuelles
         return None
     return generate_all(today)

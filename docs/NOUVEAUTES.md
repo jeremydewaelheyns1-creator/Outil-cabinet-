@@ -3,6 +3,16 @@
 Ce qui a été ajouté à l'outil, du plus récent au plus ancien. Toutes les données de la démo
 sont inventées.
 
+## 27 octobre 2026 — Déclaration TVA
+
+- **Colonnes** : « Acomptes » est maintenant avant « Com. client ».
+- **Doc. reçus** : en cliquant sur la case, bouton « Demander les documents au client ». L'outil
+  propose l'e-mail (factures de vente, d'achat, extraits, date limite), vous le relisez et
+  l'envoyez vous-même. Rien ne part tout seul. Ensuite : « Envoyer un rappel ».
+- **Dates** : TVA trimestrielle le 25, mensuelle le 20, reportées au jour ouvrable suivant si
+  c'est un week-end ou un jour férié. Les échéances déjà créées avec l'ancienne date sont
+  corrigées automatiquement.
+
 ## 27 octobre 2026 — Fiche de risque sur le modèle officiel
 
 - **Fiche de risque** : c'est maintenant exactement le formulaire 5.1 de l'ITAA (9 blocs,

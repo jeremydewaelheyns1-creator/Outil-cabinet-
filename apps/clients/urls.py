@@ -49,6 +49,11 @@ urlpatterns = [
     path("<int:pk>/tva/<int:filing_id>/case/<slug:column>/", vat_views.vat_cell, name="vat_cell"),
     path("<int:pk>/tva/<int:filing_id>/montants/", vat_views.vat_amounts, name="vat_amounts"),
     path("<int:pk>/tva/<int:filing_id>/email/", vat_views.vat_mail, name="vat_mail"),
+    path(
+        "<int:pk>/tva/<int:filing_id>/demande-documents/",
+        vat_views.vat_docs_mail,
+        name="vat_docs_mail",
+    ),
     path("<int:pk>/tva/a-confirmer/<int:pending_id>/", vat_views.vat_confirm, name="vat_confirm"),
     path("<int:pk>/archives/<slug:slug>/", views.client_archive, name="archive"),
     path("<int:pk>/documents/", views.client_documents, name="documents"),

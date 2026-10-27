@@ -506,3 +506,49 @@ def test_payment_line_in_the_administration_format():
         "TVA-BTW",
         "GEBABEBB",
     )
+
+
+def test_advances_come_before_the_client_email_column(web, user):
+    company, _filing = _filed(user)
+    html = web.get(reverse("clients:vat", args=[company.pk])).content.decode()
+    head = html[html.index("<thead>") : html.index("</thead>")]
+    assert head.index("Acomptes") < head.index("Com. client")
+    row = html[html.index('class="vat-row') :]
+    assert row.index("vat-advances") < row.index("Préparer l'e-mail au client")
+
+
+def test_documents_request_is_only_sent_on_click(web, user, settings, mailoutbox):
+    """« Doc. reçus » : demande proposée, relue, envoyée seulement sur clic (D-088)."""
+    from apps.vat.models import VatMessage
+
+    settings.OUTGOING_EMAIL_ENABLED = True
+    company, filing = _filed(user)
+    grid = web.get(reverse("clients:vat", args=[company.pk])).content.decode()
+    assert "Demander les documents au client" in grid
+    url = reverse("clients:vat_docs_mail", args=[company.pk, filing.pk])
+    html = web.get(url, HTTP_HX_REQUEST="true").content.decode()
+    assert "Demande de documents" in html and "factures d&#x27;achat" in html
+    assert "Joindre le PDF" not in html
+    assert not filing.messages.exists() and not mailoutbox  # rien d'automatique
+    data = {"action": "send", "to": "compta@fictif.test", "subject": "Vos documents",
+            "body": "Bonjour"}  # fmt: skip
+    web.post(url, data, HTTP_HX_REQUEST="true")
+    message = filing.messages.get()
+    assert message.kind == VatMessage.Kind.DOCUMENTS and message.sent_at
+    assert len(mailoutbox) == 1 and not mailoutbox[0].attachments
+    assert filing.cells.get(column="docs").status == Status.WAITING
+    assert not filing.cells.filter(column="client", status=Status.DONE).exists()
+    # La déclaration a toujours son propre e-mail ; la demande suivante est un rappel.
+    assert (
+        "Préparer l'e-mail au client"
+        in web.get(reverse("clients:vat", args=[company.pk])).content.decode()
+    )
+    again = web.get(url, HTTP_HX_REQUEST="true").content.decode()
+    assert "Rappel" in again and "toujours pas reçu" in again
+
+
+def test_documents_request_hidden_once_documents_are_received(web, user):
+    company, filing = _filed(user)
+    services.set_status(filing, Column.DOCS, Status.DONE, user=user)
+    html = web.get(reverse("clients:vat", args=[company.pk])).content.decode()
+    assert "Demander les documents au client" not in html

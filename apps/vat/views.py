@@ -9,6 +9,7 @@ from typing import Any
 from django.contrib import messages
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.views.decorators.http import require_POST
 
 from apps.clients.models import Client
@@ -168,6 +169,13 @@ def _mail_response(request: AppRequest, filing: VatFiling, message: VatMessage,
             "addresses": mail.addresses(filing),
             "mailbox": graph.mailbox_for(request.user),
             "outlook_configured": graph.configured(),
+            "documents": message.kind == VatMessage.Kind.DOCUMENTS,
+            "action_url": reverse(
+                "clients:vat_docs_mail"
+                if message.kind == VatMessage.Kind.DOCUMENTS
+                else "clients:vat_mail",
+                args=[filing.client_id, filing.pk],
+            ),
         },
     )
     if message.sent_at is not None:
@@ -178,15 +186,25 @@ def _mail_response(request: AppRequest, filing: VatFiling, message: VatMessage,
 @require_capability(Capability.CLIENTS_EDIT)
 def vat_mail(request: AppRequest, pk: int, filing_id: int) -> HttpResponse:
     """E-mail au client : proposé par l'outil, relu et modifiable, envoyé sur clic (D-042)."""
+    return _mail(request, pk, filing_id, VatMessage.Kind.DECLARATION)
+
+
+@require_capability(Capability.CLIENTS_EDIT)
+def vat_docs_mail(request: AppRequest, pk: int, filing_id: int) -> HttpResponse:
+    """Demande des documents pas encore reçus : jamais automatique, sur clic (D-088)."""
+    return _mail(request, pk, filing_id, VatMessage.Kind.DOCUMENTS)
+
+
+def _mail(request: AppRequest, pk: int, filing_id: int, kind: str) -> HttpResponse:
     filing = _filing(request, pk, filing_id)
-    message = mail.draft(filing, request.user)
+    message = mail.draft(filing, request.user, kind)
     if request.method != "POST":
         log_access(request, AccessLog.Action.VIEW, filing.client,
                    details={"rubrique": "tva", "email": filing.period_key})  # fmt: skip
         return _mail_response(request, filing, message)
     if message.sent_at is None:
         if request.POST.get("action") == "recompose":
-            message.subject, message.body = mail.compose(filing, request.user)
+            message.subject, message.body = mail.compose(filing, request.user, kind)
         else:
             message.to = request.POST.get("to", "").strip()[:254]
             message.subject = request.POST.get("subject", "").strip()[:255] or message.subject

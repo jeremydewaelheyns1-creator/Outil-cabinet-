@@ -210,6 +210,8 @@ class GenerationRun(models.Model):
     created = models.PositiveIntegerField("tâches créées", default=0)
     removed = models.PositiveIntegerField("tâches retirées", default=0)
     clients = models.PositiveIntegerField("clients traités", default=0)
+    # Empreinte du fichier de règles : s'il change (nouvelle date légale), on régénère le jour même.
+    rules_hash = models.CharField("empreinte des règles", max_length=64, blank=True)
 
     class Meta:
         verbose_name = "génération d'échéances"

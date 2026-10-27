@@ -1036,3 +1036,21 @@ mission ← mission, services), motivation = critères relevés et leurs comment
   terrorisme).
 - Révisions (3 ans / 1 an) et validation AMLCO inchangées. Les anciennes fiches oui/non restent
   lisibles (correspondance vers les critères du 5.1) ; pas de migration de base.
+
+## D-088 — TVA : acomptes avant l'e-mail, demande de documents sur clic, dates légales à jour
+
+Demandes de Jeremy :
+- Colonnes : « Acomptes » passe avant « Com. client » (il faut connaître les acomptes pour
+  écrire l'e-mail du montant à payer).
+- Case « Doc. reçus » : bouton « Demander les documents au client » (puis « Envoyer un
+  rappel »). Même fenêtre que l'e-mail de la déclaration : texte proposé, relu, modifiable,
+  envoyé **seulement sur clic** (jamais automatique, au choix du comptable). À l'envoi, la case
+  passe « en attente ». `VatMessage.kind` distingue les deux e-mails. Bouton caché une fois les
+  documents reçus.
+- Dates : trimestriels le 25, mensuels le 20, reportés au jour ouvrable suivant (tolérance de
+  la circulaire 2025/C/6, maintenue jusqu'à nouvel ordre par la circulaire du 1er octobre
+  2025). La règle existait mais les échéances déjà créées gardaient l'ancienne date (seules les
+  tâches futures intactes suivaient) et la ligne TVA en gardait une copie. Désormais : quand la
+  règle donne une autre date, chaque échéance suit (même commencée, passée ou terminée : c'est
+  un fait légal) ; `task.rescheduled` met la ligne TVA à jour ; et la génération repasse le jour
+  même quand le fichier de règles change (`GenerationRun.rules_hash`), donc dès la mise à jour.

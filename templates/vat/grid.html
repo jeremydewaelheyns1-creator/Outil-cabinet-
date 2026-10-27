@@ -13,8 +13,8 @@
         <th scope="col">Période</th>
         {% for key, label, header in headers|slice:":4" %}<th scope="col" title="{{ label }}">{{ header }}</th>{% endfor %}
         <th scope="col" title="Grille 71 (à payer) ou 72 (à récupérer)">Solde</th>
-        {% with h=headers.4 %}<th scope="col" title="{{ h.1 }}">{{ h.2 }}</th>{% endwith %}
         {% if quarterly %}<th scope="col">Acomptes</th>{% endif %}
+        {% with h=headers.4 %}<th scope="col" title="{{ h.1 }}">{{ h.2 }}</th>{% endwith %}
         <th scope="col" title="Responsable">Resp.</th>
         <th scope="col" title="Assistant">Assis.</th>
         <th scope="col">Remarque</th>

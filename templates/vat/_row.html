@@ -26,7 +26,6 @@
       </details>{% endif %}
     {% endwith %}
   </td>
-  {% with cell=row.cells.4 %}{% include "vat/_cell.html" %}{% endwith %}
   {% if quarterly %}
     <td class="vat-advances">
       {% if f.periodicity == "quarterly" %}
@@ -48,6 +47,7 @@
       {% endif %}
     </td>
   {% endif %}
+  {% with cell=row.cells.4 %}{% include "vat/_cell.html" %}{% endwith %}
   <td class="nowrap" title="{{ f.manager|default:'' }}">{{ f.manager.get_short_name|default:"" }}</td>
   <td class="nowrap" title="{{ f.assistant|default:'' }}">{{ f.assistant.get_short_name|default:"" }}</td>
   <td class="vat-remark">

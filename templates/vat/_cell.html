@@ -2,7 +2,7 @@
 <td class="vat-cell vat-{{ cell.css }}">
   {% if can_edit %}<details class="vat-menu"><summary title="{{ cell.label }} : {% if cell.never %}jamais nécessaire{% else %}{{ cell.status_label|lower }}{% endif %}">{% endif %}
     <span class="vat-date">{% if cell.never %}&nbsp;{% elif cell.on %}{{ cell.on|date:"d/m" }}{% else %}&nbsp;{% endif %}</span>
-    {% if cell.column == "client" and row.filing.messages.all|length %}<svg class="vat-mailed" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" aria-label="E-mail préparé"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>{% endif %}
+    {% if cell.column == "client" and row.filing.declaration_messages or cell.column == "docs" and row.filing.documents_messages %}<svg class="vat-mailed" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" aria-label="E-mail préparé"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>{% endif %}
     {% if cell.comment %}<svg class="vat-note" viewBox="0 0 24 24" width="13" height="13" fill="currentColor" aria-label="Remarque"><path d="M4 4h16v12H8l-4 4z"/></svg>{% endif %}
     <span class="visually-hidden">{{ cell.label }} : {{ cell.status_label }}</span>
     {% include "vat/_files.html" %}
@@ -23,7 +23,13 @@
       </form>
       {% if cell.column == "client" %}
         <a class="button vat-mail-button" href="{% url 'clients:vat_mail' client.pk row.filing.pk %}" hx-get="{% url 'clients:vat_mail' client.pk row.filing.pk %}" hx-target="#doc-viewer-content" hx-swap="innerHTML">
-          {% if row.filing.messages.all|length %}Voir l'e-mail au client{% else %}Préparer l'e-mail au client{% endif %}</a>
+          {% if row.filing.declaration_messages %}Voir l'e-mail au client{% else %}Préparer l'e-mail au client{% endif %}</a>
+      {% elif cell.column == "docs" and not cell.never and cell.status != "done" and cell.status != "na" %}
+        {% with sent=row.filing.documents_messages %}
+          {% if sent %}<p class="small muted">{% for m in sent %}{% if m.sent_at %}Documents demandés le {{ m.sent_at|date:"d/m/Y" }}{% else %}Demande préparée, pas encore envoyée{% endif %}{% if not forloop.last %}<br>{% endif %}{% endfor %}</p>{% endif %}
+          <a class="button vat-mail-button button-secondary" href="{% url 'clients:vat_docs_mail' client.pk row.filing.pk %}" hx-get="{% url 'clients:vat_docs_mail' client.pk row.filing.pk %}" hx-target="#doc-viewer-content" hx-swap="innerHTML">
+            {% if sent and not sent.0.sent_at %}Reprendre la demande{% elif sent %}Envoyer un rappel au client{% else %}Demander les documents au client{% endif %}</a>
+        {% endwith %}
       {% endif %}
     </div>
   </details>{% else %}{% if cell.comment %}<span class="small">{{ cell.comment }}</span>{% endif %}{% endif %}

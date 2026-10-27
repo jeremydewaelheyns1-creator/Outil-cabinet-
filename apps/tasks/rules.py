@@ -191,6 +191,12 @@ def _parse_rule(raw: dict[str, Any]) -> Rule:
     )
 
 
+def rules_hash(path: Path = RULES_FILE) -> str:
+    import hashlib
+
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
 @cache
 def load_rules(path: Path = RULES_FILE) -> RuleSet:
     data = yaml.safe_load(path.read_text(encoding="utf-8")) or {}

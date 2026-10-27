@@ -105,20 +105,42 @@ def test_generate_all_runs_once_a_day():
     assert generate_all_if_due() is None
 
 
-def test_new_deadline_rule_moves_untouched_future_tasks_only(monkeypatch):
+def test_new_deadline_rule_moves_every_task(django_capture_on_commit_callbacks):
+    """Date légale changée (TVA trimestrielle au 25, reportée au jour ouvrable) : chaque échéance
+    suit, même passée, commencée ou terminée ; la ligne TVA aussi (D-088)."""
     from apps.core.testing.factories import ClientFactory
     from apps.tasks import generator
     from apps.tasks.models import Task
+    from apps.vat import services
 
     client = ClientFactory(vat_status="subject", vat_periodicity="quarterly")
-    today = date(2026, 10, 1)
-    generator.generate_for_client(client, today)
+    today = date(2026, 10, 27)
+    generator.generate_for_client(client, date(2026, 7, 1))
+    q2 = client.tasks.get(kind="tva_trimestrielle", period_key="2026-T2")
     q3 = client.tasks.get(kind="tva_trimestrielle", period_key="2026-T3")
     q4 = client.tasks.get(kind="tva_trimestrielle", period_key="2026-T4")
-    Task.objects.filter(pk=q3.pk).update(due_date=date(2026, 10, 20))  # ancienne règle (le 20)
-    Task.objects.filter(pk=q4.pk).update(due_date=date(2027, 1, 20), notes="déjà travaillée")
-    result = generator.generate_for_client(client, today)
-    q3.refresh_from_db()
-    q4.refresh_from_db()
-    assert q3.due_date == date(2026, 10, 26) and result.moved == 1
-    assert q4.due_date == date(2027, 1, 20)  # travaillée : on n'y touche pas
+    Task.objects.filter(pk=q2.pk).update(due_date=date(2026, 7, 20), status="done")  # terminée
+    Task.objects.filter(pk=q3.pk).update(due_date=date(2026, 10, 20))  # ancienne règle, passée
+    Task.objects.filter(pk=q4.pk).update(due_date=date(2027, 1, 20), notes="déjà commencée")
+    filing = services.filing_for(client, services.period(2026, quarter=3))
+    assert filing.due_date == date(2026, 10, 20)
+    with django_capture_on_commit_callbacks(execute=True):
+        result = generator.generate_for_client(client, today)
+    for task in (q2, q3, q4):
+        task.refresh_from_db()
+    assert q3.due_date == date(2026, 10, 26)  # le 25 est un dimanche → lundi 26
+    assert q4.due_date == date(2027, 1, 25) and q2.due_date == date(2026, 7, 27)
+    assert result.moved == 3
+    filing.refresh_from_db()
+    assert filing.due_date == date(2026, 10, 26)
+
+
+def test_generation_runs_again_the_same_day_when_rules_change(monkeypatch):
+    from apps.tasks import generator
+
+    quarterly_company()
+    generate_all()
+    assert generate_all_if_due() is None
+    monkeypatch.setattr(generator, "rules_hash", lambda: "nouvelles-regles")
+    assert generate_all_if_due() is not None
+    assert generate_all_if_due() is None

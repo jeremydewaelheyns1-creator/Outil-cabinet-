@@ -151,6 +151,15 @@ class VatFiling(models.Model):
         return (self.advance_1 or Decimal("0")) + (self.advance_2 or Decimal("0"))
 
     @property
+    def declaration_messages(self) -> list[VatMessage]:
+        return [m for m in self.messages.all() if m.kind == VatMessage.Kind.DECLARATION]
+
+    @property
+    def documents_messages(self) -> list[VatMessage]:
+        """Demandes de documents (préparées ou envoyées), la plus récente d'abord."""
+        return [m for m in self.messages.all() if m.kind == VatMessage.Kind.DOCUMENTS]
+
+    @property
     def remaining(self) -> Decimal | None:
         """Reste à payer après les acomptes (négatif : à récupérer). Sans montant : None."""
         if self.grid_71 is None and self.grid_72 is None:
@@ -230,13 +239,19 @@ class VatPending(models.Model):
 
 
 class VatMessage(models.Model):
-    """E-mail au client après le dépôt (D-042) : préparé par l'outil, relu, puis envoyé.
+    """E-mail au client après le dépôt (D-042), ou demande de documents pas encore reçus
+    (D-088) : préparé par l'outil, relu, puis envoyé sur clic.
 
     Tant que la messagerie du cabinet n'est pas branchée, « Envoyer » l'enregistre comme prêt
     à partir (`delivered` reste faux) et coche la case « Com. client ».
     """
 
+    class Kind(models.TextChoices):
+        DECLARATION = "declaration", "Déclaration déposée (montant à payer)"
+        DOCUMENTS = "documents", "Documents pas encore reçus"
+
     filing = models.ForeignKey(VatFiling, on_delete=models.CASCADE, related_name="messages")
+    kind = models.CharField("type", max_length=12, choices=Kind.choices, default=Kind.DECLARATION)
     to = models.EmailField("à", blank=True)
     subject = models.CharField("objet", max_length=255)
     body = models.TextField("message")

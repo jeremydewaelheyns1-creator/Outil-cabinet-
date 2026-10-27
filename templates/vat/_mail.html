@@ -2,19 +2,19 @@
 <div class="viewer">
   <header class="viewer-head">
     <div class="viewer-title">
-      <h2>E-mail au client — TVA {{ filing.short_label }}
+      <h2>{% if documents %}Demande de documents{% else %}E-mail au client{% endif %} — TVA {{ filing.short_label }}
         {% if message.sent_at %}<span class="badge badge-success">envoyé</span>{% else %}<span class="badge badge-warning">à relire</span>{% endif %}
       </h2>
       <div class="viewer-meta">
         <span><span class="muted">Dossier</span> {{ client.display_name }}</span>
-        {% with r=filing.remaining %}{% if r is not None %}<span><span class="muted">{% if r < 0 %}En sa faveur{% else %}Reste à payer{% endif %}</span> {% if r < 0 %}{{ r|euros|slice:"1:" }}{% else %}{{ r|euros }}{% endif %}</span>{% endif %}{% endwith %}
+        {% with r=filing.remaining %}{% if r is not None and not documents %}<span><span class="muted">{% if r < 0 %}En sa faveur{% else %}Reste à payer{% endif %}</span> {% if r < 0 %}{{ r|euros|slice:"1:" }}{% else %}{{ r|euros }}{% endif %}</span>{% endif %}{% endwith %}
       </div>
     </div>
     <div class="viewer-actions">
       <button type="button" class="viewer-close" data-viewer-close aria-label="Fermer">×</button>
     </div>
   </header>
-  <form class="vat-mail" method="post" action="{% url 'clients:vat_mail' client.pk filing.pk %}" hx-post="{% url 'clients:vat_mail' client.pk filing.pk %}" hx-target="#doc-viewer-content" hx-swap="innerHTML">{% csrf_token %}
+  <form class="vat-mail" method="post" action="{{ action_url }}" hx-post="{{ action_url }}" hx-target="#doc-viewer-content" hx-swap="innerHTML">{% csrf_token %}
     <div class="viewer-body vat-mail-body">
       <section>
         {% if error %}<p class="alert alert-error">{{ error }}</p>{% endif %}
@@ -36,7 +36,9 @@
         {% endif %}
         <label>Objet<input type="text" name="subject" value="{{ message.subject }}" maxlength="255" {% if message.sent_at %}disabled{% endif %}></label>
         <label>Message<textarea name="body" rows="16" {% if message.sent_at %}disabled{% endif %}>{{ message.body }}</textarea></label>
-        {% if filing.pdf %}
+        {% if documents %}
+          {% if not message.sent_at %}<p class="small muted">Rien ne part sans votre clic. À l'envoi, la case « Doc. reçus » passe « en attente ».</p>{% endif %}
+        {% elif filing.pdf %}
           <label class="vat-mail-attach"><input type="checkbox" name="attach_pdf" value="1"{% if message.attach_pdf %} checked{% endif %}{% if message.sent_at %} disabled{% endif %}>
             Joindre le PDF de la déclaration</label>
           {% with d=filing.pdf %}<p class="small">{% include "documents/_open.html" %}Voir la déclaration (PDF)</a></p>{% endwith %}
@@ -49,7 +51,7 @@
       <button type="button" class="button-secondary" data-viewer-close>Fermer</button>
       {% if not message.sent_at %}
         <div class="viewer-foot-actions">
-          <button type="submit" name="action" value="recompose" class="link-button" title="Reprend les montants actuels de la grille">Refaire le texte</button>
+          <button type="submit" name="action" value="recompose" class="link-button" title="{% if documents %}Reprend le texte proposé{% else %}Reprend les montants actuels de la grille{% endif %}">Refaire le texte</button>
           <button type="submit" name="action" value="save" class="button-secondary">Enregistrer</button>
           <button type="submit" name="action" value="send"{% if not addresses %} disabled{% endif %}>Envoyer au client</button>
         </div>
