@@ -49,6 +49,9 @@ def spf_mandate_request(request: AppRequest, pk: int) -> HttpResponse:
     from apps.outlook import graph
 
     client = _get_client(request, pk)
+    if client.status == Client.Status.PROSPECT:
+        messages.info(request, "Prospect : les mandats se demandent après la lettre de mission.")
+        return redirect("clients:documents", pk=client.pk)
     cabinet = CabinetSettings.current()
     todo = spf.missing(client)
     kinds = [line.kind for line in todo]

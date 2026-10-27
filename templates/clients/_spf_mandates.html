@@ -20,7 +20,9 @@
     <li class="muted small">Aucun mandat nécessaire.</li>
   {% endfor %}
   </ul>
-  {% if can_edit and mandates_missing %}
+  {% if client.status == "prospect" %}
+    <p class="small muted" style="margin:.6rem 0 0">Prospect : les mandats se demandent une fois la lettre de mission signée.</p>
+  {% elif can_edit and mandates_missing %}
     <a class="button button-small mandates-ask" href="{% url 'clients:spf_mandate_request' client.pk %}">Demander {% if mandates_missing == 1 %}le mandat manquant{% else %}les {{ mandates_missing }} mandats manquants{% endif %}</a>
   {% endif %}
   <p class="small muted" style="margin:.5rem 0 0">Créés et signés sur le site du SPF, dans « Mes mandats ».</p>

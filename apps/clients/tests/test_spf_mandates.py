@@ -103,3 +103,13 @@ def test_person_national_number_is_never_shown(web):
     person = PersonFactory(national_number="85073003328")
     page = web.get(reverse("clients:spf_mandate_request", args=[person.pk])).content.decode()
     assert "85073003328" not in page and "85.07.30" not in page and "voir la fiche" in page
+
+
+def test_prospect_mandates_wait_for_the_signed_letter(web):
+    from apps.clients.models import Client
+
+    prospect = ClientFactory(status=Client.Status.PROSPECT)
+    docs = web.get(reverse("clients:documents", args=[prospect.pk])).content.decode()
+    assert "une fois la lettre de mission signée" in docs and "Demander les" not in docs
+    response = web.get(reverse("clients:spf_mandate_request", args=[prospect.pk]))
+    assert response.status_code == 302

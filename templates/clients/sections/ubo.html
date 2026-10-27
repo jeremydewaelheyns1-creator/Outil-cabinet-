@@ -67,7 +67,7 @@
       {% for c in ubo.candidates %}{% if not c.person.is_hidden %}
       <li><strong>Bénéficiaire : {{ c.person }}</strong> <button type="button" class="copy" data-copy="{{ c.person }}" title="Copier le nom">⧉</button>
         <div class="small">
-          {% if c.person.birth_date %}Né(e) le {{ c.person.birth_date|date:"d/m/Y" }} · {% endif %}
+          {% if c.person.birth_date %}Né(e) le {{ c.person.birth_date|date:"d/m/Y" }} · {% endif %}{% if c.person.nationality %}nationalité {{ c.person.nationality }} · {% endif %}
           {% if c.person.address_lines %}{{ c.person.address_lines|join:", " }} <button type="button" class="copy" data-copy="{{ c.person.address_lines|join:', ' }}" title="Copier l'adresse">⧉</button>{% else %}<span class="muted">adresse à compléter dans sa fiche</span>{% endif %}
         </div>
         <div class="small">{{ c.control_label|capfirst }}{% if c.basis == "ownership" %} — {{ c.share_percentage|floatformat:"-2" }} % du capital, {{ c.voting_percentage|floatformat:"-2" }} % des votes{% endif %}

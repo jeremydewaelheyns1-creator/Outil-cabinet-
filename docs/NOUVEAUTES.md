@@ -18,6 +18,8 @@ sont inventées.
 - Lettre de mission sur un vrai fichier Word : un « XXX » découpé par Word en plusieurs
   morceaux, un lien dans le paragraphe, ou un passage à option seul dans une case de tableau
   sont maintenant bien gérés (le fichier reste valable).
+- Un **prospect** ne propose pas encore de demander les mandats SPF (seulement une fois la
+  lettre de mission signée). La fiche d'encodage du registre UBO montre aussi la nationalité.
 
 ## 27 octobre 2026 — Registre UBO : la fiche d'encodage pour MyMinfin
 
