@@ -133,6 +133,9 @@ class Document(models.Model):
     size = models.PositiveIntegerField("taille")
     # Empreinte des données du dossier utilisées par un document produit par l'outil (D-050).
     data_fingerprint = models.JSONField("empreinte des données", default=dict, blank=True)
+    # Questions posées au client quand il signe en ligne (D-071, déclaration UBO) :
+    # [{"person": id, "name": "…"}] — une ligne par bénéficiaire effectif.
+    questions = models.JSONField("questions au signataire", default=list, blank=True)
     sha256 = models.CharField(max_length=64)
     uploaded_at = models.DateTimeField("ajouté le", default=timezone.now)
     uploaded_by = models.ForeignKey(
@@ -284,6 +287,8 @@ class Signature(models.Model):
     user_agent = models.CharField("navigateur", max_length=255, blank=True)
     original_sha256 = models.CharField("empreinte du document lu", max_length=64)
     signed_sha256 = models.CharField("empreinte du document signé", max_length=64)
+    # Réponses du client aux questions du document (D-071) : {"<id>": {"pep": bool, "lieu": "…"}}
+    answers = models.JSONField("réponses du signataire", default=dict, blank=True)
 
     class Meta:
         verbose_name = "signature en ligne"

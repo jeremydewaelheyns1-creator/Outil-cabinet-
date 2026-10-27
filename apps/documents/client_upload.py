@@ -152,14 +152,23 @@ def _sign_page(
         return _headers(render(request, "documents/public/expired.html", status=404))
     context.update({"document": document, "pages": range(1, preview.page_count(document) + 1),
                     "token": token, "signer_name": found.client.contact_name})  # fmt: skip
+    posted = request.POST if request.method == "POST" else {}
+    context["questions"] = [
+        {"key": str(q.get("person")), "name": q.get("name", ""),
+         "lieu": posted.get(f"lieu-{q.get('person')}", ""),
+         "pep": posted.get(f"pep-{q.get('person')}", "")}
+        for q in document.questions or []
+    ]  # fmt: skip
     if request.method == "POST":
         DocumentRequest.objects.filter(pk=found.pk).update(link_attempts=F("link_attempts") + 1)
         if request.POST.get("approve") != "1":
             context["error"] = "Cochez la case pour confirmer que vous avez lu le document."
         else:
             try:
+                answers = signing.answers_from(document, request.POST)
                 signed = signing.sign(
                     found,
+                    answers=answers,
                     signer_name=request.POST.get("signer_name", ""),
                     signer_role=request.POST.get("signer_role", ""),
                     signature_data_url=request.POST.get("signature", ""),

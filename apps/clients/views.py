@@ -492,6 +492,12 @@ def _ubo_rows(client: Client) -> list[Any]:
     return rows_with_requests(client, "ubo")
 
 
+def _declared(client: Client) -> Any:
+    from apps.documents.signing import latest_answers
+
+    return latest_answers(client)
+
+
 def client_ubo(request: AppRequest, pk: int) -> HttpResponse:
     return render_section(
         request,
@@ -502,6 +508,7 @@ def client_ubo(request: AppRequest, pk: int) -> HttpResponse:
             "ubo": _ubo(request, client),
             **_documents_block(client, case="ubo"),
             "rows": _ubo_rows(client),
+            "declared": _declared(client),
         },
     )
 

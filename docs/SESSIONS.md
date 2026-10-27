@@ -26,7 +26,9 @@ le journal des consultations pourraient y aller — à décider avec Jeremy).
 **26/10/2026 soir — fait (D-068)** : identifications client (PP/PM) et mandataire sur le modèle
 ITAA. **Fait ensuite (D-069)** : lettre de mission sur le modèle Word du cabinet (dépôt, trous,
 options, contrôle ITAA, génération, signature). **À tester par Jeremy** avec le modèle de son
-cabinet, directement dans l'outil en ligne. **Prochaine étape** : valider avec Jeremy l'UBO,
+cabinet, directement dans l'outil en ligne. D-070 : plus de lettre de mission de base.
+**27/10 — fait (D-071)** : déclaration UBO sur le modèle ITAA, questions PEP + lieu de naissance
+à la signature. **Prochaine étape** : valider avec Jeremy le registre UBO (MyMinfin),
 la fiche de risque et les mandats SPF, un par un (format court : il préfère des réponses
 brèves).
 

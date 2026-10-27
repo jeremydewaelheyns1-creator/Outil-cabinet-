@@ -29,6 +29,13 @@
     <tr><th>Adresse IP</th><td>{{ ip|default:"—" }}</td></tr>
     <tr><th>Déclaration</th><td>« J'ai lu le document ci-dessus et je l'approuve. »</td></tr>
   </table>
+  {% if answers %}
+  <table>
+    <tr><th colspan="3" style="width:auto">Réponses du signataire (bénéficiaires effectifs)</th></tr>
+    <tr><th>Bénéficiaire effectif</th><th>Lieu de naissance</th><th>Personne politiquement exposée, famille ou proche</th></tr>
+    {% for a in answers %}<tr><td>{{ a.name }}</td><td>{{ a.lieu }}</td><td>{% if a.pep %}<strong>Oui</strong>{% else %}Non{% endif %}</td></tr>{% endfor %}
+  </table>
+  {% endif %}
   <div class="sig"><img src="{{ signature_uri }}" alt="Signature"></div>
   <table>
     <tr><th>Empreinte du document lu (SHA-256)</th><td class="mono">{{ original_sha256 }}</td></tr>

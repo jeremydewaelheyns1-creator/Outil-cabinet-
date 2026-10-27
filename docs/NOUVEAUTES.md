@@ -3,6 +3,15 @@
 Ce qui a été ajouté à l'outil, du plus récent au plus ancien. Toutes les données de la démo
 sont inventées.
 
+## 27 octobre 2026 — Déclaration des bénéficiaires effectifs (modèle ITAA)
+
+- La **déclaration UBO** suit maintenant le modèle de l'ITAA (société ou ASBL) : qui contrôle
+  la société et comment (directement ou via une holding), questions sur les personnes
+  politiquement exposées, engagement du client, notes explicatives.
+- Quand le client **signe en ligne**, il indique pour chaque bénéficiaire son lieu de
+  naissance et s'il est une personne politiquement exposée. Les réponses figurent sur le
+  certificat, dans « Bénéficiaires effectifs » et sont proposées dans la fiche de risque.
+
 ## 26 octobre 2026 — Lettre de mission sur votre propre modèle
 
 - Dans **Réglages du cabinet**, déposez votre lettre de mission Word telle quelle. L'outil

@@ -90,6 +90,22 @@ class UboCandidate:
     def basis_label(self) -> str:
         return BASIS_LABELS[self.basis]
 
+    @property
+    def control_label(self) -> str:
+        """« directement », « indirectement, via Holding X »… (déclaration UBO)."""
+        if self.basis != Basis.OWNERSHIP:
+            return self.basis_label
+        direct = any(len(h.chain) <= 2 for h in self.holdings)
+        via: list[str] = []
+        for holding in self.holdings:
+            for party in holding.chain[1:-1]:
+                if str(party) not in via:
+                    via.append(str(party))
+        if not via:
+            return "directement"
+        text = "indirectement, via " + ", ".join(via)
+        return ("directement et " + text) if direct else text
+
 
 @dataclass
 class UboAnalysis:

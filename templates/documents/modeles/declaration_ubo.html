@@ -1,12 +1,62 @@
 {% extends "documents/modeles/_base.html" %}
+{% comment %}
+Déclaration des bénéficiaires effectifs — modèles ITAA 4.2 (société) et 4.3 (ASBL, fondation),
+« Recueil de modèles de formulaires » anti-blanchiment (D-071). Signée par le client seul.
+Les questions PEP et le lieu de naissance sont répondus en ligne au moment de la signature et
+figurent sur le certificat joint ; sur papier, les cases sont à cocher.
+{% endcomment %}
 {% block body %}
-<p>Le client <strong>{{ client.display_name }}</strong>{% if client.enterprise_number %} (BCE {{ client.enterprise_number_display }}){% endif %} déclare qu'en date du {{ today|date:"d/m/Y" }}, la ou les personnes physiques suivantes sont ses bénéficiaires effectifs :</p>
-<table class="list">
-  <tr><th>Nom et prénom</th><th>Date de naissance</th><th>Fondement</th><th>Capital / votes</th></tr>
-  {% for c in ubo.candidates %}
-    <tr><td>{{ c.person }}</td><td>{{ c.person.birth_date|date:"d/m/Y"|default:"—" }}</td><td>{{ c.basis_label }}</td>
-        <td>{% if c.basis == "ownership" %}{{ c.share_percentage|floatformat:"-2" }} % / {{ c.voting_percentage|floatformat:"-2" }} %{% else %}—{% endif %}</td></tr>
-  {% empty %}<tr><td colspan="4" class="muted">Aucun bénéficiaire effectif calculé : actionnaires à encoder.</td></tr>{% endfor %}
+<table>
+  <tr><th>Client</th><td><strong>{{ client.display_name }}</strong>{% if client.legal_form %} ({{ client.legal_form }}){% endif %}</td></tr>
+  {% if client.enterprise_number %}<tr><th>Numéro d'entreprise</th><td>{{ client.enterprise_number_display }}</td></tr>{% endif %}
+  {% if client.address_lines %}<tr><th>Siège</th><td>{{ client.address_lines|join:", " }}</td></tr>{% endif %}
 </table>
-<p>Il s'engage à informer {{ cabinet }} de toute modification de ces informations et joint, pour chaque personne, une copie de sa pièce d'identité.</p>
+
+<h2>A. Entités exemptées</h2>
+<p>Société cotée sur un marché réglementé (dispensée d'identifier ses bénéficiaires effectifs) : <strong>néant</strong>.</p>
+
+<h2>B. Identification des bénéficiaires effectifs</h2>
+<p>Le(s) soussigné(s) déclare(nt) qu'en date du {{ today|date:"d/m/Y" }}, la ou les personnes physiques suivantes sont les bénéficiaires effectifs {% if nonprofit %}de l'association ou de la fondation{% else %}de la société{% endif %} :</p>
+<table class="list">
+  <tr><th>Nom et prénom</th><th>Date et lieu de naissance</th><th>Adresse</th><th>{% if nonprofit %}Qualité{% else %}Contrôle{% endif %}</th></tr>
+  {% for c in ubo.candidates %}
+    <tr>
+      <td>{{ c.person }}</td>
+      <td>{{ c.person.birth_date|date:"d/m/Y"|default:"……" }}, à …………</td>
+      <td>{% if c.person.address_lines %}{{ c.person.address_lines|join:", " }}{% else %}……{% endif %}</td>
+      <td>{{ c.control_label }}{% if c.basis == "ownership" %}<br><span class="muted">capital {{ c.share_percentage|floatformat:"-2" }} % · votes {{ c.voting_percentage|floatformat:"-2" }} %</span>{% endif %}</td>
+    </tr>
+  {% empty %}<tr><td colspan="4" class="muted">Aucun bénéficiaire effectif calculé : actionnariat à compléter.</td></tr>{% endfor %}
+</table>
+<p class="muted">Une copie de la pièce d'identité de chaque personne est jointe ou déjà en possession de {{ cabinet }}.</p>
+
+<h2>C. Personnes politiquement exposées</h2>
+<table class="list">
+  <tr><th>Bénéficiaire effectif</th><th>Personne politiquement exposée, membre de sa famille ou personne connue pour lui être étroitement associée ?</th></tr>
+  {% for c in ubo.candidates %}<tr><td>{{ c.person }}</td><td>☐ Oui &nbsp; ☐ Non</td></tr>{% endfor %}
+</table>
+<p class="muted">En cas de signature en ligne, les réponses figurent sur le certificat de signature joint.</p>
+
+<h2>Déclaration</h2>
+<p>{{ cabinet }} peut mettre fin à la relation d'affaires si les informations communiquées se révèlent inexactes ou incomplètes.</p>
+<p>Le(s) soussigné(s), {% if nonprofit %}administrateur(s) ou représentant(s){% else %}gérant(s), administrateur(s){% endif %} ou mandataire(s) du client, déclare(nt) sur l'honneur que ces informations sont sincères et exactes, et s'engage(nt) à communiquer sans délai toute modification à {{ cabinet }} ainsi qu'au registre des bénéficiaires effectifs (registre UBO), conformément aux articles 1:33 à 1:36 du Code des sociétés et des associations.</p>
+
+<h2>Notes explicatives</h2>
+<p class="muted">Le professionnel doit recueillir des informations sur les bénéficiaires effectifs de ses clients et de leurs mandataires (loi du 18 septembre 2017, art. 23 et 26). Les bénéficiaires effectifs sont toujours des personnes physiques : si un bénéficiaire est une société, ce sont les personnes physiques qui se trouvent derrière elle qui sont identifiées.</p>
+{% if nonprofit %}
+<p class="muted">ASBL et fondations : les administrateurs, les personnes habilitées à représenter l'association, les personnes chargées de la gestion journalière, les fondateurs d'une fondation, les personnes physiques (ou la catégorie de personnes) dans l'intérêt principal desquelles l'entité a été constituée ou opère, et toute autre personne physique qui exerce en dernier ressort le contrôle par d'autres moyens.</p>
+{% else %}
+<p class="muted">Sociétés : les personnes physiques qui détiennent, directement ou indirectement, plus de 25 % des actions ou des droits de vote, et celles qui exercent le contrôle par d'autres moyens (articles 1:14 à 1:18 du Code des sociétés et des associations). À défaut, et en l'absence de soupçon, le ou les dirigeants principaux.</p>
+{% endif %}
+<p class="muted">Personne politiquement exposée (art. 4, 28° à 30° de la loi) : personne qui exerce ou a exercé une fonction publique importante (chef d'État ou de gouvernement, ministre, parlementaire, membre d'une haute juridiction, d'une cour des comptes ou du directoire d'une banque centrale, ambassadeur, officier supérieur, dirigeant d'une entreprise publique ou d'une organisation internationale…), les membres de sa famille (conjoint ou partenaire, enfants et leurs conjoints, parents, frères et sœurs) et les personnes connues pour lui être étroitement associées.</p>
+<p class="muted">Protection des données : ces informations sont traitées par {{ cabinet }} uniquement pour respecter la loi du 18 septembre 2017 (prévention du blanchiment). Elles sont conservées dix ans après la fin de la relation d'affaires (art. 60). Les droits d'accès et de rectification sont limités par l'article 65 de la loi ; ils s'exercent auprès de l'Autorité de protection des données. Merci de transmettre une copie de cette déclaration à chaque bénéficiaire effectif mentionné.</p>
+{% endblock %}
+{% block signatures %}
+<div class="signatures">
+  <div class="sign">
+    <div class="who">Pour le client{% if management %} — {% for m in management %}{{ m.person.display_name }}{% if not forloop.last %}, {% endif %}{% endfor %}{% endif %}</div>
+    <div>Fait à …………………, le …………………</div>
+    <div class="blank">Nom, prénom, qualité et signature</div>
+  </div>
+</div>
 {% endblock %}

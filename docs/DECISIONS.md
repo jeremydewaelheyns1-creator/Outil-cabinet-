@@ -799,3 +799,19 @@ est supprimé. Sans modèle : « Pas de modèle du cabinet » dans le dossier (r
 Réglages du cabinet), on peut toujours ranger une lettre signée ou la demander au client.
 Remplace la phrase de D-069 « Sans modèle actif : modèle provisoire de l'outil ».
 
+## D-071 — Déclaration des bénéficiaires effectifs sur le modèle ITAA
+
+Sources : ITAA, « Recueil de modèles de formulaires » anti-blanchiment, modèles 4.2 (société)
+et 4.3 (ASBL, fondation). Le document reprend leurs rubriques : A. entités exemptées (néant),
+B. bénéficiaires effectifs (nom, date et lieu de naissance, adresse, façon dont ils
+contrôlent : directement / via telle société, % du capital et des votes), C. personnes
+politiquement exposées, déclaration sur l'honneur (fin de relation si inexact, mise à jour du
+registre UBO, art. 1:33 à 1:36 CSA), notes explicatives (seuil « plus de 25 % », définition
+PEP, protection des données : 10 ans, art. 60 et 65). Signé par le client seul (comme le
+modèle ITAA ; la maquette prévoyait aussi le cabinet).
+Signature en ligne : pour chaque bénéficiaire, le client donne le **lieu de naissance** (que
+l'outil ne connaît pas) et répond **PEP oui / non**. Réponses obligatoires, imprimées sur le
+certificat de signature, gardées avec la preuve (`Signature.answers`), affichées dans
+« Bénéficiaires effectifs » et reprises comme réponse proposée dans la fiche de risque (l'humain
+valide). Rien n'est écrit automatiquement dans les fiches des personnes.
+

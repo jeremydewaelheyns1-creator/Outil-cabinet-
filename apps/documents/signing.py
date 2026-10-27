@@ -20,6 +20,7 @@ import base64
 import binascii
 import hashlib
 import io
+from typing import Any
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
@@ -70,9 +71,29 @@ def clean_signature(data_url: str) -> bytes:
     return out.getvalue()
 
 
+def answers_from(document: Document, posted: Any) -> dict[str, dict[str, Any]]:
+    """Réponses du signataire aux questions du document (D-071), vérifiées.
+
+    Pour chaque bénéficiaire : PEP oui / non (obligatoire) et lieu de naissance (obligatoire)."""
+    answers: dict[str, dict[str, Any]] = {}
+    for question in document.questions or []:
+        key = str(question.get("person"))
+        pep = posted.get(f"pep-{key}", "")
+        place = " ".join(str(posted.get(f"lieu-{key}", "")).split())[:100]
+        if pep not in {"oui", "non"} or len(place) < 2:
+            raise ValidationError(
+                "Répondez aux questions sur chaque bénéficiaire effectif (lieu de naissance et "
+                "personne politiquement exposée)."
+            )
+        answers[key] = {"name": str(question.get("name", ""))[:150], "pep": pep == "oui",
+                        "lieu": place}  # fmt: skip
+    return answers
+
+
 def _certificate(
     request: DocumentRequest, document: Document, *, signer_name: str, signer_role: str,
     signature_png: bytes, signed_at: object, ip: str | None, original_sha256: str,
+    answers: dict[str, dict[str, Any]] | None = None,
 ) -> bytes:  # fmt: skip
     from weasyprint import HTML
 
@@ -90,6 +111,7 @@ def _certificate(
             "ip": ip,
             "original_sha256": original_sha256,
             "signature_uri": "data:image/png;base64," + base64.b64encode(signature_png).decode(),
+            "answers": list((answers or {}).values()),
         },
     )
     return bytes(HTML(string=html).write_pdf())
@@ -115,6 +137,7 @@ def sign(
     signature_data_url: str,
     ip: str | None,
     user_agent: str,
+    answers: dict[str, dict[str, Any]] | None = None,
 ) -> Document:
     from .services import receive
 
@@ -132,6 +155,7 @@ def sign(
     certificate = _certificate(
         request, original_doc, signer_name=signer_name, signer_role=signer_role.strip()[:100],
         signature_png=signature_png, signed_at=signed_at, ip=ip, original_sha256=original_sha256,
+        answers=answers,
     )  # fmt: skip
     merged = _merge(original, certificate)
     name = f"{original_doc.doc_type or 'document'}-signe.pdf"
@@ -145,16 +169,30 @@ def sign(
         request=request, document=document, signer_name=signer_name,
         signer_role=signer_role.strip()[:100], signed_at=signed_at, ip_address=ip,
         user_agent=user_agent[:255], original_sha256=original_sha256,
-        signed_sha256=hashlib.sha256(merged).hexdigest(),
+        signed_sha256=hashlib.sha256(merged).hexdigest(), answers=answers or {},
     )  # fmt: skip
     events.emit(
         "document.signed",
         subject=request.client,
         actor=None,
-        payload={"document": str(document.pk), "demande": request.reference},
+        payload={
+            "document": str(document.pk),
+            "demande": request.reference,
+            "ppe_declaree": any(a.get("pep") for a in (answers or {}).values()),
+        },
     )
     _send_copy(request, document, merged)
     return document
+
+
+def latest_answers(client: Any) -> Signature | None:
+    """Dernière déclaration UBO signée en ligne avec ses réponses (PEP, lieu de naissance)."""
+    return (
+        Signature.objects.filter(request__client=client, document__doc_type="declaration_ubo")
+        .exclude(answers={})
+        .order_by("-signed_at")
+        .first()
+    )
 
 
 def _send_copy(request: DocumentRequest, document: Document, content: bytes) -> None:

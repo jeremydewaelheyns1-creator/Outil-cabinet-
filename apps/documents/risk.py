@@ -143,6 +143,22 @@ def _structure(client: Client) -> tuple[bool | None, str]:
     return False, "Détention simple et connue."
 
 
+def _declared_pep(client: Client) -> tuple[bool, str] | None:
+    """Réponse PEP reprise de la dernière déclaration UBO signée en ligne (D-071)."""
+    from .signing import latest_answers
+
+    found = latest_answers(client)
+    if found is None:
+        return None
+    when = f"{timezone.localtime(found.signed_at):%d/%m/%Y}"
+    peps = [a.get("name", "") for a in found.answers.values() if a.get("pep")]
+    if peps:
+        return True, f"Déclaré par le client le {when} (déclaration UBO) : {', '.join(peps)}."
+    return False, (
+        f"Aucune selon la déclaration UBO signée le {when}. Vérifier aussi les bases PPE."
+    )
+
+
 def propose(client: Client, today: date | None = None) -> list[Proposal]:
     """Une réponse proposée par question, avec la raison (None = à répondre)."""
     today = today or timezone.localdate()
@@ -177,6 +193,9 @@ def propose(client: Client, today: date | None = None) -> list[Proposal]:
         "risky_mission": (None, "Selon la lettre de mission."),
         "unusual": (None, "Selon votre connaissance du dossier."),
     }
+    declared = _declared_pep(client)
+    if declared is not None:
+        answers["pep"] = declared
     if previous is not None:
         for key, value in (previous.answers or {}).items():
             current = answers.get(key)

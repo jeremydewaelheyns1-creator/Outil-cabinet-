@@ -101,6 +101,7 @@ def _context(
         )
     if doc_type == "declaration_ubo" and not client.is_person:
         context["ubo"] = ubo.analyse(client)
+        context["nonprofit"] = client.kind == Client.Kind.NONPROFIT
     return context
 
 
@@ -158,6 +159,7 @@ def generate(
             sha256=hashlib.sha256(content).hexdigest(),
             uploaded_by=user,
             data_fingerprint=freshness.fingerprint(client, doc_type, person),
+            questions=_questions(client, doc_type),
         )
         document.file.save("document", ContentFile(content), save=False)
         document.save()
@@ -168,6 +170,20 @@ def generate(
         payload={"document": str(document.pk), "type": doc_type},
     )
     return document
+
+
+def _questions(client: Client, doc_type: str) -> list[dict[str, Any]]:
+    """Déclaration UBO : le client répondra, pour chaque bénéficiaire, aux questions PEP et
+    donnera le lieu de naissance au moment de signer (D-071)."""
+    from apps.clients.services import ubo
+
+    if doc_type != "declaration_ubo" or client.is_person:
+        return []
+    return [
+        {"person": c.person.pk, "name": c.person.display_name}
+        for c in ubo.analyse(client).candidates
+        if isinstance(c.person, Client)
+    ]
 
 
 def _drafts(client: Client, doc_type: str, person: Client | None) -> Any:

@@ -41,6 +41,18 @@
     {% endif %}
   </section>
   </div>
+{% if declared %}
+<div style="max-width: 900px">
+  <section class="card">
+    <div class="card-header"><h2>Réponses du client (déclaration signée le {{ declared.signed_at|date:"d/m/Y" }})</h2></div>
+    <table class="table">
+      <thead><tr><th>Bénéficiaire effectif</th><th>Lieu de naissance</th><th>Personne politiquement exposée</th></tr></thead>
+      <tbody>{% for a in declared.answers.values %}<tr><td>{{ a.name }}</td><td>{{ a.lieu }}</td><td>{% if a.pep %}<span class="badge badge-danger">oui</span>{% else %}non{% endif %}</td></tr>{% endfor %}</tbody>
+    </table>
+    <p class="small muted">Signée en ligne par {{ declared.signer_name }}. La réponse est reprise dans la fiche de risque.</p>
+  </section>
+</div>
+{% endif %}
 <div style="max-width: 900px">
   <section class="card">
     <div class="card-header"><h2>Registre UBO (SPF Finances)</h2></div>

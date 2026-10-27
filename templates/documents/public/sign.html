@@ -12,6 +12,21 @@
 {% if error %}<p class="alert alert-error">{{ error }}</p>{% endif %}
 <form method="post" class="sign-form" data-sign-form>{% csrf_token %}
   <label>Vos nom et prénom<input type="text" name="signer_name" value="{{ signer_name }}" maxlength="150" required autocomplete="name"></label>
+  {% if questions %}
+  <fieldset class="sign-questions">
+    <legend>Questions sur chaque bénéficiaire effectif</legend>
+    <p class="small muted">Une personne politiquement exposée exerce ou a exercé une fonction publique importante (ministre, parlementaire, juge d'une haute juridiction, ambassadeur, dirigeant d'une entreprise publique…). Les membres de sa famille et ses proches connus sont aussi concernés.</p>
+    {% for q in questions %}
+      <div class="sign-question">
+        <strong>{{ q.name }}</strong>
+        <label>Lieu de naissance<input type="text" name="lieu-{{ q.key }}" value="{{ q.lieu }}" maxlength="100" required></label>
+        <span>Personne politiquement exposée, membre de sa famille ou proche ?</span>
+        <label class="inline-choice"><input type="radio" name="pep-{{ q.key }}" value="non" required{% if q.pep == "non" %} checked{% endif %}> Non</label>
+        <label class="inline-choice"><input type="radio" name="pep-{{ q.key }}" value="oui"{% if q.pep == "oui" %} checked{% endif %}> Oui</label>
+      </div>
+    {% endfor %}
+  </fieldset>
+  {% endif %}
   <label>Votre qualité <span class="muted small">(par ex. gérant, administrateur — facultatif)</span><input type="text" name="signer_role" value="{{ signer_role|default:'' }}" maxlength="100"></label>
   <div class="sign-pad-label">Votre signature <button type="button" class="link-button small" data-sign-clear>Effacer</button></div>
   <canvas class="sign-pad" data-sign-pad aria-label="Cadre de signature : dessinez avec le doigt ou la souris"></canvas>
