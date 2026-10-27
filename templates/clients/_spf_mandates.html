@@ -3,16 +3,19 @@
   <ul class="mandates-list">
   {% for line in mandates %}
     <li>
-      <span class="mandate-dot mandate-{{ line.level }}" title="{{ line.status_label }}"></span>
-      <span class="mandate-label" title="{{ line.label }}">{{ line.short }}<span class="visually-hidden"> : {{ line.status_label }}</span></span>
+      <span class="mandate-dot mandate-{{ line.level }}" aria-hidden="true"></span>
+      <span class="mandate-label" title="{{ line.label }}">{{ line.short }}
+        <span class="mandate-state mandate-state-{{ line.level }}">
+          {% if line.status == "signed" %}Signé ✓{% if line.mandate %} le {{ line.mandate.updated_at|date:"d/m" }}{% endif %}
+          {% elif line.status == "requested" %}Envoyé le {{ line.mandate.updated_at|date:"d/m" }} — en attente de réponse
+          {% else %}À demander{% endif %}
+        </span>
+      </span>
       {% if can_edit %}
-      <form method="post" action="{% url 'clients:spf_mandate_update' client.pk %}" class="inline">{% csrf_token %}
-        <input type="hidden" name="kind" value="{{ line.kind }}">
-        {% if line.status == "signed" %}
-          <button type="submit" name="status" value="missing" class="link-button small" title="Signé{% if line.mandate.updated_by %} — noté le {{ line.mandate.updated_at|date:'d/m/Y' }} par {{ line.mandate.updated_by }}{% endif %}">Annuler</button>
-        {% else %}
-          <button type="submit" name="status" value="signed" class="link-button small">Noter signé</button>
-        {% endif %}
+      <form method="post" action="{% url 'clients:spf_mandate_update' client.pk %}" class="inline mandate-check">{% csrf_token %}
+        <input type="hidden" name="kind" value="{{ line.kind }}"><input type="hidden" name="case" value="1">
+        <label title="Cocher quand le client a signé le mandat sur le site du SPF"><input type="checkbox" name="status" value="signed" data-autosubmit{% if line.status == "signed" %} checked{% endif %}> signé</label>
+        <noscript><button type="submit" class="link-button small">OK</button></noscript>
       </form>
       {% endif %}
     </li>
@@ -24,6 +27,8 @@
     <p class="small muted" style="margin:.6rem 0 0">Prospect : les mandats se demandent une fois la lettre de mission signée.</p>
   {% elif can_edit and mandates_missing %}
     <a class="button button-small mandates-ask" href="{% url 'clients:spf_mandate_request' client.pk %}">Demander {% if mandates_missing == 1 %}le mandat manquant{% else %}les {{ mandates_missing }} mandats manquants{% endif %}</a>
+  {% elif can_edit and mandates_waiting %}
+    <a class="button button-secondary button-small mandates-ask" href="{% url 'clients:spf_mandate_request' client.pk %}">Revoir les infos ou renvoyer l'e-mail</a>
   {% endif %}
-  <p class="small muted" style="margin:.5rem 0 0">Créés et signés sur le site du SPF, dans « Mes mandats ».</p>
+  <p class="small muted" style="margin:.5rem 0 0">Créés et signés sur le site du SPF, dans « Mes mandats ». Cochez « signé » quand c'est fait.</p>
 </aside>

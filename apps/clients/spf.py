@@ -76,7 +76,12 @@ def missing(client: Client) -> list[Line]:
     return [line for line in lines(client) if line.status == Status.MISSING]
 
 
-def email(client: Client, kinds: list[str], url: str) -> tuple[str, str]:
+def unsigned(client: Client) -> list[Line]:
+    """Rouges et oranges : tout ce que le client doit encore signer (demande ou rappel)."""
+    return [line for line in lines(client) if line.status != Status.SIGNED]
+
+
+def email(client: Client, kinds: list[str], url: str, reminder: bool = False) -> tuple[str, str]:
     """Objet et texte de l'e-mail au client : tous ses mandats à signer, en une fois.
 
     Aucune donnée sensible : le nom des mandats, le lien public du SPF, la marche à suivre."""
@@ -84,7 +89,9 @@ def email(client: Client, kinds: list[str], url: str) -> tuple[str, str]:
 
     count = len(kinds)
     plural = "s" if count > 1 else ""
-    subject = f"{count} mandat{plural} à signer pour le SPF Finances"
+    subject = (
+        f"{'Rappel : ' if reminder else ''}{count} mandat{plural} à signer pour le SPF Finances"
+    )
     greeting = client.greeting
     items = "\n".join(f"- {CLIENT_LABELS[k]}" for k in kinds)
     who = "au nom de l'entreprise" if not client.is_person else "en votre nom"

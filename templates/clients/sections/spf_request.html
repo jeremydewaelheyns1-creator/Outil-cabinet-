@@ -28,14 +28,15 @@
       </dd>
     </dl>
     <p class="small" style="margin-bottom:.3rem"><strong>Cases à cocher</strong></p>
-    <ul class="spf-boxes">{% for line in todo %}<li>☑ {{ line.label }}</li>{% endfor %}</ul>
+    <ul class="spf-boxes">{% for line in todo %}<li>☑ {{ line.label }}{% if line.status == "requested" %} <span class="badge badge-warning">déjà demandé le {{ line.mandate.updated_at|date:"d/m/Y" }}</span>{% endif %}</li>{% endfor %}</ul>
+    {% if reminder %}<p class="small muted">Ces mandats ont déjà été demandés. Si vous les avez déjà créés sur le site du SPF, passez directement au rappel ci-contre.</p>{% endif %}
     {% if already %}<p class="small muted">Déjà {% for line in already %}{{ line.label }} ({{ line.status_label|lower }}){% if not forloop.last %}, {% endif %}{% endfor %} : ne pas les recocher.</p>{% endif %}
     <p><a class="button" href="{{ cabinet.spf_mandates_url }}" target="_blank" rel="noopener noreferrer">Ouvrir l'application des mandats du SPF ↗</a></p>
     <p class="small muted">S'ouvre dans un nouvel onglet ; cette page reste à côté.</p>
   </section>
 
   <section class="card">
-    <div class="card-header"><h2>② Prévenir le client (un seul e-mail)</h2></div>
+    <div class="card-header"><h2>② {% if reminder %}Rappeler le client{% else %}Prévenir le client (un seul e-mail){% endif %}</h2></div>
     <p class="small muted" style="margin-top:0">Rien ne part sans votre clic. L'e-mail part de votre boîte Outlook et une copie est rangée dans Archives › Courriels.</p>
     <div class="mail-preview">
       <div class="small muted">À : {{ to|default:"— pas d'adresse e-mail dans la fiche —" }}</div>
@@ -43,8 +44,8 @@
       <pre class="mail-preview-body">{{ body }}</pre>
     </div>
     <form method="post" class="actions" style="margin-top:.8rem">{% csrf_token %}
-      <button type="submit" name="action" value="email"{% if not to %} disabled{% endif %}>J'ai créé la demande : envoyer l'e-mail</button>
-      <button type="submit" name="action" value="noter" class="secondary">Pas d'e-mail, juste noter « demandé »</button>
+      <button type="submit" name="action" value="email"{% if not to %} disabled{% endif %}>{% if reminder %}Renvoyer l'e-mail (rappel){% else %}J'ai créé la demande : envoyer l'e-mail{% endif %}</button>
+      {% if not reminder %}<button type="submit" name="action" value="noter" class="secondary">Pas d'e-mail, juste noter « demandé »</button>{% endif %}
     </form>
   </section>
 </div>

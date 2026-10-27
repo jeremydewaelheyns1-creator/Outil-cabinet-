@@ -947,3 +947,14 @@ Dépannage sans boîte reliée : `deploy/mot-de-passe.sh` dans Cloud Shell (mêm
 premier compte : secret temporaire supprimé aussitôt) ; adresse inconnue → rappel des comptes
 administrateurs masqués.
 
+## D-082 — Mandats SPF : états en clair, case « signé », envoi jamais perdu
+
+Retour de Jeremy après un vrai envoi : l'e-mail était parti mais les lignes restaient rouges
+et l'écran semblait bloqué. Cause probable : une erreur après l'envoi (copie d'archive) qui
+annulait tout le reste. Désormais l'état « envoyé » est enregistré dès que l'e-mail est parti ;
+la copie d'archive se fait à part et une erreur y est seulement notée dans le journal technique.
+Encadré : chaque ligne dit son état en clair — « À demander » (rouge), « Envoyé le … — en
+attente de réponse » (orange), « Signé ✓ le … » (vert) — avec une case « signé » à cocher (au
+lieu de « Noter signé »). Après l'envoi, « Revoir les infos ou renvoyer l'e-mail » reste
+disponible (rappel : objet « Rappel : … »).
+

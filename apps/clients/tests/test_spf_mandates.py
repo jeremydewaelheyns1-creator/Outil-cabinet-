@@ -113,3 +113,56 @@ def test_prospect_mandates_wait_for_the_signed_letter(web):
     assert "une fois la lettre de mission signée" in docs and "Demander les" not in docs
     response = web.get(reverse("clients:spf_mandate_request", args=[prospect.pk]))
     assert response.status_code == 302
+
+
+def test_after_sending_the_sheet_and_a_reminder_stay_available(web, monkeypatch):
+    from apps.outlook import graph
+
+    company = company_with_email()
+    sent = []
+    link = type("Link", (), {"address": "moi@cabinet-fictif.test"})()
+    monkeypatch.setattr(graph, "mailbox_for", lambda user: link)
+    monkeypatch.setattr(graph, "send", lambda link, **kw: sent.append(kw))
+    url = reverse("clients:spf_mandate_request", args=[company.pk])
+    web.post(url, {"action": "email"})
+    docs = web.get(reverse("clients:documents", args=[company.pk])).content.decode()
+    assert "Revoir les infos ou renvoyer" in docs and "en attente de réponse" in docs
+    page = web.get(url).content.decode()
+    assert page.count("déjà demandé le") == 4
+    assert "Renvoyer l&#x27;e-mail" in page or "Renvoyer l'e-mail" in page
+    web.post(url, {"action": "email"})
+    assert len(sent) == 2 and sent[1]["subject"].startswith("Rappel : 4 mandats")
+
+
+def test_archive_failure_after_sending_keeps_the_lines_orange(web, monkeypatch):
+    """Cas vu chez Jeremy : l'e-mail part, puis la copie d'archive échoue. L'envoi ne doit
+    pas être « oublié » (lignes restées rouges, page d'erreur)."""
+    from apps.documents import mailing
+    from apps.outlook import graph
+
+    company = company_with_email()
+    link = type("Link", (), {"address": "moi@cabinet-fictif.test"})()
+    monkeypatch.setattr(graph, "mailbox_for", lambda user: link)
+    monkeypatch.setattr(graph, "send", lambda link, **kw: None)
+
+    def broken(*args, **kwargs):
+        raise RuntimeError("stockage indisponible")
+
+    monkeypatch.setattr(mailing, "archive_copy", broken)
+    response = web.post(reverse("clients:spf_mandate_request", args=[company.pk]),
+                        {"action": "email"})  # fmt: skip
+    assert response.status_code == 302
+    assert SpfMandate.objects.filter(client=company, status="requested").count() == 4
+
+
+def test_box_shows_plain_states_and_a_signed_checkbox(web):
+    company = company_with_email()  # TVA signée
+    SpfMandate.objects.create(client=company, kind="biztax", status="requested")
+    page = web.get(reverse("clients:documents", args=[company.pk])).content.decode()
+    assert "Signé ✓" in page and "en attente de réponse" in page and "À demander" in page
+    assert 'name="status" value="signed" data-autosubmit checked' in page
+    update = reverse("clients:spf_mandate_update", args=[company.pk])
+    web.post(update, {"kind": "biztax", "case": "1", "status": "signed"})  # case cochée
+    assert SpfMandate.objects.get(client=company, kind="biztax").status == "signed"
+    web.post(update, {"kind": "biztax", "case": "1"})  # case décochée
+    assert SpfMandate.objects.get(client=company, kind="biztax").status == "missing"

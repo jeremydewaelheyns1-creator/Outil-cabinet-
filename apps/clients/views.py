@@ -506,7 +506,9 @@ def client_documents(request: AppRequest, pk: int) -> HttpResponse:
 
         mandates = spf.lines(client)
         missing = sum(1 for line in mandates if line.status == spf.Status.MISSING)
-        return {"cases": cases, "mandates": mandates, "mandates_missing": missing}
+        waiting = sum(1 for line in mandates if line.status == spf.Status.REQUESTED)
+        return {"cases": cases, "mandates": mandates, "mandates_missing": missing,
+                "mandates_waiting": waiting}  # fmt: skip
 
     return render_section(request, pk, "documents", "clients/sections/documents.html", build)
 

@@ -1464,3 +1464,10 @@ button:active, .button:active { transform: scale(.98); }
 .form-stack label { font-weight: 600; margin-top: .5rem; }
 .form-stack input:not([type=checkbox]):not([type=radio]) { width: 100%; box-sizing: border-box; }
 .form-stack label.checkbox { display: flex; gap: .5rem; align-items: center; font-weight: 500; }
+.mandates-list li { align-items: flex-start; }
+.mandates-list .mandate-dot { margin-top: .35rem; flex-shrink: 0; }
+.mandate-state { display: block; font-size: .78rem; font-weight: 600; }
+.mandate-state-danger { color: var(--danger); }
+.mandate-state-warning { color: var(--warning); }
+.mandate-state-ok { color: var(--success); }
+.mandate-check label { display: inline-flex; gap: .3rem; align-items: center; font-size: .82rem; font-weight: 600; white-space: nowrap; cursor: pointer; }

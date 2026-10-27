@@ -3,6 +3,16 @@
 Ce qui a été ajouté à l'outil, du plus récent au plus ancien. Toutes les données de la démo
 sont inventées.
 
+## 27 octobre 2026 — Mandats SPF : on voit où on en est
+
+- Chaque mandat dit son état en clair : **« À demander »** (rouge), **« Envoyé le … — en
+  attente de réponse »** (orange), **« Signé ✓ »** (vert). Une case **« signé »** à cocher
+  quand le client a signé.
+- Après l'envoi, la demande reste accessible : revoir les infos à encoder ou **renvoyer
+  l'e-mail en rappel**.
+- Corrigé : l'e-mail partait, mais les lignes pouvaient rester rouges si un souci survenait
+  juste après (copie dans les archives). L'envoi est maintenant toujours enregistré.
+
 ## 27 octobre 2026 — Mot de passe oublié
 
 - Sur la page de connexion : **« Mot de passe oublié ? »**. Vous recevez un lien (valable une
