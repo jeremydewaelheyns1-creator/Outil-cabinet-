@@ -52,6 +52,56 @@ MODELS: dict[str, Model] = {
 LETTER = "lettre_mission"  # propre à chaque cabinet : seulement avec son modèle (D-070)
 
 
+class MissingData(ValueError):
+    """Données obligatoires absentes : le document ne peut pas être préparé ni validé."""
+
+    def __init__(self, missing: list[str]) -> None:
+        self.missing = missing
+        super().__init__("Il manque : " + ", ".join(missing) + ".")
+
+
+def missing_data(client: Client, doc_type: str, person: Client | None = None) -> list[str]:
+    """Ce qui doit être rempli avant de préparer ou valider ce document (D-085)."""
+    from .identity import situation
+    from .models import RiskAssessment
+
+    missing: list[str] = []
+    if doc_type in ("identification_client", "identification_mandataire"):
+        subject = person if doc_type == "identification_mandataire" and person else client
+        who = "" if subject == client else f" ({subject.display_name})"
+        if subject.is_person:
+            for label, value in (
+                ("nom", subject.name), ("prénom", subject.first_name),
+                ("date de naissance", subject.birth_date), ("nationalité", subject.nationality),
+                ("adresse", subject.address_lines), ("numéro national", subject.national_number),
+            ):  # fmt: skip
+                if not value:
+                    missing.append(label + who)
+            if situation(subject)[1] == "danger":
+                missing.append("carte d'identité valable" + who)
+        else:
+            for label, value in (
+                ("dénomination", subject.name), ("forme juridique", subject.legal_form),
+                ("numéro d'entreprise", subject.enterprise_number),
+                ("adresse du siège", subject.address_lines),
+            ):  # fmt: skip
+                if not value:
+                    missing.append(label + who)
+            if doc_type == "identification_client" and not types.mandataires(client):
+                missing.append("au moins un dirigeant (Mandataires)")
+        if (
+            doc_type == "identification_client"
+            and not RiskAssessment.objects.filter(client=client).exists()
+        ):
+            missing.append("niveau de risque (fiche de risque)")
+    if doc_type == "declaration_ubo" and not client.is_person:
+        from apps.clients.services import ubo
+
+        if not ubo.analyse(client).candidates:
+            missing.append("bénéficiaires effectifs (encoder les actionnaires)")
+    return missing
+
+
 def can_generate(doc_type: str) -> bool:
     from . import letter
 
@@ -90,8 +140,9 @@ def _context(
         "management": list(management),
         "provisional": MODELS[doc_type].provisional,
     }
-    if person is not None and person.is_person:
-        card, _, card_text = situation(person, today)
+    subject = person if person is not None else client
+    if subject.is_person:  # carte de la personne identifiée (client IPP ou mandataire)
+        card, _, card_text = situation(subject, today)
         context["card"], context["card_text"] = card, card_text
     if doc_type.startswith("identification_"):
         from .models import RiskAssessment
@@ -131,6 +182,9 @@ def generate(
 
     if not can_generate(doc_type):
         raise ValueError("Ce document ne peut pas être généré.")
+    missing = missing_data(client, doc_type, person)
+    if missing:
+        raise MissingData(missing)
     kind = types.BY_SLUG[doc_type]
     if doc_type == LETTER:
         template = letter.active()
@@ -202,6 +256,9 @@ def finalize(document: Document, *, user: User | None = None) -> Document:
 
     if document.state != Document.State.DRAFT:
         raise ValueError("Seul un brouillon peut être validé.")
+    missing = missing_data(document.client, document.doc_type, document.person)
+    if missing:  # données effacées entre-temps : on ne valide pas un document incomplet
+        raise MissingData(missing)
     with transaction.atomic():
         archive_replaced(document.client, document.case, document.doc_type, document.person)
         document.state = Document.State.FINAL

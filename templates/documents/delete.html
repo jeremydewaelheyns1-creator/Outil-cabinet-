@@ -1,0 +1,21 @@
+{% extends "clients/sections/_base.html" %}
+{% block head_title %}Supprimer un document · {{ client.display_name }}{% endblock %}
+{% block page_title %}<a href="{% url 'clients:documents' client.pk %}" class="muted">Documents</a> › Supprimer un document{% endblock %}
+{% block content %}
+<section class="card" style="max-width: 640px">
+  <h2 style="margin-top:0">« {{ document.title }} »</h2>
+  <p class="small muted">Ajouté le {{ document.uploaded_at|date:"d/m/Y à H:i" }}{% if document.uploaded_by %} par {{ document.uploaded_by }}{% endif %}.</p>
+  {% if refused %}
+    <p class="alert alert-warning">{{ refused }}</p>
+    <a class="button button-secondary" href="{{ back }}">Retour</a>
+  {% else %}
+    <p>Ce document sera <strong>supprimé définitivement</strong> (le journal garde la trace de la suppression).</p>
+    {% if previous %}<p>Le document qu'il avait remplacé, « {{ previous.title }} », sera <strong>remis en place</strong>.</p>{% endif %}
+    {% if document.identity_cards.exists %}<p class="small">La carte d'identité enregistrée à partir de ce document est aussi retirée.</p>{% endif %}
+    <form method="post">{% csrf_token %}
+      <label class="checkbox"><input type="checkbox" name="confirme" value="1" required> Je confirme la suppression</label>
+      <div class="actions" style="margin-top:.8rem"><button type="submit" class="danger">Supprimer</button><a class="button button-secondary" href="{{ back }}">Annuler</a></div>
+    </form>
+  {% endif %}
+</section>
+{% endblock %}

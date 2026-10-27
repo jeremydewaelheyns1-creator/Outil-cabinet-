@@ -94,7 +94,10 @@ def test_send_for_signature_creates_a_request_and_keeps_the_sent_version(web):
 
 
 def test_cabinet_documents_are_validated_not_sent(web):
+    from apps.documents.tests.complete import complete
+
     client, manager = company()
+    complete(manager)
     old = services.store(client, SimpleUploadedFile("a.pdf", b"%PDF-1.4 ancien"),
                          title="Ancienne", case="identification-mandataires",
                          doc_type="identification_mandataire", person=manager)  # fmt: skip
@@ -164,3 +167,41 @@ def test_without_outlook_the_message_says_prepared_not_sent(web):
     draft = generation.generate(client, "procuration")
     response = web.post(reverse("clients:document_send", args=[client.pk, draft.pk]), follow=True)
     assert "seulement préparé" in response.content.decode()
+
+
+def test_identification_refused_while_mandatory_data_is_missing(web):
+    from apps.core.testing.factories import PersonFactory as Person
+
+    person = Person(birth_date=None, nationality="")
+    url = reverse("clients:document_generate", args=[person.pk, "identification_client"])
+    response = web.post(url, HTTP_HX_REQUEST="true")
+    html = response.content.decode()
+    assert "informations obligatoires manquent" in html
+    assert "date de naissance" in html and "carte d" in html and "fiche de risque" in html
+    assert not Document.objects.exists()
+
+
+def test_validated_document_can_be_deleted_and_the_previous_one_comes_back(web):
+    from apps.documents.tests.complete import complete
+
+    client, _ = company()
+    complete(client)
+    first = generation.finalize(generation.generate(client, "identification_client"))
+    second = generation.finalize(generation.generate(client, "identification_client"))
+    first.refresh_from_db()
+    assert first.archived_at is not None
+    url = reverse("clients:document_delete", args=[client.pk, second.pk])
+    assert "remis en place" in web.get(url).content.decode()
+    web.post(url, {"confirme": "1"})
+    assert not Document.objects.filter(pk=second.pk).exists()
+    first.refresh_from_db()
+    assert first.archived_at is None and first.case == "identification-client"
+    assert AccessLog.objects.filter(action="delete", details__has_key="supprimé").exists()
+
+
+def test_signed_document_cannot_be_deleted():
+    from apps.documents.tests.test_client_link import letter_sent_for_signature
+
+    _, request, _ = letter_sent_for_signature()
+    document = request.documents.get()
+    assert "signature" in services.can_delete(document)

@@ -1,0 +1,13 @@
+<header class="viewer-head">
+  <div><h2 class="viewer-title">{{ label }}</h2></div>
+  <button type="button" class="viewer-close" data-viewer-close aria-label="Fermer">×</button>
+</header>
+<div class="viewer-body" style="padding: 1rem 1.2rem">
+  <p class="alert alert-warning"><strong>Impossible de préparer ce document : des informations obligatoires manquent.</strong></p>
+  <ul>{% for item in missing %}<li>{{ item }}</li>{% endfor %}</ul>
+  <p class="small muted">Complétez-les, puis cliquez à nouveau sur « Générer ».</p>
+  <p><a class="button button-small" href="{% url 'clients:edit' client.pk %}">Compléter la fiche</a>
+     <a class="button button-secondary button-small" href="{% url 'clients:mandates' client.pk %}">Mandataires</a>
+     <a class="button button-secondary button-small" href="{% url 'clients:risk_sheet' client.pk %}">Fiche de risque</a></p>
+</div>
+<footer class="viewer-foot"><button type="button" class="button-secondary" data-viewer-close>Fermer</button></footer>

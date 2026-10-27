@@ -13,6 +13,7 @@ from django.contrib import messages
 from django.core.exceptions import ValidationError
 from django.http import FileResponse, Http404, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.views.decorators.http import require_GET, require_POST
 
 from apps.clients import dossier
@@ -480,9 +481,27 @@ def document_generate(request: AppRequest, pk: int, doc_type: str) -> HttpRespon
         person = get_object_or_404(
             Client, pk=request.POST.get("person") or 0, pk__in=_concerned_ids(client)
         )
-    document = generation.generate(client, doc_type, person=person, user=request.user)
+    try:
+        document = generation.generate(client, doc_type, person=person, user=request.user)
+    except generation.MissingData as error:
+        return _missing_response(request, client, doc_type, error.missing)
     log_access(request, AccessLog.Action.CREATE, document, details={"généré": doc_type})
     return _viewer_response(request, client, document)
+
+
+def _missing_response(
+    request: AppRequest, client: Client, doc_type: str, missing: list[str]
+) -> HttpResponse:
+    """Données obligatoires absentes : on dit quoi compléter, rien n'est préparé (D-085)."""
+    label = types.BY_SLUG[doc_type].label
+    if request.htmx:
+        context = {"client": client, "label": label, "missing": missing}
+        return render(request, "documents/_missing.html", context)
+    messages.error(request, f"{label} : il manque " + ", ".join(missing) + ".")
+    case = types.BY_SLUG[doc_type].case
+    if case == "ubo":
+        return redirect("clients:ubo", pk=client.pk)
+    return redirect("clients:document_case", pk=client.pk, slug=case)
 
 
 def _draft(request: AppRequest, client: Client, document_id: str) -> Document:
@@ -558,3 +577,41 @@ def document_discard(request: AppRequest, pk: int, document_id: str) -> HttpResp
     if case == "ubo":
         return redirect("clients:ubo", pk=client.pk)
     return redirect("clients:document_case", pk=client.pk, slug=case)
+
+
+@require_capability(Capability.CLIENTS_EDIT)
+def document_delete(request: AppRequest, pk: int, document_id: str) -> HttpResponse:
+    """Supprimer un document validé ou déposé par erreur (D-085) : page de confirmation, puis
+    suppression ; le document qu'il avait remplacé est remis en place."""
+    client = _get_client(request, pk)
+    document = get_object_or_404(Document, pk=document_id, client=client)
+    refused = services.can_delete(document)
+    back = (
+        reverse("clients:document_case", args=[client.pk, document.case])
+        if document.case and document.case != "ubo"
+        else reverse("clients:ubo", args=[client.pk]) if document.case == "ubo"
+        else reverse("clients:archive", args=[client.pk, document.folder]) if document.folder
+        else reverse("clients:documents", args=[client.pk])
+    )  # fmt: skip
+    if request.method == "POST" and not refused and request.POST.get("confirme") == "1":
+        title = document.title
+        log_access(request, AccessLog.Action.DELETE, document,
+                   details={"supprimé": True, "type": document.doc_type})  # fmt: skip
+        restored = services.delete_document(document)
+        text = f"« {title} » supprimé."
+        if restored is not None:
+            text += f" Le document précédent (« {restored.title} ») est remis en place."
+        messages.success(request, text)
+        return redirect(back)
+    return render_section(
+        request,
+        pk,
+        "documents",
+        "documents/delete.html",
+        lambda c: {
+            "document": document,
+            "refused": refused,
+            "back": back,
+            "previous": services.previous_version(document),
+        },
+    )

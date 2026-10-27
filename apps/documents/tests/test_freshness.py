@@ -10,6 +10,7 @@ from apps.clients.models import Assignment, ContactPoint, Relation
 from apps.core.testing.factories import ClientFactory, PersonFactory
 from apps.documents import freshness, generation, services, types
 from apps.documents.models import Document
+from apps.documents.tests.complete import complete
 from apps.tasks.models import Task
 
 pytestmark = pytest.mark.django_db
@@ -19,7 +20,7 @@ def company():
     client = ClientFactory(name="Société Fictive", street="Rue Fictive", city="Namur")
     ContactPoint.objects.create(client=client, kind="email", value="compta@fictif.test")
     Relation.objects.create(entity=client, person=PersonFactory(name="Fictif"), role="manager")
-    return client
+    return complete(client)
 
 
 def finalized(client, doc_type="identification_client"):

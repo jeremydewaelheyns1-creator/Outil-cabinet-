@@ -988,3 +988,17 @@ texte : 1re page lue sur le serveur (français installé dans l'image : tesserac
 Reconnu avant la TVA (un avertissement ISOC peut contenir « TVA » et « déclaration »).
 À enrichir avec de vrais exemples anonymisés si un document n'est pas reconnu.
 
+## D-085 — Supprimer un document ; champs obligatoires avant une identification
+
+Demandes de Jeremy.
+- « Supprimer ce document » (fenêtre du document, page de confirmation) : supprime un document
+  validé ou déposé par erreur, et ce qui en a été tiré (carte enregistrée, fiche de risque) ;
+  le document qu'il avait remplacé (parti aux archives au même moment) est **remis en place**.
+  Refusé pour un document signé par le client (il se remplace) ou en attente de signature.
+  Journalisé.
+- Identification du client / des mandataires : préparation **et** validation refusées tant
+  qu'il manque une donnée obligatoire — personne : nom, prénom, date de naissance, nationalité,
+  adresse, numéro national, carte d'identité valable ; société : dénomination, forme, numéro
+  d'entreprise, siège, au moins un dirigeant ; et le niveau de risque (fiche de risque).
+  Déclaration UBO : au moins un bénéficiaire calculé. L'écran dit ce qui manque, avec des liens.
+

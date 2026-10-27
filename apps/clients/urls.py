@@ -98,6 +98,11 @@ urlpatterns = [
         document_views.document_discard,
         name="document_discard",
     ),
+    path(
+        "<int:pk>/documents/fichier/<uuid:document_id>/supprimer/",
+        document_views.document_delete,
+        name="document_delete",
+    ),
     path("<int:pk>/documents/demander/", document_views.request_create, name="request_create"),
     path(
         "<int:pk>/documents/demande/<uuid:request_id>/recue/",

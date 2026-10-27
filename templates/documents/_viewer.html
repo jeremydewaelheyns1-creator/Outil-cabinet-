@@ -87,5 +87,10 @@
         {% endif %}
       </div>
     {% endif %}
+    {% if can_edit and document.state == "final" %}
+      <div class="viewer-foot-actions">
+        <a class="link-button" href="{% url 'clients:document_delete' client.pk document.pk %}">Supprimer ce document</a>
+      </div>
+    {% endif %}
   </footer>
 </div>

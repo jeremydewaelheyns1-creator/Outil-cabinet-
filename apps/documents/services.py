@@ -631,3 +631,51 @@ def pending_requests(client: Client) -> list[DocumentRequest]:
         .select_related("person", "bundle")
         .prefetch_related("emails")
     )
+
+
+# --- Supprimer un document (erreur de manipulation) — D-085 ----------------------------------
+
+
+def can_delete(document: Document) -> str:
+    """Raison pour laquelle le document ne peut pas être supprimé (vide : il peut l'être)."""
+    if document.signatures.exists():
+        return "Document signé par le client : il ne se supprime pas, il se remplace."
+    if document.state == Document.State.AWAITING_SIGNATURE:
+        return "Document envoyé au client pour signature : annulez d'abord la demande."
+    return ""
+
+
+def previous_version(document: Document) -> Document | None:
+    """Le document que celui-ci a remplacé (parti aux archives au même moment), s'il existe."""
+    if not document.case or not document.doc_type:
+        return None
+    window = timedelta(minutes=5)
+    older = Document.objects.filter(
+        client=document.client, doc_type=document.doc_type, case="", state=Document.State.FINAL,
+        archived_at__gte=document.uploaded_at - window,
+        archived_at__lte=document.uploaded_at + window,
+    ).exclude(pk=document.pk)  # fmt: skip
+    if document.person_id:
+        older = older.filter(person_id=document.person_id)
+    return older.order_by("-archived_at").first()
+
+
+def delete_document(document: Document) -> Document | None:
+    """Supprime le document (et ce qui a été tiré de lui : carte enregistrée, fiche de risque)
+    et remet en place celui qu'il avait remplacé. Renvoie le document remis en place."""
+    from .models import IdentityCard, RiskAssessment
+
+    if can_delete(document):
+        raise ValidationError(can_delete(document))
+    previous = previous_version(document)
+    case = document.case
+    with transaction.atomic():
+        IdentityCard.objects.filter(document=document).delete()
+        RiskAssessment.objects.filter(document=document).delete()
+        storage, name = document.file.storage, document.file.name
+        document.delete()
+        if previous is not None:
+            previous.case, previous.folder, previous.archived_at = case, "", None
+            previous.save(update_fields=["case", "folder", "archived_at"])
+        transaction.on_commit(lambda: storage.delete(name) if name else None)
+    return previous

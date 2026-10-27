@@ -3,6 +3,15 @@
 Ce qui a été ajouté à l'outil, du plus récent au plus ancien. Toutes les données de la démo
 sont inventées.
 
+## 27 octobre 2026 — Retour en arrière et champs obligatoires
+
+- **Supprimer ce document** (dans la fenêtre du document) : après confirmation, le document
+  validé par erreur est supprimé et l'ancien, s'il y en avait un, est remis en place. Un
+  document signé par le client ne se supprime pas (il se remplace).
+- **Identification** : l'outil refuse de la préparer ou de la valider tant qu'il manque une
+  information obligatoire (date de naissance, nationalité, carte d'identité valable, dirigeant,
+  niveau de risque…) et dit exactement quoi compléter.
+
 ## 27 octobre 2026 — « Déposer des documents » lit les documents du SPF
 
 - Déposez un **avertissement-extrait de rôle** (IPP, ISOC, IPM), un **accusé de réception
