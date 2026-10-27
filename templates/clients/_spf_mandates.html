@@ -20,14 +20,5 @@
     <li class="muted small">Aucun mandat nécessaire.</li>
   {% endfor %}
   </ul>
-  {% if not client.is_person %}
-  <form method="post" action="{% url 'clients:spf_mandate_update' client.pk %}" class="small mandates-filer">{% csrf_token %}
-    <label for="ubo-filer">Registre UBO déposé par</label>
-    <select id="ubo-filer" name="ubo_filed_by" data-autosubmit{% if not can_edit %} disabled{% endif %}>
-      {% for value, label in filers %}<option value="{{ value }}"{% if value == client.ubo_filed_by %} selected{% endif %}>{{ label }}</option>{% endfor %}
-    </select>
-    <noscript><button type="submit" class="small">Enregistrer</button></noscript>
-  </form>
-  {% endif %}
   <p class="small muted" style="margin:.5rem 0 0">Créés et signés sur le site du SPF, dans « Mes mandats ».</p>
 </aside>

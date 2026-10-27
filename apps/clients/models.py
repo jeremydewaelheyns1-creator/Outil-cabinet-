@@ -156,13 +156,6 @@ class Client(models.Model):
         "statut TVA", max_length=20, choices=VatStatus.choices, default="", blank=True
     )
 
-    class UboFiler(models.TextChoices):
-        CABINET = "cabinet", "le cabinet"
-        CLIENT = "client", "le client"
-
-    ubo_filed_by = models.CharField(
-        "registre UBO déposé par", max_length=10, choices=UboFiler.choices, default="cabinet"
-    )
     vat_periodicity = models.CharField(
         "périodicité TVA", max_length=20, choices=VatPeriodicity.choices, default="", blank=True
     )

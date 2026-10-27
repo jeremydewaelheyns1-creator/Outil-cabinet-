@@ -8,7 +8,6 @@ sont inventées.
 - En haut à droite de la page **Documents** du dossier, un encadré **Mandats SPF** montre les
   mandats utiles à ce dossier (TVA, Biztax, registre UBO, Tax-on-web) : vert quand le mandat
   est signé, rouge sinon. Un clic sur « Noter signé » quand c'est fait.
-- Le même encadré indique qui dépose le **registre UBO** : le cabinet (par défaut) ou le client.
 
 ## 27 octobre 2026 — Déclaration des bénéficiaires effectifs (modèle ITAA)
 

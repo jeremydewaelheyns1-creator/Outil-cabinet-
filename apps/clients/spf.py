@@ -1,8 +1,9 @@
 """Récapitulatif des mandats SPF Finances d'un dossier (D-072).
 
 Une ligne par mandat **utile à ce dossier** : TVA si le client dépose des déclarations TVA,
-Biztax pour une société ou une association, Registre UBO si c'est le cabinet qui le dépose,
-Tax-on-web pour une personne physique. Vert quand le mandat est signé, rouge sinon. Pas
+Biztax et Registre UBO pour une société ou une association (le cabinet dépose le registre
+UBO : si le client le fait lui-même, il appelle le cabinet), Tax-on-web pour une personne
+physique. Vert quand le mandat est signé, rouge sinon. Pas
 d'alerte : c'est un simple récapitulatif, tenu à la main.
 """
 
@@ -23,9 +24,7 @@ def needed(client: Client) -> list[str]:
     if client.is_person:
         kinds.append(Kind.IPP)
     else:
-        kinds.append(Kind.BIZTAX)
-        if client.ubo_filed_by == Client.UboFiler.CABINET:
-            kinds.append(Kind.UBO)
+        kinds += [Kind.BIZTAX, Kind.UBO]
     return kinds
 
 

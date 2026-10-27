@@ -16,7 +16,7 @@ from apps.core.models import AccessLog
 from apps.core.permissions import require_capability
 
 from . import spf
-from .models import Client, SpfMandate
+from .models import SpfMandate
 from .views import _get_client
 
 
@@ -24,14 +24,6 @@ from .views import _get_client
 @require_capability(Capability.CLIENTS_EDIT)
 def spf_mandate_update(request: AppRequest, pk: int) -> HttpResponse:
     client = _get_client(request, pk)
-    if "ubo_filed_by" in request.POST:
-        filer = request.POST["ubo_filed_by"]
-        if filer in Client.UboFiler.values and not client.is_person:
-            client.ubo_filed_by = filer
-            client.save(update_fields=["ubo_filed_by"])
-            log_access(request, AccessLog.Action.UPDATE, client,
-                       details={"registre UBO déposé par": filer})  # fmt: skip
-        return redirect("clients:documents", pk=client.pk)
     kind, status = request.POST.get("kind", ""), request.POST.get("status", "")
     if kind not in spf.needed(client) or status not in SpfMandate.Status.values:
         messages.error(request, "Changement refusé.")

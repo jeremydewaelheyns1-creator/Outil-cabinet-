@@ -483,7 +483,7 @@ def client_documents(request: AppRequest, pk: int) -> HttpResponse:
         ]
         from . import spf
 
-        return {"cases": cases, "mandates": spf.lines(client), "filers": Client.UboFiler.choices}
+        return {"cases": cases, "mandates": spf.lines(client)}
 
     return render_section(request, pk, "documents", "clients/sections/documents.html", build)
 

@@ -830,3 +830,11 @@ Proposé, en attente de l'accord de Jeremy : bouton « Demander » sur une ligne
 « Mes mandats », afficher les infos à encoder, e-mail au client avec la marche à suivre) ;
 rappel au client quand c'est lui qui dépose le registre UBO.
 
+## D-073 — Registre UBO : toujours déposé par le cabinet
+
+Jeremy : si le client dépose lui-même, il appelle le cabinet pour le faire ; l'outil part donc
+du principe que le cabinet dépose le registre UBO. Le choix « Registre UBO déposé par » (D-072)
+est retiré : la ligne « Registre UBO » figure toujours pour une société ou une association.
+Vérifié : un mandat SPF par type (TVA, Biztax, Registre UBO…), mais plusieurs types peuvent être
+créés en une seule demande dans l'application des mandats.
+
