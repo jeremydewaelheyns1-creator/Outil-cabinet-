@@ -17,7 +17,7 @@
   <section class="card" style="margin-top: 1rem">
     <h2>1. Les trous à compléter ({{ holes|length }})</h2>
     <p class="small muted" style="margin-top:0">L'outil propose ce qu'il faut mettre d'après le texte qui précède. Corrigez si besoin. « À demander » : le comptable le donne à chaque lettre (donnez alors la question à afficher).</p>
-    <table class="table">
+    <table class="table letter-holes">
       <thead><tr><th>Dans le texte</th><th>Contenu</th></tr></thead>
       <tbody>
       {% for item in holes %}
@@ -28,7 +28,7 @@
               <option value="">— à choisir —</option>
               {% for code, label in choices %}<option value="{{ code }}"{% if code == item.field %} selected{% endif %}>{{ label }}</option>{% endfor %}
             </select>
-            <input name="libelle-{{ item.hole.key }}" value="{{ item.label }}" maxlength="120" placeholder="Question si « à demander » (ex. Honoraires annuels HTVA)" aria-label="Question à poser" style="margin-top:.3rem">
+            <input name="libelle-{{ item.hole.key }}" value="{{ item.label }}" maxlength="120" placeholder="Question posée au comptable (ex. Honoraires annuels HTVA)" aria-label="Question posée au comptable" data-show-if="trou-{{ item.hole.key }}=demander">
           </td>
         </tr>
       {% empty %}
@@ -58,7 +58,7 @@
     <p class="small muted" style="margin-top:0">Par défaut tout le texte est gardé. Pour un passage qui ne vaut pas pour tous les clients (mission TVA, IPP du dirigeant, frais d'ouverture…), choisissez quand le garder.</p>
     <details>
       <summary>Voir les {{ paragraphs|length }} paragraphes</summary>
-      <table class="table">
+      <table class="table letter-holes">
         <tbody>
         {% for p in paragraphs %}
           <tr>
@@ -67,7 +67,7 @@
               <select name="option-{{ p.index }}" aria-label="Quand garder ce passage">
                 {% for code, label in conditions %}<option value="{{ code }}"{% if code == p.condition %} selected{% endif %}>{{ label }}</option>{% endfor %}
               </select>
-              <input name="question-{{ p.index }}" value="{{ p.label }}" maxlength="160" placeholder="Question si « le comptable le coche »" aria-label="Question à cocher" style="margin-top:.3rem">
+              <input name="question-{{ p.index }}" value="{{ p.label }}" maxlength="160" placeholder="Question à cocher (ex. Inclure l'IPP du dirigeant ?)" aria-label="Question à cocher" data-show-if="option-{{ p.index }}=question">
             </td>
           </tr>
         {% endfor %}
@@ -83,7 +83,7 @@
     {% else %}
       <button type="submit" name="action" value="activer">Enregistrer et activer</button>
     {% endif %}
-    <button type="submit" name="action" value="supprimer" class="secondary">Supprimer ce modèle</button>
+    <button type="submit" name="action" value="supprimer" class="danger">Supprimer ce modèle</button>
   </div>
 </form>
 {% endblock %}

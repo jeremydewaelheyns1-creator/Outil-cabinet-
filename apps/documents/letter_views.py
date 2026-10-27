@@ -48,7 +48,7 @@ def models_page(request: AppRequest) -> HttpResponse:
         template = LetterTemplate.objects.create(
             name=(upload.name or "modele.docx")[:200],
             content=content,
-            holes={h.key: {"field": h.guess, "label": ""} for h in found if h.guess},
+            holes={h.key: {"field": h.guess, "label": h.question} for h in found if h.guess},
             uploaded_by=request.user,
         )
         log_access(request, AccessLog.Action.IMPORT, template, details={"modèle": "lettre"})

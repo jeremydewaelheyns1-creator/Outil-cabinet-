@@ -403,7 +403,15 @@ class CaseStatus:
     text: str
 
 
-def case_status(client: Client, case: dossier.DocumentCase, request: AppRequest) -> CaseStatus:
+def case_status(
+    client: Client,
+    case: dossier.DocumentCase,
+    request: AppRequest,
+    every: dict[str, Any] | None = None,
+    current: list[Any] | None = None,
+) -> CaseStatus:
+    """`every` (lignes de toutes les cases) et `current` (documents en place de la case) :
+    déjà chargés par l'onglet Documents, pour ne pas relire la base case par case."""
     from apps.documents import services as documents
 
     if case.slug == "ubo":
@@ -414,7 +422,8 @@ def case_status(client: Client, case: dossier.DocumentCase, request: AppRequest)
             )
         from apps.documents import types
 
-        missing = [r for r in types.rows(client, "ubo") if r.level in ("danger", "warning")]
+        ubo_rows = every["ubo"] if every and "ubo" in every else types.rows(client, "ubo")
+        missing = [r for r in ubo_rows if r.level in ("danger", "warning")]
         if missing:
             level = types.worst([r.level for r in missing])
             return CaseStatus(level, f"{missing[0].doc_type.label} : {missing[0].text.lower()}")
@@ -450,7 +459,9 @@ def case_status(client: Client, case: dossier.DocumentCase, request: AppRequest)
     from apps.documents import types
 
     if case.slug in types.TYPED_CASES:
-        doc_rows = types.rows(client, case.slug)
+        doc_rows = (
+            every[case.slug] if every and case.slug in every else types.rows(client, case.slug)
+        )
         level = types.worst([r.level for r in doc_rows])
         problems = [r for r in doc_rows if r.level in ("danger", "warning")]
         if not problems:
@@ -465,7 +476,7 @@ def case_status(client: Client, case: dossier.DocumentCase, request: AppRequest)
             return CaseStatus(level, f"{first.doc_type.label} : {first.text.lower()}{more}")
         who = f"{first.person.display_name} : " if first.person else ""
         return CaseStatus(level, f"{who}{first.text}{more}")
-    count = len(documents.current_documents(client, case.slug))
+    count = len(current if current is not None else documents.current_documents(client, case.slug))
     if not count:
         return CaseStatus("empty", "Aucun document")
     return CaseStatus("ok", f"{count} document{'s' if count > 1 else ''}")
@@ -474,13 +485,23 @@ def case_status(client: Client, case: dossier.DocumentCase, request: AppRequest)
 def client_documents(request: AppRequest, pk: int) -> HttpResponse:
     """Onglet Documents : une case par sujet, avec son état (D-033)."""
 
-    from apps.documents import services as documents
-
     def build(client: Client) -> dict[str, Any]:
-        cases = [
-            (c, case_status(client, c, request), documents.current_documents(client, c.slug))
-            for c in dossier.document_cases_for(client)
-        ]
+        from apps.documents import types
+        from apps.documents.models import Document
+
+        # Tous les documents en place du dossier en une requête (au lieu d'une par case).
+        loaded = list(
+            Document.objects.filter(client=client, archived_at__isnull=True)
+            .exclude(case="")
+            .select_related("person", "request", "uploaded_by")
+            .order_by("-uploaded_at")
+        )
+        every = types.all_rows(client, [d for d in loaded if d.case in types.TYPED_CASES])
+        final = Document.State.FINAL
+        cases = []
+        for c in dossier.document_cases_for(client):
+            current = [d for d in loaded if d.case == c.slug and d.state == final]
+            cases.append((c, case_status(client, c, request, every, current), current))
         from . import spf
 
         mandates = spf.lines(client)

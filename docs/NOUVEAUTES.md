@@ -3,6 +3,19 @@
 Ce qui a été ajouté à l'outil, du plus récent au plus ancien. Toutes les données de la démo
 sont inventées.
 
+## 27 octobre 2026 — Vérifications et finitions de l'après-midi
+
+- Tous les parcours du jour ont été essayés de bout en bout (dépôt du modèle de lettre de
+  mission, préparation, signature en ligne sur téléphone avec les questions sur les personnes
+  politiquement exposées, mandats SPF, fiche de risque, prospects, registre UBO).
+- **Lettre de mission** : l'outil propose aussi la question à poser (« Honoraires (montant
+  hors TVA) », « Lieu de signature »…) ; la question n'apparaît que pour un trou « à
+  demander » ; champs plus lisibles ; écran plus rapide avec une longue lettre.
+- **Sécurité** : un fichier Word piégé (qui gonflerait à l'ouverture) est refusé avant d'être
+  ouvert ; les nouveaux écrans restent invisibles pour un dossier d'un portefeuille privé.
+- **Vitesse** : la page Documents d'un dossier lit la base 18 fois de moins.
+- Quelques champs de saisie (TVA, « À classer ») avaient perdu leur mise en forme : corrigé.
+
 ## 27 octobre 2026 — Registre UBO : la fiche d'encodage pour MyMinfin
 
 - Dans **Bénéficiaires effectifs**, une fiche suit les écrans de MyMinfin dans l'ordre :

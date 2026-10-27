@@ -34,7 +34,9 @@ mandats manquants » (fiche à recopier + un e-mail). **À faire par Jeremy** : 
 d'entreprise du cabinet et vérifier le lien de l'application des mandats (Réglages du cabinet). D-076 : fiche de risque sur le modèle ITAA 5.1/5.2 (faible/standard/élevé, 3 ans / 1 an).
 D-077 : prospects (devient client à la signature + notification à l'expert-comptable ;
 bouton « Devient client »). D-078 : registre UBO (fiche d'encodage, mise à jour dans le mois) ; prospects sans suite
-signalés après 1 an, suppression à la main. **Série « Documents un par un » terminée.**
+signalés après 1 an, suppression à la main. **Série « Documents un par un » terminée.** Puis, Jeremy absent 2 h : essais de bout en bout,
+sécurité (bombe zip, portefeuilles privés), vitesse (page Documents), finitions (voir
+NOUVEAUTES 27/10 après-midi).
 **Ensuite**, un par un (format court : il préfère des réponses
 brèves).
 

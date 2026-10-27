@@ -54,6 +54,12 @@ def test_holes_are_found_and_guessed_from_the_text_before():
         "client.representant",
     ]
     assert letter.ASK in found.values()  # honoraires, lieu
+    questions = {h.question for h in letter.holes(model()) if h.guess == letter.ASK}
+    assert {
+        "Honoraires (montant hors TVA)",
+        "Lieu de signature",
+        "Premier exercice concerné",
+    } <= questions
     texts = [h.text for h in letter.holes(model())]
     assert "[année]" in texts and "à adapter" in texts  # crochets et surlignage
 
@@ -123,3 +129,17 @@ def test_not_a_word_file_is_refused(admin):
     file = SimpleUploadedFile("lettre.docx", b"pas un word")
     admin.post(reverse("lettre:models"), {"modele": file})
     assert not LetterTemplate.objects.exists()
+
+
+def test_zip_bomb_is_refused_before_opening(admin):
+    import zipfile
+
+    buffer = io.BytesIO()
+    with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as archive:
+        archive.writestr("[Content_Types].xml", "<x/>")
+        archive.writestr("word/bomb.xml", b"0" * (60 * 1024 * 1024))  # 60 Mo, compressé en Ko
+    content = buffer.getvalue()
+    assert len(content) < 200_000
+    file = SimpleUploadedFile("lettre.docx", content)
+    response = admin.post(reverse("lettre:models"), {"modele": file}, follow=True)
+    assert "anormal" in response.content.decode() and not LetterTemplate.objects.exists()

@@ -10,7 +10,7 @@
     <p style="margin-top:0">L'outil n'a pas de lettre de mission de base : elle est propre à chaque cabinet. Un administrateur doit d'abord déposer le modèle Word du cabinet{% if request.user.is_staff %} dans <a href="{% url 'lettre:models' %}">Réglages du cabinet › Modèle de lettre de mission</a>{% else %} (Réglages du cabinet){% endif %}.</p>
   {% endif %}
   {% if template %}
-  <form method="post">
+  <form method="post" class="form-stack">
     {% csrf_token %}
     {% for key, label in questions %}
       {% if key|slice:":5" == "trou:" %}

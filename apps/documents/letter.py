@@ -61,7 +61,7 @@ FIELDS: dict[str, tuple[str, Callable[[Client], str]]] = {
 }
 CHOICES: list[tuple[str, str]] = [
     *[(code, label) for code, (label, _) in FIELDS.items()],
-    (ASK, "À demander à chaque lettre (honoraires, lieu, date de début…)"),
+    (ASK, "À demander à chaque lettre"),
     (KEEP, "Pas un trou : laisser tel quel"),
 ]
 
@@ -121,22 +121,54 @@ def _paragraphs(document: Any) -> list[Any]:
     return [Paragraph(p, document) for p in body.iter(qn("w:p"))]
 
 
+MAX_UNPACKED = 40 * 1024 * 1024  # un vrai modèle Word décompressé pèse quelques Mo
+MAX_PARTS = 500
+
+
+def _safe_archive(content: bytes) -> None:
+    """Refuse une archive piégée (« bombe zip ») avant de l'ouvrir : un .docx est un zip."""
+    import zipfile
+
+    try:
+        with zipfile.ZipFile(io.BytesIO(content)) as archive:
+            infos = archive.infolist()
+    except (zipfile.BadZipFile, ValueError) as exc:
+        raise ValidationError("Ce fichier n'est pas un document Word (.docx) lisible.") from exc
+    if len(infos) > MAX_PARTS or sum(i.file_size for i in infos) > MAX_UNPACKED:
+        raise ValidationError("Ce fichier Word est anormal (trop gros une fois ouvert) : refusé.")
+
+
 def _open(content: bytes) -> Any:
     from docx import Document as Word
 
+    _safe_archive(content)
     try:
         return Word(io.BytesIO(content))
     except Exception as exc:  # fichier abîmé ou pas un Word
         raise ValidationError("Ce fichier n'est pas un document Word (.docx) lisible.") from exc
 
 
-@dataclass
+@dataclass(frozen=True)
 class Hole:
     key: str  # « paragraphe:position »
     before: str
     text: str
     after: str
     guess: str
+
+    @property
+    def question(self) -> str:
+        """Question proposée au comptable quand le trou est « à demander »."""
+        b, a = normalize_text(self.before)[-40:], normalize_text(self.after)[:20]
+        if "honoraire" in b or "montant" in b or "eur" in a or "€" in self.after[:10]:
+            return "Honoraires (montant hors TVA)"
+        if b.rstrip().endswith("fait a"):
+            return "Lieu de signature"
+        if "exercice" in b[-20:]:
+            return "Premier exercice concerné"
+        if "prend cours" in b or "a partir du" in b or "debut" in b[-25:]:
+            return "Date de début de la mission"
+        return ""
 
 
 def _highlighted(paragraph: Any) -> list[str]:
@@ -195,8 +227,26 @@ def _spans(paragraph: Any) -> list[tuple[int, int]]:
     return sorted(spans)
 
 
+_MEMO: dict[tuple[str, str], Any] = {}  # lecture d'un modèle gardée (même fichier = même résultat)
+
+
+def _memo(kind: str, content: bytes, compute: Callable[[], Any]) -> Any:
+    import hashlib
+
+    key = (kind, hashlib.sha256(content).hexdigest())
+    if key not in _MEMO:
+        if len(_MEMO) > 16:
+            _MEMO.clear()
+        _MEMO[key] = compute()
+    return _MEMO[key]
+
+
 def holes(content: bytes) -> list[Hole]:
     """Trous repérés dans le modèle, avec le texte autour et une proposition."""
+    return list(_memo("holes", content, lambda: _holes(content)))
+
+
+def _holes(content: bytes) -> list[Hole]:
     result: list[Hole] = []
     running = ""
     for index, paragraph in enumerate(_paragraphs(_open(content))):
@@ -212,7 +262,12 @@ def holes(content: bytes) -> list[Hole]:
 
 def paragraphs(content: bytes) -> list[tuple[int, str]]:
     """Les paragraphes non vides (pour choisir ceux qui sont à options)."""
-    return [(i, p.text) for i, p in enumerate(_paragraphs(_open(content))) if p.text.strip()]
+
+    def compute() -> list[tuple[int, str]]:
+        items = enumerate(_paragraphs(_open(content)))
+        return [(i, p.text) for i, p in items if p.text.strip()]
+
+    return list(_memo("paragraphs", content, compute))
 
 
 @dataclass

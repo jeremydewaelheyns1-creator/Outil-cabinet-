@@ -193,6 +193,20 @@ document.addEventListener("change", function (event) {
   if (field.matches && field.matches("[data-autosubmit]") && field.form) field.form.submit();
 });
 
+// Champ montré seulement pour un choix précis d'une liste : data-show-if="nom-de-la-liste=valeur"
+// (ex. la question à poser, seulement si le trou est « à demander »). Sans JavaScript : visible.
+(function () {
+  function sync() {
+    document.querySelectorAll("[data-show-if]").forEach(function (field) {
+      var parts = field.getAttribute("data-show-if").split("=");
+      var select = document.querySelector('[name="' + parts[0] + '"]');
+      if (select) field.hidden = select.value !== parts[1];
+    });
+  }
+  document.addEventListener("change", sync);
+  document.addEventListener("DOMContentLoaded", sync);
+})();
+
 // Liste de dossiers « à taper » : on écrit quelques lettres, l'outil propose les dossiers qui
 // correspondent (sans tenir compte des accents). La vraie liste reste dans la page (sans
 // JavaScript, elle s'affiche telle quelle).
