@@ -7,8 +7,9 @@
   {% if template %}
     <p class="small muted" style="margin-top:0">Sur le modèle du cabinet (« {{ template.name }} »). L'outil remplit tout seul ce qu'il connaît (nom, siège, numéro, représentant…) et garde ou retire les passages à options selon le dossier. Il ne reste que ceci :</p>
   {% else %}
-    <p class="small muted" style="margin-top:0">Aucun modèle du cabinet n'est encore activé : la lettre sera faite sur le modèle provisoire de l'outil. Un administrateur peut déposer le modèle du cabinet dans Paramètres › Réglages du cabinet.</p>
+    <p style="margin-top:0">L'outil n'a pas de lettre de mission de base : elle est propre à chaque cabinet. Un administrateur doit d'abord déposer le modèle Word du cabinet{% if request.user.is_staff %} dans <a href="{% url 'lettre:models' %}">Réglages du cabinet › Modèle de lettre de mission</a>{% else %} (Réglages du cabinet){% endif %}.</p>
   {% endif %}
+  {% if template %}
   <form method="post">
     {% csrf_token %}
     {% for key, label in questions %}
@@ -22,5 +23,6 @@
     <div class="actions" style="margin-top: .8rem"><button type="submit">Générer le brouillon</button><a class="button button-secondary" href="{% url 'clients:document_case' client.pk 'lettre-de-mission' %}">Annuler</a></div>
     <p class="small muted">Le brouillon s'ouvre ensuite : relisez-le, puis envoyez-le au client pour signature en ligne.</p>
   </form>
+  {% endif %}
 </section>
 {% endblock %}

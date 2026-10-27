@@ -155,7 +155,7 @@ def prepare(request: AppRequest, pk: int) -> HttpResponse:
     client = _get_client(request, pk)
     template = letter.active()
     questions = letter.questions(template) if template is not None else []
-    if request.method == "POST":
+    if request.method == "POST" and template is not None:
         answers = {key: request.POST.get(key, "").strip()[:300] for key, _ in questions}
         empty = [label for key, label in questions if key.startswith("trou:") and not answers[key]]
         if empty:

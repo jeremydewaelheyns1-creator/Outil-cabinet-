@@ -473,8 +473,8 @@ def document_generate(request: AppRequest, pk: int, doc_type: str) -> HttpRespon
     from . import generation
 
     client = _get_client(request, pk)
-    if not generation.can_generate(doc_type):
-        raise Http404
+    if not generation.can_generate(doc_type) or doc_type == generation.LETTER:
+        raise Http404  # la lettre de mission passe par « Préparer » (letter_views.prepare)
     person = None
     if types.BY_SLUG[doc_type].per:
         person = get_object_or_404(

@@ -12,6 +12,8 @@ sont inventées.
 - Dans le dossier, **« Générer »** ne demande plus que les honoraires et ce que l'outil ne
   connaît pas, garde ou retire les passages à options (TVA, société…), et prépare le
   brouillon à envoyer au client pour signature en ligne.
+- L'outil n'a **plus de lettre de mission de base** : tant que le cabinet n'a pas déposé son
+  modèle, il n'en fait pas.
 
 ## 26 octobre 2026 — Identifications sur le modèle de l'ITAA
 

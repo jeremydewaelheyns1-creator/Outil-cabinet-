@@ -9,6 +9,7 @@ from apps.core.models import AccessLog
 from apps.core.testing.factories import ClientFactory, PersonFactory
 from apps.documents import generation, services, types
 from apps.documents.models import Document, DocumentRequest, OutgoingEmail
+from apps.documents.tests.letter_fixture import install
 
 pytestmark = pytest.mark.django_db
 
@@ -37,7 +38,7 @@ def text_of(document):
 def test_generate_produces_a_draft_shown_in_the_viewer(web):
     client, _ = company()
     response = web.post(
-        reverse("clients:document_generate", args=[client.pk, "lettre_mission"]),
+        reverse("clients:document_generate", args=[client.pk, "procuration"]),
         HTTP_HX_REQUEST="true",
     )
     html = response.content.decode()
@@ -47,20 +48,30 @@ def test_generate_produces_a_draft_shown_in_the_viewer(web):
     assert draft.state == "draft" and draft.generated and draft.content_type == "application/pdf"
     assert draft.file.open("rb").read(5) == b"%PDF-"
     # Un brouillon ne compte pas : la ligne reste « manquant » tant qu'il n'est pas signé.
-    row = types.rows(client, "lettre-de-mission")[0]
+    row = types.rows(client, "procuration")[0]
     assert row.document is None and row.draft == draft
     assert AccessLog.objects.filter(action="create", object_id=str(draft.pk)).exists()
 
 
 @pytest.mark.skipif(not __import__("shutil").which("pdftotext"), reason="poppler absent")
-def test_generated_document_contains_the_dossier_data_and_cabinet_signature(web, user):
+def test_generated_letter_contains_the_dossier_data(web, user):
     client, _manager = company()
+    install()
     document = generation.generate(client, "lettre_mission", user=user)
-    text = text_of(document)
-    assert "Société Fictive" in text and "Fictif Anne" in text
-    assert "Signé électroniquement" in text  # déjà signé par la fiduciaire
-    assert "Pour le client" in text  # case de signature du client, vide
-    assert "trimestrielle" in text
+    text = " ".join(text_of(document).split())
+    assert "Société Fictive" in text and "Anne Fictif" in text
+
+
+def test_no_mission_letter_without_the_cabinet_model(web):
+    client, _ = company()
+    assert not generation.can_generate("lettre_mission")
+    with pytest.raises(ValueError):
+        generation.generate(client, "lettre_mission")
+    page = web.get(reverse("clients:document_case", args=[client.pk, "lettre-de-mission"]))
+    assert "Pas de modèle du cabinet" in page.content.decode()
+    url = reverse("clients:letter_prepare", args=[client.pk])
+    assert web.post(url, {}).status_code == 200
+    assert not Document.objects.exists()
 
 
 def test_send_for_signature_creates_a_request_and_keeps_the_sent_version(web):
@@ -114,7 +125,7 @@ def test_discard_draft(web):
 def test_generation_requires_edit_right(client, make_user):
     target, _ = company()
     client.force_login(make_user())
-    url = reverse("clients:document_generate", args=[target.pk, "lettre_mission"])
+    url = reverse("clients:document_generate", args=[target.pk, "procuration"])
     assert client.post(url).status_code == 403
 
 
@@ -127,6 +138,7 @@ def test_mandataire_must_belong_to_the_client(web):
 
 def test_rows_offer_generate_or_update(web):
     client, _ = company()
+    install()
     html = web.get(reverse("clients:document_case", args=[client.pk, "lettre-de-mission"]))
     assert "Générer" in html.content.decode()
     services.store(client, SimpleUploadedFile("l.pdf", b"%PDF-1.4 x"), title="LM",

@@ -7,6 +7,7 @@ from apps.clients.models import Assignment
 from apps.core.testing.factories import ClientFactory
 from apps.documents import compliance, generation, services
 from apps.documents.models import DocumentRequest
+from apps.documents.tests.letter_fixture import install
 from apps.documents.tests.test_client_link import link_of, photo, signature_png
 from apps.documents.tests.test_documents import company_with_manager
 
@@ -15,6 +16,7 @@ pytestmark = pytest.mark.django_db
 
 def prepared_company():
     company, manager = company_with_manager()
+    install()  # modèle de lettre de mission du cabinet
     generation.generate(company, "lettre_mission")  # brouillon relu, prêt à signer
     return company, manager
 

@@ -12,7 +12,7 @@ from apps.core.models import AccessLog
 from apps.documents import letter
 from apps.documents.models import Document, LetterTemplate
 
-from .letter_fixture import model
+from .letter_fixture import install, model
 from .test_generation import company, text_of
 
 pytestmark = pytest.mark.django_db
@@ -112,11 +112,11 @@ def test_prepare_page_generates_the_draft_from_the_cabinet_model(admin, web):
     assert "Société Fictive" in text_of(document)
 
 
-def test_without_active_model_the_provisional_one_is_used(web):
+def test_direct_generate_url_refuses_the_letter(web):
+    install()
     client, _ = company()
-    response = web.post(reverse("clients:letter_prepare", args=[client.pk]), {})
-    assert response.status_code == 302
-    assert Document.objects.filter(client=client, doc_type="lettre_mission").exists()
+    url = reverse("clients:document_generate", args=[client.pk, "lettre_mission"])
+    assert web.post(url).status_code == 404  # passe par « Préparer »
 
 
 def test_not_a_word_file_is_refused(admin):

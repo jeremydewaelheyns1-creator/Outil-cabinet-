@@ -446,7 +446,7 @@ class Command(BaseCommand):
             user=user,
             comment="Débit de boissons : paiements en espèces fréquents (exemple fictif).",
         )
-        generation.generate(medical, "lettre_mission", user=user)
+        generation.generate(medical, "procuration", user=user)
         compliance.ask_everything(medical, user)
         digest.monthly(timezone.localdate().replace(day=1))
 

@@ -791,3 +791,11 @@ ressource extérieure chargée). Brouillon puis signature en ligne par le parcou
 Sans modèle actif : modèle provisoire de l'outil. Aucune IA. Le modèle est gardé dans la base
 du cabinet (jamais dans le dépôt) ; dépôt, réglage, suppression et génération sont journalisés.
 
+## D-070 — Pas de lettre de mission de base
+
+Demande de Jeremy : la lettre de mission est propre à chaque cabinet, l'outil n'en fait donc
+aucune tant que le cabinet n'a pas déposé et activé son modèle (D-069). Le modèle provisoire
+est supprimé. Sans modèle : « Pas de modèle du cabinet » dans le dossier (renvoi vers
+Réglages du cabinet), on peut toujours ranger une lettre signée ou la demander au client.
+Remplace la phrase de D-069 « Sans modèle actif : modèle provisoire de l'outil ».
+

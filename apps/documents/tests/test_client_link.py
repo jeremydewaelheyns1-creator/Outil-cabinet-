@@ -121,8 +121,10 @@ def signature_png() -> str:
 
 def letter_sent_for_signature():
     from apps.documents import generation
+    from apps.documents.tests.letter_fixture import install
 
     company, _ = company_with_manager()
+    install()
     draft = generation.generate(company, "lettre_mission")
     request = generation.send_for_signature(draft)
     return company, request, "/" + link_of(request)

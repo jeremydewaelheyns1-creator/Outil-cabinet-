@@ -10,8 +10,8 @@ puis le valide (document du cabinet) ou l'envoie au client pour signature (docum
 client signe). Il ne remplace le document en place qu'une fois définitif.
 
 Les modèles sont des pages HTML (`templates/documents/modeles/`) transformées en PDF par
-WeasyPrint, sur le serveur. Ceux de la lettre de mission et de la procuration sont provisoires
-et devront être remplacés par les modèles du cabinet.
+WeasyPrint, sur le serveur. Celui de la procuration est provisoire. La lettre de mission n'a
+pas de modèle de base : elle est faite seulement sur le modèle déposé par le cabinet (D-070).
 """
 
 from __future__ import annotations
@@ -45,17 +45,23 @@ MODELS: dict[str, Model] = {
     "identification_client": Model("identification_client.html", signature=False),
     "identification_mandataire": Model("identification_mandataire.html", signature=False),
     "declaration_ubo": Model("declaration_ubo.html", signature=True),
-    "lettre_mission": Model("lettre_mission.html", signature=True, provisional=True),
     "procuration": Model("procuration.html", signature=True, provisional=True),
 }
 
 
+LETTER = "lettre_mission"  # propre à chaque cabinet : seulement avec son modèle (D-070)
+
+
 def can_generate(doc_type: str) -> bool:
+    from . import letter
+
+    if doc_type == LETTER:
+        return letter.active() is not None
     return doc_type in MODELS
 
 
 def needs_signature(doc_type: str) -> bool:
-    return doc_type in MODELS and MODELS[doc_type].signature
+    return doc_type == LETTER or (doc_type in MODELS and MODELS[doc_type].signature)
 
 
 def _context(
@@ -118,17 +124,18 @@ def generate(
 ) -> Document:
     """Produit un brouillon du document (nouveau, ou mise à jour de celui en place).
 
-    Lettre de mission : sur le modèle Word du cabinet s'il y en a un d'activé (D-069), avec
-    les réponses du comptable (`answers`) ; sinon sur le modèle provisoire."""
+    Lettre de mission : uniquement sur le modèle Word que le cabinet a déposé et activé
+    (D-069, D-070), avec les réponses du comptable (`answers`)."""
     from . import letter
 
     if not can_generate(doc_type):
         raise ValueError("Ce document ne peut pas être généré.")
     kind = types.BY_SLUG[doc_type]
-    template = letter.active() if doc_type == "lettre_mission" else None
-    if template is not None:
-        word = letter.fill(template, client, answers or {})
-        content = letter.to_pdf(word, kind.label)
+    if doc_type == LETTER:
+        template = letter.active()
+        if template is None:
+            raise ValueError("Aucun modèle de lettre de mission n'est activé.")
+        content = letter.to_pdf(letter.fill(template, client, answers or {}), kind.label)
     else:
         content = render_pdf(client, doc_type, person, user)
     today = timezone.localdate()

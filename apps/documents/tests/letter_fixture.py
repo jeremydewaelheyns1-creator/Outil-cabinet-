@@ -34,3 +34,16 @@ def model(complete: bool = True) -> bytes:
     out = io.BytesIO()
     doc.save(out)
     return out.getvalue()
+
+
+def install(complete: bool = True):  # type: ignore[no-untyped-def]
+    """Dépose et active le modèle fictif, comme un administrateur du cabinet."""
+    from apps.documents import letter
+    from apps.documents.models import LetterTemplate
+
+    content = model(complete)
+    holes = {h.key: {"field": h.guess or letter.KEEP, "label": ""} for h in letter.holes(content)}
+    checks = [c.code for c in letter.checks(content, holes) if c.excerpt]
+    return LetterTemplate.objects.create(
+        name="modele-fictif.docx", content=content, holes=holes, checks=checks, active=True
+    )
