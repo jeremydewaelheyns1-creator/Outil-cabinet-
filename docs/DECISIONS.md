@@ -838,3 +838,8 @@ est retiré : la ligne « Registre UBO » figure toujours pour une société ou 
 Vérifié : un mandat SPF par type (TVA, Biztax, Registre UBO…), mais plusieurs types peuvent être
 créés en une seule demande dans l'application des mandats.
 
+## D-074 — Mandats SPF : Finprof et Contentieux ajoutés
+
+À la demande de Jeremy (« pour le moment ») : Finprof pour une société ou une association
+(consultation de la situation fiscale), Contentieux pour tous les dossiers (réclamations).
+

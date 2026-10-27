@@ -499,6 +499,8 @@ class SpfMandate(models.Model):
         BIZTAX = "biztax", "Biztax (ISOC)"
         UBO = "ubo", "Registre UBO"
         IPP = "ipp", "Tax-on-web (IPP)"
+        FINPROF = "finprof", "Finprof (situation fiscale)"
+        DISPUTE = "contentieux", "Contentieux (réclamations)"
 
     class Status(models.TextChoices):
         MISSING = "missing", "Pas de mandat"
@@ -506,7 +508,7 @@ class SpfMandate(models.Model):
         SIGNED = "signed", "Signé"
 
     client = models.ForeignKey(Client, on_delete=models.CASCADE, related_name="spf_mandates")
-    kind = models.CharField("mandat", max_length=10, choices=Kind.choices)
+    kind = models.CharField("mandat", max_length=20, choices=Kind.choices)
     status = models.CharField("état", max_length=10, choices=Status.choices, default=Status.MISSING)
     updated_at = models.DateTimeField("mis à jour le", default=timezone.now)
     updated_by = models.ForeignKey(

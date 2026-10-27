@@ -1,10 +1,9 @@
-"""Récapitulatif des mandats SPF Finances d'un dossier (D-072).
+"""Récapitulatif des mandats SPF Finances d'un dossier (D-072 à D-074).
 
-Une ligne par mandat **utile à ce dossier** : TVA si le client dépose des déclarations TVA,
-Biztax et Registre UBO pour une société ou une association (le cabinet dépose le registre
-UBO : si le client le fait lui-même, il appelle le cabinet), Tax-on-web pour une personne
-physique. Vert quand le mandat est signé, rouge sinon. Pas
-d'alerte : c'est un simple récapitulatif, tenu à la main.
+Une ligne par mandat **utile à ce dossier** : TVA si le client dépose des déclarations TVA ;
+Biztax, Registre UBO et Finprof pour une société ou une association (le cabinet dépose le
+registre UBO) ; Tax-on-web pour une personne physique ; Contentieux pour tous. Vert quand le
+mandat est signé, rouge sinon. Pas d'alerte : un simple récapitulatif, tenu à la main.
 """
 
 from __future__ import annotations
@@ -24,7 +23,8 @@ def needed(client: Client) -> list[str]:
     if client.is_person:
         kinds.append(Kind.IPP)
     else:
-        kinds += [Kind.BIZTAX, Kind.UBO]
+        kinds += [Kind.BIZTAX, Kind.UBO, Kind.FINPROF]
+    kinds.append(Kind.DISPUTE)
     return kinds
 
 

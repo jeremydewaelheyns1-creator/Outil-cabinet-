@@ -13,10 +13,10 @@ pytestmark = pytest.mark.django_db
 
 def test_only_useful_mandates_are_listed():
     company = ClientFactory(vat_status="subject")
-    assert spf.needed(company) == ["tva", "biztax", "ubo"]
+    assert spf.needed(company) == ["tva", "biztax", "ubo", "finprof", "contentieux"]
     company.vat_status = "not_subject"
-    assert spf.needed(company) == ["biztax", "ubo"]  # pas de TVA
-    assert spf.needed(PersonFactory()) == ["ipp"]
+    assert spf.needed(company) == ["biztax", "ubo", "finprof", "contentieux"]  # pas de TVA
+    assert spf.needed(PersonFactory()) == ["ipp", "contentieux"]
 
 
 def test_lines_are_red_until_signed(web):

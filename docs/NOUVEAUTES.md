@@ -6,7 +6,7 @@ sont inventées.
 ## 27 octobre 2026 — Mandats SPF dans la page Documents
 
 - En haut à droite de la page **Documents** du dossier, un encadré **Mandats SPF** montre les
-  mandats utiles à ce dossier (TVA, Biztax, registre UBO, Tax-on-web) : vert quand le mandat
+  mandats utiles à ce dossier (TVA, Biztax, registre UBO, Finprof, Contentieux, Tax-on-web) : vert quand le mandat
   est signé, rouge sinon. Un clic sur « Noter signé » quand c'est fait.
 
 ## 27 octobre 2026 — Déclaration des bénéficiaires effectifs (modèle ITAA)
