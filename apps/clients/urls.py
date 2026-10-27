@@ -6,7 +6,7 @@ from apps.tasks import views as task_views
 from apps.timesheet import views as timesheet_views
 from apps.vat import views as vat_views
 
-from . import views
+from . import spf_views, views
 
 app_name = "clients"
 
@@ -27,6 +27,11 @@ urlpatterns = [
     path("<int:pk>/mandataires/", views.client_mandates, name="mandates"),
     path("<int:pk>/actionnaires/", views.client_shareholders, name="shareholders"),
     path("<int:pk>/documents/beneficiaires-effectifs/", views.client_ubo, name="ubo"),
+    path(
+        "<int:pk>/documents/mandats-spf/modifier/",
+        spf_views.spf_mandate_update,
+        name="spf_mandate_update",
+    ),
     path("<int:pk>/comptes-annuels/", views.client_annual_accounts, name="annual_accounts"),
     path("<int:pk>/echeances/", task_views.client_tasks, name="tasks"),
     path("<int:pk>/historique/", views.client_history, name="history"),

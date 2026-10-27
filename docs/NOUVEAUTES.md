@@ -3,6 +3,13 @@
 Ce qui a été ajouté à l'outil, du plus récent au plus ancien. Toutes les données de la démo
 sont inventées.
 
+## 27 octobre 2026 — Mandats SPF dans la page Documents
+
+- En haut à droite de la page **Documents** du dossier, un encadré **Mandats SPF** montre les
+  mandats utiles à ce dossier (TVA, Biztax, registre UBO, Tax-on-web) : vert quand le mandat
+  est signé, rouge sinon. Un clic sur « Noter signé » quand c'est fait.
+- Le même encadré indique qui dépose le **registre UBO** : le cabinet (par défaut) ou le client.
+
 ## 27 octobre 2026 — Déclaration des bénéficiaires effectifs (modèle ITAA)
 
 - La **déclaration UBO** suit maintenant le modèle de l'ITAA (société ou ASBL) : qui contrôle

@@ -481,7 +481,9 @@ def client_documents(request: AppRequest, pk: int) -> HttpResponse:
             (c, case_status(client, c, request), documents.current_documents(client, c.slug))
             for c in dossier.document_cases_for(client)
         ]
-        return {"cases": cases}
+        from . import spf
+
+        return {"cases": cases, "mandates": spf.lines(client), "filers": Client.UboFiler.choices}
 
     return render_section(request, pk, "documents", "clients/sections/documents.html", build)
 

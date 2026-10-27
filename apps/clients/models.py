@@ -155,6 +155,14 @@ class Client(models.Model):
     vat_status = models.CharField(
         "statut TVA", max_length=20, choices=VatStatus.choices, default="", blank=True
     )
+
+    class UboFiler(models.TextChoices):
+        CABINET = "cabinet", "le cabinet"
+        CLIENT = "client", "le client"
+
+    ubo_filed_by = models.CharField(
+        "registre UBO déposé par", max_length=10, choices=UboFiler.choices, default="cabinet"
+    )
     vat_periodicity = models.CharField(
         "périodicité TVA", max_length=20, choices=VatPeriodicity.choices, default="", blank=True
     )
@@ -484,3 +492,41 @@ class HybridClaim(models.Model):
 
     def __str__(self) -> str:
         return f"{self.client} — {self.user}"
+
+
+class SpfMandate(models.Model):
+    """Mandat électronique du SPF Finances donné au cabinet (D-072).
+
+    Le mandat se crée dans « Mes mandats » (SPF Finances) et le client le signe là-bas : l'outil
+    ne fait que tenir le récapitulatif, mis à jour à la main.
+    """
+
+    class Kind(models.TextChoices):
+        VAT = "tva", "TVA (Intervat)"
+        BIZTAX = "biztax", "Biztax (ISOC)"
+        UBO = "ubo", "Registre UBO"
+        IPP = "ipp", "Tax-on-web (IPP)"
+
+    class Status(models.TextChoices):
+        MISSING = "missing", "Pas de mandat"
+        REQUESTED = "requested", "Demandé, en attente du client"
+        SIGNED = "signed", "Signé"
+
+    client = models.ForeignKey(Client, on_delete=models.CASCADE, related_name="spf_mandates")
+    kind = models.CharField("mandat", max_length=10, choices=Kind.choices)
+    status = models.CharField("état", max_length=10, choices=Status.choices, default=Status.MISSING)
+    updated_at = models.DateTimeField("mis à jour le", default=timezone.now)
+    updated_by = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True, related_name="+"
+    )
+    history = HistoricalRecords()
+
+    class Meta:
+        verbose_name = "mandat SPF"
+        verbose_name_plural = "mandats SPF"
+        constraints: ClassVar = [
+            models.UniqueConstraint(fields=["client", "kind"], name="un_mandat_spf_par_type")
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.get_kind_display()} — {self.get_status_display()}"

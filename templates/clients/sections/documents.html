@@ -2,11 +2,12 @@
 {% block head_title %}Documents · {{ client.display_name }}{% endblock %}
 {% block page_title %}Documents{% endblock %}
 {% block content %}
+<div class="docs-layout">
 <div class="grid grid-2 doc-cases">
   {% for case, status, docs in cases %}
     <section class="card{% if status.level == 'empty' %} soon-card{% endif %}">
       <div class="card-header">
-        <h2><a href="{% if case.url_name == 'ubo' %}{% url 'clients:ubo' client.pk %}{% else %}{% url 'clients:document_case' client.pk case.slug %}{% endif %}">{{ case.label }}</a></h2>
+        <h2><a href="{% if case.url_name != 'document_case' %}{% url "clients:"|add:case.url_name client.pk %}{% else %}{% url 'clients:document_case' client.pk case.slug %}{% endif %}">{{ case.label }}</a></h2>
         <div class="case-tools">
           {% if docs %}
             {% with d=docs.0 %}{% include "documents/_open.html" with link_class="doc-open" %}
@@ -20,5 +21,7 @@
       <p class="small muted" style="margin:0">{{ status.text }}</p>
     </section>
   {% endfor %}
+</div>
+{% include "clients/_spf_mandates.html" %}
 </div>
 {% endblock %}

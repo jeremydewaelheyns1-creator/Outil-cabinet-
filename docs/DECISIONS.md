@@ -815,3 +815,18 @@ certificat de signature, gardées avec la preuve (`Signature.answers`), affiché
 « Bénéficiaires effectifs » et reprises comme réponse proposée dans la fiche de risque (l'humain
 valide). Rien n'est écrit automatiquement dans les fiches des personnes.
 
+## D-072 — Mandats SPF : récapitulatif dans la page Documents
+
+Demande de Jeremy : un encadré « Mandats SPF » en haut à droite de la page Documents du
+dossier (pas d'onglet du haut, pas de case de document). Une ligne par mandat **utile** :
+TVA (Intervat) si assujetti (normal ou mixte), Biztax pour une société ou une association,
+Registre UBO si c'est le cabinet qui le dépose (choix « Registre UBO déposé par : le cabinet /
+le client », le cabinet par défaut), Tax-on-web pour une personne physique. Pastille verte
+quand c'est signé, rouge sinon ; **aucune alerte** ailleurs (ni accueil, ni conformité, ni
+pourcentage). Mis à jour à la main (« Noter signé ») : le mandat se crée et se signe dans
+« Mes mandats » du SPF, aucun accès connu ne permet à l'outil de le faire ou de le lire.
+Chaque changement est journalisé et gardé dans l'historique.
+Proposé, en attente de l'accord de Jeremy : bouton « Demander » sur une ligne rouge (ouvrir
+« Mes mandats », afficher les infos à encoder, e-mail au client avec la marche à suivre) ;
+rappel au client quand c'est lui qui dépose le registre UBO.
+

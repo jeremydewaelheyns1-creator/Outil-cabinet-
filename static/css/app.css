@@ -1435,3 +1435,17 @@ button:active, .button:active { transform: scale(.98); }
 .combo-list .combo-none { color: var(--text-muted); cursor: default; }
 .combo-list .combo-none:hover { background: none; color: var(--text-muted); }
 .acc-links h3 { margin: .7rem 0 .35rem; font-size: .72rem; text-transform: uppercase; letter-spacing: .06em; color: var(--text-muted); font-weight: 700; }
+
+/* Mandats SPF (D-072) : pastille verte / orange / rouge */
+.mandate-dot { display: inline-block; width: .7rem; height: .7rem; border-radius: 50%; vertical-align: middle; }
+.mandate-ok { background: var(--success); }
+.mandate-warning { background: var(--warning); }
+.mandate-danger { background: var(--danger); }
+.docs-layout { display: grid; grid-template-columns: minmax(0, 1fr) 260px; gap: 1rem; align-items: start; }
+.mandates-box h2 { font-size: 1rem; margin: 0 0 .5rem; }
+.mandates-list { list-style: none; margin: 0; padding: 0; display: grid; gap: .45rem; }
+.mandates-list li { display: flex; align-items: center; gap: .5rem; }
+.mandates-list .mandate-label { flex: 1; font-size: .9rem; }
+.mandates-filer { margin-top: .7rem; border-top: 1px solid var(--border, #e3e7ee); padding-top: .6rem; }
+.mandates-filer select { width: 100%; margin-top: .25rem; }
+@media (max-width: 900px) { .docs-layout { grid-template-columns: 1fr; } .mandates-box { order: -1; } }

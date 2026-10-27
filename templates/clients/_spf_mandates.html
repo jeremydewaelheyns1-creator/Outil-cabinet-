@@ -1,0 +1,33 @@
+<aside class="card mandates-box" aria-labelledby="mandates-title">
+  <h2 id="mandates-title">Mandats SPF</h2>
+  <ul class="mandates-list">
+  {% for line in mandates %}
+    <li>
+      <span class="mandate-dot mandate-{{ line.level }}" title="{{ line.status_label }}"></span>
+      <span class="mandate-label">{{ line.label }}<span class="visually-hidden"> : {{ line.status_label }}</span></span>
+      {% if can_edit %}
+      <form method="post" action="{% url 'clients:spf_mandate_update' client.pk %}" class="inline">{% csrf_token %}
+        <input type="hidden" name="kind" value="{{ line.kind }}">
+        {% if line.status == "signed" %}
+          <button type="submit" name="status" value="missing" class="link-button small" title="Signé{% if line.mandate.updated_by %} — noté le {{ line.mandate.updated_at|date:'d/m/Y' }} par {{ line.mandate.updated_by }}{% endif %}">Annuler</button>
+        {% else %}
+          <button type="submit" name="status" value="signed" class="link-button small">Noter signé</button>
+        {% endif %}
+      </form>
+      {% endif %}
+    </li>
+  {% empty %}
+    <li class="muted small">Aucun mandat nécessaire.</li>
+  {% endfor %}
+  </ul>
+  {% if not client.is_person %}
+  <form method="post" action="{% url 'clients:spf_mandate_update' client.pk %}" class="small mandates-filer">{% csrf_token %}
+    <label for="ubo-filer">Registre UBO déposé par</label>
+    <select id="ubo-filer" name="ubo_filed_by" data-autosubmit{% if not can_edit %} disabled{% endif %}>
+      {% for value, label in filers %}<option value="{{ value }}"{% if value == client.ubo_filed_by %} selected{% endif %}>{{ label }}</option>{% endfor %}
+    </select>
+    <noscript><button type="submit" class="small">Enregistrer</button></noscript>
+  </form>
+  {% endif %}
+  <p class="small muted" style="margin:.5rem 0 0">Créés et signés sur le site du SPF, dans « Mes mandats ».</p>
+</aside>
