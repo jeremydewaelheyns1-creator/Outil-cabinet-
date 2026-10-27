@@ -79,10 +79,15 @@ def _parts(client: Client, doc_type: str, person: Client | None) -> dict[str, An
             "fonctions": sorted(roles.values_list("role", flat=True)),
             "carte": card.valid_until if card else None,
         }
-    if doc_type == "declaration_ubo":
+    if doc_type in ("declaration_ubo", "extrait_ubo"):
         from apps.clients.services import ubo
 
         analysis = ubo.analyse(client)
+        if doc_type == "extrait_ubo":  # registre UBO : seuls les bénéficiaires comptent (D-078)
+            return {"beneficiaires": sorted(
+                (c.person.pk, c.basis, str(c.share_percentage), str(c.voting_percentage))
+                for c in analysis.candidates
+            )}  # fmt: skip
         return {
             "identite": _fields(client, IDENTITY),
             "beneficiaires": sorted(
@@ -186,6 +191,13 @@ def follow_client(client: Client, today: date | None = None) -> int:
         doc_type__in=[*CABINET_SIDE, *GENERATED],
     ).select_related("person")  # fmt: skip
     for document in documents:
+        if document.doc_type == "extrait_ubo" and changes(document, client):
+            # Bénéficiaires modifiés : le registre UBO se met à jour dans le mois (D-078).
+            created += _task(
+                client, document, "Mettre à jour le registre UBO (bénéficiaires modifiés)",
+                today + timedelta(days=30), "maj-extrait_ubo",
+            )  # fmt: skip
+            continue
         if document.doc_type in CABINET_SIDE:
             if document.expires_on and document.expires_on <= horizon:
                 created += _task(

@@ -1455,3 +1455,5 @@ button:active, .button:active { transform: scale(.98); }
 .mail-preview-body { white-space: pre-wrap; font: inherit; margin: .6rem 0 0; }
 @media (max-width: 700px) { .spf-copy { grid-template-columns: 1fr; } }
 .risk-group th { background: var(--surface-muted, #f1f3f8); font-size: .85rem; text-transform: uppercase; letter-spacing: .04em; }
+.ubo-encode { display: grid; gap: .7rem; padding-left: 1.3rem; margin: .4rem 0 1rem; }
+.ubo-encode > li > .small { margin-top: .15rem; }

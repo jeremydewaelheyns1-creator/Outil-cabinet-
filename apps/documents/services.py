@@ -140,6 +140,11 @@ def store(
             doc_type=doc_type,
             expires_on=expires_on,
         )
+        if doc_type == "extrait_ubo" and case:
+            # Bénéficiaires au moment de l'extrait : un changement se verra (D-078).
+            from . import freshness
+
+            document.data_fingerprint = freshness.fingerprint(client, doc_type)
         document.file.save("document", upload, save=False)
         document.save()
     events.emit(

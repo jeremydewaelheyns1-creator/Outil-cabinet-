@@ -9,6 +9,8 @@ avec ce qu'il reste à compléter. Sans responsable : les associés, puis les ad
 
 from __future__ import annotations
 
+from typing import Any
+
 from django.db import transaction
 from django.utils import timezone
 
@@ -81,3 +83,80 @@ def prospect_signs_the_letter(event: Event) -> None:
     if document is None or document.doc_type != "lettre_mission":
         return
     become_client(document.client, reason="Lettre de mission signée en ligne")
+
+
+STALE_DAYS = 365  # D-077 : un prospect sans suite depuis un an est proposé à la suppression
+
+
+def remind_stale(today: object = None) -> int:
+    """Une fois par mois, les administrateurs voient combien de prospects n'ont pas donné suite
+    depuis un an. L'outil ne supprime rien lui-même : l'humain décide (données personnelles à
+    ne pas garder sans raison)."""
+    from datetime import date, timedelta
+
+    day = today if isinstance(today, date) else timezone.localdate()
+    limit = timezone.now() - timedelta(days=STALE_DAYS)
+    count = Client.objects.filter(status=Client.Status.PROSPECT, updated_at__lt=limit).count()
+    if not count:
+        return 0
+    for user in User.objects.filter(is_staff=True, is_active=True):
+        Notification.objects.get_or_create(
+            user=user,
+            key=f"prospects-sans-suite:{day:%Y-%m}",
+            defaults={
+                "title": f"{count} prospect{'s' if count > 1 else ''} sans suite depuis un an",
+                "lines": ["À supprimer s'ils n'ont pas donné suite : leurs données ne doivent "
+                          "pas être gardées sans raison."],
+                "link": "/clients/?statut=prospect",
+            },
+        )  # fmt: skip
+    return count
+
+
+def _delete_files(files: list[tuple[Any, str]]) -> None:
+    for storage, name in files:
+        storage.delete(name)
+
+
+def delete_prospect(client: Client) -> None:
+    """Efface un prospect sans suite et tout ce qui le concerne : documents (et leurs
+    fichiers), demandes, preuves de signature, fiches de risque, coordonnées, relations et
+    l'historique de sa fiche. Seulement pour un prospect ; journalisé par la vue (D-077)."""
+    from django.db.models import Q
+
+    from apps.documents.models import (
+        Document,
+        DocumentRequest,
+        IdentityCard,
+        RiskAssessment,
+        Signature,
+    )  # fmt: skip
+
+    from .models import Relation
+
+    if client.status != Client.Status.PROSPECT:
+        raise ValueError("Seul un prospect peut être supprimé.")
+    pk = client.pk
+    with transaction.atomic():
+        documents = Document.objects.filter(Q(client=client) | Q(person=client))
+        requests = DocumentRequest.objects.filter(Q(client=client) | Q(person=client))
+        files = [(d.file.storage, d.file.name) for d in documents if d.file and d.file.name]
+        Signature.objects.filter(Q(document__in=documents) | Q(request__in=requests)).delete()
+        IdentityCard.objects.filter(person=client).delete()
+        RiskAssessment.objects.filter(client=client).delete()
+        Document.objects.filter(pk__in=documents.values("pk")).update(request=None)
+        Document.objects.filter(pk__in=[d.pk for d in documents]).delete()
+        requests.update(bundle=None)
+        DocumentRequest.objects.filter(pk__in=[r.pk for r in requests]).delete()
+        client.delete()
+        # Après la suppression (qui ajoute elle-même une ligne d'historique) : rien ne reste.
+        for model in (Client, Relation, ContactPoint, Assignment):
+            history = model.history.model
+            if model is Client:
+                history.objects.filter(id=pk).delete()
+            elif model is Relation:
+                history.objects.filter(Q(entity_id=pk) | Q(person_id=pk)).delete()
+            else:
+                history.objects.filter(client_id=pk).delete()
+        transaction.on_commit(lambda: _delete_files(files))
+    events.emit("client.prospect_deleted", payload={"fiche": pk})

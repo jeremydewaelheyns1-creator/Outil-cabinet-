@@ -1,0 +1,44 @@
+"""Registre UBO (MyMinfin) : fiche d'encodage, attestation, mise à jour (D-078)."""
+
+import pytest
+from django.core.files.uploadedfile import SimpleUploadedFile
+from django.urls import reverse
+
+from apps.clients.models import Relation
+from apps.core.testing.factories import PersonFactory
+from apps.documents import freshness, services, types
+from apps.tasks.models import Task
+
+from .test_ubo_declaration import owned_company
+
+pytestmark = pytest.mark.django_db
+
+
+def store_extract(company):
+    return services.store(company, SimpleUploadedFile("a.pdf", b"%PDF-1.4 x"), title="Attestation",
+                          case="ubo", doc_type="extrait_ubo")  # fmt: skip
+
+
+def test_encoding_sheet_lists_what_to_type(web):
+    company, marc, _ = owned_company()
+    page = web.get(reverse("clients:ubo", args=[company.pk])).content.decode()
+    assert "fiche d&#x27;encodage" in page or "fiche d'encodage" in page
+    assert marc.display_name in page and "via Holding Fictive" in page
+    assert "pas d&#x27;extrait rangé" in page or "pas d'extrait rangé" in page
+    store_extract(company)
+    page = web.get(reverse("clients:ubo", args=[company.pk])).content.decode()
+    assert "confirmation annuelle à faire avant" in page
+
+
+def test_new_shareholder_asks_to_update_the_register_within_a_month():
+    company, _, _ = owned_company()
+    extract = store_extract(company)
+    assert extract.expires_on is not None and extract.data_fingerprint
+    assert types.rows(company, "ubo")[0].level == "ok"
+    newcomer = PersonFactory(name="Nouveau")
+    Relation.objects.create(entity=company, person=newcomer, role="shareholder",
+                            share_percentage=30)  # fmt: skip
+    assert types.rows(company, "ubo")[0].level == "warning"
+    freshness.follow_client(company)
+    task = Task.objects.get(client=company, kind="document:maj-extrait_ubo")
+    assert "registre UBO" in task.title

@@ -55,13 +55,39 @@
 {% endif %}
 <div style="max-width: 900px">
   <section class="card">
-    <div class="card-header"><h2>Registre UBO (SPF Finances)</h2></div>
-    <p class="small" style="margin-top:0">Les bénéficiaires effectifs ne sont pas publiés à la BCE : ils figurent dans le registre UBO, que le cabinet consulte dans MyMinfin (chaque consultation y est tracée). La loi anti-blanchiment demande de ne pas se fier au seul registre : comparez-le au calcul ci-dessus, construit à partir des relations (dirigeants vérifiables à la BCE).</p>
-    <p class="small">Une fois vérifié, encodez chaque personne déclarée comme relation « Bénéficiaire effectif déclaré » : l'outil signale alors tout écart avec le calcul.</p>
+    <div class="card-header"><h2>Registre UBO (MyMinfin) — fiche d'encodage</h2>
+      {% if register.changed %}<span class="badge badge-warning">à mettre à jour</span>{% elif register.extract %}<span class="badge badge-success">encodé</span>{% else %}<span class="badge badge-danger">pas d'extrait rangé</span>{% endif %}</div>
+    {% if register.extract %}
+      <p class="small" style="margin-top:0">Dernier extrait rangé le {{ register.extract.uploaded_at|date:"d/m/Y" }}{% if register.extract.expires_on %} · confirmation annuelle à faire avant le <strong>{{ register.extract.expires_on|date:"d/m/Y" }}</strong>{% endif %}.</p>
+    {% endif %}
+    {% if register.changed %}<p class="alert alert-warning small">Bénéficiaires modifiés depuis le dernier extrait : la mise à jour dans MyMinfin se fait dans le mois. Une échéance est créée pour le responsable du dossier.</p>{% endif %}
+    <p class="small muted">Dans MyMinfin, connecté avec le mandat « Registre UBO », suivez les écrans dans cet ordre. Un bouton ⧉ copie chaque information.</p>
+    <ol class="ubo-encode">
+      <li><strong>Se connecter au nom de l'entreprise</strong>{% if client.enterprise_number %} <span class="mono">{{ client.enterprise_number_display }}</span> <button type="button" class="copy" data-copy="{{ client.enterprise_number_display }}" title="Copier">⧉</button>{% endif %}</li>
+      {% for c in ubo.candidates %}{% if not c.person.is_hidden %}
+      <li><strong>Bénéficiaire : {{ c.person }}</strong> <button type="button" class="copy" data-copy="{{ c.person }}" title="Copier le nom">⧉</button>
+        <div class="small">
+          {% if c.person.birth_date %}Né(e) le {{ c.person.birth_date|date:"d/m/Y" }} · {% endif %}
+          {% if c.person.address_lines %}{{ c.person.address_lines|join:", " }} <button type="button" class="copy" data-copy="{{ c.person.address_lines|join:', ' }}" title="Copier l'adresse">⧉</button>{% else %}<span class="muted">adresse à compléter dans sa fiche</span>{% endif %}
+        </div>
+        <div class="small">{{ c.control_label|capfirst }}{% if c.basis == "ownership" %} — {{ c.share_percentage|floatformat:"-2" }} % du capital, {{ c.voting_percentage|floatformat:"-2" }} % des votes{% endif %}
+          {% for h in c.holdings %}{% for link in h.chain|slice:"1:-1" %}{% if link.enterprise_number %} · {{ link.name }} <span class="mono">{{ link.enterprise_number_display }}</span> <button type="button" class="copy" data-copy="{{ link.enterprise_number_display }}" title="Copier">⧉</button>{% endif %}{% endfor %}{% endfor %}
+        </div>
+      </li>
+      {% endif %}{% empty %}
+      <li class="muted">Aucun bénéficiaire calculé : encodez d'abord les actionnaires.</li>
+      {% endfor %}
+      <li><strong>Joindre les pièces justificatives</strong> (statuts, registre des parts)
+        {% if register.proofs %}<ul class="small">{% for d in register.proofs %}<li>{% include "documents/_open.html" %}{{ d.title }}</a> <span class="muted">({{ d.uploaded_at|date:"d/m/Y" }})</span></li>{% endfor %}</ul>
+        {% else %}<div class="small muted">Rien dans Archives › Légal et statuts : à demander au client ou à déposer.</div>{% endif %}
+      </li>
+      <li><strong>Enregistrer, puis télécharger l'attestation</strong> et la ranger ici : l'outil note la date et prépare la confirmation annuelle.</li>
+    </ol>
     <div class="official-links">
       <a class="button button-small" href="https://eservices.minfin.fgov.be/myminfin-web/" target="_blank" rel="noopener noreferrer">Ouvrir MyMinfin (registre UBO) ↗</a>
-      <a class="button button-secondary button-small" href="{% url 'clients:mandates' client.pk %}">Mandataires (BCE)</a>
+      {% if can_edit %}<a class="button button-secondary button-small" href="?type=extrait_ubo#ajouter">C'est encodé : ranger l'attestation</a>{% endif %}
     </div>
+    <p class="small muted">L'outil ne peut pas encoder à votre place : MyMinfin n'accepte pas les logiciels. Le registre se met à jour dans le mois d'un changement et se confirme une fois par an. La loi anti-blanchiment demande aussi de comparer le registre au calcul ci-dessus : encodez chaque personne inscrite au registre comme relation « Bénéficiaire effectif déclaré », l'outil signale alors tout écart.</p>
   </section>
 </div>
 <div style="max-width: 900px">

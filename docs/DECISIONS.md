@@ -889,3 +889,25 @@ préparer et envoyer la lettre de mission.
 - Lettre signée sur papier : bouton « Devient client » dans l'en-tête du dossier (journalisé).
 - Proposé, pas encore fait : suppression des prospects sans suite après un délai à fixer.
 
+## D-078 — Registre UBO (MyMinfin) : fiche d'encodage et suivi ; prospects sans suite
+
+Jeremy : « fais comme tu le sens ». Registre UBO (maquette 5) :
+- Dans « Bénéficiaires effectifs », une **fiche d'encodage** suit l'ordre de MyMinfin :
+  entreprise, puis chaque bénéficiaire (nom, naissance, adresse, nature et % du contrôle,
+  sociétés intermédiaires avec leur numéro), boutons « copier » ; pièces justificatives prises
+  dans Archives › Légal et statuts ; « C'est encodé : ranger l'attestation » (extrait du
+  registre UBO).
+- L'extrait garde l'empreinte des bénéficiaires : s'ils changent, la ligne passe « à mettre
+  à jour » et une échéance « Mettre à jour le registre UBO » (30 jours) est créée pour le
+  responsable — la loi demande la mise à jour dans le mois. L'extrait expire après un an
+  (confirmation annuelle, D-053). Sources : RSM Tax Insights 2021 (mise à jour dans le mois,
+  confirmation annuelle, pièces justificatives : statuts, registre des parts).
+- L'outil n'encode rien dans MyMinfin (aucun accès logiciel).
+Prospects sans suite (complète D-077) : délai fixé à **1 an** sans modification. Une fois par
+mois, les administrateurs voient combien il y en a (notification, lien vers la liste filtrée).
+Rien n'est supprimé tout seul. Bouton « Supprimer ce prospect » (administrateurs, prospects
+seulement, page de confirmation) : efface la fiche, ses documents et leurs fichiers, ses
+demandes, preuves de signature, fiches de risque, coordonnées, liens et l'historique de la
+fiche. Le journal des consultations garde la trace des accès ; la suppression y est notée
+sans le nom.
+

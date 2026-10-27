@@ -113,6 +113,30 @@ def become_client(request: AppRequest, pk: int) -> HttpResponse:
     return redirect("clients:identity", pk=client.pk)
 
 
+def prospect_delete(request: AppRequest, pk: int) -> HttpResponse:
+    """Supprimer un prospect sans suite (administrateurs) — page de confirmation (D-077)."""
+    from django.core.exceptions import PermissionDenied
+    from django.shortcuts import render
+
+    from . import prospects
+
+    if not request.user.is_staff:
+        raise PermissionDenied
+    client = _get_client(request, pk)
+    if client.status != Client.Status.PROSPECT:
+        messages.error(request, "Seul un prospect peut être supprimé.")
+        return redirect("clients:identity", pk=client.pk)
+    if request.method == "POST" and request.POST.get("confirme") == "1":
+        name = client.display_name
+        log_access(request, AccessLog.Action.DELETE, client, object_repr="Prospect supprimé",
+                   details={"prospect supprimé": True})  # fmt: skip
+        prospects.delete_prospect(client)
+        messages.success(request, f"Prospect « {name} » supprimé, avec ses documents.")
+        return redirect("clients:list")
+    counts = {"documents": client.documents.count(), "demandes": client.document_requests.count()}
+    return render(request, "clients/prospect_delete.html", {"client": client, "counts": counts})
+
+
 def _recipient(client: Client) -> str:
     from apps.documents.services import _recipient as recipient
 

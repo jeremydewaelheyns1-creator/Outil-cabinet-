@@ -28,6 +28,7 @@ urlpatterns = [
     path("<int:pk>/actionnaires/", views.client_shareholders, name="shareholders"),
     path("<int:pk>/documents/beneficiaires-effectifs/", views.client_ubo, name="ubo"),
     path("<int:pk>/devient-client/", spf_views.become_client, name="become_client"),
+    path("<int:pk>/supprimer-prospect/", spf_views.prospect_delete, name="prospect_delete"),
     path(
         "<int:pk>/documents/mandats-spf/demander/",
         spf_views.spf_mandate_request,

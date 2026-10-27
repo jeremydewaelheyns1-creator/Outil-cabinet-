@@ -72,3 +72,53 @@ def test_without_expert_the_admins_are_told():
     company = ClientFactory(status=Client.Status.PROSPECT)
     prospects.become_client(company, reason="Test")
     assert Notification.objects.filter(user=admin).exists()
+
+
+def test_stale_prospects_are_proposed_for_deletion_never_deleted():
+    from datetime import timedelta
+
+    from django.utils import timezone
+
+    from apps.core.testing.factories import ClientFactory
+
+    admin = UserFactory(is_staff=True)
+    old = ClientFactory(status=Client.Status.PROSPECT)
+    Client.objects.filter(pk=old.pk).update(updated_at=timezone.now() - timedelta(days=400))
+    ClientFactory(status=Client.Status.PROSPECT)  # récent : pas compté
+    assert prospects.remind_stale() == 1
+    assert Notification.objects.get(user=admin).link == "/clients/?statut=prospect"
+    assert Client.objects.filter(pk=old.pk).exists()
+
+
+def test_admin_deletes_a_prospect_and_everything_about_it(
+    client, django_capture_on_commit_callbacks
+):
+    from apps.clients.models import ContactPoint
+    from apps.core.models import AccessLog
+    from apps.documents.models import Document, DocumentRequest
+
+    company, _, _ = prospect_sending_a_letter()
+    files = [d.file.name for d in Document.objects.filter(client=company)]
+    storage = Document.objects.filter(client=company).first().file.storage
+    pk = company.pk
+    client.force_login(UserFactory(capabilities=["clients.edit"]))
+    url = reverse("clients:prospect_delete", args=[pk])
+    assert client.get(url).status_code == 403  # pas administrateur
+    client.force_login(UserFactory(is_staff=True, capabilities=["clients.edit"]))
+    assert "définitivement" in client.get(url).content.decode()
+    with django_capture_on_commit_callbacks(execute=True):
+        client.post(url, {"confirme": "1"})
+    assert not Client.objects.filter(pk=pk).exists()
+    assert not Document.objects.filter(client_id=pk).exists()
+    assert not DocumentRequest.objects.filter(client_id=pk).exists()
+    assert not ContactPoint.objects.filter(client_id=pk).exists()
+    assert not Client.history.filter(id=pk).exists()
+    assert not any(storage.exists(name) for name in files)
+    assert AccessLog.objects.filter(action="delete", details__has_key="prospect supprimé").exists()
+
+
+def test_a_client_cannot_be_deleted_this_way():
+    from apps.core.testing.factories import ClientFactory
+
+    with pytest.raises(ValueError):
+        prospects.delete_prospect(ClientFactory())

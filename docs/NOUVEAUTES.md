@@ -3,6 +3,16 @@
 Ce qui a été ajouté à l'outil, du plus récent au plus ancien. Toutes les données de la démo
 sont inventées.
 
+## 27 octobre 2026 — Registre UBO : la fiche d'encodage pour MyMinfin
+
+- Dans **Bénéficiaires effectifs**, une fiche suit les écrans de MyMinfin dans l'ordre :
+  numéro de l'entreprise, chaque bénéficiaire avec ce qu'il faut taper (bouton « copier »),
+  les pièces justificatives déjà dans le dossier, puis « ranger l'attestation ».
+- Si un actionnaire change, l'outil le voit et crée une échéance pour mettre le registre à
+  jour dans le mois. La confirmation annuelle est rappelée un an après l'attestation.
+- **Prospects sans suite** : après un an, les administrateurs sont prévenus une fois par mois
+  et peuvent supprimer la fiche (bouton « Supprimer ce prospect »). Rien ne s'efface tout seul.
+
 ## 27 octobre 2026 — Prospects : la lettre de mission avant le premier dossier
 
 - Créez la personne ou la société en **« Prospect »** (formulaire « Nouveau client »,

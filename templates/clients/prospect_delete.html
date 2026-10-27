@@ -1,0 +1,12 @@
+{% extends "layouts/app.html" %}
+{% block head_title %}Supprimer un prospect{% endblock %}
+{% block page_title %}Supprimer le prospect « {{ client.display_name }} »{% endblock %}
+{% block content %}
+<form method="post" class="card" style="max-width: 640px">
+  {% csrf_token %}
+  <p>Ce prospect n'a pas donné suite. Sa fiche sera effacée <strong>définitivement</strong>, avec tout ce qui le concerne : {{ counts.documents }} document{{ counts.documents|pluralize }} (lettre de mission comprise), {{ counts.demandes }} demande{{ counts.demandes|pluralize }}, ses coordonnées, ses liens et l'historique de sa fiche.</p>
+  <p class="small muted">Les fiches des personnes liées (gérant…) restent. Le journal des consultations garde, comme toujours, la trace de qui a consulté quoi et quand (obligation de traçabilité) ; la suppression y est notée sans le nom.</p>
+  <label class="checkbox"><input type="checkbox" name="confirme" value="1" required> Je confirme la suppression</label>
+  <div class="actions" style="margin-top:.8rem"><button type="submit" class="danger">Supprimer définitivement</button><a class="button button-secondary" href="{% url 'clients:identity' client.pk %}">Annuler</a></div>
+</form>
+{% endblock %}

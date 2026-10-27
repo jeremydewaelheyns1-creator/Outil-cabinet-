@@ -496,6 +496,27 @@ def _ubo_rows(client: Client) -> list[Any]:
     return rows_with_requests(client, "ubo")
 
 
+def _register(client: Client) -> dict[str, Any]:
+    """Registre UBO (D-078) : dernier extrait rangé, changements depuis, pièces justificatives."""
+    from apps.documents.freshness import changes
+    from apps.documents.models import Document
+
+    extract = (
+        Document.objects.filter(client=client, doc_type="extrait_ubo", case="ubo",
+                                archived_at__isnull=True)
+        .order_by("-uploaded_at")
+        .first()
+    )  # fmt: skip
+    proofs = list(
+        Document.objects.filter(client=client, folder="legal").order_by("-uploaded_at")[:6]
+    )
+    return {
+        "extract": extract,
+        "changed": changes(extract, client) if extract is not None else [],
+        "proofs": proofs,
+    }
+
+
 def _declared(client: Client) -> Any:
     from apps.documents.signing import latest_answers
 
@@ -513,6 +534,7 @@ def client_ubo(request: AppRequest, pk: int) -> HttpResponse:
             **_documents_block(client, case="ubo"),
             "rows": _ubo_rows(client),
             "declared": _declared(client),
+            "register": _register(client),
         },
     )
 
