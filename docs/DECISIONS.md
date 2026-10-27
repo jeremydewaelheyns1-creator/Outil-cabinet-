@@ -932,3 +932,18 @@ la page d'un dossier reste calculée en direct. Résultat : < 1 s (puis cache 15
 Limite : un changement chez un actionnaire indirect (holding) se voit dans les tableaux le
 lendemain matin ; dans le dossier lui-même, tout de suite.
 
+## D-081 — Mot de passe oublié
+
+Demande de Jeremy. Lien « Mot de passe oublié ? » sur la page de connexion (allauth) :
+- l'e-mail part de la boîte Outlook reliée d'un administrateur, **sans copie** dans ses
+  éléments envoyés (le lien ne doit rester nulle part) ; à défaut, par le serveur d'envoi du
+  cabinet s'il est configuré ;
+- lien valable 1 heure, une seule fois ; même réponse à l'écran que l'adresse existe ou non ;
+  **aucun e-mail vers une adresse inconnue** (sinon n'importe qui pourrait faire envoyer des
+  e-mails depuis la boîte d'un administrateur) ; limite de tentatives d'allauth ;
+- la double authentification reste demandée après ; la réinitialisation est tracée dans le
+  journal (jamais le mot de passe).
+Dépannage sans boîte reliée : `deploy/mot-de-passe.sh` dans Cloud Shell (même principe que le
+premier compte : secret temporaire supprimé aussitôt) ; adresse inconnue → rappel des comptes
+administrateurs masqués.
+

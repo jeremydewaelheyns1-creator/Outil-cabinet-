@@ -22,6 +22,18 @@ PREMIER_COMPTE=oui bash deploy/installer.sh
 passe du premier compte (le mot de passe ne s'affiche pas, n'est écrit nulle part) et donne
 l'adresse de l'outil.
 
+## Mot de passe oublié
+- **Sur la page de connexion** : « Mot de passe oublié ? ». Un lien (valable une heure, une
+  seule fois) part de la boîte Outlook reliée d'un administrateur. Il faut donc qu'au moins un
+  administrateur ait relié sa boîte (menu « Ma boîte mail »).
+- **Dépannage** (aucune boîte reliée, ou adresse oubliée), dans Cloud Shell :
+```bash
+cd ~/outil && git pull && bash deploy/mot-de-passe.sh
+```
+  Le script demande l'adresse du compte et le nouveau mot de passe (qui ne s'affiche pas). Si
+  l'adresse est inconnue, il rappelle les comptes administrateurs sous forme masquée
+  (j•••@d•••.be). La double authentification reste demandée à la connexion.
+
 ## Mettre à jour plus tard
 ```bash
 cd ~/outil && git pull && bash deploy/installer.sh

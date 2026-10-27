@@ -24,7 +24,8 @@
       Se connecter avec une clé d'accès
     {% endelement %}
   {% endif %}
-  <p class="muted small" style="margin-top: 1.25rem">Pas de compte ? Demandez-le à l'administrateur du cabinet.</p>
+  <p class="small" style="margin-top: 1.25rem"><a href="{% url 'account_reset_password' %}">Mot de passe oublié ?</a></p>
+  <p class="muted small">Pas de compte ? Demandez-le à l'administrateur du cabinet.</p>
 {% endblock content %}
 {% block extra_body %}
   {{ block.super }}

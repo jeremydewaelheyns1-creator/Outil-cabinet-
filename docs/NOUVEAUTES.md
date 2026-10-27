@@ -3,6 +3,13 @@
 Ce qui a été ajouté à l'outil, du plus récent au plus ancien. Toutes les données de la démo
 sont inventées.
 
+## 27 octobre 2026 — Mot de passe oublié
+
+- Sur la page de connexion : **« Mot de passe oublié ? »**. Vous recevez un lien (valable une
+  heure) pour en choisir un nouveau. La double authentification reste demandée ensuite.
+- Si rien n'arrive (aucune boîte Outlook reliée), un administrateur peut changer un mot de
+  passe depuis Cloud Shell (voir le guide d'installation).
+
 ## 27 octobre 2026 — Vérifications et finitions de l'après-midi
 
 - Tous les parcours du jour ont été essayés de bout en bout (dépôt du modèle de lettre de

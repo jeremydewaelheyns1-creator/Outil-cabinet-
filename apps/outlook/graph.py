@@ -243,9 +243,11 @@ def send(
     attachments: list[Attachment] | None = None,
     http: httpx.Client | None = None,
     html: bool = False,
+    keep_copy: bool = True,
 ) -> None:
     """Envoie depuis la boîte de l'employé ; copie gardée dans ses « Éléments envoyés ».
-    `html=True` : `body` est du HTML déjà nettoyé (mise en forme de « Ma boîte mail »)."""
+    `html=True` : `body` est du HTML déjà nettoyé (mise en forme de « Ma boîte mail »).
+    `keep_copy=False` : aucune copie chez l'expéditeur (lien de mot de passe oublié)."""
     attachments = attachments or []
     if sum(len(a.content) for a in attachments) > MAX_ATTACHMENTS_BYTES:
         raise MailboxError("Pièce jointe trop lourde pour un envoi (3 Mo au maximum).")
@@ -261,7 +263,7 @@ def send(
     try:
         response = http.post(
             f"{GRAPH}/me/sendMail",
-            json={"message": message, "saveToSentItems": True},
+            json={"message": message, "saveToSentItems": keep_copy},
             headers={"Authorization": f"Bearer {token}"},
         )
     except httpx.HTTPError as exc:

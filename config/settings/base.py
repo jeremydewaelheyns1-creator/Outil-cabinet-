@@ -144,6 +144,12 @@ ACCOUNT_EMAIL_VERIFICATION = "none"
 ACCOUNT_LOGOUT_ON_PASSWORD_CHANGE = True
 ACCOUNT_SESSION_REMEMBER = False
 ACCOUNT_PASSWORD_RESET_BY_CODE_ENABLED = False
+# D-081 : « mot de passe oublié » par lien (1 heure, une seule fois) ; même réponse que
+# l'adresse existe ou non ; la double authentification reste demandée ensuite.
+PASSWORD_RESET_TIMEOUT = 3600
+ACCOUNT_PREVENT_ENUMERATION = True
+ACCOUNT_EMAIL_SUBJECT_PREFIX = ""
+ACCOUNT_EMAIL_UNKNOWN_ACCOUNTS = False  # jamais d'e-mail vers une adresse inconnue
 
 # Double authentification : obligatoire pour tous (voir apps.core.middleware).
 MFA_SUPPORTED_TYPES = ["totp", "recovery_codes", "webauthn"]
