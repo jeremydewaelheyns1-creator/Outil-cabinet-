@@ -527,7 +527,7 @@ def test_documents_request_is_only_sent_on_click(web, user, settings, mailoutbox
     assert "Demander les documents au client" in grid
     url = reverse("clients:vat_docs_mail", args=[company.pk, filing.pk])
     html = web.get(url, HTTP_HX_REQUEST="true").content.decode()
-    assert "Demande de documents" in html and "factures d&#x27;achat" in html
+    assert "Demande de documents" in html and "n&#x27;hésitez pas à nous transmettre" in html
     assert "Joindre le PDF" not in html
     assert not filing.messages.exists() and not mailoutbox  # rien d'automatique
     data = {"action": "send", "to": "compta@fictif.test", "subject": "Vos documents",
@@ -544,7 +544,7 @@ def test_documents_request_is_only_sent_on_click(web, user, settings, mailoutbox
         in web.get(reverse("clients:vat", args=[company.pk])).content.decode()
     )
     again = web.get(url, HTTP_HX_REQUEST="true").content.decode()
-    assert "Rappel" in again and "toujours pas reçu" in again
+    assert "Petit rappel" in again and "pas encore reçu l&#x27;ensemble" in again
 
 
 def test_documents_request_hidden_once_documents_are_received(web, user):

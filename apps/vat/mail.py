@@ -102,29 +102,46 @@ def _compose_documents(filing: VatFiling, user: User | None) -> tuple[str, str]:
     sent = [m for m in filing.messages.filter(kind=VatMessage.Kind.DOCUMENTS)
             if m.sent_at is not None]  # fmt: skip
     reminder = bool(sent)
-    subject = f"{'Rappel — ' if reminder else ''}Vos documents TVA — {filing.period_label}"
+    subject = f"{'Petit rappel — ' if reminder else ''}Vos documents TVA — {filing.period_label}"
     lines = [filing.client.greeting, ""]
     if reminder:
         when = f"{timezone.localtime(sent[0].sent_at):%d/%m/%Y}"
-        lines.append(f"Sauf erreur de notre part, suite à notre e-mail du {when}, nous n'avons "
-                     f"toujours pas reçu vos documents pour la déclaration TVA du "
-                     f"{filing.period_label}.")  # fmt: skip
+        lines += [
+            f"Petit rappel concernant notre e-mail du {when} : sauf erreur de notre part, nous "
+            f"n'avons pas encore reçu l'ensemble de vos documents pour la déclaration TVA du "
+            f"{filing.period_label}.",
+            "",
+            "N'hésitez pas à nous les transmettre dès que vous le pouvez :",
+        ]
     else:
-        lines.append(f"Pour préparer votre déclaration TVA du {filing.period_label}, nous "
-                     "n'avons pas encore reçu vos documents.")  # fmt: skip
+        lines += [
+            f"Nous préparons votre déclaration TVA du {filing.period_label}.",
+            "",
+            "Si ce n'est pas encore fait, n'hésitez pas à nous transmettre l'ensemble de vos "
+            "documents relatifs à ce trimestre :"
+            if filing.periodicity == VatFiling.Periodicity.QUARTERLY
+            else "Si ce n'est pas encore fait, n'hésitez pas à nous transmettre l'ensemble de "
+            "vos documents relatifs à ce mois :",
+        ]
     lines += [
-        "",
-        "Pourriez-vous nous transmettre dès que possible :",
         "- vos factures de vente ;",
         "- vos factures d'achat et notes de frais ;",
-        "- vos extraits de compte de la période.",
+        "- vos extraits de compte.",
     ]
     if filing.due_date:
         lines += [
             "",
-            f"La déclaration doit être déposée au plus tard le {filing.due_date:%d/%m/%Y}.",
+            "Les recevoir quelques jours à l'avance nous permet de préparer votre déclaration "
+            f"sereinement avant la date limite du {filing.due_date:%d/%m/%Y}.",
         ]
-    lines += ["", "Merci d'avance.", "", "Bien à vous,", *_signature(user)]
+    lines += [
+        "",
+        "Si vous nous les avez déjà envoyés, merci de ne pas tenir compte de ce message.",
+        "",
+        "Merci d'avance et belle journée,",
+        "",
+        *_signature(user),
+    ]
     return subject, "\n".join(lines)
 
 
