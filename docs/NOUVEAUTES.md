@@ -3,6 +3,17 @@
 Ce qui a été ajouté à l'outil, du plus récent au plus ancien. Toutes les données de la démo
 sont inventées.
 
+## 27 octobre 2026 — Carte d'identité : le client la scanne avec son téléphone
+
+- Sur le lien reçu, le client touche **« Ouvrir la caméra »** et présente sa carte dans le
+  cadre : le recto puis le verso se prennent **tout seuls** quand ils sont lisibles (le
+  téléphone guide : « rapprochez », « évitez le reflet »).
+- La lecture se fait dans le téléphone du client, sans service extérieur ; rien n'est envoyé
+  tant que les deux photos ne sont pas bonnes. L'outil range la carte et note sa date
+  d'expiration, comme avant.
+- Le lien de la carte reste valable **90 jours** (fermé dès que la carte est reçue). Sans
+  caméra, on peut toujours déposer des photos.
+
 ## 27 octobre 2026 — Mandats SPF : on voit où on en est
 
 - Chaque mandat dit son état en clair : **« À demander »** (rouge), **« Envoyé le … — en

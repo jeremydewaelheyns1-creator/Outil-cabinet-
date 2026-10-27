@@ -1,16 +1,42 @@
 {% extends "documents/public/_layout.html" %}
+{% load static %}
 {% block head_title %}Envoi sécurisé{% endblock %}
 {% block public %}
 {% if bundle_url %}<p class="small"><a href="{{ bundle_url }}">← Tous les documents demandés</a></p>{% endif %}
 <h1>Envoi sécurisé d'un document</h1>
 <p>Document demandé : <strong>{{ demande.title }}</strong></p>
 {% if is_card %}
+  <section class="card-scan" data-card-scan
+           {% get_static_prefix as static_prefix %}
+           data-worker="{{ static_prefix }}vendor/tesseract/worker.min.js"
+           data-core="{{ static_prefix }}vendor/tesseract/core/"
+           data-lang="{{ static_prefix }}vendor/tesseract/lang/" hidden>
+    <ul class="card-scan-intro">
+      <li>📷 La caméra s'ouvre : présentez la carte dans le cadre.</li>
+      <li>✨ La photo se prend toute seule quand elle est lisible.</li>
+      <li>🔒 Rien n'est envoyé tant que les deux photos ne sont pas bonnes.</li>
+    </ul>
+    <button type="button" class="public-submit" data-scan-start>Ouvrir la caméra</button>
+    <div class="card-scan-live" data-scan-live hidden>
+      <p class="card-scan-step" data-scan-step>Recto (1/2)</p>
+      <div class="card-scan-view">
+        <video data-scan-video playsinline muted></video>
+        <div class="card-scan-frame" data-scan-frame></div>
+      </div>
+      <p class="card-scan-hint" data-scan-hint role="status">Présentez la carte dans le cadre</p>
+      <button type="button" class="link-button small" data-scan-manual hidden>Prendre la photo quand même</button>
+    </div>
+    <div class="card-scan-done" data-scan-done hidden>
+      <p><strong>Les deux photos sont bonnes.</strong> Envoi en cours…</p>
+    </div>
+    <p class="small muted">Pas de caméra ou ça ne marche pas ? Déposez des photos ci-dessous.</p>
+  </section>
   <p>Déposez une photo nette du <strong>recto</strong> et une du <strong>verso</strong> de la carte (ou un seul PDF avec les deux faces).</p>
 {% else %}
   <p>Déposez le document (photo JPG/PNG ou PDF).</p>
 {% endif %}
 {% if error %}<p class="alert alert-error">{{ error }}</p>{% endif %}
-<form method="post" enctype="multipart/form-data">{% csrf_token %}
+<form method="post" enctype="multipart/form-data" data-upload-form>{% csrf_token %}
   <label class="depot-zone" for="files">
     <strong>Choisir {% if is_card %}les photos{% else %}le fichier{% endif %}</strong>
     <span class="small muted">JPG, PNG ou PDF · 2 fichiers au maximum</span>
@@ -19,5 +45,6 @@
   </label>
   <button type="submit" class="public-submit">Envoyer</button>
 </form>
-<p class="small muted">Référence : {{ demande.reference }}</p>
+<p class="small muted">Référence : {{ demande.reference }}{% if is_card %} · Lien personnel, désactivé dès que la carte est reçue.{% endif %}</p>
 {% endblock %}
+{% block extra_body %}{{ block.super }}{% if is_card %}<script src="{% static 'vendor/tesseract/tesseract.min.js' %}" defer></script><script src="{% static 'js/card-scan.js' %}" defer></script>{% endif %}{% endblock %}

@@ -74,10 +74,15 @@ def ocr_bytes(content: bytes, content_type: str) -> str | None:
     with tempfile.TemporaryDirectory(prefix="lecture-") as folder:
         source = Path(folder) / "source"
         source.write_bytes(content)
+        # D'abord les photos contenues dans le PDF, telles quelles (recto/verso envoyés par le
+        # téléphone, scans) : plus fiable que de chercher la carte sur une page A4 entière.
+        _run(["pdfimages", "-png", "-f", "1", "-l", "2", str(source), f"{folder}/photo"])
         _run(["pdftoppm", "-r", "300", "-png", "-f", "1", "-l", "2", str(source),
               f"{folder}/page"])  # fmt: skip
+        photos = sorted(Path(folder).glob("photo*.png"), key=lambda p: -p.stat().st_size)
+        candidates = [p for p in photos if p.stat().st_size > 20_000][:4]
         texts = []
-        for image in sorted(Path(folder).glob("page*.png")):
+        for image in [*candidates, *sorted(Path(folder).glob("page*.png"))]:
             text = card_reader.read(image.read_bytes(), is_valid, budget=20.0)
             if is_valid(text):
                 return text

@@ -958,3 +958,17 @@ attente de réponse » (orange), « Signé ✓ le … » (vert) — avec une cas
 lieu de « Noter signé »). Après l'envoi, « Revoir les infos ou renvoyer l'e-mail » reste
 disponible (rappel : objet « Rappel : … »).
 
+## D-083 — Carte d'identité : scan par la caméra du téléphone du client
+
+Maquette 3b validée par Jeremy (itsme écarté pour l'instant). Sur le lien de la demande de
+carte, « Ouvrir la caméra » : cadre à la taille d'une carte ; recto pris tout seul quand
+l'image est nette, éclairée et stable ; verso pris quand les 3 lignes codées sont lues et que
+les chiffres de contrôle tombent juste (une seule confusion de chiffres semblables tolérée dans
+les données facultatives). Lecture **dans le téléphone** (Tesseract en WebAssembly,
+`static/vendor/tesseract`, servi par l'outil : aucun service extérieur, rien n'est envoyé avant
+les deux bonnes photos). Les deux photos partent par le formulaire habituel ; le serveur relit
+la carte (il lit désormais les photos contenues dans le PDF avant la page A4) et l'applique
+comme avant (D-035). Sans caméra : dépôt de photos comme avant. Lien de la carte : 90 jours
+(`REQUEST_CARD_LINK_DAYS`), fermé dès réception, 10 essais. Politique de sécurité des pages :
+`'wasm-unsafe-eval'` ajouté (compilation WebAssembly uniquement, pas d'eval de texte).
+

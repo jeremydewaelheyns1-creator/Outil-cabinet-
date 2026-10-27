@@ -244,10 +244,13 @@ def open_link(request: DocumentRequest, until: date | None = None) -> None:
     valable au moins jusqu'à cette date (prochain rappel) + REQUEST_LINK_DAYS."""
     from apps.outlook.graph import encrypt
 
-    expires = timezone.now() + timedelta(days=settings.REQUEST_LINK_DAYS)
+    days = settings.REQUEST_LINK_DAYS
+    if request.kind == DocumentRequest.Kind.IDENTITY_CARD:
+        days = settings.REQUEST_CARD_LINK_DAYS  # scan de la carte : 90 jours (D-083)
+    expires = timezone.now() + timedelta(days=days)
     if until is not None:
         end_of_day = timezone.make_aware(datetime.combine(until, time(23, 59)))
-        expires = max(expires, end_of_day + timedelta(days=settings.REQUEST_LINK_DAYS))
+        expires = max(expires, end_of_day + timedelta(days=days))
     if not request.link_hash:
         token = secrets.token_urlsafe(32)
         request.link_hash, request.link_token = _link_hash(token), encrypt(token)

@@ -196,6 +196,9 @@ REQUEST_REMINDER_DAYS = env.int("REQUEST_REMINDER_DAYS", default=7)
 # D-046 : lien sécurisé de dépôt envoyé au client (validité, prolongée à chaque relance).
 REQUEST_LINK_DAYS = env.int("REQUEST_LINK_DAYS", default=14)
 REQUEST_LINK_MAX_ATTEMPTS = env.int("REQUEST_LINK_MAX_ATTEMPTS", default=10)
+# D-083 : le lien de la carte d'identité (scan par la caméra) reste valable 90 jours ; il se
+# ferme dès que la carte est reçue, comme les autres.
+REQUEST_CARD_LINK_DAYS = env.int("REQUEST_CARD_LINK_DAYS", default=90)
 # Adresse publique de l'outil (liens dans les e-mails). Réglée par l'installateur.
 SITE_URL = env("SITE_URL", default="http://localhost:8000")
 # D-049 : révision de la fiche de risque selon le niveau (années). Valeurs proposées, à
@@ -237,7 +240,8 @@ MAILBOX_TOKEN_KEY = env("MAILBOX_TOKEN_KEY", default="")
 # (aucun script en ligne, aucun site tiers) ; l'outil ne peut pas être affiché dans un autre site.
 SECURE_CSP = {
     "default-src": [CSP.SELF],
-    "script-src": [CSP.SELF],
+    # wasm-unsafe-eval : le lecteur de carte (D-083) compile WebAssembly ; pas d'eval de texte.
+    "script-src": [CSP.SELF, CSP.WASM_UNSAFE_EVAL],
     "style-src": [CSP.SELF, CSP.UNSAFE_INLINE],
     "img-src": [CSP.SELF, "data:", "blob:"],
     "font-src": [CSP.SELF],
