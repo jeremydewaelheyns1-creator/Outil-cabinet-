@@ -972,3 +972,19 @@ comme avant (D-035). Sans caméra : dépôt de photos comme avant. Lien de la ca
 (`REQUEST_CARD_LINK_DAYS`), fermé dès réception, 10 essais. Politique de sécurité des pages :
 `'wasm-unsafe-eval'` ajouté (compilation WebAssembly uniquement, pas d'eval de texte).
 
+## D-084 — « Déposer des documents » reconnaît les documents du SPF
+
+Demande de Jeremy. En plus des déclarations TVA d'Intervat et des cartes d'identité (D-041) :
+avertissements-extraits de rôle IPP / ISOC / IPM, accusés de réception Biztax et Tax-on-web,
+listing clients annuel, compte courant TVA, versements anticipés, avis de rectification et
+demandes de renseignements (`apps/documents/spf_docs.py`). Règles de mots sûrs, sans IA ;
+aucun type sûr → rien n'est deviné. Dossier retrouvé par le numéro d'entreprise (modulo 97 ;
+le numéro du cabinet est ignoré) ou, à défaut, par le numéro national (seulement pour la
+recherche, jamais gardé ni affiché), parmi les dossiers visibles de la personne. Un seul
+dossier → rangé dans Archives › ISOC / IPP / TVA avec un titre clair (« Avertissement-extrait
+de rôle ISOC — exercice 2025 ») ; demande de renseignements et avis de rectification rangés
+« à revoir » (réponse à donner). Sinon → « À classer » avec la raison. Courrier scanné sans
+texte : 1re page lue sur le serveur (français installé dans l'image : tesseract-ocr-fra).
+Reconnu avant la TVA (un avertissement ISOC peut contenir « TVA » et « déclaration »).
+À enrichir avec de vrais exemples anonymisés si un document n'est pas reconnu.
+

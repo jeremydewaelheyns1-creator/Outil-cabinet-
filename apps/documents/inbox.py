@@ -146,6 +146,40 @@ def _identity_card(
                   url)  # fmt: skip
 
 
+# --- Autres documents du SPF (D-084) ---------------------------------------------------------
+
+
+def _spf_document(
+    upload: UploadedFile[bytes], content_type: str, clients: QuerySet[Client], user: User,
+    text: str,
+) -> Result | None:  # fmt: skip
+    from apps.core.models import CabinetSettings
+
+    from . import spf_docs
+
+    found = spf_docs.identify(text, clients, CabinetSettings.current().enterprise_number)
+    if found is None:
+        return None
+    label = spf_docs.title(found)
+    if len(found.clients) != 1:
+        reason = (f"{label} reconnu, mais "
+                  + ("aucun dossier ne correspond" if not found.clients
+                     else "plusieurs dossiers correspondent"))  # fmt: skip
+        return to_inbox(upload, content_type, user, reason)
+    client = found.clients[0]
+    place = spf_docs.folder(found, client)
+    document = documents.store(client, upload, title=label, folder=place, user=user)
+    url = reverse("clients:archive", args=[client.pk, place])
+    if found.kind.action:
+        document.review_needed = True
+        document.review_reason = "Courrier du SPF qui demande une réponse"
+        document.save(update_fields=["review_needed", "review_reason"])
+        return Result(upload.name or "document", DOUBT, f"{label} rangé dans {client.display_name}"
+                      " : il demande une réponse, à traiter.", client, url)  # fmt: skip
+    return Result(upload.name or "document", OK, f"{label} rangé dans {client.display_name}.",
+                  client, url)  # fmt: skip
+
+
 # --- Point d'entrée --------------------------------------------------------------------------
 
 
@@ -173,6 +207,15 @@ def receive(
         if content_type == XML:
             continue
         if content_type == PDF:
+            from . import spf_docs
+
+            text = spf_docs.text_of(_content(upload))
+            # Documents du SPF sûrs (avertissement-extrait de rôle, Biztax…) avant la TVA :
+            # un avertissement ISOC peut aussi contenir les mots « TVA » et « déclaration ».
+            spf = _spf_document(upload, content_type, clients, user, text)
+            if spf is not None:
+                results.append(spf)
+                continue
             clues = intervat.read_pdf(_content(upload))
             if clues.looks_like_vat:
                 outcome = importer.import_pdf(upload, clients, user, classified, clues)

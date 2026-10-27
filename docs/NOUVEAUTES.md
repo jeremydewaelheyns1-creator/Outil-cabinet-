@@ -3,6 +3,17 @@
 Ce qui a été ajouté à l'outil, du plus récent au plus ancien. Toutes les données de la démo
 sont inventées.
 
+## 27 octobre 2026 — « Déposer des documents » lit les documents du SPF
+
+- Déposez un **avertissement-extrait de rôle** (IPP, ISOC, IPM), un **accusé de réception
+  Biztax ou Tax-on-web**, un **listing clients**, un **compte courant TVA**, un avis de
+  **versements anticipés**… : l'outil reconnaît le document, retrouve le dossier par le numéro
+  d'entreprise ou le numéro national et le range dans ses archives (ISOC, IPP ou TVA) avec un
+  titre clair, par exemple « Avertissement-extrait de rôle ISOC — exercice 2025 ».
+- **Demande de renseignements** et **avis de rectification** sont rangés « à traiter ».
+- Marche aussi avec un courrier papier scanné. Pas sûr du dossier ou du type : le document
+  attend dans « À classer » avec la raison.
+
 ## 27 octobre 2026 — Carte d'identité : le client la scanne avec son téléphone
 
 - Sur le lien reçu, le client touche **« Ouvrir la caméra »** et présente sa carte dans le
