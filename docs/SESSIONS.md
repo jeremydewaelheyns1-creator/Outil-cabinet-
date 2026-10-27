@@ -35,8 +35,11 @@ d'entreprise du cabinet et vérifier le lien de l'application des mandats (Régl
 D-077 : prospects (devient client à la signature + notification à l'expert-comptable ;
 bouton « Devient client »). D-078 : registre UBO (fiche d'encodage, mise à jour dans le mois) ; prospects sans suite
 signalés après 1 an, suppression à la main. **Série « Documents un par un » terminée.** Puis, Jeremy absent 2 h : essais de bout en bout,
-sécurité (bombe zip, portefeuilles privés), vitesse (page Documents), finitions (voir
-NOUVEAUTES 27/10 après-midi).
+sécurité (bombe zip, portefeuilles privés), vitesse (page Documents ; tableaux 30 s → < 1 s
+avec 1 500 dossiers, D-080), finitions (voir NOUVEAUTES 27/10 après-midi).
+**Idées à proposer à Jeremy (pas faites)** : renvoyer tout seul les e-mails « préparés » dès
+qu'une boîte Outlook est reliée ; champ e-mail directement dans « Nouveau client » (prospect) ;
+trous de la lettre de mission dans l'en-tête / pied de page si son vrai modèle en a.
 **Ensuite**, un par un (format court : il préfère des réponses
 brèves).
 
