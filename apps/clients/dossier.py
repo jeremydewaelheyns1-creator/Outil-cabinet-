@@ -258,6 +258,9 @@ ACTION_SECTIONS = {
     "document_case": "documents",
     "document_viewer_page": "documents",
     "ubo": "documents",
+    "risk_sheet": "documents",
+    "letter_prepare": "documents",
+    "spf_mandate_request": "documents",
 }
 
 

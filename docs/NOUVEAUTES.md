@@ -7,7 +7,11 @@ sont inventées.
 
 - En haut à droite de la page **Documents** du dossier, un encadré **Mandats SPF** montre les
   mandats utiles à ce dossier (TVA, Biztax, registre UBO, Finprof, Contentieux, Tax-on-web) : vert quand le mandat
-  est signé, rouge sinon. Un clic sur « Noter signé » quand c'est fait.
+  est signé, orange quand il est demandé, rouge sinon. Un clic sur « Noter signé » quand
+  c'est fait.
+- **« Demander les mandats manquants »** : une fiche à recopier sur le site du SPF (numéros à
+  copier, cases à cocher), puis un seul e-mail au client avec tous ses mandats à signer et la
+  marche à suivre. Le numéro d'entreprise du cabinet se met une fois dans Réglages du cabinet.
 
 ## 27 octobre 2026 — Déclaration des bénéficiaires effectifs (modèle ITAA)
 

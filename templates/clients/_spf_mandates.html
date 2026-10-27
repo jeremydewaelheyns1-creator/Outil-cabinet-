@@ -4,7 +4,7 @@
   {% for line in mandates %}
     <li>
       <span class="mandate-dot mandate-{{ line.level }}" title="{{ line.status_label }}"></span>
-      <span class="mandate-label">{{ line.label }}<span class="visually-hidden"> : {{ line.status_label }}</span></span>
+      <span class="mandate-label" title="{{ line.label }}">{{ line.short }}<span class="visually-hidden"> : {{ line.status_label }}</span></span>
       {% if can_edit %}
       <form method="post" action="{% url 'clients:spf_mandate_update' client.pk %}" class="inline">{% csrf_token %}
         <input type="hidden" name="kind" value="{{ line.kind }}">
@@ -20,5 +20,8 @@
     <li class="muted small">Aucun mandat nécessaire.</li>
   {% endfor %}
   </ul>
+  {% if can_edit and mandates_missing %}
+    <a class="button button-small mandates-ask" href="{% url 'clients:spf_mandate_request' client.pk %}">Demander {% if mandates_missing == 1 %}le mandat manquant{% else %}les {{ mandates_missing }} mandats manquants{% endif %}</a>
+  {% endif %}
   <p class="small muted" style="margin:.5rem 0 0">Créés et signés sur le site du SPF, dans « Mes mandats ».</p>
 </aside>

@@ -1,0 +1,51 @@
+{% extends "clients/sections/_base.html" %}
+{% block head_title %}Demander les mandats SPF · {{ client.display_name }}{% endblock %}
+{% block page_title %}<a href="{% url 'clients:documents' client.pk %}" class="muted">Documents</a> › Demander les mandats SPF{% endblock %}
+{% block content %}
+<div class="grid grid-2 spf-request">
+  <section class="card">
+    <div class="card-header"><h2>① Créer la demande sur le site du SPF</h2><span class="badge">préparé par l'outil</span></div>
+    <p style="margin-top:0">Ouvrez l'application des mandats, connecté <strong>au nom du cabinet</strong>, puis recopiez :</p>
+    <dl class="spf-copy">
+      <dt>Mandant (le client)</dt>
+      <dd>
+        {% if client.is_person %}
+          <span class="small">{{ client.display_name }} — numéro national : voir la fiche (« Afficher », action tracée).</span>
+        {% elif client.enterprise_number %}
+          <span class="mono">{{ client.enterprise_number_display }}</span> <button type="button" class="copy" data-copy="{{ client.enterprise_number_display }}" title="Copier">⧉</button>
+          <div class="small muted">{{ client.display_name }}</div>
+        {% else %}
+          <span class="badge badge-warning">numéro d'entreprise absent de la fiche</span>
+        {% endif %}
+      </dd>
+      <dt>Mandataire (le cabinet)</dt>
+      <dd>
+        {% if cabinet.enterprise_number %}
+          <span class="mono">{{ cabinet.enterprise_number }}</span> <button type="button" class="copy" data-copy="{{ cabinet.enterprise_number }}" title="Copier">⧉</button>
+        {% else %}
+          <span class="small muted">À indiquer une fois dans Paramètres › Réglages du cabinet.</span>
+        {% endif %}
+      </dd>
+    </dl>
+    <p class="small" style="margin-bottom:.3rem"><strong>Cases à cocher</strong></p>
+    <ul class="spf-boxes">{% for line in todo %}<li>☑ {{ line.label }}</li>{% endfor %}</ul>
+    {% if already %}<p class="small muted">Déjà {% for line in already %}{{ line.label }} ({{ line.status_label|lower }}){% if not forloop.last %}, {% endif %}{% endfor %} : ne pas les recocher.</p>{% endif %}
+    <p><a class="button" href="{{ cabinet.spf_mandates_url }}" target="_blank" rel="noopener noreferrer">Ouvrir l'application des mandats du SPF ↗</a></p>
+    <p class="small muted">S'ouvre dans un nouvel onglet ; cette page reste à côté.</p>
+  </section>
+
+  <section class="card">
+    <div class="card-header"><h2>② Prévenir le client (un seul e-mail)</h2></div>
+    <p class="small muted" style="margin-top:0">Rien ne part sans votre clic. L'e-mail part de votre boîte Outlook et une copie est rangée dans Archives › Courriels.</p>
+    <div class="mail-preview">
+      <div class="small muted">À : {{ to|default:"— pas d'adresse e-mail dans la fiche —" }}</div>
+      <div><strong>{{ subject }}</strong></div>
+      <pre class="mail-preview-body">{{ body }}</pre>
+    </div>
+    <form method="post" class="actions" style="margin-top:.8rem">{% csrf_token %}
+      <button type="submit" name="action" value="email"{% if not to %} disabled{% endif %}>J'ai créé la demande : envoyer l'e-mail</button>
+      <button type="submit" name="action" value="noter" class="secondary">Pas d'e-mail, juste noter « demandé »</button>
+    </form>
+  </section>
+</div>
+{% endblock %}

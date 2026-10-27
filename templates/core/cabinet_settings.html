@@ -1,5 +1,14 @@
 {% extends "layouts/app.html" %}
 {% block head_title %}Réglages du cabinet
+<form method="post" class="card" style="max-width: 760px; margin-top: 1rem">
+  {% csrf_token %}
+  <input type="hidden" name="action" value="mandats">
+  <h2>Mandats SPF</h2>
+  <p class="muted">Utilisé par « Demander les mandats manquants » dans la page Documents d'un dossier.</p>
+  <div class="form-grid">{% for field in mandates_form %}{{ field.as_field_group }}{% endfor %}</div>
+  <div class="actions"><button type="submit">Enregistrer</button></div>
+</form>
+
 <section class="card" style="max-width: 760px; margin-top: 1rem">
   <h2>Modèle de lettre de mission</h2>
   <p class="muted">Déposez la lettre de mission Word du cabinet : l'outil repère les endroits à compléter, vérifie les mentions obligatoires de l'ITAA, puis la remplit pour chaque client.</p>

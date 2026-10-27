@@ -483,7 +483,9 @@ def client_documents(request: AppRequest, pk: int) -> HttpResponse:
         ]
         from . import spf
 
-        return {"cases": cases, "mandates": spf.lines(client)}
+        mandates = spf.lines(client)
+        missing = sum(1 for line in mandates if line.status == spf.Status.MISSING)
+        return {"cases": cases, "mandates": mandates, "mandates_missing": missing}
 
     return render_section(request, pk, "documents", "clients/sections/documents.html", build)
 

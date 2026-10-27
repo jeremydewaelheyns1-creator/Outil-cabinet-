@@ -1447,3 +1447,10 @@ button:active, .button:active { transform: scale(.98); }
 .mandates-list li { display: flex; align-items: center; gap: .5rem; }
 .mandates-list .mandate-label { flex: 1; font-size: .9rem; }
 @media (max-width: 900px) { .docs-layout { grid-template-columns: 1fr; } .mandates-box { order: -1; } }
+.mandates-ask { display: block; text-align: center; margin-top: .7rem; }
+.spf-copy { display: grid; grid-template-columns: 170px minmax(0, 1fr); gap: .5rem .8rem; margin: .5rem 0 1rem; }
+.spf-copy dt { color: var(--text-muted); }
+.spf-boxes { list-style: none; padding: 0; margin: 0 0 .5rem; display: grid; gap: .25rem; font-weight: 600; }
+.mail-preview { border: 1px solid var(--border, #e3e7ee); border-radius: 12px; padding: .8rem 1rem; background: var(--surface, #fff); }
+.mail-preview-body { white-space: pre-wrap; font: inherit; margin: .6rem 0 0; }
+@media (max-width: 700px) { .spf-copy { grid-template-columns: 1fr; } }

@@ -29,8 +29,9 @@ options, contrôle ITAA, génération, signature). **À tester par Jeremy** avec
 cabinet, directement dans l'outil en ligne. D-070 : plus de lettre de mission de base.
 **27/10 — fait (D-071)** : déclaration UBO sur le modèle ITAA, questions PEP + lieu de naissance
 à la signature. Puis (D-072) : encadré « Mandats SPF » dans Documents + « registre UBO déposé
-par ». **En attente de Jeremy** : bouton « Demander » sur une ligne rouge, rappel au client qui
-dépose lui-même le registre UBO. **Ensuite** : la fiche de risque, un par un (format court : il préfère des réponses
+par ». D-073/74 : UBO toujours par le cabinet, + Finprof et Contentieux. D-075 : « Demander les
+mandats manquants » (fiche à recopier + un e-mail). **À faire par Jeremy** : mettre le numéro
+d'entreprise du cabinet et vérifier le lien de l'application des mandats (Réglages du cabinet). **Ensuite** : la fiche de risque, un par un (format court : il préfère des réponses
 brèves).
 
 **26/10/2026 — Onglet Documents : maquettes « un document à la fois »** (page « Documents, un par

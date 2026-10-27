@@ -222,9 +222,25 @@ def cabinet_settings(request: AppRequest) -> HttpResponse:
             model = CabinetSettings
             fields = ("hybrid_management", "hybrid_release_days")
 
+    class MandatesForm(forms.ModelForm[CabinetSettings]):
+        class Meta:
+            model = CabinetSettings
+            fields = ("enterprise_number", "spf_mandates_url")
+
     settings = CabinetSettings.current()
     if request.method == "POST" and request.POST.get("action") in {"logo", "retirer_logo"}:
         return _logo_change(request, settings)
+    if request.method == "POST" and request.POST.get("action") == "mandats":
+        mandates_form = MandatesForm(request.POST, instance=settings)
+        if mandates_form.is_valid():
+            mandates_form.save()
+            details = {"écran": "réglages du cabinet", "partie": "mandats SPF"}
+            log_access(request, AccessLog.Action.UPDATE, settings, details=details)
+            messages.success(request, "Réglages des mandats SPF enregistrés.")
+            return redirect("core:cabinet_settings")
+        form = SettingsForm(instance=settings)
+        context = {"form": form, "mandates_form": mandates_form, "settings": settings}
+        return render(request, "core/cabinet_settings.html", context)
     form = SettingsForm(request.POST or None, instance=settings)
     if request.method == "POST" and form.is_valid():
         form.save()
@@ -233,7 +249,8 @@ def cabinet_settings(request: AppRequest) -> HttpResponse:
         )
         messages.success(request, "Réglages enregistrés.")
         return redirect("core:cabinet_settings")
-    return render(request, "core/cabinet_settings.html", {"form": form, "settings": settings})
+    context = {"form": form, "mandates_form": MandatesForm(instance=settings), "settings": settings}
+    return render(request, "core/cabinet_settings.html", context)
 
 
 def _logo_change(request: AppRequest, settings: Any) -> HttpResponse:

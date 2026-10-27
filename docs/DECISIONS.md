@@ -843,3 +843,19 @@ créés en une seule demande dans l'application des mandats.
 À la demande de Jeremy (« pour le moment ») : Finprof pour une société ou une association
 (consultation de la situation fiscale), Contentieux pour tous les dossiers (réclamations).
 
+## D-075 — Demander les mandats SPF manquants
+
+Maquette 7b validée par Jeremy. Bouton « Demander les N mandats manquants » dans l'encadré
+(seulement s'il y a des lignes rouges et le droit de modifier) → page sous l'onglet Documents :
+① fiche à recopier sur le site du SPF (numéro d'entreprise du client et du cabinet avec bouton
+« copier », cases à cocher = seulement les mandats rouges, bouton vers l'application des
+mandats) ; pour une personne physique, le numéro national n'est jamais affiché ici (renvoi à
+la fiche, « Afficher » journalisé) ; ② **un seul e-mail** au client avec tous ses mandats, le
+lien et 3 étapes. Rien ne part sans clic ; l'e-mail part de la boîte Outlook de l'employé,
+copie dans Archives › Courriels ; sans boîte reliée ou sans adresse, rien ne change. Autre
+choix : « juste noter demandé ». Les lignes passent en orange (demandé), puis vert à la main.
+Réglages du cabinet : numéro d'entreprise du cabinet et lien de l'application des mandats
+(par défaut la page officielle du SPF sur les mandats ; adresse exacte de l'application à
+vérifier par Jeremy, elle n'a pas pu être confirmée). Contenu de l'e-mail : aucune donnée
+sensible (noms des mandats, lien public).
+

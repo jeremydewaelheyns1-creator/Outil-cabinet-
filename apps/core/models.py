@@ -325,6 +325,18 @@ class CabinetSettings(models.Model):
     hybrid_release_days = models.PositiveSmallIntegerField(
         "dossier hybride rendu libre après (jours sans temps encodé)", default=14
     )
+    # Mandats SPF (D-075) : ce qui est recopié dans l'application des mandats du SPF.
+    enterprise_number = models.CharField(
+        "numéro d'entreprise du cabinet",
+        max_length=20,
+        blank=True,
+        help_text="Recopié comme « mandataire » quand vous créez un mandat SPF.",
+    )
+    spf_mandates_url = models.URLField(
+        "lien vers l'application des mandats du SPF",
+        default="https://finances.belgium.be/fr/E-services/mandats",
+        help_text="Ouvert par le bouton « Ouvrir l'application des mandats » et envoyé au client.",
+    )
     # Logo des signatures d'e-mails (PNG refait par l'outil, apps/core/logo.py).
     signature_logo = models.BinaryField("logo des signatures", blank=True, default=b"")
     history = HistoricalRecords(excluded_fields=["signature_logo"])
