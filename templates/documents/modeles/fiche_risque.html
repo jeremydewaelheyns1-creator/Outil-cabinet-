@@ -1,51 +1,65 @@
 {% extends "documents/modeles/_base.html" %}
 {% comment %}
-Fiche de risque — formulaire de synthèse d'évaluation des risques du client, modèle ITAA 5.2
-(critères, niveau faible / standard / élevé, motivation), avec en annexe le détail des
-facteurs examinés (inspiré du modèle 5.1). D-049, D-076.
+Fiche de risque sur les modèles ITAA (recueil de formulaires anti-blanchiment) — D-087 :
+page 1 et suivantes, modèle 5.1 « Formulaire d'évaluation du niveau de risque du client »
+(9 blocs de critères, niveau faible / standard / élevé, commentaires, synthèse) ;
+puis modèle 5.2 « Formulaire de synthèse d'évaluation des risques du client » pour l'AMLCO.
 {% endcomment %}
 {% block body %}
-  <table>
-    <tr><th>Référence / dossier</th><td>{{ client.reference|default:"—" }}</td></tr>
-    <tr><th>Identité du client</th><td>{{ client.display_name }}{% if client.enterprise_number %} — BE {{ client.enterprise_number_display }}{% endif %}</td></tr>
-  </table>
+<style>tr { page-break-inside: avoid; } .lvl { display: inline-block; padding: 0 4px; margin-right: 1px; color: #999; white-space: nowrap; font-size: 8pt; } .lvl.on { border: 1.5px solid #14243b; border-radius: 9px; color: #14243b; font-weight: bold; } table.list tr.block th { background: #14243b; color: #fff; font-weight: bold; font-size: 9pt; } .keep { page-break-inside: avoid; } td.c { font-size: 8.5pt; } .tool { color: #777; font-size: 7.5pt; } .newpage { page-break-before: always; }</style>
+<p class="muted">5.1 Formulaire d'évaluation du niveau de risque du client — modèle ITAA, loi du 18 septembre 2017.</p>
+<table>
+  <tr><th>Référence / n° de dossier</th><td>{{ client.reference|default:"—" }}</td></tr>
+  <tr><th>Identité du client</th><td>{{ client.display_name }}{% if client.enterprise_number %} — BE {{ client.enterprise_number_display }}{% endif %}</td></tr>
+</table>
 
-  <h2>Synthèse de l'évaluation des risques du client</h2>
-  <table class="list">
-    <tr><th style="width:20%">Critères</th><th style="width:36%">Niveau de risque</th><th>Motivation / explication</th></tr>
-    {% for c in criteria %}
-      <tr><td>{{ c.label }}</td>
-        <td>{% for value, label in levels %}<span class="lvl{% if value == c.level %} on{% endif %}">{{ label }}</span>{% endfor %}</td>
-        <td>{{ c.motivation }}</td></tr>
-    {% endfor %}
-    <tr><td><strong>Synthèse</strong></td>
-      <td>{% for value, label in levels %}<span class="lvl{% if value == assessment.level %} on{% endif %}">{{ label }}</span>{% endfor %}</td>
-      <td>{% if assessment.comment %}{{ assessment.comment|linebreaksbr }}{% else %}Niveau le plus élevé des critères ci-dessus.{% endif %}</td></tr>
-  </table>
-  <table>
-    <tr><th>Prochaine révision</th><td>{{ assessment.next_review|date:"d/m/Y" }} — ou plus tôt en cas de changement (actionnaire, activité, mission)</td></tr>
-    <tr><th>Mesures de vigilance</th><td>{% if assessment.level == "high" %}Vigilance accrue : acceptation par l'AMLCO, informations sur l'origine des fonds, suivi renforcé, révision chaque année.{% elif assessment.level == "medium" %}Vigilance standard : mise à jour des données d'identification et de cette fiche à la date de révision.{% else %}Vigilance simplifiée possible : mise à jour à la date de révision.{% endif %}</td></tr>
-  </table>
+<table class="list">
+  <tr><th style="width:40%">Critère</th><th style="width:31%">Niveau de risque*</th><th>Commentaires</th></tr>
+  {% for question, level, comment, reason in rows %}
+    {% ifchanged question.block %}<tr class="block"><th colspan="3">{{ question.block_label }}</th></tr>{% endifchanged %}
+    <tr><td>{{ question.text }}</td>
+      <td>{% if level %}{% for value, label in levels %}<span class="lvl{% if value == level %} on{% endif %}">{{ label }}</span>{% endfor %}{% else %}<span class="muted">non évalué (ancienne fiche)</span>{% endif %}</td>
+      <td class="c">{{ comment }}{% if reason %}{% if comment %}<br>{% endif %}<span class="tool">{{ reason }}</span>{% endif %}</td></tr>
+  {% endfor %}
+  <tr class="block"><th colspan="3">Synthèse</th></tr>
+  <tr><td><strong>Niveau de risque du client</strong></td>
+    <td>{% for value, label in levels %}<span class="lvl{% if value == assessment.level %} on{% endif %}">{{ label }}</span>{% endfor %}</td>
+    <td class="c">{% if assessment.comment %}{{ assessment.comment|linebreaksbr }}{% else %}Niveau le plus élevé des critères ci-dessus.{% endif %}</td></tr>
+</table>
+<div class="keep"><p class="muted" style="font-size:8pt">* Niveaux de risque du cabinet : faible, standard, élevé. En petit gris : ce que l'outil a vérifié pour proposer le niveau.</p>
+<table>
+  <tr><th>Établi le</th><td>{{ assessment.created_at|date:"d/m/Y" }}</td></tr>
+  <tr><th>Nom + prénom du professionnel</th><td>{% if author %}{{ author.get_full_name|default:author.email }}{% else %}—{% endif %}</td></tr>
+  <tr><th>Signature</th><td>Signé électroniquement dans l'outil du cabinet</td></tr>
+</table></div>
 
-  <h2>Annexe — facteurs examinés</h2>
-  <table class="list">
-    <tr><th>Facteur (loi du 18/09/2017, annexes I à III)</th><th style="width:10%">Réponse</th><th style="width:36%">Élément vérifié</th></tr>
-    {% for question, answer, reason in rows %}
-      <tr><td>{{ question.text }}</td><td>{% if answer %}<strong>Oui</strong>{% else %}Non{% endif %}</td><td class="muted">{{ reason }}</td></tr>
-    {% endfor %}
-  </table>
-  <p class="muted" style="font-size:8.5pt">Modèles 5.1 et 5.2 du recueil de formulaires anti-blanchiment de l'ITAA ; critères et barème de l'outil, à valider par l'AMLCO du cabinet. Document interne, conservé 10 ans.</p>
+<div class="newpage"></div>
+<h2>5.2 Formulaire de synthèse d'évaluation des risques du client</h2>
+<table>
+  <tr><th>Référence / n° de dossier</th><td>{{ client.reference|default:"—" }}</td></tr>
+  <tr><th>Identité du client</th><td>{{ client.display_name }}</td></tr>
+</table>
+<table class="list">
+  <tr><th style="width:20%">Critères</th><th style="width:30%">Niveau de risque</th><th>Motivation / explication</th></tr>
+  {% for c in criteria %}
+    <tr><td>{{ c.label }}</td>
+      <td>{% for value, label in levels %}<span class="lvl{% if value == c.level %} on{% endif %}">{{ label }}</span>{% endfor %}</td>
+      <td class="c">{{ c.motivation }}</td></tr>
+  {% endfor %}
+  <tr><td><strong>Synthèse</strong></td>
+    <td>{% for value, label in levels %}<span class="lvl{% if value == assessment.level %} on{% endif %}">{{ label }}</span>{% endfor %}</td>
+    <td class="c">{% if assessment.comment %}{{ assessment.comment|linebreaksbr }}{% else %}Niveau le plus élevé des critères.{% endif %}</td></tr>
+</table>
+<table>
+  <tr><th>Prochaine révision</th><td>{{ assessment.next_review|date:"d/m/Y" }} — ou plus tôt en cas de changement (actionnaire, activité, mission)</td></tr>
+  <tr><th>Mesures de vigilance</th><td>{% if assessment.level == "high" %}Vigilance accrue : acceptation par l'AMLCO, informations sur l'origine des fonds, suivi renforcé, révision chaque année.{% elif assessment.level == "medium" %}Vigilance standard : mise à jour des données d'identification et de cette fiche à la date de révision.{% else %}Vigilance simplifiée possible : mise à jour à la date de révision.{% endif %}</td></tr>
+</table>
+<p class="muted" style="font-size:8pt">Modèles 5.1 et 5.2 du recueil de formulaires anti-blanchiment de l'ITAA. Propositions de l'outil à valider par l'AMLCO du cabinet. Document interne, conservé 10 ans.</p>
 {% endblock %}
 {% block signatures %}
-<style>tr { page-break-inside: avoid; } .lvl { display: inline-block; padding: 1px 5px; margin-right: 1px; color: #888; white-space: nowrap; font-size: 9pt; } .lvl.on { border: 1.5px solid #14243b; border-radius: 10px; color: #14243b; font-weight: bold; }</style>
 <div class="signatures">
-  <div class="sign signed">
-    <div class="who">Établi le {{ assessment.created_at|date:"d/m/Y" }}</div>
-    <div>{% if author %}{{ author.get_full_name|default:author.email }}{% endif %}</div>
-    <div class="stamp">Signé électroniquement</div>
-  </div>
   <div class="sign{% if assessment.approved_at %} signed{% endif %}">
-    <div class="who">AMLCO</div>
+    <div class="who">AMLCO — nom et signature</div>
     {% if assessment.approved_at %}
       <div>{{ assessment.approved_by.get_full_name|default:assessment.approved_by.email }}</div>
       <div class="stamp">Fait le {{ assessment.approved_at|date:"d/m/Y" }}</div>

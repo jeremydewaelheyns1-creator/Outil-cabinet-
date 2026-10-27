@@ -65,7 +65,7 @@ def test_client_answers_pep_and_birth_place_when_signing(client):
     assert "Réponses du signataire" in certificate and "Liège" in certificate
     assert signing.latest_answers(company) == proof
     pep = next(p for p in risk.propose(company) if p.question.key == "pep")
-    assert pep.answer is True and sophie.display_name in pep.reason
+    assert pep.answer == "high" and sophie.display_name in pep.reason
 
 
 def test_answers_are_shown_on_the_ubo_page(client, web):
@@ -79,4 +79,4 @@ def test_answers_are_shown_on_the_ubo_page(client, web):
     page = web.get(reverse("clients:ubo", args=[company.pk])).content.decode()
     assert "Réponses du client" in page and "Namur" in page
     pep = next(p for p in risk.propose(company) if p.question.key == "pep")
-    assert pep.answer is False
+    assert pep.answer == "low"

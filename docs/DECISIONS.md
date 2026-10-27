@@ -1016,3 +1016,23 @@ mandataire), 3.3 (personne morale – client : siège social et d'exploitation, 
 UBO signée en ligne (D-071), sinon de la fiche de risque ; à défaut, laissés à compléter.
 Remplace la mise en page de D-068 (même contenu, numérotation et rubriques du modèle).
 
+
+## D-087 — Fiche de risque : exactement les modèles ITAA 5.1 et 5.2
+
+Jeremy : la fiche ne suivait que la synthèse (5.2). Elle est refaite sur le formulaire
+officiel 5.1 : 9 blocs (nature de la mission ; client ; nature, réputation et comportement ;
+facteurs géographiques ; services et transactions ; client, activité et localisation de
+l'annexe III ; varia), 41 critères, chacun noté faible / standard / élevé avec un
+commentaire, puis la synthèse ; « Établi le », nom du professionnel, signature. Suit le 5.2
+pour l'AMLCO : ses 4 critères sont déduits des blocs (client ← client, comportement, client
+annexe III ; activité ← activité annexe III, varia ; géographie ← géographie, localisation ;
+mission ← mission, services), motivation = critères relevés et leurs commentaires.
+- L'outil propose un niveau quand il sait (BCE, pays, structure de détention, déclaration UBO,
+  fiche précédente) et dit pourquoi ; ce qu'il a vérifié est gardé avec la fiche (le PDF refait
+  à la validation AMLCO montre les mêmes éléments). Le reste est « à évaluer » ; un bouton met
+  « faible » dans les cases vides, sans enregistrer (la personne relit puis enregistre).
+- Synthèse proposée = le critère le plus élevé ; abaissable avec une motivation obligatoire,
+  jamais si un critère décisif est élevé (PPE, gel des fonds, pays à haut risque, sanctions,
+  terrorisme).
+- Révisions (3 ans / 1 an) et validation AMLCO inchangées. Les anciennes fiches oui/non restent
+  lisibles (correspondance vers les critères du 5.1) ; pas de migration de base.

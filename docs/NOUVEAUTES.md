@@ -3,6 +3,14 @@
 Ce qui a été ajouté à l'outil, du plus récent au plus ancien. Toutes les données de la démo
 sont inventées.
 
+## 27 octobre 2026 — Fiche de risque sur le modèle officiel
+
+- **Fiche de risque** : c'est maintenant exactement le formulaire 5.1 de l'ITAA (9 blocs,
+  41 critères notés faible / standard / élevé, avec un commentaire), suivi du résumé 5.2 pour
+  l'AMLCO. L'outil pré-remplit ce qu'il sait et dit pourquoi ; un bouton met « faible » dans
+  les cases restées vides. La synthèse se baisse seulement avec une explication, et jamais si
+  une PPE, un pays à haut risque ou un gel des fonds est en jeu.
+
 ## 27 octobre 2026 — Retour en arrière et champs obligatoires
 
 - **Supprimer ce document** (dans la fenêtre du document) : après confirmation, le document

@@ -440,12 +440,12 @@ class Command(BaseCommand):
         from apps.documents import compliance, digest, generation, risk
 
         brewery, medical = companies[6], companies[3]
-        risk.save(
-            brewery,
-            {"sensitive_sector": True, "cash": True, "new_client": False},
-            user=user,
-            comment="Débit de boissons : paiements en espèces fréquents (exemple fictif).",
-        )
+        answers = {p.question.key: {"level": p.answer or "low"} for p in risk.propose(brewery)}
+        answers["especes"] = {
+            "level": "medium",
+            "comment": "Débit de boissons : paiements en espèces fréquents (exemple fictif).",
+        }
+        risk.save(brewery, answers, user=user)
         generation.generate(medical, "procuration", user=user)
         compliance.ask_everything(medical, user)
         digest.monthly(timezone.localdate().replace(day=1))

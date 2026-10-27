@@ -1,4 +1,5 @@
-"""Fiche de risque guidée : propositions, calcul, révision, validation AMLCO (D-049)."""
+"""Fiche de risque sur les modèles ITAA 5.1 et 5.2 : propositions, synthèse, révision,
+validation AMLCO (D-049, D-087)."""
 
 from datetime import date, timedelta
 
@@ -13,11 +14,24 @@ from apps.documents.models import Document, RiskAssessment
 
 pytestmark = pytest.mark.django_db
 
-ALL_NO = {q.key: "non" for q in risk.QUESTIONS}
+ALL_LOW = {q.key: "low" for q in risk.QUESTIONS} | {"synthese": "low"}
 
 
 def proposals(client):
     return {p.question.key: p for p in risk.propose(client)}
+
+
+def grid(**levels):
+    return {q.key: {"level": levels.get(q.key, "low")} for q in risk.QUESTIONS}
+
+
+def test_grid_follows_the_official_model_5_1():
+    assert len(risk.BLOCKS) == 9 and len(risk.QUESTIONS) == 41
+    assert risk.BLOCKS[0][1] == "Nature de la mission (annexe I de la LAB)"
+    assert {q.block for q in risk.QUESTIONS} == {key for key, _ in risk.BLOCKS}
+    # Chaque bloc nourrit exactement un critère du résumé 5.2.
+    fed = [b for _, _, blocks in risk.CRITERIA for b in blocks]
+    assert sorted(fed) == sorted(key for key, _ in risk.BLOCKS)
 
 
 def test_tool_prefills_what_it_knows_and_says_why():
@@ -27,39 +41,68 @@ def test_tool_prefills_what_it_knows_and_says_why():
         country="BE",
     )
     found = proposals(restaurant)
-    assert found["sensitive_sector"].answer is True
-    assert "56101" in found["sensitive_sector"].reason
-    assert found["new_client"].answer is True
-    assert found["foreign"].answer is False
-    assert found["pep"].answer is None  # l'outil ne devine pas : à répondre
+    assert found["secteurs_risque"].answer == "medium"
+    assert "56101" in found["secteurs_risque"].reason
+    assert found["mission_duree"].answer == "medium"  # nouvelle relation
+    assert found["zone_euro"].answer == "low" and found["pays_lbc"].answer == "low"
+    assert found["v_jeux"].answer == "low"  # varia d'après la BCE
+    assert found["pep"].answer is None  # l'outil ne devine pas : à évaluer
+    assert found["presse"].answer is None
     office = ClientFactory(nace_codes=[{"code": "69.202"}], client_since=date(2015, 1, 1))
-    assert proposals(office)["sensitive_sector"].answer is False
-    assert proposals(office)["new_client"].answer is False
+    assert proposals(office)["secteurs_risque"].answer == "low"
+    assert proposals(office)["mission_duree"].answer == "low"
+    assert proposals(ClientFactory(nace_codes=[{"code": "68.311"}]))["v_immobilier"].answer == (
+        "medium"
+    )
 
 
 def test_high_risk_country_is_proposed():
     found = proposals(ClientFactory(country="IR"))
-    assert found["high_risk_country"].answer is True and found["foreign"].answer is True
+    assert found["paradis_fiscal"].answer == "high" and found["zone_euro"].answer == "medium"
+    assert found["pays_lbc"].answer == "high"
 
 
-def test_score_and_levels():
-    assert risk.evaluate({}) == (0, "low")
-    # Modèle ITAA 5.2 : un facteur dans un critère le met en « standard ».
-    assert risk.evaluate({"new_client": True}) == (1, "medium")
-    assert risk.evaluate({"sensitive_sector": True, "new_client": True}) == (3, "medium")
-    assert risk.evaluate({"sensitive_sector": True, "cash": True, "foreign": True})[1] == "high"
-    # Un seul facteur décisif suffit : risque élevé.
-    assert risk.evaluate({"pep": True}) == (3, "high")
+def test_synthesis_is_the_highest_level_and_decisive_factors_cannot_be_lowered():
+    assert risk.evaluate(grid()) == (0, "low")
+    assert risk.evaluate(grid(especes="medium", secteurs_risque="medium")) == (2, "medium")
+    assert risk.evaluate(grid(presse="high"))[1] == "high"
+    # Abaisser la synthèse : possible en motivant…
+    answers = grid(presse="high")
+    assert risk.check(answers, "medium", "")
+    assert risk.check(answers, "medium", "Article ancien, sans suite (exemple fictif).") == []
+    # … mais jamais sous un critère décisif élevé.
+    assert risk.check(grid(pep="high"), "medium", "Motivation")
+    assert risk.check(grid(pep="high"), "high", "") == []
+    missing = grid()
+    del missing["presse"]
+    assert "1 critère(s) sans niveau" in risk.check(missing, "low", "")[0]
 
 
 def test_criteria_follow_the_itaa_summary_form():
-    found = {c.key: c for c in risk.criteria({"cash": True, "high_risk_country": True})}
+    answers = grid(especes="medium", pays_lbc="high")
+    answers["especes"]["comment"] = "Caisse enregistreuse (exemple fictif)"
+    found = {c.key: c for c in risk.criteria(answers)}
     assert [c.label for c in found.values()] == [
         "Client", "Activité / secteur", "Géographique", "Nature de la mission",
     ]  # fmt: skip
-    assert found["activite"].level == "medium" and "espèces" in found["activite"].motivation
-    assert found["geographie"].level == "high" and found["client"].level == "low"
+    assert found["client"].level == "medium" and "espèces" in found["client"].motivation
+    assert "Caisse enregistreuse" in found["client"].motivation
+    assert found["geographie"].level == "high" and found["activite"].level == "low"
     assert found["mission"].motivation == "Aucun facteur relevé."
+
+
+def test_old_yes_no_sheets_are_still_read():
+    old = {"pep": True, "cash": False, "sensitive_sector": True}
+    clean = risk.normalise(old)
+    assert clean["pep"]["level"] == "high" and clean["especes"]["level"] == "low"
+    assert clean["secteurs_risque"]["level"] == "medium"
+    target = ClientFactory()
+    assessment = RiskAssessment.objects.create(
+        client=target, answers=old, score=3, level="high", next_review=date(2030, 1, 1)
+    )
+    assert risk.pep_of(assessment) is True
+    assert proposals(target)["pep"].answer == "high"  # repris de l'ancienne fiche
+    assert b"%PDF" in risk._pdf(assessment)[:8]
 
 
 def test_review_dates_follow_the_level(settings):
@@ -71,12 +114,20 @@ def test_review_dates_follow_the_level(settings):
 def test_filling_the_sheet_stores_the_pdf_with_its_expiry(web, user):
     client = ClientFactory(nace_codes=[{"code": "41.201"}])
     page = web.get(reverse("clients:risk_sheet", args=[client.pk]))
-    assert page.status_code == 200 and "secteur" in page.content.decode()
-    answers = {**ALL_NO, "sensitive_sector": "oui", "cash": "oui"}
+    html = page.content.decode()
+    assert page.status_code == 200 and "Nature de la mission (annexe I de la LAB)" in html
+    answers = {
+        **ALL_LOW,
+        "secteurs_risque": "medium",
+        "especes": "medium",
+        "especes-c": "Chantiers payés en liquide (exemple fictif)",
+        "synthese": "medium",
+    }
     response = web.post(reverse("clients:risk_sheet", args=[client.pk]), answers)
     assert response.status_code == 302
     assessment = RiskAssessment.objects.get()
-    assert assessment.level == "medium" and assessment.score == 4
+    assert assessment.level == "medium" and assessment.score == 2
+    assert assessment.answers["especes"]["comment"].startswith("Chantiers")
     assert assessment.next_review.year == timezone.localdate().year + 3
     document = Document.objects.get(doc_type="fiche_risque")
     assert document.expires_on == assessment.next_review and document.case == "fiche-risque"
@@ -84,19 +135,42 @@ def test_filling_the_sheet_stores_the_pdf_with_its_expiry(web, user):
     row = types.rows(client, "fiche-risque")[0]
     assert row.level == "ok"
     assert AccessLog.objects.filter(action="create", details__has_key="fiche de risque").exists()
-    # La fiche suivante reprend les réponses manuelles précédentes.
-    assert proposals(client)["cash"].answer is True
+    from .test_generation import text_of
+
+    text = " ".join(text_of(document).split())
+    assert "5.1 Formulaire d'évaluation du niveau de risque du client" in text
+    assert "5.2 Formulaire de synthèse" in text and "Chantiers payés en liquide" in text
+    # La fiche suivante reprend les réponses et commentaires précédents.
+    again = proposals(client)
+    assert again["presse"].answer == "low" and "Repris de la fiche" in again["presse"].reason
+    assert again["especes"].comment.startswith("Chantiers")
 
 
-def test_unanswered_questions_are_refused(web):
+def test_unanswered_criteria_are_refused_and_can_be_set_to_low(web):
     client = ClientFactory()
-    response = web.post(reverse("clients:risk_sheet", args=[client.pk]), {"pep": "non"})
+    url = reverse("clients:risk_sheet", args=[client.pk])
+    response = web.post(url, {"pep": "low", "synthese": "low"})
     assert response.status_code == 200 and not RiskAssessment.objects.exists()
+    assert "sans niveau de risque" in response.content.decode()
+    # « Mettre faible partout où c'est vide » : la grille revient remplie, rien n'est enregistré.
+    html = web.post(url, {"pep": "high", "remplir": "1"}).content.decode()
+    assert not RiskAssessment.objects.exists()
+    assert 'name="presse" value="low" checked' in html and 'name="pep" value="high" checked' in html
+
+
+def test_lowering_a_decisive_factor_is_refused(web):
+    client = ClientFactory()
+    url = reverse("clients:risk_sheet", args=[client.pk])
+    web.post(url, {**ALL_LOW, "pep": "high", "synthese": "low", "commentaire": "Non"})
+    assert not RiskAssessment.objects.exists()
 
 
 def test_high_risk_waits_for_the_amlco(web, make_user, client):
     target = ClientFactory()
-    web.post(reverse("clients:risk_sheet", args=[target.pk]), {**ALL_NO, "pep": "oui"})
+    web.post(
+        reverse("clients:risk_sheet", args=[target.pk]),
+        {**ALL_LOW, "pep": "high", "synthese": "high"},
+    )
     assessment = RiskAssessment.objects.get()
     assert assessment.awaiting_approval and assessment.document.review_needed
     url = reverse("clients:risk_approve", args=[target.pk, assessment.pk])
@@ -120,5 +194,5 @@ def test_high_risk_waits_for_the_amlco(web, make_user, client):
 def test_reader_cannot_fill_the_sheet(client, make_user):
     target = ClientFactory()
     client.force_login(make_user(capabilities=[]))
-    response = client.post(reverse("clients:risk_sheet", args=[target.pk]), ALL_NO)
+    response = client.post(reverse("clients:risk_sheet", args=[target.pk]), ALL_LOW)
     assert response.status_code == 404 and not RiskAssessment.objects.exists()

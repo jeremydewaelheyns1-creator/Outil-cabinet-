@@ -57,6 +57,7 @@ def _identification(
 ) -> dict[str, Any]:
     """Ce que les modèles ITAA 3.1 à 3.4 demandent en plus des données de la fiche (D-086)."""
     from .models import RiskAssessment
+    from .risk import pep_of
     from .signing import person_answers
 
     answers = person_answers(subject) if subject.is_person else None
@@ -65,8 +66,8 @@ def _identification(
     if answers is not None:
         pep = bool(answers.get("pep"))
         pep_source = "Déclaré par le client (déclaration des bénéficiaires effectifs signée)."
-    elif subject == client and risk is not None and "pep" in (risk.answers or {}):
-        pep = bool(risk.answers["pep"])
+    elif subject == client and risk is not None and pep_of(risk) is not None:
+        pep = pep_of(risk)
         pep_source = f"Fiche d'évaluation du risque du {risk.created_at:%d/%m/%Y}."
     roles = [r for r in management if r.person_id == subject.pk]
     powers = "; ".join(
