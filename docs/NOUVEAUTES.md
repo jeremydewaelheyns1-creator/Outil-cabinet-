@@ -19,6 +19,9 @@ sont inventées.
 - Lettre de mission sur un vrai fichier Word : un « XXX » découpé par Word en plusieurs
   morceaux, un lien dans le paragraphe, ou un passage à option seul dans une case de tableau
   sont maintenant bien gérés (le fichier reste valable).
+- « Envoyer au client » disait « envoyé » même sans adresse e-mail dans la fiche ou sans
+  boîte Outlook reliée : l'outil refuse maintenant s'il manque l'adresse, et dit clairement
+  quand l'e-mail est seulement préparé.
 - Un **prospect** ne propose pas encore de demander les mandats SPF (seulement une fois la
   lettre de mission signée). La fiche d'encodage du registre UBO montre aussi la nationalité.
 

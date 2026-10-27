@@ -519,13 +519,28 @@ def document_send(request: AppRequest, pk: int, document_id: str) -> HttpRespons
 
     client = _get_client(request, pk)
     document = _draft(request, client, document_id)
+    if not services._recipient(client):
+        messages.error(
+            request,
+            "Pas d'adresse e-mail dans la fiche du client : ajoutez-la (Identité et "
+            "coordonnées), puis envoyez le document.",
+        )
+        return _viewer_response(request, client, document)
     try:
         sent = generation.send_for_signature(document, user=request.user)
     except ValueError as error:
         messages.error(request, str(error))
         return _viewer_response(request, client, document)
     log_access(request, AccessLog.Action.UPDATE, document, details={"envoyé": sent.reference})
-    messages.success(request, f"« {document.title} » envoyé au client pour signature.")
+    email = sent.emails.first()
+    if email is not None and email.delivered:
+        messages.success(request, f"« {document.title} » envoyé au client pour signature.")
+    else:
+        messages.warning(
+            request,
+            f"« {document.title} » est prêt à signer, mais l'e-mail est seulement préparé, pas "
+            "envoyé : aucune boîte Outlook reliée (menu « Ma boîte mail »).",
+        )
     return _viewer_response(request, client, document)
 
 

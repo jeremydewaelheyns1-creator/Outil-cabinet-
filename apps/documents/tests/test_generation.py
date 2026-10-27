@@ -145,3 +145,22 @@ def test_rows_offer_generate_or_update(web):
                    case="lettre-de-mission", doc_type="lettre_mission")  # fmt: skip
     html = web.get(reverse("clients:document_case", args=[client.pk, "lettre-de-mission"]))
     assert "Mettre à jour" in html.content.decode()
+
+
+def test_sending_without_email_address_is_refused_honestly(web):
+    from apps.core.testing.factories import ClientFactory
+
+    target = ClientFactory()
+    draft = generation.generate(target, "procuration")
+    response = web.post(reverse("clients:document_send", args=[target.pk, draft.pk]), follow=True)
+    html = response.content.decode()
+    assert "Pas d&#x27;adresse e-mail" in html or "Pas d'adresse e-mail" in html
+    draft.refresh_from_db()
+    assert draft.state == "draft" and not DocumentRequest.objects.exists()
+
+
+def test_without_outlook_the_message_says_prepared_not_sent(web):
+    client, _ = company()
+    draft = generation.generate(client, "procuration")
+    response = web.post(reverse("clients:document_send", args=[client.pk, draft.pk]), follow=True)
+    assert "seulement préparé" in response.content.decode()
