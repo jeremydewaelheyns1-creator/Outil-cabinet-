@@ -3,6 +3,16 @@
 Ce qui a été ajouté à l'outil, du plus récent au plus ancien. Toutes les données de la démo
 sont inventées.
 
+## 27 octobre 2026 — Délais prolongés par le SPF
+
+- Chaque jour, l'outil lit les communiqués officiels du gouvernement fédéral et les actualités
+  de l'ITAA. Un article qui parle d'un délai fiscal prolongé arrive sous la cloche des
+  administrateurs.
+- **Paramètres › Délais du SPF** : vous lisez l'article et encodez la prolongation en deux
+  clics (échéance, nouvelle date). Les échéances de tous les dossiers concernés bougent, la
+  ligne TVA suit, et chaque collègue voit un petit message en haut de l'outil à sa prochaine
+  ouverture. On peut aussi encoder une prolongation à la main, ou l'annuler.
+
 ## 27 octobre 2026 — Déclaration TVA
 
 - **Colonnes** : « Acomptes » est maintenant avant « Com. client ».

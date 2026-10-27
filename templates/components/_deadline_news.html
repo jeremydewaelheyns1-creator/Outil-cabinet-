@@ -1,0 +1,15 @@
+{# Délai prolongé par le SPF (D-089) : affiché jusqu'à « Compris ». #}
+{% for e in deadline_news %}
+<div class="alert alert-info deadline-news" role="status">
+  <div>
+    <strong>Délai prolongé par le SPF Finances :</strong> {{ e.label }} — au plus tard le <strong>{{ e.new_date|date:"d/m/Y" }}</strong> au lieu du {{ e.previous_date|date:"d/m/Y" }}.
+    {% if e.note %}<span class="small">{{ e.note }}</span>{% endif %}
+    {% if e.source_url %}<a class="small" href="{{ e.source_url }}" target="_blank" rel="noopener noreferrer">Source</a>{% endif %}
+    <span class="small muted">Vos échéances sont déjà déplacées.</span>
+  </div>
+  <form method="post" action="{% url 'tasks:extension_seen' e.pk %}" hx-post="{% url 'tasks:extension_seen' e.pk %}" hx-target="closest .deadline-news" hx-swap="outerHTML">{% csrf_token %}
+    <input type="hidden" name="next" value="{{ request.get_full_path }}">
+    <button type="submit" class="small">Compris</button>
+  </form>
+</div>
+{% endfor %}

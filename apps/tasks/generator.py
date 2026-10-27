@@ -22,7 +22,7 @@ from apps.core import events
 from apps.core.models import User
 
 from .models import GenerationRun, Task, TaskStep
-from .rules import Rule, RuleSet, load_rules, rules_hash
+from .rules import Period, Rule, RuleSet, load_rules, rules_hash
 
 
 @dataclass
@@ -57,10 +57,22 @@ def _remove_untouched(client: Client, rule: Rule, today: date) -> int:
 
 @transaction.atomic
 def generate_for_client(
-    client: Client, today: date | None = None, rules: RuleSet | None = None
+    client: Client,
+    today: date | None = None,
+    rules: RuleSet | None = None,
+    extended: dict[tuple[str, str, date], date] | None = None,
 ) -> Result:
+    from .extensions import overrides
+
     today = today or timezone.localdate()
     rules = rules or load_rules()
+    extended = overrides() if extended is None else extended
+
+    def due_for(rule: Rule, period: Period) -> date | None:
+        """Date de la règle, ou la date prolongée par le SPF si un administrateur l'a encodée."""
+        due = rule.due_date(period)
+        return extended.get((rule.code, period.key, due), due) if due else None
+
     window_start = today - timedelta(days=rules.days_back)
     window_end = today + timedelta(days=31 * rules.months_ahead)
     result = Result()
@@ -77,7 +89,7 @@ def generate_for_client(
         for period in rule.periods(client, window_start.year - 1, window_end.year):
             if period.key in existing:
                 task = tasks[period.key]
-                due = rule.due_date(period)
+                due = due_for(rule, period)
                 # Date légale changée (ex. TVA trimestrielle au 25) : l'échéance suit, même
                 # commencée, passée ou terminée (c'est un fait, pas un choix du cabinet).
                 if due and due != task.due_date:
@@ -91,7 +103,7 @@ def generate_for_client(
                     )  # fmt: skip
                     result.moved += 1
                 continue
-            due = rule.due_date(period)
+            due = due_for(rule, period)
             if due is None or not (window_start <= due <= window_end):
                 continue
             task = Task.objects.create(
@@ -135,10 +147,13 @@ def generate_all(today: date | None = None) -> GenerationRun:
     """Tous les clients (les anciens clients et prospects voient leurs tâches futures retirées)."""
     run = GenerationRun.objects.create(rules_hash=rules_hash())
     rules = load_rules()
+    from .extensions import overrides
+
+    extended = overrides()
     total = Result()
     clients = Client.objects.prefetch_related("assignments__user")
     for client in clients.iterator(chunk_size=200):
-        total += generate_for_client(client, today, rules)
+        total += generate_for_client(client, today, rules, extended)
         run.clients += 1
     run.created, run.removed = total.created, total.removed
     run.finished_at = timezone.now()

@@ -11,6 +11,9 @@ def app_context(request: HttpRequest) -> dict[str, Any]:
         context["unread_notifications"] = user.notifications.filter(read_at__isnull=True).count()
         context["unanswered_requests"] = _unanswered(user)
         context["unread_mails"] = _unread_mails(user)
+        from apps.tasks.extensions import unseen_for
+
+        context["deadline_news"] = unseen_for(user)  # délais prolongés par le SPF (D-089)
     return context
 
 

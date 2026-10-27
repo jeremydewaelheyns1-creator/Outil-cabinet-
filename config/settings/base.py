@@ -326,6 +326,14 @@ OFFICIAL_AUTO_REFRESH = env.bool("OFFICIAL_AUTO_REFRESH", default=True)
 OFFICIAL_REFRESH_DAYS = env.int("OFFICIAL_REFRESH_DAYS", default=7)
 OFFICIAL_REFRESH_BATCH = env.int("OFFICIAL_REFRESH_BATCH", default=10)
 
+# Délais prolongés par le SPF Finances (D-089) : flux publics lus une fois par jour. Aucune
+# donnée du cabinet n'est envoyée. Les articles repérés sont à vérifier par un administrateur.
+DEADLINE_WATCH = env.bool("DEADLINE_WATCH", default=True)
+DEADLINE_SOURCES: list[tuple[str, str]] = [
+    ("Communiqués du gouvernement fédéral", "https://news.belgium.be/fr/feeds/all"),
+    ("Actualités de l'ITAA", "https://www.blogitaa.be/fr/feed/"),
+]
+
 # Nombre de relais de confiance (répartiteur de charge Google) qui ajoutent l'adresse IP du
 # visiteur dans l'en-tête X-Forwarded-For. 0 = on se fie à l'adresse de connexion directe.
 TRUSTED_PROXY_COUNT = env.int("TRUSTED_PROXY_COUNT", default=0)

@@ -117,6 +117,12 @@ def settings_page(request: AppRequest) -> HttpResponse:
             request.user.is_staff,
         ),
         (
+            "Délais du SPF",
+            "Prolongations de délai annoncées par le SPF Finances : articles repérés, encodage.",
+            "tasks:extensions",
+            request.user.is_staff,
+        ),
+        (
             "Réglages du cabinet",
             "Gestion hybride des dossiers (comptable « Hybride »).",
             "core:cabinet_settings",

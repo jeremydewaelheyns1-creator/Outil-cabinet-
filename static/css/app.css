@@ -1488,3 +1488,6 @@ button:active, .button:active { transform: scale(.98); }
 .card-scan-hint[data-level="warn"] { color: var(--warning); }
 .card-scan-hint[data-level="ok"] { color: var(--success); }
 .card-scan [hidden] { display: none !important; }
+.deadline-news { display: flex; justify-content: space-between; align-items: center; gap: 1rem; margin-bottom: 1rem; }
+.deadline-news form { flex: none; }
+.extension-form { display: grid; gap: .7rem; max-width: 46rem; }

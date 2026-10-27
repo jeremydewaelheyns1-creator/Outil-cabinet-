@@ -1,0 +1,65 @@
+{% extends "layouts/app.html" %}
+{% block head_title %}Délais du SPF{% endblock %}
+{% block page_title %}<a href="{% url 'core:settings' %}" class="muted">Paramètres</a> › Délais du SPF{% endblock %}
+{% block content %}
+<section class="card">
+  <div class="card-header"><h2>Articles à vérifier{% if notices %} <span class="badge badge-warning">{{ notices|length }}</span>{% endif %}</h2></div>
+  <p class="small muted" style="margin-top:0">Chaque jour, l'outil lit {% for name, url in sources %}<a href="{{ url }}" target="_blank" rel="noopener noreferrer">{{ name }}</a>{% if not forloop.last %} et {% endif %}{% endfor %}. Un article qui parle de délai et d'impôt arrive ici (et sous la cloche des administrateurs). Rien ne change sans vous : lisez-le, puis encodez la prolongation ou écartez-le.</p>
+  {% if notices %}
+  <table class="table">
+    <thead><tr><th>Article</th><th>Publié</th><th></th></tr></thead>
+    <tbody>
+    {% for n in notices %}
+      <tr><td><a href="{{ n.url }}" target="_blank" rel="noopener noreferrer">{{ n.title }}</a><div class="small muted">{{ n.source }}{% if n.excerpt %} — {{ n.excerpt|truncatechars:220 }}{% endif %}</div></td>
+        <td class="nowrap small">{{ n.published_at|date:"d/m/Y"|default:"—" }}</td>
+        <td class="nowrap"><a class="button small" href="?article={{ n.pk }}#encoder">Encoder la prolongation</a>
+          <form method="post" class="inline">{% csrf_token %}<input type="hidden" name="action" value="dismiss"><input type="hidden" name="article" value="{{ n.pk }}"><button type="submit" class="secondary small">Pas une prolongation</button></form></td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% else %}<p class="muted">Rien à vérifier pour le moment.</p>{% endif %}
+</section>
+
+<section class="card" id="encoder">
+  <div class="card-header"><h2>Encoder une prolongation</h2></div>
+  {% if notice %}<p class="small">D'après : <a href="{{ notice.url }}" target="_blank" rel="noopener noreferrer">{{ notice.title }}</a></p>{% endif %}
+  <form method="post" class="extension-form">{% csrf_token %}
+    <input type="hidden" name="action" value="create">
+    {% if notice %}<input type="hidden" name="article" value="{{ notice.pk }}">{% endif %}
+    <label>Échéance prolongée
+      <select name="echeance" required>
+        <option value="">— choisir —</option>
+        {% for d in deadlines %}<option value="{{ d.value }}">{{ d.label }} — actuellement le {{ d.due_date|date:"d/m/Y" }} ({{ d.count }} dossier{{ d.count|pluralize }})</option>{% endfor %}
+      </select>
+    </label>
+    <label>Nouvelle date limite<input type="date" name="nouvelle_date" required></label>
+    <label>Précision (facultatif)<input name="note" maxlength="300" placeholder="Ex. : dépôt et paiement ; pas d'amende jusqu'à cette date"></label>
+    <label>Lien vers l'annonce officielle<input type="url" name="source" maxlength="500" value="{{ notice.url|default:'' }}" placeholder="https://"></label>
+    <p class="small muted" style="margin:0">À l'enregistrement, les échéances de tous les dossiers concernés sont déplacées, la ligne TVA suit, et chacun voit un petit message à sa prochaine ouverture de l'outil.</p>
+    <p><button type="submit">Enregistrer la prolongation</button></p>
+  </form>
+</section>
+
+{% if extensions %}
+<section class="card">
+  <div class="card-header"><h2>Prolongations encodées</h2></div>
+  <table class="table">
+    <thead><tr><th>Échéance</th><th>Avant</th><th>Après</th><th>Encodée</th><th></th></tr></thead>
+    <tbody>
+    {% for e in extensions %}
+      <tr><td>{{ e.label }}{% if e.note %}<div class="small muted">{{ e.note }}</div>{% endif %}{% if e.source_url %}<div class="small"><a href="{{ e.source_url }}" target="_blank" rel="noopener noreferrer">Source</a></div>{% endif %}</td>
+        <td class="nowrap">{{ e.previous_date|date:"d/m/Y" }}</td><td class="nowrap"><strong>{{ e.new_date|date:"d/m/Y" }}</strong></td>
+        <td class="small">{{ e.created_at|date:"d/m/Y" }}{% if e.created_by %} · {{ e.created_by.get_short_name|default:e.created_by }}{% endif %}</td>
+        <td><form method="post" class="inline">{% csrf_token %}<input type="hidden" name="action" value="cancel"><input type="hidden" name="prolongation" value="{{ e.pk }}"><button type="submit" class="secondary small" title="Erreur d'encodage : remet l'ancienne date">Annuler</button></form></td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</section>
+{% endif %}
+
+{% if done_notices %}
+<details class="card"><summary>Articles déjà traités</summary>
+  <ul class="small">{% for n in done_notices %}<li><a href="{{ n.url }}" target="_blank" rel="noopener noreferrer">{{ n.title }}</a> — {{ n.get_status_display|lower }}</li>{% endfor %}</ul>
+</details>
+{% endif %}
+{% endblock %}

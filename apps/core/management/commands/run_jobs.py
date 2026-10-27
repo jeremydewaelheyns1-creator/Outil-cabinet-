@@ -6,8 +6,9 @@ Cloud Run « jobs ») :
 1. les événements restés en échec ou en attente sont retraités ;
 2. les fichiers de reprise déposés depuis plus de 24 heures sans suite sont effacés ;
 3. une fois par jour, les échéances manquantes sont générées, ainsi que les tâches pour les
-   documents qui expirent ou ne sont plus à jour (D-050) et, en début de mois, le résumé de
-   chaque employé (notification dans l'outil, D-052) ;
+   documents qui expirent ou ne sont plus à jour (D-050), les annonces de délais prolongés
+   par le SPF sont relevées (D-089) et, en début de mois, le résumé de chaque employé
+   (notification dans l'outil, D-052) ;
 4. les travaux de la file procrastinate sont exécutés jusqu'à ce qu'elle soit vide.
 """
 
@@ -24,7 +25,7 @@ from apps.integrations import official
 from apps.mailbox import services as mail_services
 from apps.mailbox import sync as mail_sync
 from apps.reprise.models import purge_stale_uploads
-from apps.tasks import deadlines
+from apps.tasks import deadlines, extensions
 from apps.tasks.generator import generate_all_if_due
 
 
@@ -44,6 +45,7 @@ class Command(BaseCommand):
             self.stdout.write(f"Brouillons oubliés effacés : {mail_services.purge_drafts()}")
             self.stdout.write(f"Dossiers hybrides rendus libres : {hybrid.release_stale()}")
             self.stdout.write(f"Prospects sans suite signalés : {prospects.remind_stale()}")
+            self.stdout.write(f"Délais du SPF, articles à vérifier : {extensions.watch()}")
         self.stdout.write(f"Relances préparées : {documents.send_due_reminders()}")
         self.stdout.write(f"Cartes d'identité demandées : {identity.request_renewals()}")
         self.stdout.write(f"Rappels d'échéances : {deadlines.send_reminders()}")

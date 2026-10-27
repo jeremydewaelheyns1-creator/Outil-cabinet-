@@ -1054,3 +1054,23 @@ Demandes de Jeremy :
   règle donne une autre date, chaque échéance suit (même commencée, passée ou terminée : c'est
   un fait légal) ; `task.rescheduled` met la ligne TVA à jour ; et la génération repasse le jour
   même quand le fichier de règles change (`GenerationRun.rules_hash`), donc dès la mise à jour.
+
+## D-089 — Délais prolongés par le SPF : surveillance, encodage, message à l'ouverture
+
+Le SPF ne publie pas de calendrier lisible par une machine ; il annonce ses prolongations dans
+des communiqués. Choix (Jeremy : « l'IA plus tard ») :
+- **Sources** : deux flux RSS publics et officiels, lus une fois par jour (`run_jobs`) :
+  communiqués du gouvernement fédéral (news.belgium.be, où publie le SPF Finances) et
+  actualités de l'ITAA (relaie chaque décision du SPF). Liste dans `DEADLINE_SOURCES`. Simple
+  lecture : aucune donnée du cabinet ne sort. Source illisible → réessayée le lendemain.
+- **Repérage sans IA** : un mot de délai (prolongation, report, délai supplémentaire…) ET un mot
+  fiscal (TVA, IPP, ISOC, déclaration…) → « article à vérifier » + cloche des administrateurs.
+- **L'humain décide** : Paramètres › Délais du SPF. L'administrateur choisit l'échéance dans une
+  liste (même règle, même période, même date actuelle : « Déclaration TVA 3e trimestre 2026 —
+  actuellement le 26/10 (11 dossiers) »), la nouvelle date, une précision et le lien. Aussi
+  possible sans article (encodage manuel).
+- **Effet** : les échéances de tous les dossiers concernés sont déplacées (`task.rescheduled` →
+  ligne TVA), la génération quotidienne respecte la prolongation, chacun voit un bandeau en haut
+  de l'outil jusqu'à « Compris » (sauf celui qui l'a encodée). « Annuler » remet l'ancienne date.
+- Plus tard (si utile) : une IA européenne, sans conservation, pour lire l'article et pré-remplir
+  l'encodage ; elle ne recevrait que le texte public de l'article.
