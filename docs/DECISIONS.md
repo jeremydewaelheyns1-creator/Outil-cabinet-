@@ -911,3 +911,12 @@ demandes, preuves de signature, fiches de risque, coordonnées, liens et l'histo
 fiche. Le journal des consultations garde la trace des accès ; la suppression y est notée
 sans le nom.
 
+## D-079 — Lettre de mission : limites connues du modèle Word
+
+Gérés : trous dans le corps du texte et dans les tableaux, « XXX » découpé en plusieurs
+passages de mise en forme, liens hypertextes, paragraphe à option seul dans une case de
+tableau (vidé au lieu d'être retiré, pour que Word puisse ouvrir le fichier), fichiers
+piégés refusés (taille décompressée > 40 Mo ou > 500 parties). Pas encore gérés : les trous
+dans l'en-tête et le pied de page, et dans les modifications suivies (à accepter dans Word
+avant de déposer le modèle). À proposer à Jeremy si un vrai modèle en a besoin.
+

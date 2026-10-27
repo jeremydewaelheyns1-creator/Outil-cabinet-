@@ -143,3 +143,59 @@ def test_zip_bomb_is_refused_before_opening(admin):
     file = SimpleUploadedFile("lettre.docx", content)
     response = admin.post(reverse("lettre:models"), {"modele": file}, follow=True)
     assert "anormal" in response.content.decode() and not LetterTemplate.objects.exists()
+
+
+def test_split_holes_and_hyperlinks_are_filled_in_place():
+    """Word coupe souvent « XXX » en plusieurs morceaux de mise en forme ; un lien dans le
+    paragraphe ne doit pas décaler le remplissage."""
+    from docx.oxml import OxmlElement
+
+    from apps.core.testing.factories import ClientFactory
+
+    doc = Word()
+    p = doc.add_paragraph("Et la société ")
+    p.add_run("XX").bold = True
+    p.add_run("X, dont le siège social est situé ")
+    p.add_run("XXX").italic = True
+    p.add_run(".")
+    p2 = doc.add_paragraph("Voir ")
+    link, run, text = OxmlElement("w:hyperlink"), OxmlElement("w:r"), OxmlElement("w:t")
+    text.text = "notre site"
+    run.append(text)
+    link.append(run)
+    p2._p.append(link)
+    p2.add_run(" ; honoraires : XXX EUR.")
+    out = io.BytesIO()
+    doc.save(out)
+    content = out.getvalue()
+    found = letter.holes(content)
+    template = LetterTemplate(content=content, options={},
+                              holes={h.key: {"field": h.guess} for h in found})  # fmt: skip
+    client = ClientFactory(name="Fictive Alpha", street="Rue du Test", house_number="1",
+                           postal_code="5000", city="Namur")  # fmt: skip
+    filled = Word(io.BytesIO(letter.fill(template, client, {"trou:1:0": "900"})))
+    texts = [p.text for p in filled.paragraphs]
+    assert texts[0].startswith(f"Et la société {client.display_name}, dont le siège social")
+    assert "Rue du Test 1, 5000 Namur." in texts[0] and "XX" not in texts[0]
+    assert texts[1] == "Voir notre site ; honoraires : 900 EUR."
+
+
+def test_option_alone_in_a_table_cell_keeps_the_word_file_valid():
+    from apps.core.testing.factories import ClientFactory
+
+    doc = Word()
+    doc.add_paragraph("Lettre de mission pour XXX.")
+    table = doc.add_table(rows=1, cols=2)
+    table.cell(0, 0).paragraphs[0].text = "Mission TVA : déclarations périodiques."
+    table.cell(0, 1).paragraphs[0].text = "Autre case."
+    out = io.BytesIO()
+    doc.save(out)
+    content = out.getvalue()
+    index = next(i for i, t in letter.paragraphs(content) if t.startswith("Mission TVA"))
+    template = LetterTemplate(content=content, holes={"0:0": {"field": "client.denomination"}},
+                              options={str(index): {"condition": "tva", "end": index}})  # fmt: skip
+    client = ClientFactory(vat_status="not_subject")
+    filled = Word(io.BytesIO(letter.fill(template, client, {})))
+    cell = filled.tables[0].cell(0, 0)
+    assert len(cell.paragraphs) == 1 and cell.paragraphs[0].text == ""
+    assert filled.tables[0].cell(0, 1).paragraphs[0].text == "Autre case."

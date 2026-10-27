@@ -121,6 +121,9 @@ def _paragraphs(document: Any) -> list[Any]:
     return [Paragraph(p, document) for p in body.iter(qn("w:p"))]
 
 
+# Les passages qui composent le texte d'un paragraphe (comme python-docx le calcule) : directs,
+# ou dans un lien hypertexte. Positions des trous et remplissage restent ainsi alignés.
+TEXT_RUNS = "w:r | w:hyperlink/w:r"
 MAX_UNPACKED = 40 * 1024 * 1024  # un vrai modèle Word décompressé pèse quelques Mo
 MAX_PARTS = 500
 
@@ -173,9 +176,10 @@ class Hole:
 
 def _highlighted(paragraph: Any) -> list[str]:
     from docx.oxml.ns import qn
+    from docx.text.run import Run
 
     found: list[str] = []
-    for run in paragraph.runs:
+    for run in (Run(r, paragraph) for r in paragraph._p.xpath(TEXT_RUNS)):
         if run._element.find(".//" + str(qn("w:highlight"))) is not None and run.text.strip():
             found.append(run.text)
     return found
@@ -344,8 +348,13 @@ def _keep(condition: str, client: Client, answer: bool) -> bool:
 
 def _fill(paragraph: Any, replacements: list[tuple[int, int, str]]) -> None:
     """Remplace les trous en ne touchant qu'aux passages qu'ils couvrent : le reste du paragraphe
-    (gras, italique…) garde la mise en forme du cabinet."""
-    runs = paragraph.runs
+    (gras, italique…) garde la mise en forme du cabinet.
+
+    Tous les passages du paragraphe sont parcourus, y compris ceux d'un lien hypertexte, pour
+    que les positions correspondent au texte complet du paragraphe."""
+    from docx.text.run import Run
+
+    runs = [Run(r, paragraph) for r in paragraph._p.xpath(TEXT_RUNS)]
     for start, end, value in sorted(replacements, reverse=True):
         position, covered = 0, []
         for run in runs:
@@ -393,7 +402,14 @@ def fill(template: Any, client: Client, answers: dict[str, str]) -> bytes:
     for index in sorted(removed, reverse=True):
         if index < len(items):
             element = items[index]._element
-            element.getparent().remove(element)
+            parent = element.getparent()
+            if parent.tag.endswith("}tc") and len(parent.findall(element.tag)) == 1:
+                # Seul paragraphe d'une case de tableau : Word exige qu'il reste ; on le vide.
+                for child in list(element):
+                    if not child.tag.endswith("}pPr"):
+                        element.remove(child)
+            else:
+                parent.remove(element)
     out = io.BytesIO()
     document.save(out)
     return out.getvalue()

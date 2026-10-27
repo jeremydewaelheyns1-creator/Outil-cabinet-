@@ -15,6 +15,9 @@ sont inventées.
   ouvert ; les nouveaux écrans restent invisibles pour un dossier d'un portefeuille privé.
 - **Vitesse** : la page Documents d'un dossier lit la base 18 fois de moins.
 - Quelques champs de saisie (TVA, « À classer ») avaient perdu leur mise en forme : corrigé.
+- Lettre de mission sur un vrai fichier Word : un « XXX » découpé par Word en plusieurs
+  morceaux, un lien dans le paragraphe, ou un passage à option seul dans une case de tableau
+  sont maintenant bien gérés (le fichier reste valable).
 
 ## 27 octobre 2026 — Registre UBO : la fiche d'encodage pour MyMinfin
 
