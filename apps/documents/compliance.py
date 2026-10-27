@@ -125,7 +125,7 @@ def overview(client: Client, batch: Batch | None = None) -> Overview:
     pending_keys = {(r.doc_type, r.person_id) for r in pending if r.doc_type}
     every = (
         types.all_rows(client, batch.documents.get(client.pk, []),
-                       batch.mandataires.get(client.pk, []))
+                       batch.mandataires.get(client.pk, []), live=False)
         if batch is not None
         else types.all_rows(client)
     )  # fmt: skip

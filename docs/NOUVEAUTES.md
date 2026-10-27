@@ -13,7 +13,8 @@ sont inventées.
   demander » ; champs plus lisibles ; écran plus rapide avec une longue lettre.
 - **Sécurité** : un fichier Word piégé (qui gonflerait à l'ouverture) est refusé avant d'être
   ouvert ; les nouveaux écrans restent invisibles pour un dossier d'un portefeuille privé.
-- **Vitesse** : la page Documents d'un dossier lit la base 18 fois de moins.
+- **Vitesse** : la page Documents d'un dossier lit la base 18 fois de moins. Avec 1 500
+  dossiers, « Ma journée » et Conformité passent de ~30 secondes à moins d'une seconde.
 - Quelques champs de saisie (TVA, « À classer ») avaient perdu leur mise en forme : corrigé.
 - Lettre de mission sur un vrai fichier Word : un « XXX » découpé par Word en plusieurs
   morceaux, un lien dans le paragraphe, ou un passage à option seul dans une case de tableau

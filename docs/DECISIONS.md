@@ -920,3 +920,15 @@ piégés refusés (taille décompressée > 40 Mo ou > 500 parties). Pas encore g
 dans l'en-tête et le pied de page, et dans les modifications suivies (à accepter dans Word
 avant de déposer le modèle). À proposer à Jeremy si un vrai modèle en a besoin.
 
+## D-080 — « À mettre à jour » mémorisé pour les tableaux de plusieurs dossiers
+
+Mesure (1 500 dossiers fictifs, chacun avec une déclaration UBO et un extrait du registre) :
+« Ma journée » et Conformité prenaient ~30 s, car chaque document recalculait les
+bénéficiaires effectifs de son dossier à l'affichage. Désormais `Document.changed_parts`
+(parties modifiées depuis le document) est recalculé la nuit (run_jobs) et aussitôt après un
+changement de fiche ou de relation (événements client.updated, client.updated_from_bce,
+relation.saved, relation.deleted). Les tableaux (conformité, Ma journée, accueil) le lisent ;
+la page d'un dossier reste calculée en direct. Résultat : < 1 s (puis cache 15 min).
+Limite : un changement chez un actionnaire indirect (holding) se voit dans les tableaux le
+lendemain matin ; dans le dossier lui-même, tout de suite.
+

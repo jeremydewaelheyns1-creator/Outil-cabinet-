@@ -26,6 +26,8 @@ from django.db import transaction
 from django.utils import timezone
 
 from apps.clients.models import Client, Relation
+from apps.core import events
+from apps.core.models import Event
 
 from . import types
 from .models import Document
@@ -182,16 +184,44 @@ def close_resolved(client: Client | None = None) -> int:
     return closed
 
 
+def refresh_changed(client: Client) -> int:
+    """Recalcule « modifié depuis » des documents en place du dossier (D-080). Les tableaux de
+    plusieurs dossiers lisent ce résultat au lieu de tout recalculer à l'affichage."""
+    updated = 0
+    documents = Document.objects.filter(
+        client=client, archived_at__isnull=True, state=Document.State.FINAL,
+    ).exclude(data_fingerprint={}).select_related("person")  # fmt: skip
+    for document in documents:
+        found = changes(document, client)
+        if found != list(document.changed_parts):
+            document.changed_parts = found
+            document.save(update_fields=["changed_parts"])
+            updated += 1
+    return updated
+
+
+@events.on("client.updated")
+@events.on("client.updated_from_bce")
+@events.on("relation.saved")
+@events.on("relation.deleted")
+def refresh_after_change(event: Event) -> None:
+    """Fiche ou relations modifiées : « à mettre à jour » se voit aussitôt dans les tableaux."""
+    client = Client.objects.filter(pk=event.subject_id).first() if event.subject_id else None
+    if client is not None:
+        refresh_changed(client)
+
+
 def follow_client(client: Client, today: date | None = None) -> int:
     today = today or timezone.localdate()
     horizon = today + timedelta(days=types.WARN_DAYS)
     created = 0
+    refresh_changed(client)
     documents = Document.objects.filter(
         client=client, archived_at__isnull=True, state=Document.State.FINAL,
         doc_type__in=[*CABINET_SIDE, *GENERATED],
     ).select_related("person")  # fmt: skip
     for document in documents:
-        if document.doc_type == "extrait_ubo" and changes(document, client):
+        if document.doc_type == "extrait_ubo" and document.changed_parts:
             # Bénéficiaires modifiés : le registre UBO se met à jour dans le mois (D-078).
             created += _task(
                 client, document, "Mettre à jour le registre UBO (bénéficiaires modifiés)",
@@ -205,7 +235,7 @@ def follow_client(client: Client, today: date | None = None) -> int:
                     max(document.expires_on, today), document.doc_type,
                 )  # fmt: skip
             continue
-        changed = changes(document, client)
+        changed = list(document.changed_parts)
         if changed:
             label = types.BY_SLUG[document.doc_type].label
             who = f" — {document.person.display_name}" if document.person else ""

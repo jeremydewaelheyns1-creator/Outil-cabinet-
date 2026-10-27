@@ -42,3 +42,31 @@ def test_new_shareholder_asks_to_update_the_register_within_a_month():
     freshness.follow_client(company)
     task = Task.objects.get(client=company, kind="document:maj-extrait_ubo")
     assert "registre UBO" in task.title
+
+
+def test_boards_read_the_stored_result_and_events_refresh_it(django_capture_on_commit_callbacks):
+    """D-080 : le tableau de conformité ne recalcule pas les bénéficiaires de chaque dossier ;
+    il lit « modifié depuis », remis à jour dès qu'une relation change."""
+    from django.db import connection
+    from django.test.utils import CaptureQueriesContext
+
+    from apps.core import events
+    from apps.documents import compliance
+
+    company, _, _ = owned_company()
+    extract = store_extract(company)
+    newcomer = PersonFactory(name="Nouveau")
+    relation = Relation.objects.create(entity=company, person=newcomer, role="shareholder",
+                                       share_percentage=30)  # fmt: skip
+    with django_capture_on_commit_callbacks(execute=True):
+        events.emit("relation.saved", subject=company, payload={"relation": relation.pk})
+    extract.refresh_from_db()
+    assert extract.changed_parts == ["bénéficiaires effectifs"]
+    lines = " | ".join(
+        line.label for line in compliance.overview(company, compliance.load([company])).lines
+    )
+    assert "À mettre à jour" in lines
+    batch = compliance.load([company])
+    with CaptureQueriesContext(connection) as ctx:
+        compliance.overview(company, batch)
+    assert not any("clients_relation" in q["sql"] for q in ctx.captured_queries)

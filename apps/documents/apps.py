@@ -7,4 +7,7 @@ class DocumentsConfig(AppConfig):
     verbose_name = "Documents"
 
     def ready(self) -> None:
-        from . import identity  # noqa: F401  (lecture des cartes d'identité reçues)
+        from . import (  # noqa: F401  (traitements sur événements)
+            freshness,  # « modifié depuis » recalculé après un changement de fiche (D-080)
+            identity,  # lecture des cartes d'identité reçues
+        )

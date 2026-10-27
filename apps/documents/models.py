@@ -133,6 +133,9 @@ class Document(models.Model):
     size = models.PositiveIntegerField("taille")
     # Empreinte des données du dossier utilisées par un document produit par l'outil (D-050).
     data_fingerprint = models.JSONField("empreinte des données", default=dict, blank=True)
+    # Parties du dossier modifiées depuis le document, recalculées chaque nuit (D-080) : les
+    # tableaux de plusieurs dossiers les lisent au lieu de tout recalculer à l'affichage.
+    changed_parts = models.JSONField("modifié depuis", default=list, blank=True)
     # Questions posées au client quand il signe en ligne (D-071, déclaration UBO) :
     # [{"person": id, "name": "…"}] — une ligne par bénéficiaire effectif.
     questions = models.JSONField("questions au signataire", default=list, blank=True)

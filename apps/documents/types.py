@@ -145,6 +145,7 @@ def all_rows(
     client: Client,
     documents: list[Document] | None = None,
     people: list[Client] | None = None,
+    live: bool = True,
 ) -> dict[str, list[Row]]:
     """Toutes les cases typées d'un client en deux requêtes (tableau de conformité).
     `documents` / `people` : déjà chargés pour plusieurs dossiers d'un coup (compliance.board)."""
@@ -158,7 +159,8 @@ def all_rows(
     if people is None:
         people = mandataires(client)
     return {
-        case: rows(client, case, [d for d in documents if d.case == case], people) for case in cases
+        case: rows(client, case, [d for d in documents if d.case == case], people, live)
+        for case in cases
     }
 
 
@@ -167,7 +169,10 @@ def rows(
     case: str,
     documents: list[Document] | None = None,
     people: list[Client] | None = None,
+    live: bool = True,
 ) -> list[Row]:
+    """`live=False` (tableaux de beaucoup de dossiers) : « à mettre à jour » lu dans
+    `changed_parts` (recalculé chaque nuit) au lieu d'être recalculé ici (D-080)."""
     today = timezone.localdate()
     everything = (
         documents
@@ -206,7 +211,7 @@ def rows(
             if document is not None and document.data_fingerprint and level != "danger":
                 from .freshness import changes
 
-                changed = changes(document, client)
+                changed = changes(document, client) if live else list(document.changed_parts)
                 if changed:
                     level = "warning"
                     text = f"À mettre à jour : {', '.join(changed)} modifié depuis"
