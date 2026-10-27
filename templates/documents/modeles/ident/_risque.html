@@ -1,0 +1,5 @@
+<h2>{{ n }}. Estimation du risque de blanchiment / financement du terrorisme</h2>
+<p class="muted">(voir le formulaire d'évaluation du risque client{% if risk %} du {{ risk.created_at|date:"d/m/Y" }}{% endif %})</p>
+<table><tr><th>Niveau</th><td>
+  {% for value, label in levels %}<span class="box">{% if risk and risk.level == value %}☒{% else %}☐{% endif %} {{ label }}</span>{% endfor %}
+</td></tr></table>

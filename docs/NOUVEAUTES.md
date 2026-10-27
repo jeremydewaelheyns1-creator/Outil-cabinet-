@@ -8,7 +8,9 @@ sont inventées.
 - **Supprimer ce document** (dans la fenêtre du document) : après confirmation, le document
   validé par erreur est supprimé et l'ancien, s'il y en avait un, est remis en place. Un
   document signé par le client ne se supprime pas (il se remplace).
-- **Identification** : l'outil refuse de la préparer ou de la valider tant qu'il manque une
+- **Identification** : les fiches suivent maintenant exactement les modèles officiels de l'ITAA
+  (3.1 à 3.4) : contrôle PPE, lieu de naissance, siège d'exploitation, pouvoirs de
+  représentation, blocs « fait le / vérification / fin de mission ». L'outil refuse de la préparer ou de la valider tant qu'il manque une
   information obligatoire (date de naissance, nationalité, carte d'identité valable, dirigeant,
   niveau de risque…) et dit exactement quoi compléter.
 

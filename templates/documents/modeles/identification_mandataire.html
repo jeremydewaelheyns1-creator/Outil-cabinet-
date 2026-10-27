@@ -1,55 +1,33 @@
 {% extends "documents/modeles/_base.html" %}
-{% comment %}Modèle de l'ITAA : « Identification mandataire personne physique / personne morale » (loi du 18 septembre 2017).{% endcomment %}
+{% comment %}
+Modèles ITAA 3.2 « Identification personne physique – mandataire » et 3.4 « Identification
+personne morale – mandataire » (recueil de formulaires anti-blanchiment), rubrique par rubrique.
+{% endcomment %}
 {% block body %}
-<p class="muted">Identification mandataire {% if person.is_person %}personne physique{% else %}personne morale{% endif %} — modèle de l'ITAA, loi du 18 septembre 2017.</p>
+<p class="muted">Identification {% if person.is_person %}personne physique – mandataire (modèle ITAA 3.2){% else %}personne morale – mandataire (modèle ITAA 3.4){% endif %} — loi du 18 septembre 2017.</p>
 <table>
-  <tr><th>Référence client</th><td>{{ client.display_name }}{% if client.enterprise_number %} — {{ client.enterprise_number_display }}{% endif %}{% if client.reference %} · réf. {{ client.reference }}{% endif %}</td></tr>
+  <tr><th>Référence / numéro de dossier</th><td>{{ client.reference|default:"—" }}</td></tr>
+  <tr><th>Client</th><td>{{ client.display_name }}{% if client.enterprise_number %} — {{ client.enterprise_number_display }}{% endif %}</td></tr>
 </table>
 
-<h2>I. Estimation du risque de blanchiment / financement du terrorisme</h2>
-<table><tr><th>Niveau (voir fiche d'évaluation du risque)</th><td>{% if risk %}{{ risk.get_level_display }} — fiche du {{ risk.created_at|date:"d/m/Y" }}{% else %}Fiche d'évaluation du risque à établir{% endif %}</td></tr></table>
+{% include "documents/modeles/ident/_risque.html" with n="I" %}
 
 {% if person.is_person %}
-<h2>II. Personne physique</h2>
-<table>
-  <tr><th>Nom, prénom</th><td>{{ person.name }} {{ person.first_name }}</td></tr>
-  <tr><th>Date et lieu de naissance</th><td>{{ person.birth_date|date:"d/m/Y"|default:"—" }}</td></tr>
-  <tr><th>Nationalité</th><td>{{ person.nationality|default:"—" }}</td></tr>
-  <tr><th>Adresse</th><td>{% for line in person.address_lines %}{{ line }}{% if not forloop.last %}, {% endif %}{% empty %}—{% endfor %}</td></tr>
-  <tr><th>Numéro national</th><td>{{ person.national_number_masked|default:"—" }}</td></tr>
-</table>
-<h2>III. Vérification des données d'identité</h2>
-<table><tr><th>Document sur base duquel l'identité a été vérifiée (copie au dossier)</th><td>{% if card %}Carte d'identité (recto et verso) n° {{ card.masked_number }}, valable jusqu'au {{ card.valid_until|date:"d/m/Y" }}{% else %}{{ card_text }}{% endif %}</td></tr></table>
+  {% include "documents/modeles/ident/_pp.html" with n="II" who=person %}
+  {% include "documents/modeles/ident/_verif.html" with n="III" who=person subject_word="La personne est" %}
+  {% include "documents/modeles/ident/_ppe.html" with n="IV" %}
+  <h2>V. Pouvoirs de représentation</h2>
+  <table><tr><th>Pouvoirs de représentation</th><td>{{ powers_text }}</td></tr></table>
+  <h2>VI. Identification des bénéficiaires effectifs du mandataire</h2>
+  <p>Le mandataire agit pour le compte du client.</p>
 {% else %}
-<h2>II. Personne morale</h2>
-<table>
-  <tr><th>Dénomination sociale</th><td>{{ person.name }}</td></tr>
-  <tr><th>Forme juridique</th><td>{{ person.legal_form|default:"—" }}</td></tr>
-  <tr><th>Numéro d'entreprise</th><td>{{ person.enterprise_number_display|default:"—" }}</td></tr>
-  <tr><th>Siège social</th><td>{% for line in person.address_lines %}{{ line }}{% if not forloop.last %}, {% endif %}{% empty %}—{% endfor %}</td></tr>
-</table>
-<h2>III. Vérification des données d'identité</h2>
-<table><tr><th>Documents (copie au dossier)</th><td>Extrait de la Banque-Carrefour des Entreprises et statuts publiés au Moniteur belge</td></tr></table>
+  {% include "documents/modeles/ident/_pm.html" with n="II" who=person %}
+  {% include "documents/modeles/ident/_verif.html" with n="III" who=person subject_word="Le mandataire est" %}
+  {% include "documents/modeles/ident/_gestion.html" with n="IV" title="Gestion du mandataire personne morale" rows=person_management %}
+  <h2>V. Pouvoirs de représentation du mandataire</h2>
+  <table><tr><th>Pouvoirs de représentation (statuts, Moniteur belge)</th><td>{{ powers_text }}</td></tr></table>
+  <h2>VI. Identification des bénéficiaires effectifs de la personne morale</h2>
+  <p>Voir le formulaire « Déclaration des bénéficiaires effectifs » du mandataire.</p>
 {% endif %}
-
-<h2>IV. Pouvoirs de représentation du mandataire</h2>
-<table><tr><th>Qualité et preuve des pouvoirs</th><td>{% for r in management %}{% if r.person_id == person.pk %}{{ r.get_role_display }}{% if r.start_date %} depuis le {{ r.start_date|date:"d/m/Y" }}{% endif %} — voir Moniteur belge{% endif %}{% endfor %}</td></tr></table>
-
-<h2>V. Bénéficiaires effectifs</h2>
-<p>{% if person.is_person %}Le mandataire agit pour le compte du client.{% else %}Voir le formulaire « Déclaration des bénéficiaires effectifs ».{% endif %}</p>
-
-<table>
-  <tr><th>Vérification des données le</th><td>{{ today|date:"d/m/Y" }}</td></tr>
-  <tr><th>La mission pour le client a pris fin le</th><td>{% if client.client_until %}{{ client.client_until|date:"d/m/Y" }}{% else %}— (en cours){% endif %}</td></tr>
-</table>
-<p class="muted">Les données d'identité et les pièces justificatives sont conservées 10 ans à compter de la fin de la mission.</p>
 {% endblock %}
-{% block signatures %}
-<div class="signatures">
-  <div class="sign signed">
-    <div class="who">Signature de la personne responsable de l'acceptation du client</div>
-    <div>{% if author %}{{ author.get_full_name|default:author.email }}{% endif %}</div>
-    <div class="stamp">Signé électroniquement le {{ today|date:"d/m/Y" }}, selon les procédures internes du cabinet</div>
-  </div>
-</div>
-{% endblock %}
+{% block signatures %}{% include "documents/modeles/ident/_signatures.html" %}{% endblock %}

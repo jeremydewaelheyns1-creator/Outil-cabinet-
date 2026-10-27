@@ -1,0 +1,18 @@
+<div class="signatures" style="flex-direction: column; gap: 10px">
+  <div class="sign signed">
+    <div class="who">Fait le {{ today|date:"d/m/Y" }} — personne responsable de l'acceptation du client</div>
+    <div>Nom + prénom : {% if author %}{{ author.get_full_name|default:author.email }}{% endif %}</div>
+    <div class="stamp">Signature : signé électroniquement</div>
+  </div>
+  <div class="sign signed">
+    <div class="who">Établissement / vérification des données le {{ today|date:"d/m/Y" }}</div>
+    <div>Prénom + nom : {% if author %}{{ author.get_full_name|default:author.email }}{% endif %}</div>
+    <div class="stamp">Signature : signé électroniquement</div>
+  </div>
+  <div class="sign">
+    <div class="who">La mission pour le client a pris fin le {% if client.client_until %}{{ client.client_until|date:"d/m/Y" }}{% else %}……/……/20……{% endif %}</div>
+    <div class="blank">Prénom + nom + signature</div>
+  </div>
+</div>
+<p class="muted" style="font-size:8.5pt">* données obligatoires. Modèles 3.1 à 3.4 du recueil de formulaires anti-blanchiment de l'ITAA. Données et pièces conservées 10 ans à compter de la fin de la mission.</p>
+<style>.box { margin-right: 14px; white-space: nowrap; } table.list, h2 { page-break-inside: avoid; } h2 { page-break-after: avoid; }</style>

@@ -1,0 +1,8 @@
+<h2>{{ n }}. Personne morale</h2>
+<table>
+  <tr><th>Dénomination sociale</th><td>{{ who.name }}</td></tr>
+  <tr><th>Forme juridique</th><td>{{ who.legal_form|default:"……" }}</td></tr>
+  <tr><th>Numéro d'entreprise</th><td>{{ who.enterprise_number_display|default:"……" }}</td></tr>
+  <tr><th>Siège social</th><td>{{ who.street|default:"……" }} {{ who.house_number }}{% if who.box %} bte {{ who.box }}{% endif %}, {{ who.postal_code }} {{ who.city }}, {{ who.country|default:"BE" }}</td></tr>
+  <tr><th>Siège d'exploitation</th><td>Identique au siège social, sauf mention contraire</td></tr>
+</table>

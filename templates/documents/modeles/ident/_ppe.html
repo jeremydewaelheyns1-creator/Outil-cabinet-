@@ -1,0 +1,5 @@
+<h2>{{ n }}. Contrôle PPE — listes, bases de données, recherche Google</h2>
+<table><tr><th>La personne physique est-elle une personne politiquement exposée (PPE) ?</th><td>
+  {% if pep is True %}☒ OUI ☐ NON{% elif pep is False %}☐ OUI ☒ NON{% else %}☐ OUI ☐ NON{% endif %}
+  {% if pep_source %}<div class="muted">{{ pep_source }}</div>{% endif %}
+</td></tr></table>

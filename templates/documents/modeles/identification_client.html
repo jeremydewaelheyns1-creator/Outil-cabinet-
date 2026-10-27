@@ -1,71 +1,36 @@
 {% extends "documents/modeles/_base.html" %}
-{% comment %}Modèle de l'ITAA : « Identification client personne physique / personne morale » (loi du 18 septembre 2017).{% endcomment %}
+{% comment %}
+Modèles ITAA 3.1 « Identification personne physique – client » et 3.3 « Identification
+personne morale – client » (recueil de formulaires anti-blanchiment), rubrique par rubrique.
+{% endcomment %}
 {% block body %}
-<p class="muted">Identification client {% if client.is_person %}personne physique{% else %}personne morale{% endif %} — modèle de l'ITAA, loi du 18 septembre 2017.</p>
+<p class="muted">Identification {% if client.is_person %}personne physique – client (modèle ITAA 3.1){% else %}personne morale – client (modèle ITAA 3.3){% endif %} — loi du 18 septembre 2017.</p>
 <table>
   <tr><th>Référence / numéro de dossier</th><td>{{ client.reference|default:"—" }}</td></tr>
+  {% if client.is_person %}<tr><th>Prénom et nom du client</th><td>{{ client.first_name }} {{ client.name }}</td></tr>{% endif %}
 </table>
 
 <h2>I. Client occasionnel</h2>
-<table><tr><th>Client occasionnel dont l'ensemble des opérations n'excède pas 10 000 € et sans risque élevé ?</th><td>Non — mission récurrente : rubriques suivantes complétées</td></tr></table>
+<table><tr><th>Client occasionnel dont l'ensemble des opérations n'excède pas 10 000 € et qui ne présente pas de risque élevé ?</th><td>☐ OUI ☒ NON — mission récurrente</td></tr></table>
 
-<h2>II. Estimation du risque de blanchiment / financement du terrorisme</h2>
-<table><tr><th>Niveau (voir fiche d'évaluation du risque)</th><td>{% if risk %}{{ risk.get_level_display }} — fiche du {{ risk.created_at|date:"d/m/Y" }}{% else %}Fiche d'évaluation du risque à établir{% endif %}</td></tr></table>
+{% include "documents/modeles/ident/_risque.html" with n="II" %}
 
 {% if client.is_person %}
-<h2>III. Personne physique</h2>
-<table>
-  <tr><th>Nom, prénom</th><td>{{ client.name }} {{ client.first_name }}</td></tr>
-  <tr><th>Date et lieu de naissance</th><td>{{ client.birth_date|date:"d/m/Y"|default:"—" }}</td></tr>
-  <tr><th>Nationalité</th><td>{{ client.nationality|default:"—" }}</td></tr>
-  <tr><th>Adresse</th><td>{% for line in client.address_lines %}{{ line }}{% if not forloop.last %}, {% endif %}{% empty %}—{% endfor %}</td></tr>
-  <tr><th>Numéro national</th><td>{{ client.national_number_masked|default:"—" }}</td></tr>
-</table>
+  {% include "documents/modeles/ident/_pp.html" with n="III" who=client %}
+  {% include "documents/modeles/ident/_verif.html" with n="IV" who=client subject_word="Le client est" %}
+  {% include "documents/modeles/ident/_ppe.html" with n="V" %}
+  <h2>VI. Nature et objet de la relation d'affaires</h2>
+  <table><tr><th>Nature de la mission</th><td>{{ mission_text }}</td></tr></table>
+  <h2>VII. Identification des bénéficiaires effectifs</h2>
+  <p>Le client déclare agir pour son propre compte (voir le formulaire de déclaration des bénéficiaires effectifs).</p>
 {% else %}
-<h2>III. Personne morale</h2>
-<table>
-  <tr><th>Dénomination sociale</th><td>{{ client.name }}</td></tr>
-  <tr><th>Forme juridique</th><td>{{ client.legal_form|default:"—" }}</td></tr>
-  <tr><th>Numéro d'entreprise</th><td>{{ client.enterprise_number_display|default:"—" }}</td></tr>
-  <tr><th>Siège social</th><td>{% for line in client.address_lines %}{{ line }}{% if not forloop.last %}, {% endif %}{% empty %}—{% endfor %}</td></tr>
-  {% if client.nace_codes %}<tr><th>Activités (NACE)</th><td>{{ client.nace_codes|join:", " }}</td></tr>{% endif %}
-</table>
+  {% include "documents/modeles/ident/_pm.html" with n="III" who=client %}
+  {% include "documents/modeles/ident/_verif.html" with n="IV" who=client subject_word="Le client est" %}
+  {% include "documents/modeles/ident/_gestion.html" with n="V" title="Gestion du client — personne morale" rows=management %}
+  <h2>VI. Nature et objet de la relation d'affaires</h2>
+  <table><tr><th>Nature de la mission</th><td>{{ mission_text }}</td></tr></table>
+  <h2>VII. Identification des bénéficiaires effectifs de la personne morale</h2>
+  <p>Voir le formulaire « Déclaration des bénéficiaires effectifs ».</p>
 {% endif %}
-
-<h2>IV. Vérification des données d'identité</h2>
-<table>
-  <tr><th>Documents sur base desquels l'identité a été vérifiée (copie au dossier)</th><td>{% if client.is_person %}Carte d'identité (recto et verso){% if card %}, n° {{ card.masked_number }}, valable jusqu'au {{ card.valid_until|date:"d/m/Y" }}{% endif %}{% else %}Extrait de la Banque-Carrefour des Entreprises{% if client.bce_synced_at %} (consulté le {{ client.bce_synced_at|date:"d/m/Y" }}){% endif %} et statuts publiés au Moniteur belge{% endif %}</td></tr>
-  <tr><th>Client à risque {% if risk %}{{ risk.get_level_display|lower }}{% else %}…{% endif %}</th><td>Documents demandés selon la procédure interne du cabinet</td></tr>
-</table>
-
-{% if not client.is_person %}
-<h2>V. Gestion du client — personne morale</h2>
-<table class="list">
-  <tr><th>Prénom + nom / forme juridique + dénomination</th><th>Qualité</th><th>Publication de la désignation / des pouvoirs</th></tr>
-  {% for r in management %}<tr><td>{{ r.person.display_name }}{% if r.person.enterprise_number %} ({{ r.person.enterprise_number_display }}){% endif %}</td><td>{{ r.get_role_display }}</td><td>Oui — Moniteur belge</td></tr>
-  {% empty %}<tr><td colspan="3" class="muted">Aucun administrateur encodé dans la fiche.</td></tr>{% endfor %}
-</table>
-<p class="muted">Les administrateurs personnes physiques qui signent la lettre de mission ou sont chargés de la gestion journalière sont identifiés chacun séparément (« Identification mandataire »).</p>
-{% endif %}
-
-<h2>{% if client.is_person %}V{% else %}VI{% endif %}. Nature et objet de la relation d'affaires</h2>
-<table><tr><th>Nature de la mission</th><td>Gestion comptable et fiscale du dossier{% if client.client_since %} (client depuis le {{ client.client_since|date:"d/m/Y" }}){% endif %}</td></tr></table>
-
-<h2>{% if client.is_person %}VI{% else %}VII{% endif %}. Bénéficiaires effectifs</h2>
-<p>{% if client.is_person %}Le client déclare agir pour son propre compte (voir déclaration des bénéficiaires effectifs).{% else %}Voir le formulaire « Déclaration des bénéficiaires effectifs ».{% endif %}</p>
-
-<table>
-  <tr><th>Vérification des données le</th><td>{{ today|date:"d/m/Y" }}</td></tr>
-  <tr><th>La mission pour le client a pris fin le</th><td>{% if client.client_until %}{{ client.client_until|date:"d/m/Y" }}{% else %}— (en cours){% endif %}</td></tr>
-</table>
-<p class="muted">Les données d'identité et les pièces justificatives sont conservées 10 ans à compter de la fin de la mission.</p>
 {% endblock %}
-{% block signatures %}
-<div class="signatures">
-  <div class="sign signed">
-    <div class="who">Signature de la personne responsable de l'acceptation du client</div>
-    <div>{% if author %}{{ author.get_full_name|default:author.email }}{% endif %}</div>
-    <div class="stamp">Signé électroniquement le {{ today|date:"d/m/Y" }}, selon les procédures internes du cabinet</div>
-  </div>
-</div>
-{% endblock %}
+{% block signatures %}{% include "documents/modeles/ident/_signatures.html" %}{% endblock %}

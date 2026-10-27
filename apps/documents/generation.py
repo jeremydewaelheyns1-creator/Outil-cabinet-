@@ -52,6 +52,44 @@ MODELS: dict[str, Model] = {
 LETTER = "lettre_mission"  # propre à chaque cabinet : seulement avec son modèle (D-070)
 
 
+def _identification(
+    client: Client, subject: Client, risk: Any, management: list[Relation]
+) -> dict[str, Any]:
+    """Ce que les modèles ITAA 3.1 à 3.4 demandent en plus des données de la fiche (D-086)."""
+    from .models import RiskAssessment
+    from .signing import person_answers
+
+    answers = person_answers(subject) if subject.is_person else None
+    pep: bool | None = None
+    pep_source = ""
+    if answers is not None:
+        pep = bool(answers.get("pep"))
+        pep_source = "Déclaré par le client (déclaration des bénéficiaires effectifs signée)."
+    elif subject == client and risk is not None and "pep" in (risk.answers or {}):
+        pep = bool(risk.answers["pep"])
+        pep_source = f"Fiche d'évaluation du risque du {risk.created_at:%d/%m/%Y}."
+    roles = [r for r in management if r.person_id == subject.pk]
+    powers = "; ".join(
+        f"{r.get_role_display()}{f' depuis le {r.start_date:%d/%m/%Y}' if r.start_date else ''}"
+        for r in roles
+    )
+    person_management = list(
+        Relation.objects.current()
+        .filter(entity=subject, role__in=Relation.MANAGEMENT_ROLES)
+        .select_related("person")
+    ) if not subject.is_person else []  # fmt: skip
+    since = f" (client depuis le {client.client_since:%d/%m/%Y})" if client.client_since else ""
+    return {
+        "levels": list(reversed(RiskAssessment.Level.choices)),  # Élevé, Standard, Faible
+        "birth_place": (answers or {}).get("lieu", ""),
+        "pep": pep,
+        "pep_source": pep_source,
+        "powers_text": (powers + " — publication au Moniteur belge") if powers else "……",
+        "person_management": person_management,
+        "mission_text": f"Tenue de la comptabilité et missions fiscales{since}",
+    }
+
+
 class MissingData(ValueError):
     """Données obligatoires absentes : le document ne peut pas être préparé ni validé."""
 
@@ -147,9 +185,9 @@ def _context(
     if doc_type.startswith("identification_"):
         from .models import RiskAssessment
 
-        context["risk"] = (
-            RiskAssessment.objects.filter(client=client).order_by("-created_at").first()
-        )
+        risk = RiskAssessment.objects.filter(client=client).order_by("-created_at").first()
+        context["risk"] = risk
+        context.update(_identification(client, subject, risk, list(management)))
     if doc_type == "declaration_ubo" and not client.is_person:
         context["ubo"] = ubo.analyse(client)
         context["nonprofit"] = client.kind == Client.Kind.NONPROFIT

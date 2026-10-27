@@ -174,22 +174,31 @@ def test_identification_forms_follow_the_itaa_models(user):
     html = render_to_string("documents/modeles/identification_client.html",
                             _context(company, "identification_client", None, user))  # fmt: skip
     parts = (
-        "Identification client personne morale",
+        "personne morale – client (modèle ITAA 3.3)",
         "I. Client occasionnel",
+        "II. Estimation du risque",
+        "III. Personne morale",
+        "Siège d&#x27;exploitation" if "&#x27;" in html else "Siège d'exploitation",
+        "IV. Vérification des données",
         "V. Gestion du client",
         "VI. Nature et objet",
-        "personne responsable de l'acceptation",
+        "VII. Identification des bénéficiaires effectifs",
+        "Établissement / vérification des données le",
+        "La mission pour le client a pris fin le",
+        "personne responsable de l&#x27;acceptation"
+        if "&#x27;" in html
+        else "personne responsable de l'acceptation",
     )
     for part in parts:
         assert part in html
     person = PersonFactory(national_number=national_number(5))
     html = render_to_string("documents/modeles/identification_client.html",
                             _context(person, "identification_client", None, user))  # fmt: skip
-    assert "Identification client personne physique" in html
+    assert "personne physique – client (modèle ITAA 3.1)" in html
+    assert "V. Contrôle PPE" in html and "Lieu de naissance" in html
     assert national_number(5) not in html  # jamais en clair
     context = _context(company, "identification_mandataire", manager, user)
     html = render_to_string("documents/modeles/identification_mandataire.html", context)
-    assert (
-        "Identification mandataire personne physique" in html
-        and "IV. Pouvoirs de représentation" in html
-    )
+    assert "personne physique – mandataire (modèle ITAA 3.2)" in html
+    assert "IV. Contrôle PPE" in html and "V. Pouvoirs de représentation" in html
+    assert "VI. Identification des bénéficiaires effectifs du mandataire" in html

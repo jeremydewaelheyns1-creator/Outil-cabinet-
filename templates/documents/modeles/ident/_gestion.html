@@ -1,0 +1,6 @@
+<h2>{{ n }}. {{ title }}</h2>
+<table class="list">
+  <tr><th>Prénom + nom / forme juridique + dénomination sociale *</th><th>Qualité</th><th>Publication : désignation / pouvoirs de représentation</th></tr>
+  {% for r in rows %}<tr><td>{{ r.person.display_name }}{% if r.person.enterprise_number %} ({{ r.person.enterprise_number_display }}){% endif %}</td><td>{{ r.get_role_display }}</td><td>☒ OUI ☐ NON — Moniteur belge</td></tr>
+  {% empty %}<tr><td colspan="3" class="muted">Aucun administrateur encodé dans la fiche.</td></tr>{% endfor %}
+</table>

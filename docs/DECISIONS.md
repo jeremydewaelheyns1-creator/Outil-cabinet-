@@ -1002,3 +1002,17 @@ Demandes de Jeremy.
   d'entreprise, siège, au moins un dirigeant ; et le niveau de risque (fiche de risque).
   Déclaration UBO : au moins un bénéficiaire calculé. L'écran dit ce qui manque, avec des liens.
 
+## D-086 — Identifications : exactement les modèles ITAA 3.1 à 3.4
+
+Jeremy : quand un modèle officiel existe, s'y tenir. Comparaison avec le recueil de
+formulaires de l'ITAA, puis réécriture rubrique par rubrique : 3.1 (personne physique –
+client : I occasionnel, II risque ☐ Élevé ☐ Standard ☐ Faible, III données personnelles avec
+lieu de naissance, IV vérification, V contrôle PPE, VI nature de la relation, VII bénéficiaires
+effectifs), 3.2 (personne physique – mandataire : … IV PPE, V pouvoirs, VI bénéficiaires du
+mandataire), 3.3 (personne morale – client : siège social et d'exploitation, V gestion), 3.4
+(personne morale – mandataire : IV gestion du mandataire, V pouvoirs). Blocs du modèle :
+« Fait le … » (responsable de l'acceptation), « Établissement / vérification des données le
+… », « La mission a pris fin le … ». Lieu de naissance et réponse PEP repris de la déclaration
+UBO signée en ligne (D-071), sinon de la fiche de risque ; à défaut, laissés à compléter.
+Remplace la mise en page de D-068 (même contenu, numérotation et rubriques du modèle).
+

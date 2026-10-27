@@ -1,0 +1,7 @@
+<h2>{{ n }}. Vérification des données d'identité</h2>
+<table>
+  <tr><th>{{ subject_word }} à haut risque</th><td>{% if risk.level == "high" %}☒ OUI ☐ NON{% else %}☐ OUI ☒ NON{% endif %}</td></tr>
+  <tr><th>{{ subject_word }} à risque standard</th><td>{% if risk.level == "medium" %}☒ OUI ☐ NON{% else %}☐ OUI ☒ NON{% endif %}</td></tr>
+  <tr><th>{{ subject_word }} à risque faible</th><td>{% if risk.level == "low" %}☒ OUI ☐ NON{% else %}☐ OUI ☒ NON{% endif %}</td></tr>
+  <tr><th>Documents probants (copie au dossier)</th><td>{% if who.is_person %}Carte d'identité (recto et verso){% if card %}{% if card.masked_number %}, n° {{ card.masked_number }}{% endif %}, valable jusqu'au {{ card.valid_until|date:"d/m/Y" }}{% endif %}{% else %}Extrait de la Banque-Carrefour des Entreprises{% if who.bce_synced_at %} (consulté le {{ who.bce_synced_at|date:"d/m/Y" }}){% endif %} et statuts publiés au Moniteur belge{% endif %}</td></tr>
+</table>

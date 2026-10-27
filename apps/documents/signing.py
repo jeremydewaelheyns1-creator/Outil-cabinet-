@@ -185,6 +185,15 @@ def sign(
     return document
 
 
+def person_answers(person: Any) -> dict[str, Any] | None:
+    """Dernières réponses données pour cette personne dans une déclaration UBO signée en
+    ligne (lieu de naissance, PEP), quel que soit le dossier (D-086)."""
+    key = str(person.pk)
+    for found in Signature.objects.filter(answers__has_key=key).order_by("-signed_at")[:1]:
+        return dict(found.answers[key])
+    return None
+
+
 def latest_answers(client: Any) -> Signature | None:
     """Dernière déclaration UBO signée en ligne avec ses réponses (PEP, lieu de naissance)."""
     return (
