@@ -100,6 +100,19 @@ def spf_mandate_request(request: AppRequest, pk: int) -> HttpResponse:
     )
 
 
+@require_POST
+@require_capability(Capability.CLIENTS_EDIT)
+def become_client(request: AppRequest, pk: int) -> HttpResponse:
+    """Prospect → client à la main (lettre signée sur papier, accord du client) — D-077."""
+    from . import prospects
+
+    client = _get_client(request, pk)
+    if prospects.become_client(client, actor=request.user, reason="Passé en client à la main"):
+        log_access(request, AccessLog.Action.UPDATE, client, details={"statut": "client"})
+        messages.success(request, "C'est un client : complétez sa fiche (statut TVA, équipe…).")
+    return redirect("clients:identity", pk=client.pk)
+
+
 def _recipient(client: Client) -> str:
     from apps.documents.services import _recipient as recipient
 

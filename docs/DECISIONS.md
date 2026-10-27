@@ -875,3 +875,17 @@ validée par Jeremy.
   l'auteur, cadre AMLCO (« Fait le » une fois validé ; le PDF est refait à la validation,
   l'ancien fichier supprimé).
 
+## D-077 — Prospect : lettre de mission avant d'être client
+
+Jeremy : la lettre de mission part souvent après un rendez-vous, avant que la personne soit
+cliente (elle peut refuser). On crée alors une fiche « Prospect » (formulaire « Nouveau
+client », statut Prospect, préremplie depuis la BCE). Un prospect n'a ni échéances ni
+demandes automatiques (les automatismes ne traitent que les clients actifs), mais on peut lui
+préparer et envoyer la lettre de mission.
+- Lettre signée en ligne → la fiche passe en « Client » (client depuis aujourd'hui), les
+  échéances se créent, et l'expert-comptable du dossier (rôle « Responsable » ; à défaut les
+  associés, puis les administrateurs) reçoit une notification « Nouveau client » avec ce qu'il
+  reste à compléter (statut TVA, clôture, équipe, e-mail), puis anti-blanchiment et mandats.
+- Lettre signée sur papier : bouton « Devient client » dans l'en-tête du dossier (journalisé).
+- Proposé, pas encore fait : suppression des prospects sans suite après un délai à fixer.
+

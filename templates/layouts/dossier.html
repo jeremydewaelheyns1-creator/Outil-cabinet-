@@ -48,7 +48,9 @@
             <span class="dossier-progress-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="{{ dossier_progress.percent }}" aria-label="Dossier anti-blanchiment complet à {{ dossier_progress.percent }} %"><span style="width: {{ dossier_progress.percent }}%"></span></span>
           </a>
         {% endif %}
-        {% if user|can:"clients.edit" %}<a class="button button-secondary button-small" href="{% url 'clients:edit' c.pk %}">Modifier la fiche</a>{% endif %}
+        {% if user|can:"clients.edit" %}<a class="button button-secondary button-small" href="{% url 'clients:edit' c.pk %}">Modifier la fiche</a>
+          {% if c.status == "prospect" %}<form method="post" action="{% url 'clients:become_client' c.pk %}" class="inline">{% csrf_token %}<button type="submit" class="button-small" title="Lettre de mission signée sur papier, ou accord du client">Devient client</button></form>{% endif %}
+        {% endif %}
       </div>
     </header>
 

@@ -3,6 +3,15 @@
 Ce qui a été ajouté à l'outil, du plus récent au plus ancien. Toutes les données de la démo
 sont inventées.
 
+## 27 octobre 2026 — Prospects : la lettre de mission avant le premier dossier
+
+- Créez la personne ou la société en **« Prospect »** (formulaire « Nouveau client »,
+  rempli depuis la BCE) : vous pouvez lui envoyer la lettre de mission sans qu'aucune
+  échéance ni demande de documents ne parte.
+- Dès qu'elle **signe en ligne**, la fiche passe en **Client** et l'expert-comptable du
+  dossier reçoit une notification avec ce qu'il reste à compléter. Lettre signée sur papier :
+  bouton « Devient client » en haut du dossier.
+
 ## 27 octobre 2026 — Fiche de risque sur le modèle de l'ITAA
 
 - La **fiche de risque** suit le formulaire de synthèse de l'ITAA : 4 critères (client,
