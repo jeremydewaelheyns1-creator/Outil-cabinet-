@@ -44,15 +44,27 @@ def test_high_risk_country_is_proposed():
 
 def test_score_and_levels():
     assert risk.evaluate({}) == (0, "low")
+    # Modèle ITAA 5.2 : un facteur dans un critère le met en « standard ».
+    assert risk.evaluate({"new_client": True}) == (1, "medium")
     assert risk.evaluate({"sensitive_sector": True, "new_client": True}) == (3, "medium")
     assert risk.evaluate({"sensitive_sector": True, "cash": True, "foreign": True})[1] == "high"
     # Un seul facteur décisif suffit : risque élevé.
     assert risk.evaluate({"pep": True}) == (3, "high")
 
 
+def test_criteria_follow_the_itaa_summary_form():
+    found = {c.key: c for c in risk.criteria({"cash": True, "high_risk_country": True})}
+    assert [c.label for c in found.values()] == [
+        "Client", "Activité / secteur", "Géographique", "Nature de la mission",
+    ]  # fmt: skip
+    assert found["activite"].level == "medium" and "espèces" in found["activite"].motivation
+    assert found["geographie"].level == "high" and found["client"].level == "low"
+    assert found["mission"].motivation == "Aucun facteur relevé."
+
+
 def test_review_dates_follow_the_level(settings):
-    settings.RISK_REVIEW_YEARS = {"low": 5, "medium": 3, "high": 1}
-    assert risk.next_review("low", date(2026, 3, 1)) == date(2031, 3, 1)
+    assert risk.next_review("low", date(2026, 3, 1)) == date(2029, 3, 1)  # 3 ans
+    assert risk.next_review("medium", date(2026, 3, 1)) == date(2029, 3, 1)
     assert risk.next_review("high", date(2028, 2, 29)) == date(2029, 2, 28)
 
 
@@ -96,7 +108,13 @@ def test_high_risk_waits_for_the_amlco(web, make_user, client):
     assert client.post(url).status_code == 302
     assessment.refresh_from_db()
     assert not assessment.awaiting_approval and assessment.approved_by == amlco
-    assert not Document.objects.get(pk=assessment.document.pk).review_needed
+    document = Document.objects.get(pk=assessment.document.pk)
+    assert not document.review_needed
+    # Le PDF est refait avec la validation de l'AMLCO (modèle ITAA 5.2).
+    from .test_generation import text_of
+
+    text = " ".join(text_of(document).split())
+    assert "AMLCO" in text and "Fait le" in text and "Synthèse" in text
 
 
 def test_reader_cannot_fill_the_sheet(client, make_user):

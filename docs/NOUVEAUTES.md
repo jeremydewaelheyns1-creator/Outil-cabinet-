@@ -3,6 +3,14 @@
 Ce qui a été ajouté à l'outil, du plus récent au plus ancien. Toutes les données de la démo
 sont inventées.
 
+## 27 octobre 2026 — Fiche de risque sur le modèle de l'ITAA
+
+- La **fiche de risque** suit le formulaire de synthèse de l'ITAA : 4 critères (client,
+  activité, géographie, mission), chacun avec son niveau **faible / standard / élevé** et la
+  raison, puis la synthèse. Le détail des questions est en annexe.
+- Révision tous les **3 ans** (risque faible ou standard), **chaque année** si le risque est
+  élevé. Un risque élevé attend toujours la validation de l'AMLCO, qui apparaît alors sur le PDF.
+
 ## 27 octobre 2026 — Mandats SPF dans la page Documents
 
 - En haut à droite de la page **Documents** du dossier, un encadré **Mandats SPF** montre les

@@ -1454,3 +1454,4 @@ button:active, .button:active { transform: scale(.98); }
 .mail-preview { border: 1px solid var(--border, #e3e7ee); border-radius: 12px; padding: .8rem 1rem; background: var(--surface, #fff); }
 .mail-preview-body { white-space: pre-wrap; font: inherit; margin: .6rem 0 0; }
 @media (max-width: 700px) { .spf-copy { grid-template-columns: 1fr; } }
+.risk-group th { background: var(--surface-muted, #f1f3f8); font-size: .85rem; text-transform: uppercase; letter-spacing: .04em; }

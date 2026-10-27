@@ -859,3 +859,19 @@ Réglages du cabinet : numéro d'entreprise du cabinet et lien de l'application 
 vérifier par Jeremy, elle n'a pas pu être confirmée). Contenu de l'e-mail : aucune donnée
 sensible (noms des mandats, lien public).
 
+## D-076 — Fiche de risque sur le modèle ITAA (5.1 et 5.2)
+
+Source : recueil de formulaires anti-blanchiment de l'ITAA, modèles 5.1 (grille détaillée)
+et 5.2 (synthèse : critères, niveau faible / standard / élevé, motivation, AMLCO). Maquette 6
+validée par Jeremy.
+- Niveaux : faible / **standard** (terme ITAA, remplace « moyen ») / élevé.
+- Les questions (inchangées, D-049) sont rangées dans les 4 critères du modèle 5.2 : client,
+  activité / secteur, géographique, nature de la mission. Par critère : élevé si un facteur
+  décisif (PEP, pays à haut risque, prête-noms), standard si un autre facteur, faible sinon ;
+  motivation = les facteurs relevés. Synthèse = le critère le plus haut, relevée d'un cran si
+  les facteurs s'accumulent (≥ 3 points : standard, ≥ 6 : élevé). À valider par l'AMLCO.
+- Révision : 3 ans (faible ou standard), 1 an (élevé), et plus tôt en cas de changement.
+- PDF : synthèse 5.2 en première page, détail des facteurs en annexe, « Établi le » par
+  l'auteur, cadre AMLCO (« Fait le » une fois validé ; le PDF est refait à la validation,
+  l'ancien fichier supprimé).
+

@@ -29,7 +29,7 @@ from apps.clients.models import Client
 from apps.core import events
 from apps.core.models import User
 
-from .models import Document, RiskAssessment
+from .models import RiskAssessment
 
 # Secteurs sensibles (codes NACE-BEL, préfixes) : activités où les espèces ou les montages
 # sont fréquents, d'après les analyses sectorielles de la CTIF. À adapter par l'AMLCO.
@@ -60,6 +60,15 @@ _EU_EEA += " IS LI NO"  # EEE
 EU_EEA = set(_EU_EEA.split(" "))
 
 
+# Les 4 critères du formulaire de synthèse de l'ITAA (modèle 5.2) — D-076.
+CRITERIA: tuple[tuple[str, str], ...] = (
+    ("client", "Client"),
+    ("activite", "Activité / secteur"),
+    ("geographie", "Géographique"),
+    ("mission", "Nature de la mission"),
+)
+
+
 @dataclass(frozen=True)
 class Question:
     key: str
@@ -67,6 +76,11 @@ class Question:
     help: str
     points: int
     forces_high: bool = False
+    criterion: str = "client"
+
+    @property
+    def criterion_label(self) -> str:
+        return dict(CRITERIA)[self.criterion]
 
 
 QUESTIONS: tuple[Question, ...] = (
@@ -74,21 +88,25 @@ QUESTIONS: tuple[Question, ...] = (
              "Dirigeant, bénéficiaire effectif ou client lui-même, ou un proche (art. 41).", 3,
              forces_high=True),
     Question("high_risk_country", "Lien avec un pays à haut risque (listes GAFI / UE) ?",
-             "Siège, résidence, activité ou flux financiers.", 3, forces_high=True),
+             "Siège, résidence, activité ou flux financiers.", 3, forces_high=True,
+             criterion="geographie"),
     Question("nominee", "Actionnaires apparents (prête-noms) ou titres au porteur ?",
              "Annexe III, 1, c).", 3, forces_high=True),
     Question("foreign", "Client ou structure établie hors de l'Union européenne ?",
-             "Siège ou résidence hors UE/EEE.", 2),
+             "Siège ou résidence hors UE/EEE.", 2, criterion="geographie"),
     Question("complex_structure", "Structure de propriété inhabituelle ou complexe ?",
              "Plusieurs niveaux de sociétés, sociétés étrangères, bénéficiaires non résolus.", 2),
     Question("sensitive_sector", "Activité dans un secteur sensible ?",
-             "Construction, horeca, véhicules, immobilier, bijouterie, jeux… (analyses CTIF).", 2),
-    Question("cash", "Activité utilisant beaucoup d'espèces ?", "Annexe III, 1, d).", 2),
+             "Construction, horeca, véhicules, immobilier, bijouterie, jeux… (analyses CTIF).", 2,
+             criterion="activite"),
+    Question("cash", "Activité utilisant beaucoup d'espèces ?", "Annexe III, 1, d).", 2,
+             criterion="activite"),
     Question("distance", "Relation à distance, sans rencontre ni signature électronique ?",
-             "Annexe III, 2, c).", 1),
+             "Annexe III, 2, c).", 1, criterion="mission"),
     Question("new_client", "Client depuis moins d'un an ?", "Relation encore peu connue.", 1),
     Question("risky_mission", "Mission à risque (domiciliation, constitution de sociétés, "
-             "gestion de fonds de tiers) ?", "Services particulièrement exposés.", 2),
+             "gestion de fonds de tiers) ?", "Services particulièrement exposés.", 2,
+             criterion="mission"),
     Question("unusual", "Circonstances inhabituelles ou paiements de tiers inconnus ?",
              "Annexe III, 1, a) et 2, e).", 3),
 )  # fmt: skip
@@ -204,14 +222,47 @@ def propose(client: Client, today: date | None = None) -> list[Proposal]:
     return [Proposal(q, *answers[q.key]) for q in QUESTIONS]
 
 
+ORDER: dict[str, int] = {
+    RiskAssessment.Level.LOW: 0,
+    RiskAssessment.Level.MEDIUM: 1,
+    RiskAssessment.Level.HIGH: 2,
+}
+
+
+@dataclass(frozen=True)
+class Criterion:
+    key: str
+    label: str
+    level: str
+    motivation: str
+
+
+def criteria(answers: dict[str, bool]) -> list[Criterion]:
+    """Niveau et motivation par critère du modèle ITAA 5.2 : élevé si un facteur décisif,
+    standard si un autre facteur, faible sinon."""
+    result = []
+    for key, label in CRITERIA:
+        found = [q for q in QUESTIONS if q.criterion == key and answers.get(q.key)]
+        if any(q.forces_high for q in found):
+            level = RiskAssessment.Level.HIGH
+        elif found:
+            level = RiskAssessment.Level.MEDIUM
+        else:
+            level = RiskAssessment.Level.LOW
+        motivation = " ; ".join(q.text.rstrip(" ?") for q in found) or "Aucun facteur relevé."
+        result.append(Criterion(key, label, level, motivation))
+    return result
+
+
 def evaluate(answers: dict[str, bool]) -> tuple[int, str]:
+    """Points (indicatifs) et synthèse : le niveau le plus haut des 4 critères, relevé d'un cran
+    si les facteurs s'accumulent (6 points ou plus)."""
     score = sum(q.points for q in QUESTIONS if answers.get(q.key))
-    if any(answers.get(q.key) for q in QUESTIONS if q.forces_high):
-        return score, RiskAssessment.Level.HIGH
-    for threshold, level in THRESHOLDS:
-        if score >= threshold:
-            return score, level
-    return score, RiskAssessment.Level.LOW
+    level = max((c.level for c in criteria(answers)), key=ORDER.__getitem__)
+    for threshold, minimum in THRESHOLDS:
+        if score >= threshold and ORDER[minimum] > ORDER[level]:
+            level = minimum
+    return score, level
 
 
 def next_review(level: str, today: date) -> date:
@@ -236,6 +287,8 @@ def _pdf(assessment: RiskAssessment, proposals: list[Proposal]) -> bytes:
             "rows": [
                 (p.question, assessment.answers.get(p.question.key), p.reason) for p in proposals
             ],
+            "criteria": criteria(assessment.answers),
+            "levels": RiskAssessment.Level.choices,
             "author": assessment.created_by,
         },
     )
@@ -292,9 +345,20 @@ def approve(assessment: RiskAssessment, user: User) -> None:
     assessment.approved_at, assessment.approved_by = timezone.now(), user
     assessment.save(update_fields=["approved_at", "approved_by"])
     if assessment.document is not None:
-        Document.objects.filter(pk=assessment.document.pk).update(
-            review_needed=False, review_reason=""
-        )
+        # Le PDF est refait : il porte maintenant la validation de l'AMLCO (modèle ITAA 5.2).
+        import hashlib
+
+        from django.core.files.base import ContentFile
+
+        document = assessment.document
+        content = _pdf(assessment, propose(assessment.client))
+        old = document.file.name
+        document.file.save("fiche-risque.pdf", ContentFile(content), save=False)
+        document.size, document.sha256 = len(content), hashlib.sha256(content).hexdigest()
+        document.review_needed, document.review_reason = False, ""
+        document.save(update_fields=["file", "size", "sha256", "review_needed", "review_reason"])
+        if old and old != document.file.name:
+            document.file.storage.delete(old)  # pas de copie oubliée de l'ancienne version
     events.emit(
         "risk.approved", subject=assessment.client, actor=user,
         payload={"evaluation": assessment.pk},

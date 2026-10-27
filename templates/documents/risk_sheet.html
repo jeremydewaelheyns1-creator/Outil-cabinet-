@@ -4,7 +4,7 @@
 {% block content %}
 <section class="card">
   <div class="card-header"><h2>Fiche de détermination du niveau de risque</h2></div>
-  <p class="small muted" style="margin-top:0">L'outil a pré-rempli les réponses qu'il pouvait déduire du dossier (BCE, structure de détention, pays, ancienneté). Vérifiez-les et répondez aux autres. Le niveau et la date de la prochaine révision sont calculés à l'enregistrement : faible → {{ review_years.low }} ans, moyen → {{ review_years.medium }} ans, élevé → {{ review_years.high }} an (validation de l'AMLCO).</p>
+  <p class="small muted" style="margin-top:0">L'outil a pré-rempli les réponses qu'il pouvait déduire du dossier (BCE, structure de détention, pays, ancienneté). Vérifiez-les et répondez aux autres. Le niveau et la date de la prochaine révision sont calculés à l'enregistrement : faible ou standard → {{ review_years.medium }} ans, élevé → {{ review_years.high }} an (validation de l'AMLCO).</p>
   {% if can_edit %}
   <form method="post" class="risk-form">
     {% csrf_token %}
@@ -12,6 +12,7 @@
       <thead><tr><th>Question</th><th class="nowrap">Réponse</th><th>Ce que l'outil a vérifié</th></tr></thead>
       <tbody>
       {% for p, value in proposals %}
+        {% ifchanged p.question.criterion %}<tr class="risk-group"><th colspan="3">{{ p.question.criterion_label }}</th></tr>{% endifchanged %}
         <tr{% if not value %} class="risk-open"{% endif %}>
           <td>{{ p.question.text }}{% if p.question.forces_high %} <span class="badge badge-danger" title="Un « oui » rend le risque élevé">décisif</span>{% endif %}<div class="small muted">{{ p.question.help }}</div></td>
           <td class="nowrap">
@@ -36,7 +37,7 @@
     <thead><tr><th>Date</th><th>Niveau</th><th>Révision</th><th>Établie par</th><th>AMLCO</th></tr></thead>
     <tbody>
     {% for a in history %}
-      <tr><td>{{ a.created_at|date:"d/m/Y" }}</td><td>{{ a.get_level_display }} ({{ a.score }} pts)</td><td>{{ a.next_review|date:"d/m/Y" }}</td><td>{{ a.created_by|default:"—" }}</td>
+      <tr><td>{{ a.created_at|date:"d/m/Y" }}</td><td>{{ a.get_level_display }} </td><td>{{ a.next_review|date:"d/m/Y" }}</td><td>{{ a.created_by|default:"—" }}</td>
         <td>{% if a.level == "high" %}{% if a.approved_at %}validée le {{ a.approved_at|date:"d/m/Y" }}{% elif can_decide %}<form method="post" action="{% url 'clients:risk_approve' client.pk a.pk %}" class="inline">{% csrf_token %}<button type="submit" class="small">Valider</button></form>{% else %}en attente{% endif %}{% else %}—{% endif %}</td></tr>
     {% endfor %}
     </tbody>

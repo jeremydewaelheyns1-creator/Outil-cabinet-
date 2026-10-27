@@ -47,7 +47,8 @@ def risk_sheet(request: AppRequest, pk: int) -> HttpResponse:
             return redirect("clients:document_case", pk=client.pk, slug="fiche-risque")
 
     def build(client: Client) -> dict[str, Any]:
-        proposals = risk.propose(client)
+        order = [key for key, _ in risk.CRITERIA]
+        proposals = sorted(risk.propose(client), key=lambda p: order.index(p.question.criterion))
         posted = request.POST if request.method == "POST" else None
         return {
             "proposals": [

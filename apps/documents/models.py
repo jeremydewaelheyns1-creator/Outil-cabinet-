@@ -304,7 +304,7 @@ class RiskAssessment(models.Model):
 
     class Level(models.TextChoices):
         LOW = "low", "Faible"
-        MEDIUM = "medium", "Moyen"
+        MEDIUM = "medium", "Standard"  # terme du modèle ITAA (D-076)
         HIGH = "high", "Élevé"
 
     client = models.ForeignKey(Client, on_delete=models.PROTECT, related_name="risk_assessments")

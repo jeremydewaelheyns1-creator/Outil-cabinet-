@@ -195,7 +195,8 @@ SITE_URL = env("SITE_URL", default="http://localhost:8000")
 # D-049 : révision de la fiche de risque selon le niveau (années). Valeurs proposées, à
 # valider par l'AMLCO : la norme ITAA demande une mise à jour « à intervalles réguliers »
 # selon le risque ; l'AMLR (2027) : au moins chaque année si élevé, tous les 5 ans sinon.
-RISK_REVIEW_YEARS = {"low": 5, "medium": 3, "high": 1}
+# D-076 : révision tous les 3 ans (risque faible ou standard), chaque année si risque élevé.
+RISK_REVIEW_YEARS = {"low": 3, "medium": 3, "high": 1}
 REQUEST_MAX_REMINDERS = env.int("REQUEST_MAX_REMINDERS", default=2)
 # D-055 : carte d'identité demandée 15 jours avant l'expiration, rappels 15 et 30 jours APRÈS
 # l'expiration ; sans réponse 15 jours après le dernier rappel, le gestionnaire est averti.
