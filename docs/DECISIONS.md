@@ -1108,3 +1108,19 @@ reconnu) et la période sont lus, est classé directement : ligne TVA créée si
 reprise si elle est lisible sans ambiguïté et qu'aucun XML ne l'a déjà donnée. Ne reste « à
 confirmer » qu'un PDF dont la période est illisible. Remplace la prudence de D-040 sur le PDF
 seul. Un PDF mal rangé se supprime (D-085).
+
+## D-093 — Déposer des documents depuis n'importe quelle page (maquette C)
+
+Jeremy a choisi la piste C (« les infos données sont moins polluantes ») : on glisse des
+fichiers sur n'importe quel écran de l'outil, un voile violet dit « Lâchez pour déposer », puis
+un petit panneau en haut à droite suit la lecture, fichier par fichier (rond qui tourne → coche
+verte, ou « ? » orange pour « à classer »), sans quitter l'écran en cours. Chaque ligne dit en
+clair ce qui a été rangé et où, et s'ouvre d'un clic. Le résumé reste affiché jusqu'à ce qu'on
+ferme le panneau (fini les bandeaux qui s'effacent seuls). Le bouton « Déposer des documents »
+ouvre le même panneau.
+- Un fichier = une demande au serveur (`?panneau=1`, même contrôles, mêmes droits, même
+  journal) ; les XML partent d'abord. Un champ de fichier d'une page garde son rôle (on peut
+  toujours déposer dans une case précise).
+- Sans JavaScript, le bouton mène à la page « Déposer des documents », toujours là pour les
+  documents « À classer » et « À confirmer ».
+- Animations coupées pour qui a demandé moins d'animations à son système.

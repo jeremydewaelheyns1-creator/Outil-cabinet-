@@ -57,6 +57,7 @@ class Result:
     message: str
     client: Client | None = None
     url: str = ""
+    title: str = ""  # ce qui a été rangé, en clair (panneau de dépôt, D-093)
 
 
 def _content(upload: UploadedFile[bytes]) -> bytes:
@@ -87,7 +88,7 @@ def to_inbox(upload: UploadedFile[bytes], content_type: str, user: User, reason:
     )
     item.file.save("document", ContentFile(content), save=False)
     item.save()
-    return Result(item.original_name, INBOX, f"À classer : {reason}")
+    return Result(item.original_name, INBOX, f"À classer : {reason}", title=item.original_name)
 
 
 # --- Déclarations TVA (Intervat) -------------------------------------------------------------
@@ -96,7 +97,8 @@ def to_inbox(upload: UploadedFile[bytes], content_type: str, user: User, reason:
 def _from_vat(outcome: importer.Outcome) -> Result:
     url = reverse("clients:vat", args=[outcome.client.pk]) if outcome.client else ""
     level = DOUBT if outcome.level == importer.DOUBT else OK
-    return Result(outcome.name, level, outcome.message, outcome.client, url)
+    return Result(outcome.name, level, outcome.message, outcome.client, url,
+                  outcome.title or outcome.message)  # fmt: skip
 
 
 # --- Cartes d'identité -----------------------------------------------------------------------
@@ -140,10 +142,11 @@ def _identity_card(
     name = upload.name or "carte"
     if document.identity_cards.exists():
         return Result(name, OK, f"Carte d'identité de {person.display_name} rangée et "
-                      "enregistrée (tous les contrôles sont verts).", target, url)  # fmt: skip
+                      "enregistrée (tous les contrôles sont verts).", target, url,
+                      f"Carte d'identité de {person.display_name}")  # fmt: skip
     return Result(name, DOUBT, f"Carte d'identité de {person.display_name} rangée, à "
                   f"confirmer : {document.review_reason or 'vérification à faire'}.", target,
-                  url)  # fmt: skip
+                  url, f"Carte d'identité de {person.display_name}")  # fmt: skip
 
 
 # --- Autres documents du SPF (D-084) ---------------------------------------------------------
@@ -175,9 +178,9 @@ def _spf_document(
         document.review_reason = "Courrier du SPF qui demande une réponse"
         document.save(update_fields=["review_needed", "review_reason"])
         return Result(upload.name or "document", DOUBT, f"{label} rangé dans {client.display_name}"
-                      " : il demande une réponse, à traiter.", client, url)  # fmt: skip
+                      " : il demande une réponse, à traiter.", client, url, label)  # fmt: skip
     return Result(upload.name or "document", OK, f"{label} rangé dans {client.display_name}.",
-                  client, url)  # fmt: skip
+                  client, url, label)  # fmt: skip
 
 
 # --- Point d'entrée --------------------------------------------------------------------------

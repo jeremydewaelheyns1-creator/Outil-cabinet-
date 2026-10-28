@@ -3,6 +3,14 @@
 Ce qui a été ajouté à l'outil, du plus récent au plus ancien. Toutes les données de la démo
 sont inventées.
 
+## 28 octobre 2026 — Déposer des documents depuis n'importe où
+
+- Glissez vos fichiers sur n'importe quelle page de l'outil : un voile violet apparaît, lâchez,
+  et un petit panneau en haut à droite montre chaque document se ranger (coche verte), avec sa
+  destination en clair. Vous continuez à travailler pendant ce temps.
+- Le bouton « Déposer des documents » ouvre directement le choix des fichiers, même panneau.
+- Le résumé reste affiché jusqu'à ce que vous fermiez le panneau.
+
 ## 28 octobre 2026 — Le PDF de déclaration TVA suffit
 
 - Un PDF de déclaration TVA déposé seul (sans son XML) est maintenant rangé directement sur la

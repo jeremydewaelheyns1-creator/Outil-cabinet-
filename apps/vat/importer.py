@@ -50,6 +50,7 @@ class Outcome:
     message: str
     client: Client | None = None
     filing: VatFiling | None = None
+    title: str = ""  # ce qui a été rangé, en clair (« Déclaration TVA T3 2026 »)
 
 
 def _cap(text: str) -> str:
@@ -132,7 +133,7 @@ def import_xml(
     digest = hashlib.sha256(content).hexdigest()
     if current is not None and current.sha256 == digest:
         return Outcome(name, SAME, f"{label} {filing.short_label} déjà importé(e).", filing.client,
-                       filing)  # fmt: skip
+                       filing, f"{_cap(label)} {filing.short_label}")  # fmt: skip
     document = _store(filing.client, upload, f"{_cap(label)} {filing.period_label} (XML)",
                       user)  # fmt: skip
     if declaration.kind == VAT:
@@ -144,7 +145,7 @@ def import_xml(
     replaced = " (remplace la version importée avant)" if current is not None else ""
     return Outcome(
         name, OK, f"{_cap(label)} {filing.short_label} classé(e){replaced}.",
-        filing.client, filing,
+        filing.client, filing, f"{_cap(label)} {filing.short_label}",
     )  # fmt: skip
 
 
@@ -197,7 +198,7 @@ def import_pdf(
                           f"{_cap(label)} {filing.period_label} (PDF)", user)  # fmt: skip
         attach_pdf(filing, document, clues.kind, user)
         return Outcome(name, OK, f"PDF joint : {label} {filing.short_label}.", filing.client,
-                       filing)  # fmt: skip
+                       filing, f"{_cap(label)} {filing.short_label} (PDF)")  # fmt: skip
     # 2. Seul : on range dans le dossier reconnu, la période reste à confirmer.
     matched = list(clients.filter(enterprise_number__in=clues.numbers)[:2])
     if len(matched) != 1:
@@ -225,7 +226,7 @@ def import_pdf(
             payload={"periode": filing.period_key, "sorte": clues.kind, "source": "pdf"},
         )  # fmt: skip
         return Outcome(name, OK, f"{_cap(label)} {filing.short_label} classé(e).", client,
-                       filing)  # fmt: skip
+                       filing, f"{_cap(label)} {filing.short_label} (PDF)")  # fmt: skip
     # Période illisible : rangé dans le dossier, la ligne reste à choisir.
     document = _store(client, upload, f"{_cap(label)} (PDF, à confirmer)", user)
     VatPending.objects.create(document=document, kind=clues.kind, period_key="")

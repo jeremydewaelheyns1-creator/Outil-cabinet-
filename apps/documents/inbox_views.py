@@ -59,6 +59,8 @@ def index(request: AppRequest) -> HttpResponse:
 
 def _receive(request: AppRequest) -> HttpResponse:
     uploads = request.FILES.getlist("files")
+    if request.GET.get("panneau") and not 1 <= len(uploads) <= MAX_FILES:
+        return HttpResponse(status=400)
     if not uploads:
         messages.error(request, "Aucun fichier choisi.")
         return redirect("depot:index")
@@ -70,6 +72,10 @@ def _receive(request: AppRequest) -> HttpResponse:
         if result.client is not None:
             log_access(request, AccessLog.Action.IMPORT, result.client,
                        details={"depot": result.level})  # fmt: skip
+    if request.GET.get("panneau"):
+        # Panneau de dépôt (D-093) : une ligne par fichier, sans recharger la page.
+        return render(request, "documents/_depot_lines.html", {"results": results})
+    for result in results:
         where = f" → {result.client.display_name}" if result.client is not None else ""
         text = f"{result.name} : {result.message}{where}"
         if result.level == inbox.ERROR:

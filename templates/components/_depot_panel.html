@@ -1,0 +1,25 @@
+{% comment %}
+Dépôt depuis n'importe quelle page (D-093, maquette C) : voile « Lâchez pour déposer » quand on
+glisse des fichiers, puis un petit panneau qui suit la lecture sans quitter l'écran.
+Sans JavaScript : le bouton du haut mène à la page « Déposer des documents ».
+{% endcomment %}
+<div class="depot-veil" data-depot-veil hidden>
+  <div class="depot-veil-box">
+    <svg class="depot-veil-icon" viewBox="0 0 24 24" width="54" height="54" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V4M7 9l5-5 5 5"/><path d="M4 15v4a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-4"/></svg>
+    <strong>Lâchez pour déposer</strong>
+    <span>L'outil trouve le dossier et range chaque document</span>
+  </div>
+</div>
+<section class="depot-panel" data-depot-panel data-url="{% url 'depot:index' %}?panneau=1" aria-label="Documents déposés" hidden>
+  <header class="depot-panel-head">
+    <strong data-depot-title>Documents déposés</strong>
+    <button type="button" class="depot-panel-close" data-depot-close aria-label="Fermer">✕</button>
+  </header>
+  <p class="small muted depot-panel-sub" data-depot-sub>Vous pouvez continuer à travailler pendant la lecture.</p>
+  <ul class="depot-lines" data-depot-lines aria-live="polite"></ul>
+  <div class="depot-panel-done" data-depot-done hidden>
+    <strong data-depot-summary></strong>
+    <a href="{% url 'depot:index' %}">Voir la page des dépôts</a>
+  </div>
+  <form data-depot-form hidden>{% csrf_token %}<input type="file" multiple data-depot-input aria-label="Choisir des fichiers à déposer"></form>
+</section>

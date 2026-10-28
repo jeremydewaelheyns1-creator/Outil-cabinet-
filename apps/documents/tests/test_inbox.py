@@ -138,3 +138,25 @@ def test_unclassified_files_are_deleted_after_the_retention(web, settings):
     assert inbox.purge() == 0
     assert inbox.purge(timezone.now() + timedelta(days=31)) == 1
     assert not InboxItem.objects.exists()
+
+
+def test_drop_panel_is_on_every_page_for_editors_only(web, client, make_user):
+    """D-093 : on glisse ses fichiers sur n'importe quelle page (maquette C)."""
+    html = web.get(reverse("core:today")).content.decode()
+    assert "data-depot-panel" in html and "Lâchez pour déposer" in html
+    assert "D-093" not in html  # le commentaire du gabarit ne s'affiche pas
+    client.force_login(make_user(capabilities=[]))
+    assert "data-depot-panel" not in client.get(reverse("core:today")).content.decode()
+
+
+def test_panel_gets_one_plain_line_per_file(web):
+    company = ClientFactory(enterprise_number="0477472701")
+    url = reverse("depot:index") + "?panneau=1"
+    files = [SimpleUploadedFile("t3.xml", vat_xml(company.enterprise_number))]
+    html = web.post(url, {"files": files}).content.decode()
+    assert 'data-level="ok"' in html and "Déclaration TVA T3 2026" in html
+    assert company.display_name in html and reverse("clients:vat", args=[company.pk]) in html
+    html = web.post(url, {"files": [SimpleUploadedFile("x.pdf", PDF)]}).content.decode()
+    assert 'data-level="inbox"' in html and "x.pdf" in html and "choisir le dossier" in html
+    assert web.post(url, {}).status_code == 400
+    assert not [m for m in web.get(reverse("depot:index")).context["messages"]]  # pas de bandeaux

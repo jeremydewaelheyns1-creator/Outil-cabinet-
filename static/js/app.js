@@ -315,3 +315,133 @@ document.addEventListener("change", function (event) {
     }
   });
 })();
+
+// Dépôt depuis n'importe quelle page (D-093) : on glisse des fichiers n'importe où (sauf sur un
+// champ de fichier, qui garde son rôle), un voile dit « Lâchez pour déposer », puis un panneau
+// suit la lecture, fichier par fichier, sans quitter l'écran. Le bouton du haut ouvre le même
+// panneau. Les XML partent d'abord (un PDF rejoint alors son XML).
+(function () {
+  var panel = document.querySelector("[data-depot-panel]");
+  var veil = document.querySelector("[data-depot-veil]");
+  if (!panel || !veil) return;
+  var lines = panel.querySelector("[data-depot-lines]");
+  var input = panel.querySelector("[data-depot-input]");
+  var token = panel.querySelector("input[name=csrfmiddlewaretoken]");
+  var MAX = 50;
+  var hideTimer = null;
+  var running = 0;
+  var counts = { ok: 0, doubt: 0, inbox: 0, error: 0 };
+
+  function hasFiles(event) {
+    var types = event.dataTransfer && event.dataTransfer.types;
+    return types && Array.prototype.indexOf.call(types, "Files") !== -1;
+  }
+  function ownZone(target) {
+    return target && target.closest && target.closest("input[type=file], .depot-zone, [data-own-drop]");
+  }
+  function showVeil() {
+    veil.hidden = false;
+    clearTimeout(hideTimer);
+    hideTimer = setTimeout(function () { veil.hidden = true; }, 180);
+  }
+  document.addEventListener("dragover", function (event) {
+    if (!hasFiles(event)) return;
+    if (ownZone(event.target)) { veil.hidden = true; return; }
+    event.preventDefault();
+    showVeil();
+  });
+  document.addEventListener("drop", function (event) {
+    if (!hasFiles(event) || ownZone(event.target)) return;
+    event.preventDefault();
+    veil.hidden = true;
+    send(event.dataTransfer.files);
+  });
+  document.addEventListener("click", function (event) {
+    var opener = event.target.closest && event.target.closest("[data-depot-open]");
+    if (opener) { event.preventDefault(); input.click(); return; }
+    if (event.target.closest && event.target.closest("[data-depot-close]")) {
+      panel.hidden = true;
+      if (!running) reset();
+    }
+  });
+  input.addEventListener("change", function () { send(input.files); input.value = ""; });
+
+  function reset() {
+    lines.innerHTML = "";
+    counts = { ok: 0, doubt: 0, inbox: 0, error: 0 };
+    panel.querySelector("[data-depot-done]").hidden = true;
+  }
+  function pendingLine(file) {
+    var li = document.createElement("li");
+    li.className = "depot-line is-pending";
+    var icon = document.createElement("span");
+    icon.className = "depot-line-icon";
+    icon.setAttribute("aria-hidden", "true");
+    var text = document.createElement("div");
+    text.className = "depot-line-text";
+    var name = document.createElement("strong");
+    name.textContent = file.name;
+    var sub = document.createElement("div");
+    sub.className = "small";
+    sub.textContent = "Lecture…";
+    text.appendChild(name);
+    text.appendChild(sub);
+    li.appendChild(icon);
+    li.appendChild(text);
+    lines.appendChild(li);
+    return li;
+  }
+  function plural(n, one, many) { return n + " " + (n > 1 ? many : one); }
+  function summary() {
+    var parts = [];
+    if (counts.ok) parts.push(plural(counts.ok, "rangé", "rangés"));
+    if (counts.doubt) parts.push(plural(counts.doubt, "à vérifier", "à vérifier"));
+    if (counts.inbox) parts.push(plural(counts.inbox, "à classer", "à classer"));
+    if (counts.error) parts.push(plural(counts.error, "refusé", "refusés"));
+    var done = panel.querySelector("[data-depot-done]");
+    done.querySelector("[data-depot-summary]").textContent = (counts.doubt || counts.inbox || counts.error ? "" : "✓ ") + parts.join(" · ");
+    done.className = "depot-panel-done" + (counts.doubt || counts.inbox || counts.error ? " has-todo" : "");
+    done.hidden = false;
+    panel.querySelector("[data-depot-sub]").textContent = "Tout est lu. Cliquez sur une ligne pour l'ouvrir.";
+  }
+  function send(fileList) {
+    var files = Array.prototype.slice.call(fileList || [], 0, MAX);
+    if (!files.length) return;
+    if (!running) reset();
+    files.sort(function (a, b) { return (/\.xml$/i.test(b.name) ? 1 : 0) - (/\.xml$/i.test(a.name) ? 1 : 0); });
+    panel.hidden = false;
+    panel.querySelector("[data-depot-title]").textContent = plural(lines.children.length + files.length, "document déposé", "documents déposés");
+    panel.querySelector("[data-depot-sub]").textContent = "Vous pouvez continuer à travailler pendant la lecture.";
+    panel.querySelector("[data-depot-done]").hidden = true;
+    var queue = files.map(function (file) { return { file: file, line: pendingLine(file) }; });
+    running += queue.length;
+    (function next() {
+      var job = queue.shift();
+      if (!job) return;
+      var data = new FormData();
+      data.append("files", job.file);
+      fetch(panel.dataset.url, {
+        method: "POST", body: data, credentials: "same-origin",
+        headers: { "X-CSRFToken": token ? token.value : "", "X-Requested-With": "fetch" },
+      }).then(function (response) {
+        if (!response.ok) throw new Error("http");
+        return response.text();
+      }).then(function (html) {
+        var box = document.createElement("ul");
+        box.innerHTML = html;
+        var result = box.querySelector(".depot-line");
+        if (!result) throw new Error("vide");
+        counts[result.dataset.level] = (counts[result.dataset.level] || 0) + 1;
+        job.line.replaceWith(result);
+      }).catch(function () {
+        counts.error += 1;
+        job.line.className = "depot-line is-error";
+        job.line.querySelector(".small").textContent = "Pas pu être déposé : réessayez, ou utilisez la page « Déposer des documents ».";
+      }).then(function () {
+        running -= 1;
+        if (!running) summary();
+        next();
+      });
+    })();
+  }
+})();
