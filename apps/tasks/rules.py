@@ -54,6 +54,8 @@ class Rule:
     conditions: dict[str, Any]
     due: dict[str, Any]
     business_day: bool = False
+    # Fin d'une tolérance de report (ex. TVA trimestrielle : plus de report après le 30/09/2025).
+    business_day_until: date | None = None
     assignee_role: str = ""
     steps: tuple[str, ...] = field(default_factory=tuple)
 
@@ -119,7 +121,11 @@ class Rule:
             if value is None:
                 return None
             due = value if isinstance(value, date) else date.fromisoformat(str(value))
-        return next_business_day(due) if self.business_day else due
+        if self.business_day and (
+            self.business_day_until is None or due <= self.business_day_until
+        ):
+            return next_business_day(due)
+        return due
 
     def render_title(self, period: Period) -> str:
         return self.title.replace("{periode}", period.label)[:200]
@@ -186,9 +192,16 @@ def _parse_rule(raw: dict[str, Any]) -> Rule:
         conditions=conditions,
         due=due,
         business_day=bool(raw.get("report_jour_ouvrable", False)),
+        business_day_until=_until(raw.get("report_jusqu_au")),
         assignee_role=str(raw.get("responsable", "")),
         steps=tuple(str(s) for s in raw.get("etapes") or ()),
     )
+
+
+def _until(value: Any) -> date | None:
+    if value in (None, ""):
+        return None
+    return value if isinstance(value, date) else date.fromisoformat(str(value))
 
 
 def rules_hash(path: Path = RULES_FILE) -> str:

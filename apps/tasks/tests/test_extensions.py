@@ -89,7 +89,7 @@ def test_extension_moves_every_dossier_and_survives_the_daily_generation(
     for client in (first, second):
         generator.generate_for_client(client, today)
     filing = services.filing_for(first, services.period(2026, quarter=3))
-    deadline = extensions.find("tva_trimestrielle|2026-T3|2026-10-26", today)
+    deadline = extensions.find("tva_trimestrielle|2026-T3|2026-10-25", today)
     assert deadline is not None and deadline.count == 2
     admin = make_user(is_staff=True)
     with django_capture_on_commit_callbacks(execute=True):
@@ -108,7 +108,7 @@ def test_extension_moves_every_dossier_and_survives_the_daily_generation(
     with django_capture_on_commit_callbacks(execute=True):
         assert extensions.cancel(extension, user=admin) == 2
     assert first.tasks.get(period_key="2026-T3", kind="tva_trimestrielle").due_date == date(
-        2026, 10, 26
+        2026, 10, 25
     )
     with pytest.raises(ValueError, match="après"):
         extensions.create(deadline, date(2026, 10, 1), user=admin)

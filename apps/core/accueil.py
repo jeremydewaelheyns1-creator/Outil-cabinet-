@@ -87,7 +87,7 @@ FAMILIES = (
 )  # fmt: skip
 BY_KIND = {kind: f for f in FAMILIES for kind in f.kinds}
 SUB_LINES = {"tva_trimestrielle": "Trimestriels", "tva_mensuelle": "Mensuels"}
-# Calendrier : préciser la TVA (mensuels le 20, trimestriels le 25 depuis 2025).
+# Calendrier : préciser la TVA (mensuels le 20 avec report, trimestriels le 25 sans report, D-094).
 CALENDAR_LABELS = {"tva_mensuelle": "TVA mensuelle", "tva_trimestrielle": "TVA trimestrielle"}
 STATE: dict[str, tuple[str, str]] = {
     Task.Status.TODO: ("pas commencé", "gris"),
@@ -207,10 +207,31 @@ def long_date(day: date) -> str:
     return f"{DAYS[day.weekday()]} {day.day}{'er' if day.day == 1 else ''} {MONTHS[day.month - 1]}"
 
 
+def legal_vat_dates(year: int, month: int) -> list[tuple[date, str]]:
+    """Dates légales de la TVA tombant ce mois-ci, qu'on ait un dossier concerné ou non (D-094) :
+    mensuelle le 20 (report au jour ouvrable), trimestrielle le 25 (sans report)."""
+    from apps.tasks.rules import Period, load_rules
+
+    rules = {r.code: r for r in load_rules().rules}
+    previous = date(year, month, 1) - timedelta(days=1)  # la période se termine le mois d'avant
+    found = []
+    for code, wanted in (("tva_mensuelle", True), ("tva_trimestrielle", previous.month % 3 == 0)):
+        rule = rules.get(code)
+        if rule is None or not wanted:
+            continue
+        due = rule.due_date(Period("", "", previous.replace(day=1), previous))
+        if due is not None and (due.year, due.month) == (year, month):
+            found.append((due, CALENDAR_LABELS[code]))
+    return found
+
+
 def month_calendar(today: date, tasks: list[Task]) -> dict[str, object]:
-    """Calendrier fiscal du mois : mes dates limites, avec ce qui tombe ce jour-là."""
+    """Calendrier fiscal du mois : mes dates limites, avec ce qui tombe ce jour-là, et les dates
+    légales de la TVA même sans dossier concerné."""
     first_weekday, days = calendar.monthrange(today.year, today.month)
     marks: dict[int, list[str]] = defaultdict(list)
+    for due, label in legal_vat_dates(today.year, today.month):
+        marks[due.day].append(label)
     for task in tasks:
         family = BY_KIND.get(task.kind)  # seulement les échéances fiscales (pas les rappels perso)
         if family and task.due_date.year == today.year and task.due_date.month == today.month:

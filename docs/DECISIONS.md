@@ -1047,7 +1047,7 @@ Demandes de Jeremy :
   envoyé **seulement sur clic** (jamais automatique, au choix du comptable). À l'envoi, la case
   passe « en attente ». `VatMessage.kind` distingue les deux e-mails. Bouton caché une fois les
   documents reçus.
-- Dates : trimestriels le 25, mensuels le 20, reportés au jour ouvrable suivant (tolérance de
+- Dates (corrigé par D-094 : plus de report pour les trimestriels) : trimestriels le 25, mensuels le 20, reportés au jour ouvrable suivant (tolérance de
   la circulaire 2025/C/6, maintenue jusqu'à nouvel ordre par la circulaire du 1er octobre
   2025). La règle existait mais les échéances déjà créées gardaient l'ancienne date (seules les
   tâches futures intactes suivaient) et la ligne TVA en gardait une copie. Désormais : quand la
@@ -1124,3 +1124,13 @@ ouvre le même panneau.
 - Sans JavaScript, le bouton mène à la page « Déposer des documents », toujours là pour les
   documents « À classer » et « À confirmer ».
 - Animations coupées pour qui a demandé moins d'animations à son système.
+
+## D-094 — TVA trimestrielle : le 25, sans report ; calendrier avec les dates légales
+
+Correction de D-088 (Jeremy) : la tolérance « reporté au jour ouvrable suivant » a pris fin
+pour les déclarants trimestriels au 30/09/2025 ; elle reste pour les mensuels (le 20). La
+règle `tva_trimestrielle` garde le report seulement pour les dates limites jusqu'au
+30/09/2025 (`report_jusqu_au`). La génération repasse d'elle-même (empreinte des règles) et
+toutes les échéances trimestrielles reviennent au 25, ligne TVA comprise.
+Le calendrier de l'accueil montre toujours les dates légales de la TVA du mois (mensuelle,
+trimestrielle en janvier, avril, juillet et octobre), même sans dossier concerné.

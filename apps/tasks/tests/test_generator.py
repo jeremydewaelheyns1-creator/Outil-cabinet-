@@ -37,7 +37,7 @@ def test_generation_creates_expected_tasks_once():
         "assemblee_generale", "comptes_annuels", "isoc", "listing_clients_tva", "tva_trimestrielle"
     ]  # fmt: skip
     q3 = client.tasks.get(kind="tva_trimestrielle", period_key="2026-T3")
-    assert q3.due_date == date(2026, 10, 26)  # le 25 (dimanche) → lundi 26
+    assert q3.due_date == date(2026, 10, 25)  # le 25, même un dimanche (D-094)
     assert q3.steps.count() == 5
     # Fenêtre : rien avant 60 jours en arrière, rien au-delà d'environ 12 mois.
     assert not client.tasks.filter(due_date__lt=date(2026, 8, 14)).exists()
@@ -128,11 +128,11 @@ def test_new_deadline_rule_moves_every_task(django_capture_on_commit_callbacks):
         result = generator.generate_for_client(client, today)
     for task in (q2, q3, q4):
         task.refresh_from_db()
-    assert q3.due_date == date(2026, 10, 26)  # le 25 est un dimanche → lundi 26
-    assert q4.due_date == date(2027, 1, 25) and q2.due_date == date(2026, 7, 27)
+    assert q3.due_date == date(2026, 10, 25)  # le 25, même un dimanche (D-094)
+    assert q4.due_date == date(2027, 1, 25) and q2.due_date == date(2026, 7, 25)
     assert result.moved == 3
     filing.refresh_from_db()
-    assert filing.due_date == date(2026, 10, 26)
+    assert filing.due_date == date(2026, 10, 25)
 
 
 def test_generation_runs_again_the_same_day_when_rules_change(monkeypatch):

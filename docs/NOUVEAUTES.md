@@ -3,6 +3,14 @@
 Ce qui a été ajouté à l'outil, du plus récent au plus ancien. Toutes les données de la démo
 sont inventées.
 
+## 28 octobre 2026 — Dates TVA corrigées
+
+- TVA trimestrielle : le 25, même si c'est un week-end ou un jour férié (plus de report).
+  TVA mensuelle : le 20, reporté au jour ouvrable suivant si besoin. Les échéances déjà créées
+  sont corrigées toutes seules.
+- Le calendrier de l'accueil montre toujours la TVA mensuelle et trimestrielle du mois, même si
+  aucun de vos dossiers n'est concerné.
+
 ## 28 octobre 2026 — Déposer des documents depuis n'importe où
 
 - Glissez vos fichiers sur n'importe quelle page de l'outil : un voile violet apparaît, lâchez,

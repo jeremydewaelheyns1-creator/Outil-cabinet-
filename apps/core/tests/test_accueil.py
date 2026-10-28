@@ -88,9 +88,13 @@ def test_ipp_season_then_annual_accounts_in_july(user):
 def test_calendar_marks_my_deadlines_of_the_month(user):
     task(mine(user), "tva_trimestrielle", date(2026, 10, 20))
     cal = accueil.month_calendar(OCT, list(Task.objects.all()))
-    assert cal["name"] == "octobre 2026" and cal["legend"] == [(20, "TVA trimestrielle")]
+    assert cal["name"] == "octobre 2026"
+    # Dates légales toujours montrées (D-094) : mensuelle le 20, trimestrielle le 25 (dimanche).
+    assert cal["legend"] == [(20, "TVA mensuelle · TVA trimestrielle"), (25, "TVA trimestrielle")]
     marked = [c["day"] for c in cal["cells"] if c.get("mark")]
-    assert marked == [20] and cal["cells"][3]["day"] == 1  # le 1er octobre 2026 est un jeudi
+    assert marked == [20, 25] and cal["cells"][3]["day"] == 1  # le 1er octobre 2026 est un jeudi
+    november = accueil.month_calendar(date(2026, 11, 3), [])
+    assert november["legend"] == [(20, "TVA mensuelle")]  # pas de trimestrielle en novembre
 
 
 def test_home_page_renders_and_shows_no_colleague_name(web, user, make_user):

@@ -20,6 +20,7 @@
 #   {type: date_annee_suivante, mois: 3, jour: 31}          → 31 mars de l'année suivante
 #   {type: dates_par_annee, dates: {2025: 2026-10-16}}       → date publiée chaque année
 # report_jour_ouvrable : true → samedi, dimanche ou jour férié : reporté au jour ouvrable suivant
+# report_jusqu_au : 2025-09-30 → ce report ne vaut que pour les dates limites jusqu'à ce jour
 # responsable : rôle d'affectation du client (assistant, manager, partner…) ; à défaut, le
 #   responsable du dossier.
 
@@ -53,8 +54,12 @@ regles:
       statut_tva: [subject, mixed]
       periodicite_tva: [quarterly]
     # Trimestriels : le 25 du mois suivant (nouvelle « chaîne TVA », depuis le 1er janvier 2025).
+    # Le 25 reste le 25, même un samedi, un dimanche ou un jour férié : la tolérance de report
+    # au jour ouvrable a pris fin pour les trimestriels au 30/09/2025 (elle reste pour les
+    # mensuels). Corrigé à la demande de Jeremy (D-094).
     echeance: {type: jour_du_mois_suivant, mois_apres: 1, jour: 25}
     report_jour_ouvrable: true
+    report_jusqu_au: 2025-09-30
     responsable: assistant
     etapes:
       - Pièces d'achat et de vente reçues
