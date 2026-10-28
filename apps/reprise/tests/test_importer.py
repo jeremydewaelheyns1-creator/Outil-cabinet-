@@ -306,3 +306,13 @@ def test_web_report_shows_relations_and_hybrid(make_user, client):
     assert "Relations" in page and "4 liens à créer" in page and "Comptable « Hybride »" in page
     client.post(reverse("reprise:apply", args=[ImportBatch.objects.get().pk]))
     assert Relation.objects.count() == 4
+
+
+@pytest.mark.parametrize(
+    ("value", "expected"),
+    [("Belge", "BE"), ("Belgique", "BE"), ("Française", "FR"), ("BE", "BE"), ("Martienne", None)],
+)
+def test_nationalities_as_written_in_fid(value, expected):
+    from apps.reprise.importer import _country
+
+    assert _country(value) == expected

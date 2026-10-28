@@ -1086,3 +1086,15 @@ local qui repose sur un petit réseau de neurones, sans rien envoyer à l'extér
 Si un jour on en ajoute : point par point, avec une IA en Europe, sans conservation ni
 entraînement, confirmée par écrit (message préparé pour le support Google Cloud le 28/10/2026),
 une seule porte d'entrée dans le code, et un outil qui continue de marcher si elle est en panne.
+
+## D-091 — Grand test de Jeremy : trois défauts corrigés
+
+Un dossier complet de documents fictifs (reprise FID, déclarations et listing Intervat, 10
+documents du SPF, extrait UBO, statuts, facture, extrait bancaire) a été déposé dans une base
+vierge. Trois défauts trouvés et corrigés :
+1. **PDF de déclaration TVA pris pour un listing intracommunautaire** quand il cite une grille
+   « intracommunautaire » (44, 46, 86…). C'est le titre (« déclaration périodique ») qui décide.
+2. **Déclaration et listing du même trimestre déposés ensemble** : le second PDF effaçait le
+   premier (et le compte de paiement). Chaque PDF n'enregistre plus que ses propres champs.
+3. **Reprise FID** : la nationalité « Belge » (et « Française »…) n'était pas reconnue ; seuls
+   les noms de pays l'étaient.

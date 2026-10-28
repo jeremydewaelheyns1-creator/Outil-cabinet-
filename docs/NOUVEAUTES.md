@@ -3,6 +3,14 @@
 Ce qui a été ajouté à l'outil, du plus récent au plus ancien. Toutes les données de la démo
 sont inventées.
 
+## 28 octobre 2026 — Corrections après le grand test
+
+- Une déclaration TVA qui contient des opérations intracommunautaires n'est plus prise pour un
+  listing intracommunautaire.
+- Déposer en même temps la déclaration et le listing du même trimestre garde bien les deux PDF
+  (et le compte de paiement).
+- Reprise FID-Manager : la nationalité « Belge », « Française »… est reconnue.
+
 ## 27 octobre 2026 — Délais prolongés par le SPF
 
 - Chaque jour, l'outil lit les communiqués officiels du gouvernement fédéral et les actualités

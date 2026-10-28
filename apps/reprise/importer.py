@@ -79,6 +79,11 @@ COUNTRIES = {
     "belgique": "BE", "belgie": "BE", "belgium": "BE", "france": "FR", "pays bas": "NL",
     "nederland": "NL", "luxembourg": "LU", "allemagne": "DE", "deutschland": "DE",
     "espagne": "ES", "italie": "IT", "suisse": "CH", "royaume uni": "GB", "portugal": "PT",
+    # Nationalités telles qu'écrites dans FID-Manager (« Belge », « Française »…).
+    "belge": "BE", "francaise": "FR", "francais": "FR", "neerlandaise": "NL",
+    "neerlandais": "NL", "luxembourgeoise": "LU", "luxembourgeois": "LU", "allemande": "DE",
+    "allemand": "DE", "espagnole": "ES", "espagnol": "ES", "italienne": "IT", "italien": "IT",
+    "britannique": "GB", "portugaise": "PT", "portugais": "PT",
 }  # fmt: skip
 STREET_WITH_NUMBER = re.compile(
     r"^(?P<street>.*?\D)[\s,]+(?P<number>\d+[A-Za-z]?)"

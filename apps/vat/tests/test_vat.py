@@ -120,6 +120,12 @@ def test_pdf_clues():
                                        "3e trimestre 2026"))  # fmt: skip
     assert clues.numbers == (number,)
     assert (clues.kind, clues.year, clues.quarter) == (intervat.VAT, 2026, 3)
+    # Une déclaration qui cite la grille 44 « services intracommunautaires » reste une déclaration.
+    text = f"Déclaration périodique à la TVA — BE {formatted} — 3e trimestre 2026 — grille 44 "
+    clues = intervat.read_pdf(pdf_with(text + "Services intracommunautaires"))
+    assert clues.kind == intervat.VAT
+    listing = intervat.read_pdf(pdf_with(f"Listing intracommunautaire BE {formatted} T3 2026"))
+    assert listing.kind == intervat.IC
 
 
 # --- Grille -----------------------------------------------------------------------------------
@@ -552,3 +558,27 @@ def test_documents_request_hidden_once_documents_are_received(web, user):
     services.set_status(filing, Column.DOCS, Status.DONE, user=user)
     html = web.get(reverse("clients:vat", args=[company.pk])).content.decode()
     assert "Demander les documents au client" not in html
+
+
+def test_declaration_and_ic_listing_of_the_same_quarter_keep_both_pdfs(user):
+    """Grand test de Jeremy : déposés ensemble, le PDF du listing effaçait celui de la
+    déclaration (et le compte de paiement)."""
+    company = vat_client()
+    number = company.enterprise_number
+    formatted = f"{number[:4]}.{number[4:7]}.{number[7:]}"
+    declaration = (
+        f"Déclaration périodique à la TVA BE {formatted} 3e trimestre 2026<br>"
+        "Grille 44 Services intracommunautaires<br>"
+        "Paiement sur le compte BE60 6790 0012 3470<br>"
+        "Communication structurée +++410/0398/76319+++"
+    )
+    files = [
+        upload("d.xml", vat_xml(number)),
+        upload("ic.xml", ic_xml(number)),
+        upload("d.pdf", pdf_with(declaration)),
+        upload("ic.pdf", pdf_with(f"Listing intracommunautaire BE {formatted} 3e trimestre 2026")),
+    ]
+    importer.import_files(files, clients=type(company).objects.all(), user=user)
+    filing = VatFiling.objects.get(client=company)
+    assert filing.pdf is not None and filing.ic_pdf is not None
+    assert filing.payment_reference == "+++410/0398/76319+++"

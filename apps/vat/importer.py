@@ -148,8 +148,11 @@ def import_xml(
 
 
 def attach_pdf(filing: VatFiling, document: Document, kind: str, user: User | None) -> None:
+    # Seuls les champs de cette sorte de PDF sont enregistrés : la déclaration et le listing
+    # du même trimestre, déposés ensemble, ne s'effacent pas l'un l'autre (grand test, D-091).
     if kind == VAT:
         filing.pdf = document
+        fields = ["pdf"]
         # Compte et communication de paiement, s'ils sont sur la déclaration (D-043).
         with document.file.open("rb") as handle:
             text = intervat.pdf_text(handle.read())
@@ -158,12 +161,11 @@ def attach_pdf(filing: VatFiling, document: Document, kind: str, user: User | No
             beneficiary, bic = intervat.payment_extras(text)
             filing.payment_iban, filing.payment_reference = account, reference
             filing.payment_beneficiary, filing.payment_bic = beneficiary, bic
+            fields += ["payment_iban", "payment_reference", "payment_bic", "payment_beneficiary"]
     else:
         filing.ic_pdf = document
-    filing.save(
-        update_fields=["pdf", "ic_pdf", "payment_iban", "payment_reference", "payment_bic",
-                       "payment_beneficiary"]
-    )  # fmt: skip
+        fields = ["ic_pdf"]
+    filing.save(update_fields=fields)
     column = Column.FILED if kind == VAT else Column.IC
     if not filing.cells.filter(column=column, status=Status.DONE).exists():
         set_status(filing, column, Status.DONE, user=user)

@@ -176,7 +176,10 @@ def pdf_text(content: bytes) -> str:
 def read_pdf(content: bytes) -> PdfClues:
     text = pdf_text(content)
     lowered = text.lower()
-    kind = IC if "intracommunautaire" in lowered or "intracommunautair" in lowered else VAT
+    # Une déclaration périodique cite souvent des grilles « intracommunautaires » (44, 46, 86…) :
+    # c'est son titre qui décide, pas ce mot (trouvé lors du grand test de Jeremy).
+    periodic = re.search(r"d[ée]claration\s+p[ée]riodique|periodieke\s+(?:btw-?)?aangifte", lowered)
+    kind = IC if "intracommunautair" in lowered and not periodic else VAT
     looks = bool(re.search(r"\b(tva|btw)\b", lowered)) and bool(
         re.search(r"d[ée]claration|aangifte|listing|opgave", lowered)
     )
