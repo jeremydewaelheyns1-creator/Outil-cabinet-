@@ -1074,3 +1074,15 @@ des communiqués. Choix (Jeremy : « l'IA plus tard ») :
   de l'outil jusqu'à « Compris » (sauf celui qui l'a encodée). « Annuler » remet l'ancienne date.
 - Plus tard (si utile) : une IA européenne, sans conservation, pour lire l'article et pré-remplir
   l'encodage ; elle ne recevrait que le texte public de l'article.
+
+## D-090 — Pas d'IA externe pour l'instant (argument de confidentialité)
+
+Jeremy, après avoir étudié la question (Claude via Google Cloud UE, Horus, RGPD) : l'outil
+fonctionne bien sans IA, et « aucune donnée de vos clients n'est jamais envoyée à une IA » est
+un argument de vente pour des cabinets tenus au secret professionnel. Donc : aucun service
+d'IA externe. Formulation exacte à utiliser : « aucune IA externe, aucune donnée envoyée à une
+IA » (pas « 100 % sans IA » : la lecture des cartes et des scans utilise Tesseract, un logiciel
+local qui repose sur un petit réseau de neurones, sans rien envoyer à l'extérieur).
+Si un jour on en ajoute : point par point, avec une IA en Europe, sans conservation ni
+entraînement, confirmée par écrit (message préparé pour le support Google Cloud le 28/10/2026),
+une seule porte d'entrée dans le code, et un outil qui continue de marcher si elle est en panne.
