@@ -1098,3 +1098,13 @@ vierge. Trois défauts trouvés et corrigés :
    premier (et le compte de paiement). Chaque PDF n'enregistre plus que ses propres champs.
 3. **Reprise FID** : la nationalité « Belge » (et « Française »…) n'était pas reconnue ; seuls
    les noms de pays l'étaient.
+
+## D-092 — Un PDF de déclaration TVA vaut un XML
+
+Jeremy : « ne fais pas de différence entre un PDF et un XML : si on dépose un document, c'est
+un bon document ». Un PDF Intervat déposé seul, dont le dossier (un seul numéro d'entreprise
+reconnu) et la période sont lus, est classé directement : ligne TVA créée si besoin, case
+« Déposée » (ou « IC ») cochée, compte et communication de paiement repris, grille 71 / 72
+reprise si elle est lisible sans ambiguïté et qu'aucun XML ne l'a déjà donnée. Ne reste « à
+confirmer » qu'un PDF dont la période est illisible. Remplace la prudence de D-040 sur le PDF
+seul. Un PDF mal rangé se supprime (D-085).

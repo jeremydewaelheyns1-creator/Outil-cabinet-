@@ -582,3 +582,27 @@ def test_declaration_and_ic_listing_of_the_same_quarter_keep_both_pdfs(user):
     filing = VatFiling.objects.get(client=company)
     assert filing.pdf is not None and filing.ic_pdf is not None
     assert filing.payment_reference == "+++410/0398/76319+++"
+
+
+def test_pdf_alone_is_classified_like_an_xml(user):
+    """D-092 : « si on dépose un document, c'est un bon document » (Jeremy)."""
+    company = vat_client()
+    number = company.enterprise_number
+    formatted = f"{number[:4]}.{number[4:7]}.{number[7:]}"
+    text = (
+        f"Déclaration périodique à la TVA — 2e trimestre 2026<br>Numéro de TVA BE {formatted}<br>"
+        "54 TVA due 7 665,00 EUR<br>72 Somme due par l'État 3 906,00 EUR"
+    )
+    [outcome] = importer.import_files(
+        [upload("t2.pdf", pdf_with(text))], clients=type(company).objects.all(), user=user
+    )
+    assert outcome.level == importer.OK and not VatPending.objects.exists()
+    filing = VatFiling.objects.get(client=company, period_key="2026-T2")  # ligne créée
+    assert filing.pdf is not None and filing.grid_72 == Decimal("3906.00")
+    assert filing.cells.get(column="filed").status == Status.DONE
+
+
+def test_pdf_grids_only_when_certain():
+    assert intervat.pdf_grids("71 Taxe due à l'État 8 694,00 EUR") == {"71": Decimal("8694.00")}
+    assert intervat.pdf_grids("71 Taxe 1,00 EUR\n71 Taxe 2,00 EUR") == {}  # deux valeurs : rien
+    assert intervat.pdf_grids("Montant total 8 694,00 EUR") == {}

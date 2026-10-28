@@ -4,8 +4,9 @@
   ou 72 reprise, case « Déposée » (ou « IC ») cochée. Annulable : il suffit de remettre la
   case dans son état précédent ; le fichier reste dans les archives TVA du dossier.
 - PDF déposé avec son XML : rattaché à la même déclaration.
-- PDF seul : dossier reconnu → rangé dans ses archives TVA et proposé « à confirmer » ;
-  dossier non reconnu → rien n'est rangé (jamais de fichier dans un mauvais dossier).
+- PDF seul (D-092 : un PDF vaut un XML) : dossier et période lus → classé directement comme un
+  XML (montant repris s'il est lisible) ; période illisible → rangé dans le dossier, ligne « à
+  confirmer » ; dossier non reconnu → rien n'est rangé (jamais dans un mauvais dossier).
 - Un XML qui groupe plusieurs clients : montants repris, mais le fichier n'est rangé dans
   aucun dossier (chaque dossier montrerait les chiffres des autres clients).
 
@@ -205,22 +206,31 @@ def import_pdf(
             "Dossier non reconnu dans ce PDF : rien n'a été rangé. Importe-le avec son XML.",
         )  # fmt: skip
     client = matched[0]
-    key = ""
     if clues.year is not None:
-        key = period(clues.year, month=clues.month, quarter=clues.quarter).key
-        # La période lue correspond à un XML déjà importé pour ce dossier : deux preuves.
-        known = VatFiling.objects.filter(client=client, period_key=key).first()
-        if known is not None:
-            ids = (known.xml_id, known.pdf_id) if clues.kind == VAT else (
-                known.ic_xml_id, known.ic_pdf_id)  # fmt: skip
-            if ids[0] and not ids[1]:
-                title = f"{_cap(label)} {known.period_label} (PDF)"
-                attach_pdf(known, _store(client, upload, title, user), clues.kind, user)
-                return Outcome(name, OK, f"PDF joint : {label} {known.short_label}.", client,
-                               known)  # fmt: skip
+        # Un PDF vaut un XML (Jeremy, D-092) : dossier et période lus → rangé directement sur
+        # sa ligne (créée si besoin), case « Déposée » ou « IC » cochée, montant repris s'il
+        # est lisible et qu'aucun XML ne l'a déjà donné.
+        p = period(clues.year, month=clues.month, quarter=clues.quarter)
+        filing = filing_for(client, p)
+        document = _store(client, upload, f"{_cap(label)} {filing.period_label} (PDF)", user)
+        attach_pdf(filing, document, clues.kind, user)
+        if clues.kind == VAT and filing.xml_id is None:
+            with document.file.open("rb") as handle:
+                grids = intervat.pdf_grids(intervat.pdf_text(handle.read()))
+            if grids:
+                filing.grid_71, filing.grid_72 = grids.get("71"), grids.get("72")
+                filing.save(update_fields=["grid_71", "grid_72"])
+        events.emit(
+            "vat.return_imported", subject=client, actor=user,
+            payload={"periode": filing.period_key, "sorte": clues.kind, "source": "pdf"},
+        )  # fmt: skip
+        return Outcome(name, OK, f"{_cap(label)} {filing.short_label} classé(e).", client,
+                       filing)  # fmt: skip
+    # Période illisible : rangé dans le dossier, la ligne reste à choisir.
     document = _store(client, upload, f"{_cap(label)} (PDF, à confirmer)", user)
-    VatPending.objects.create(document=document, kind=clues.kind, period_key=key)
-    return Outcome(name, DOUBT, "PDF rangé dans le dossier : période à confirmer.", client)
+    VatPending.objects.create(document=document, kind=clues.kind, period_key="")
+    return Outcome(name, DOUBT, "PDF rangé dans le dossier : période illisible, à confirmer.",
+                   client)  # fmt: skip
 
 
 def import_files(

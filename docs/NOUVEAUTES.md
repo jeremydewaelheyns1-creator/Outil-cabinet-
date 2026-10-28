@@ -3,6 +3,13 @@
 Ce qui a été ajouté à l'outil, du plus récent au plus ancien. Toutes les données de la démo
 sont inventées.
 
+## 28 octobre 2026 — Le PDF de déclaration TVA suffit
+
+- Un PDF de déclaration TVA déposé seul (sans son XML) est maintenant rangé directement sur la
+  bonne ligne, comme un XML : case « Déposée » cochée, montant à payer ou à récupérer repris,
+  compte et communication de paiement aussi. Plus de confirmation, sauf si la période est
+  illisible.
+
 ## 28 octobre 2026 — Corrections après le grand test
 
 - Une déclaration TVA qui contient des opérations intracommunautaires n'est plus prise pour un

@@ -199,6 +199,23 @@ def read_pdf(content: bytes) -> PdfClues:
     return PdfClues(kind, numbers, looks_like_vat=looks)
 
 
+_GRID_LINE = re.compile(
+    r"^\s*(71|72)\b[^\n]*?(\d{1,3}(?:[ .\u00a0\u202f]\d{3})*,\d{2})\s*(?:EUR|€)?\s*$", re.M
+)
+
+
+def pdf_grids(text: str) -> dict[str, Decimal]:
+    """Grilles 71 / 72 lues sur un PDF de déclaration (« 71 Taxe due à l'État 8 694,00 EUR »).
+    Seulement si chaque grille trouvée n'a qu'une seule valeur ; sinon rien (D-092)."""
+    found: dict[str, set[Decimal]] = {}
+    for grid, raw in _GRID_LINE.findall(text):
+        digits = re.sub(r"[ .\u00a0\u202f]", "", raw).replace(",", ".")
+        found.setdefault(grid, set()).add(Decimal(digits).quantize(Decimal("0.01")))
+    if any(len(values) != 1 for values in found.values()):
+        return {}
+    return {grid: values.pop() for grid, values in found.items()}
+
+
 # --- Données de paiement lues sur le PDF (D-043) ---------------------------------------------
 
 STRUCTURED = re.compile(
