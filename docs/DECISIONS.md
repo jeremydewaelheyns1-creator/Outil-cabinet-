@@ -1151,3 +1151,10 @@ pouvoir les retrouver et les réactiver.
 - Réservé aux administrateurs ; tracé (historique de la fiche, journal, événements
   `client.deleted` / `client.restored`). Un numéro d'entreprise ou national d'un dossier en
   corbeille ne peut pas être recréé ni repris par la reprise FID sans le réactiver d'abord.
+
+## D-096 — Document du SPF qui cite plusieurs dossiers : le premier cité
+
+Deuxième grand test (10 dossiers) : le listing clients annuel d'un indépendant cite aussi les
+numéros de TVA de ses clients ; si l'un d'eux est aussi client du cabinet, le document partait
+dans « À classer » (« plusieurs dossiers correspondent »). Un document du SPF s'adresse au
+contribuable cité en premier (déclarant, destinataire) : c'est désormais lui qui est choisi.

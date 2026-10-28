@@ -3,6 +3,11 @@
 Ce qui a été ajouté à l'outil, du plus récent au plus ancien. Toutes les données de la démo
 sont inventées.
 
+## 28 octobre 2026 — Listing clients bien rangé
+
+- Un listing clients qui cite aussi les numéros de vos autres clients se range maintenant dans
+  le dossier de celui qui l'a déposé (le premier numéro cité), au lieu d'aller dans « À classer ».
+
 ## 28 octobre 2026 — Supprimer des dossiers (corbeille)
 
 - Dans « Tous les clients », cochez un ou plusieurs dossiers puis « Supprimer la sélection… ».

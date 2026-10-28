@@ -13,7 +13,8 @@ Comment :
    aucun type sûr → rien n'est deviné ;
 3. le **dossier** par le numéro d'entreprise ou le numéro national imprimé (contrôles
    modulo 97), parmi les dossiers visibles de la personne qui dépose ; le numéro du cabinet
-   est ignoré ; le numéro national ne sert qu'à la recherche (jamais gardé, affiché ni
+   est ignoré ; si plusieurs dossiers sont cités, c'est le premier cité (le destinataire)
+   (D-096) ; le numéro national ne sert qu'à la recherche (jamais gardé, affiché ni
    journalisé) ;
 4. un seul dossier et un type sûr → rangé dans les archives (ISOC, IPP, TVA ou Administratif)
    avec un titre clair ; un courrier qui demande une action (demande de renseignements, avis
@@ -143,13 +144,16 @@ def identify(text: str, clients: QuerySet[Client], cabinet_number: str = "") -> 
         return None
     match = YEAR.search(text)
     year = int(match.group(1) or match.group(2)) if match else None
-    numbers = {
-        n for n in (intervat.normalize_number(m) for m in intervat.NUMBER.findall(text)) if n
-    }
-    numbers.discard(intervat.normalize_number(cabinet_number or ""))
+    cabinet = intervat.normalize_number(cabinet_number or "")
+    # Dans l'ordre du document : le destinataire (déclarant) est toujours cité en premier ; un
+    # listing clients cite ensuite les numéros de ses clients (grand test, D-096).
+    cited = (intervat.normalize_number(m) for m in intervat.NUMBER.findall(text))
+    ordered = [n for n in dict.fromkeys(cited) if n and n != cabinet]
     found: list[Client] = []
-    if numbers:
-        found = list(clients.filter(enterprise_number__in=numbers)[:3])
+    if ordered:
+        known = {c.enterprise_number: c for c in clients.filter(enterprise_number__in=ordered)}
+        first = next((known[n] for n in ordered if n in known), None)
+        found = [first] if first is not None else []
     if not found:
         nationals = _national_numbers(text)
         if nationals:

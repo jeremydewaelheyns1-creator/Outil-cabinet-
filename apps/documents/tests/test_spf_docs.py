@@ -76,3 +76,15 @@ def test_unknown_number_waits_in_to_classify_with_the_reason(web):
 def test_ordinary_letter_is_not_guessed():
     assert spf_docs.kind_of("Facture du garage pour l'entretien du véhicule, TVA 21 %") is None
     assert spf_docs.kind_of("Avertissement-extrait de rôle impôt des sociétés").slug == "aer_isoc"
+
+
+def test_client_listing_goes_to_the_declarant_not_to_its_customers(web):
+    """Grand test : un listing clients cite aussi les numéros des clients du déclarant."""
+    declarant = ClientFactory(enterprise_number=enterprise_number(7101), name="Graphiste Fictif")
+    ClientFactory(enterprise_number=enterprise_number(7102), name="Client Fictif du Graphiste")
+    upload = pdf("Listing annuel des clients assujettis — année 2025",
+                 f"Déclarant : Graphiste Fictif — numéro de TVA BE {number(7101)}",
+                 f"Client : BE {number(7102)} — chiffre d'affaires 2 400,00 EUR — TVA")  # fmt: skip
+    web.post(reverse("depot:index"), {"files": [upload]})
+    document = Document.objects.get()
+    assert document.client == declarant and document.folder == "tva"
