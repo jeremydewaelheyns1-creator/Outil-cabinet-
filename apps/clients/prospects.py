@@ -96,7 +96,9 @@ def remind_stale(today: object = None) -> int:
 
     day = today if isinstance(today, date) else timezone.localdate()
     limit = timezone.now() - timedelta(days=STALE_DAYS)
-    count = Client.objects.filter(status=Client.Status.PROSPECT, updated_at__lt=limit).count()
+    count = Client.objects.filter(
+        status=Client.Status.PROSPECT, updated_at__lt=limit, deleted_at__isnull=True
+    ).count()
     if not count:
         return 0
     for user in User.objects.filter(is_staff=True, is_active=True):

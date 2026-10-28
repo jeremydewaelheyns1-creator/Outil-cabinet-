@@ -1,11 +1,15 @@
+{% if can_delete %}<form method="post" action="{% url 'clients:trash_put' %}" class="client-select">{% csrf_token %}
+<div class="client-select-bar"><span class="small muted">Cochez des dossiers pour les supprimer (ils vont à la corbeille et peuvent être réactivés).</span>
+  <button type="submit" class="danger small">Supprimer la sélection…</button></div>{% endif %}
 <div class="table-wrap">
 <table class="table">
   <thead>
-    <tr><th>Nom</th><th>Type</th><th>N° d'entreprise</th><th>Localité</th><th>Référence</th><th>Portefeuille</th><th>Statut</th></tr>
+    <tr>{% if can_delete %}<th class="check-col"><input type="checkbox" data-check-all="client" aria-label="Tout cocher sur cette page"></th>{% endif %}<th>Nom</th><th>Type</th><th>N° d'entreprise</th><th>Localité</th><th>Référence</th><th>Portefeuille</th><th>Statut</th></tr>
   </thead>
   <tbody>
   {% for client in page %}
     <tr>
+      {% if can_delete %}<td class="check-col"><input type="checkbox" name="client" value="{{ client.pk }}" aria-label="Choisir {{ client.display_name }}"></td>{% endif %}
       <td><a href="{{ client.get_absolute_url }}">{% client_icon client %} {{ client.display_name }}</a></td>
       <td class="small">{{ client.get_kind_display }}</td>
       <td class="mono small">{{ client.enterprise_number_display }}</td>
@@ -20,9 +24,10 @@
       </td>
     </tr>
   {% empty %}
-    <tr><td colspan="7" class="empty">Aucun client ne correspond.{% if filters.q %} Essayez un autre mot ou le statut « Tous ».{% endif %}</td></tr>
+    <tr><td colspan="{% if can_delete %}8{% else %}7{% endif %}" class="empty">Aucun client ne correspond.{% if filters.q %} Essayez un autre mot ou le statut « Tous ».{% endif %}</td></tr>
   {% endfor %}
   </tbody>
 </table>
 </div>
+{% if can_delete %}</form>{% endif %}
 {% include "components/_pagination.html" %}

@@ -62,7 +62,7 @@ class Rule:
     # --- Le client est-il concerné ? -----------------------------------------------------
 
     def applies_to(self, client: Client) -> bool:
-        if client.status != Client.Status.ACTIVE:
+        if client.status != Client.Status.ACTIVE or client.deleted_at is not None:
             return False
         for name, allowed in self.conditions.items():
             if name == "cloture_connue":

@@ -475,7 +475,14 @@ class _Importer:
                 Issue(row_number, "", "les identifiants désignent des fiches différentes")
             )
             return False
-        return next(iter(matches.values()), None)
+        found = next(iter(matches.values()), None)
+        if found is not None and found.deleted_at is not None:
+            # D-095 : jamais de mise à jour discrète d'un dossier mis à la corbeille.
+            self.report.issues.append(
+                Issue(row_number, "", "ce dossier est dans la corbeille : réactivez-le d'abord")
+            )
+            return False
+        return found
 
     def remember(self, row_number: int, values: dict[str, Any]) -> None:
         for key in ("enterprise_number", "national_number", "reference"):

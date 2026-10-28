@@ -2,6 +2,7 @@
 {% block head_title %}Clients{% endblock %}
 {% block page_title %}Clients{% endblock %}
 {% block page_actions %}
+  {% if can_delete %}<a class="button button-secondary" href="{% url 'clients:trash' %}">Corbeille{% if in_trash %} ({{ in_trash }}){% endif %}</a>{% endif %}
   {% if can_export %}<a class="button button-secondary" href="{% url 'clients:export' %}?{% querystring page=None %}">Exporter (Excel)</a>{% endif %}
   {% if can_edit %}<a class="button" href="{% url 'clients:create' %}">Nouveau client</a>{% endif %}
 {% endblock %}

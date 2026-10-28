@@ -209,7 +209,9 @@ def refresh_due(limit: int | None = None) -> int:
     threshold = timezone.now() - timedelta(days=settings.OFFICIAL_REFRESH_DAYS)
     due = (
         Client.objects.exclude(kind=Client.Kind.PERSON)
-        .filter(status=Client.Status.ACTIVE, enterprise_number__isnull=False)
+        .filter(
+            status=Client.Status.ACTIVE, enterprise_number__isnull=False, deleted_at__isnull=True
+        )
         .annotate(last=Max("official_snapshots__fetched_at"))
         .filter(Q(last__isnull=True) | Q(last__lt=threshold))
         .order_by("last", "pk")[:limit]

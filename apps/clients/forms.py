@@ -96,14 +96,22 @@ class ClientForm(forms.ModelForm[Client]):
         self.fields["enterprise_number"].widget.attrs["placeholder"] = "0123.456.789"
 
     def clean_enterprise_number(self) -> str | None:
-        return normalize_enterprise_number(self.cleaned_data.get("enterprise_number")) or None
+        number = normalize_enterprise_number(self.cleaned_data.get("enterprise_number")) or None
+        others = Client.objects.exclude(pk=self.instance.pk)
+        if number and others.filter(enterprise_number=number, deleted_at__isnull=False).exists():
+            raise ValidationError(
+                "Ce dossier existe déjà dans la corbeille : réactivez-le (Clients › Corbeille)."
+            )
+        return number
 
     def clean_new_national_number(self) -> str:
         number = normalize_national_number(self.cleaned_data.get("new_national_number"))
-        if (
-            number
-            and Client.objects.exclude(pk=self.instance.pk).filter(national_number=number).exists()
-        ):
+        others = Client.objects.exclude(pk=self.instance.pk).filter(national_number=number)
+        if number and others.filter(deleted_at__isnull=False).exists():
+            raise ValidationError(
+                "Ce dossier existe déjà dans la corbeille : réactivez-le (Clients › Corbeille)."
+            )
+        if number and others.exists():
             raise ValidationError("Ce numéro national est déjà attribué à une autre fiche.")
         return number
 

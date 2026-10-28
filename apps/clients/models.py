@@ -40,10 +40,19 @@ PERCENT_VALIDATORS = [MinValueValidator(0), MaxValueValidator(100)]
 
 class ClientQuerySet(models.QuerySet["Client"]):
     def visible_to(self, user: User | AnonymousUser) -> ClientQuerySet:
-        return self.filter(portfolio__in=Portfolio.objects.visible_to(user))
+        """Dossiers de mes portefeuilles, hors corbeille (D-095)."""
+        return self.filter(
+            portfolio__in=Portfolio.objects.visible_to(user), deleted_at__isnull=True
+        )
+
+    def in_trash_visible_to(self, user: User | AnonymousUser) -> ClientQuerySet:
+        """Corbeille : dossiers supprimés de mes portefeuilles (pour les réactiver)."""
+        return self.filter(
+            portfolio__in=Portfolio.objects.visible_to(user), deleted_at__isnull=False
+        )
 
     def active(self) -> ClientQuerySet:
-        return self.filter(status=Client.Status.ACTIVE)
+        return self.filter(status=Client.Status.ACTIVE, deleted_at__isnull=True)
 
     def search(self, text: str) -> ClientQuerySet:
         text = text.strip()
@@ -205,6 +214,13 @@ class Client(models.Model):
     accountant_hybrid = models.BooleanField("comptable hybride", default=False)
     created_at = models.DateTimeField("créé le", default=timezone.now, editable=False)
     updated_at = models.DateTimeField("modifié le", auto_now=True)
+    # Corbeille (D-095) : un dossier supprimé n'est jamais effacé (conservation légale), il est
+    # caché partout et peut être réactivé depuis Clients › Corbeille.
+    deleted_at = models.DateTimeField("mis à la corbeille le", null=True, blank=True, db_index=True)
+    deleted_by = models.ForeignKey(
+        "core.User", on_delete=models.SET_NULL, null=True, blank=True, related_name="+",
+        verbose_name="mis à la corbeille par",
+    )  # fmt: skip
 
     objects = ClientQuerySet.as_manager()
     history = HistoricalRecords()
@@ -236,6 +252,10 @@ class Client(models.Model):
 
     def get_absolute_url(self) -> str:
         return reverse("clients:identity", args=[self.pk])
+
+    @property
+    def in_trash(self) -> bool:
+        return self.deleted_at is not None
 
     @property
     def contact_display(self) -> str:

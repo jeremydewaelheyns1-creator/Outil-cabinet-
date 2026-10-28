@@ -250,7 +250,7 @@ def follow_up(today: date | None = None) -> int:
     """Passage quotidien (run_jobs) : tâches créées pour ce qui expire ou n'est plus à jour."""
     close_resolved()
     created = 0
-    for client in Client.objects.filter(status=Client.Status.ACTIVE).iterator(chunk_size=200):
+    for client in Client.objects.active().iterator(chunk_size=200):
         with transaction.atomic():
             created += follow_client(client, today)
     return created

@@ -1134,3 +1134,20 @@ règle `tva_trimestrielle` garde le report seulement pour les dates limites jusq
 toutes les échéances trimestrielles reviennent au 25, ligne TVA comprise.
 Le calendrier de l'accueil montre toujours les dates légales de la TVA du mois (mensuelle,
 trimestrielle en janvier, avril, juillet et octobre), même sans dossier concerné.
+
+## D-095 — Supprimer des dossiers : corbeille, jamais d'effacement
+
+Jeremy : sélectionner des clients dans la liste et les supprimer, avec une confirmation, et
+pouvoir les retrouver et les réactiver.
+- Liste des clients : une case par ligne (et « tout cocher »), bouton « Supprimer la
+  sélection… » → page « Êtes-vous sûr ? » qui nomme chaque dossier → « Oui, supprimer ».
+- « Supprimer » = mettre à la corbeille (`Client.deleted_at`, `deleted_by`) : rien n'est
+  effacé, car les documents anti-blanchiment se gardent 10 ans. Le dossier disparaît partout
+  (`visible_to` l'exclut : listes, recherche, tableaux, tâches) ; les échéances futures pas
+  commencées partent, les demandes en cours au client sont annulées (plus aucune relance),
+  plus de consultation automatique BCE / Moniteur.
+- Clients › Corbeille : recherche, « Réactiver » par ligne ou pour la sélection ; tout revient
+  tel quel (échéances régénérées).
+- Réservé aux administrateurs ; tracé (historique de la fiche, journal, événements
+  `client.deleted` / `client.restored`). Un numéro d'entreprise ou national d'un dossier en
+  corbeille ne peut pas être recréé ni repris par la reprise FID sans le réactiver d'abord.

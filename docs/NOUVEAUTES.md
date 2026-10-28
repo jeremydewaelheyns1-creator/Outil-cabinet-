@@ -3,6 +3,13 @@
 Ce qui a été ajouté à l'outil, du plus récent au plus ancien. Toutes les données de la démo
 sont inventées.
 
+## 28 octobre 2026 — Supprimer des dossiers (corbeille)
+
+- Dans « Tous les clients », cochez un ou plusieurs dossiers puis « Supprimer la sélection… ».
+  L'outil demande si vous êtes sûr, en nommant chaque dossier.
+- Les dossiers supprimés vont dans la **Corbeille** (bouton en haut de la liste) : rien n'est
+  effacé, et « Réactiver » les remet tels quels. Réservé aux administrateurs.
+
 ## 28 octobre 2026 — Dates TVA corrigées
 
 - TVA trimestrielle : le 25, même si c'est un week-end ou un jour férié (plus de report).

@@ -6,7 +6,7 @@ from apps.tasks import views as task_views
 from apps.timesheet import views as timesheet_views
 from apps.vat import views as vat_views
 
-from . import spf_views, views
+from . import spf_views, trash_views, views
 
 app_name = "clients"
 
@@ -14,6 +14,9 @@ urlpatterns = [
     path("", views.client_list, name="list"),
     path("export/", views.client_export, name="export"),
     path("nouveau/", views.client_create, name="create"),
+    path("corbeille/", trash_views.trash_list, name="trash"),
+    path("corbeille/mettre/", trash_views.trash_put, name="trash_put"),
+    path("corbeille/reactiver/", trash_views.trash_restore, name="trash_restore"),
     path("choisir/", views.client_picker, name="picker"),
     path("numero-national/", views.national_number_lookup, name="nn_lookup"),
     # Dossier actif (sélecteur en haut de l'écran)

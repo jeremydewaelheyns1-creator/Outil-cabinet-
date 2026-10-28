@@ -1,0 +1,17 @@
+{% extends "layouts/app.html" %}
+{% block head_title %}Supprimer des dossiers{% endblock %}
+{% block page_title %}<a href="{% url 'clients:list' %}" class="muted">Clients</a> › Supprimer {{ chosen|length }} dossier{{ chosen|pluralize }} ?{% endblock %}
+{% block content %}
+<section class="card">
+  <h2>Êtes-vous sûr de vouloir supprimer {% if chosen|length == 1 %}ce dossier{% else %}ces {{ chosen|length }} dossiers{% endif %} ?</h2>
+  <ul class="trash-list">{% for c in chosen %}<li><strong>{{ c.display_name }}</strong>{% if c.reference %} <span class="muted small">· réf. {{ c.reference }}</span>{% endif %}</li>{% endfor %}</ul>
+  <p>{% if chosen|length == 1 %}Il disparaîtra{% else %}Ils disparaîtront{% endif %} de toutes les listes, de la recherche et des tableaux. Les échéances futures pas encore commencées sont retirées et les demandes en cours au client sont annulées.</p>
+  <p class="small muted">Rien n'est effacé (les documents anti-blanchiment doivent être gardés 10 ans) : vous pourrez {% if chosen|length == 1 %}le{% else %}les{% endif %} retrouver dans <b>Clients › Corbeille</b> et {% if chosen|length == 1 %}le{% else %}les{% endif %} réactiver d'un clic.</p>
+  <form method="post" action="{% url 'clients:trash_put' %}" class="actions">{% csrf_token %}
+    {% for c in chosen %}<input type="hidden" name="client" value="{{ c.pk }}">{% endfor %}
+    <input type="hidden" name="confirme" value="oui">
+    <button type="submit" class="danger">Oui, supprimer</button>
+    <a class="button button-secondary" href="{% url 'clients:list' %}">Annuler</a>
+  </form>
+</section>
+{% endblock %}

@@ -103,6 +103,10 @@ def client_list(request: AppRequest) -> HttpResponse:
         "can_export": request.user.has_capability(Capability.DATA_EXPORT),
         "can_edit": request.user.has_capability(Capability.CLIENTS_EDIT),
         "can_see_sensitive": request.user.has_capability(Capability.CLIENTS_SENSITIVE),
+        "can_delete": request.user.is_staff,  # corbeille (D-095)
+        "in_trash": Client.objects.in_trash_visible_to(request.user).count()
+        if request.user.is_staff
+        else 0,
     }
     if request.htmx and request.htmx.target == "resultats":
         return render(request, "clients/_list_results.html", context)

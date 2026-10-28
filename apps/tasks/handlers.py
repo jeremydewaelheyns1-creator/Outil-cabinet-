@@ -10,6 +10,8 @@ from .generator import generate_for_client, reassign_open_tasks
 @events.on("client.created")
 @events.on("client.updated")
 @events.on("client.updated_from_bce")
+@events.on("client.deleted")  # corbeille : les échéances futures non commencées partent (D-095)
+@events.on("client.restored")  # réactivé : elles reviennent
 def regenerate_client_tasks(event: Event) -> None:
     client = _client(event)
     if client is not None:

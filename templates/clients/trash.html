@@ -1,0 +1,32 @@
+{% extends "layouts/app.html" %}
+{% block head_title %}Corbeille{% endblock %}
+{% block page_title %}<a href="{% url 'clients:list' %}" class="muted">Clients</a> › Corbeille{% endblock %}
+{% block page_subtitle %}<p class="muted" style="margin:.2rem 0 0">Les dossiers supprimés. Rien n'est effacé : cochez-les et réactivez-les, tout revient tel quel.</p>{% endblock %}
+{% block content %}
+<form class="filters" method="get" action="{% url 'clients:trash' %}">
+  <div class="search"><label for="q">Rechercher</label>
+    <input id="q" type="search" name="q" value="{{ q }}" autocomplete="off" placeholder="Nom, n° d'entreprise, référence…"></div>
+</form>
+<form method="post" action="{% url 'clients:trash_restore' %}">{% csrf_token %}
+  <div class="client-select-bar"><span class="small muted">{{ page.paginator.count }} dossier{{ page.paginator.count|pluralize }} dans la corbeille.</span>
+    {% if page.paginator.count %}<button type="submit">Réactiver la sélection</button>{% endif %}</div>
+  <div class="table-wrap"><table class="table">
+    <thead><tr><th class="check-col"><input type="checkbox" data-check-all="client" aria-label="Tout cocher"></th><th>Nom</th><th>Type</th><th>N° d'entreprise</th><th>Supprimé le</th><th>Par</th><th></th></tr></thead>
+    <tbody>
+    {% for c in page %}
+      <tr><td class="check-col"><input type="checkbox" name="client" value="{{ c.pk }}" aria-label="Choisir {{ c.display_name }}"></td>
+        <td>{% client_icon c %} {{ c.display_name }}{% if c.reference %} <span class="muted small">· {{ c.reference }}</span>{% endif %}</td>
+        <td class="small">{{ c.get_kind_display }}</td>
+        <td class="mono small">{{ c.enterprise_number_display }}</td>
+        <td class="small">{{ c.deleted_at|date:"d/m/Y H:i" }}</td>
+        <td class="small">{{ c.deleted_by.get_short_name|default:c.deleted_by|default:"—" }}</td>
+        <td><button type="submit" form="reactiver-un" name="client" value="{{ c.pk }}" class="link-button small">Réactiver</button></td></tr>
+    {% empty %}
+      <tr><td colspan="7" class="empty">La corbeille est vide.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table></div>
+</form>
+<form id="reactiver-un" method="post" action="{% url 'clients:trash_restore' %}">{% csrf_token %}</form>
+{% include "components/_pagination.html" %}
+{% endblock %}

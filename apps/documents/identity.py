@@ -370,7 +370,7 @@ def _dossier_for(person: Client) -> Client | None:
     company_ids = (
         Relation.objects.current().filter(person=person).values_list("entity_id", flat=True)
     )
-    candidates += list(Client.objects.filter(pk__in=company_ids, status=Client.Status.ACTIVE))
+    candidates += list(Client.objects.active().filter(pk__in=company_ids))
     for candidate in candidates:
         if candidate.contacts.filter(kind=ContactPoint.Kind.EMAIL).exists():
             return candidate
