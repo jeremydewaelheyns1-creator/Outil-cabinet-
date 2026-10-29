@@ -1248,3 +1248,17 @@ page des doublons (des deux côtés) :
 Rien n'est exécuté : XML lu avec defusedxml, Word et Excel refusés s'ils dépassent 60 Mo une
 fois décompressés ; un fichier abîmé affiche simplement « Pas d'aperçu » avec le bouton de
 téléchargement.
+
+## D-101 — Dossier de test 3 (demandes de documents) : trois corrections
+
+En préparant les pièces qu'un client renvoie (carte, lettre de mission, déclaration UBO,
+procuration, extrait UBO), trois défauts trouvés et corrigés :
+- **Une lettre de mission partait dans la TVA** : il suffisait des mots « TVA » et
+  « déclaration » n'importe où. Il faut maintenant le titre d'un document TVA (« déclaration
+  périodique », « déclaration TVA », « listing / relevé intracommunautaire », « Intervat »,
+  équivalents néerlandais).
+- **Lettre de mission et déclaration des bénéficiaires effectifs signées** : reconnues au dépôt
+  et rangées dans leur case.
+- **Carte d'identité** : sur une photo, la lecture pouvait prendre la 1re ligne machine une 2e
+  fois à la place du nom (les contrôles passent, le nom n'en a pas). Une lecture n'est
+  acceptée que si le nom ressemble à un nom ; sinon on essaie l'image autrement.

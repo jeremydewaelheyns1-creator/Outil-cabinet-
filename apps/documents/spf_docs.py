@@ -69,6 +69,16 @@ KINDS: tuple[Kind, ...] = (
          (("procuration", "volmacht"), ("mandant", "lastgever", "volmachtgever"),
           ("mandataire", "lasthebber", "volmachthebber")),
          "administratif", "administratif", case="procuration", doc_type="procuration"),
+    # Documents signés renvoyés par le client (dossier de test 3, D-101).
+    Kind("lettre_mission", "Lettre de mission",
+         (("lettre de mission", "opdrachtbrief", "opdrachtovereenkomst"),
+          ("honoraires", "erelonen", "objet de la mission", "voorwerp van de opdracht")),
+         "administratif", "administratif", case="lettre-de-mission", doc_type="lettre_mission"),
+    Kind("declaration_ubo", "Déclaration des bénéficiaires effectifs",
+         (("declaration des beneficiaires effectifs",
+           "verklaring van de uiteindelijke begunstigden"),
+          ("soussigne", "declare", "ondergetekende", "verklaar")),
+         "administratif", "administratif", case="declaration-ubo", doc_type="declaration_ubo"),
     # Copie de la déclaration IPP (Tax-on-web / MyMinfin) ou document préparatoire.
     Kind("declaration_ipp", "Déclaration IPP",
          (("declaration a l'impot des personnes physiques",

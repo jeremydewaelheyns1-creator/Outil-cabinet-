@@ -3,6 +3,13 @@
 Ce qui a été ajouté à l'outil, du plus récent au plus ancien. Toutes les données de la démo
 sont inventées.
 
+## 29 octobre 2026 — Pièces signées reconnues
+
+- **Lettre de mission** et **déclaration des bénéficiaires effectifs** signées : déposées,
+  elles vont seules dans leur case (une lettre de mission partait par erreur dans la TVA).
+- Lecture des photos de cartes d'identité plus sûre (le nom n'est plus confondu avec une autre
+  ligne).
+
 ## 29 octobre 2026 — Tous les fichiers lisibles
 
 - En ouvrant un document, vous voyez maintenant son contenu en clair quel que soit son format :

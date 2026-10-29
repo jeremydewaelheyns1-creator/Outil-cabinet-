@@ -71,6 +71,12 @@ class MrzResult:
         return bool(self.checks) and all(self.checks.values())
 
     @property
+    def name_readable(self) -> bool:
+        """Le nom n'a pas de chiffre de contrôle : il doit au moins ressembler à un nom (pas la
+        1re ligne relue une 2e fois, dossier de test 3)."""
+        return bool(self.surname) and not re.search(r"\d", self.surname + self.given_names)
+
+    @property
     def failed_checks(self) -> list[str]:
         return [name for name, ok in self.checks.items() if not ok]
 

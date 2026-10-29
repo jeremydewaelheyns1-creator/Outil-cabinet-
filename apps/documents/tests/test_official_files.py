@@ -408,3 +408,54 @@ def test_mail_attachment_is_described():
     _, label = recognize("c.xbrl", accounts_xbrl(enterprise_number(8091)), "application/xml",
                          clients)  # fmt: skip
     assert label == "Comptes annuels (XBRL)"
+
+
+# --- Pièces signées renvoyées par le client (dossier de test 3, D-101) ----------------------
+
+
+@needs_poppler
+def test_signed_engagement_letter_is_not_a_vat_return(web):
+    company = ClientFactory(enterprise_number=enterprise_number(8101))
+    letter = pdf("lettre.pdf", "Lettre de mission",
+                 f"Client : Société Fictive SRL — numéro d'entreprise {dotted(8101)}",
+                 "1. Objet de la mission : comptabilité, déclarations à l'impôt des sociétés.",
+                 "3. Honoraires : 2 400,00 EUR hors TVA, facturés chaque trimestre.")  # fmt: skip
+    deposit(web, letter)
+    document = Document.objects.get(client=company)
+    assert (document.case, document.doc_type) == ("lettre-de-mission", "lettre_mission")
+    assert not company.vat_filings.exists()
+
+
+@needs_poppler
+def test_signed_ubo_declaration_goes_to_its_case(web):
+    company = ClientFactory(enterprise_number=enterprise_number(8102))
+    declaration = pdf("ubo.pdf", "Déclaration des bénéficiaires effectifs",
+                      f"Je soussigné, gérant de Société Fictive SRL ({dotted(8102)}), déclare que "
+                      "les bénéficiaires effectifs sont : FICTIF Jean, 100 %.")  # fmt: skip
+    deposit(web, declaration)
+    document = Document.objects.get(client=company)
+    assert (document.case, document.doc_type) == ("declaration-ubo", "declaration_ubo")
+
+
+def test_vat_title_is_needed_not_just_the_words():
+    from apps.vat import intervat
+
+    assert not intervat.VAT_TITLE.search(
+        "honoraires hors tva ; déclarations à l'impôt des sociétés"
+    )
+    titles = ("déclaration périodique à la tva", "déclaration tva", "listing intracommunautaire",
+              "periodieke btw-aangifte", "relevé intracommunautaire")  # fmt: skip
+    for title in titles:
+        assert intervat.VAT_TITLE.search(title)
+
+
+def test_card_reading_needs_a_name_line():
+    from apps.documents import mrz
+
+    lines = mrz.build_td1(document_number="592417306582", surname="FICTIF", given_names="PAUL",
+                          birth="650923", expiry="310314", sex="M")  # fmt: skip
+    good = mrz.parse_td1(lines)
+    assert good.valid and good.name_readable
+    # La 1re ligne relue à la place du nom : les contrôles passent, mais le nom est illisible.
+    bad = mrz.parse_td1([lines[0], lines[1], lines[0]])
+    assert bad.valid and not bad.name_readable

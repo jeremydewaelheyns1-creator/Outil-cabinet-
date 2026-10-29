@@ -145,6 +145,12 @@ class PdfClues:
     looks_like_vat: bool = False  # le texte parle bien d'une déclaration ou d'un listing TVA
 
 
+VAT_TITLE = re.compile(
+    r"d[ée]claration\s+p[ée]riodique|periodieke\s+(?:btw-?)?aangifte"
+    r"|d[ée]claration\s+(?:[àa]\s+la\s+)?tva|btw-?aangifte|aangifte\s+(?:van\s+de\s+)?btw"
+    r"|listing\s+intracommunautaire|relev[ée]\s+intracommunautaire|intracommunautaire\s+opgave"
+    r"|intervat"
+)
 NUMBER = re.compile(r"(?<!\d)([01]\d{3}[.\s]?\d{3}[.\s]?\d{3})(?!\d)")
 QUARTER = (
     re.compile(r"\b([1-4])\s*(?:er|e|ème|de|ste)?\s*(?:trimestre|kwartaal)\s*(20\d{2})", re.I),
@@ -180,9 +186,10 @@ def read_pdf(content: bytes) -> PdfClues:
     # c'est son titre qui décide, pas ce mot (trouvé lors du grand test de Jeremy).
     periodic = re.search(r"d[ée]claration\s+p[ée]riodique|periodieke\s+(?:btw-?)?aangifte", lowered)
     kind = IC if "intracommunautair" in lowered and not periodic else VAT
-    looks = bool(re.search(r"\b(tva|btw)\b", lowered)) and bool(
-        re.search(r"d[ée]claration|aangifte|listing|opgave", lowered)
-    )
+    # Il faut le titre d'un document TVA, pas seulement les mots « TVA » et « déclaration » :
+    # une lettre de mission (« hors TVA », « déclarations à l'impôt des sociétés ») ou une
+    # procuration les contiennent aussi (dossier de test 3, D-101).
+    looks = bool(VAT_TITLE.search(lowered))
     numbers = tuple(
         dict.fromkeys(n for n in (normalize_number(m) for m in NUMBER.findall(text)) if n)
     )

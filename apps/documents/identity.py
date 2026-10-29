@@ -65,7 +65,7 @@ def ocr_bytes(content: bytes, content_type: str) -> str | None:
 
     def is_valid(text: str) -> bool:
         result = mrz.read(text)
-        return bool(result and result.valid)
+        return bool(result and result.valid and result.name_readable)
 
     if content_type != "application/pdf":
         return card_reader.read(content, is_valid)
