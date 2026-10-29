@@ -47,6 +47,8 @@ class Kind:
     folder_person: str  # dossier d'archives pour une personne physique
     folder_entity: str  # … pour une société ou une association
     action: bool = False  # courrier qui demande une réponse : rangé « à revoir »
+    case: str = ""  # case de l'onglet Documents (au lieu d'une archive), pour une société
+    doc_type: str = ""
 
 
 AER = ("avertissement-extrait de role", "avertissement extrait de role", "aanslagbiljet")
@@ -76,6 +78,11 @@ KINDS: tuple[Kind, ...] = (
     Kind("versements_anticipes", "Versements anticipés",
          (("versements anticipes", "versement anticipe", "voorafbetaling"),
           ("avis", "rappel", "aperçu", "apercu", "decompte", "overzicht")), "ipp", "isoc"),
+    # Extrait du registre UBO (MyMinfin) → case UBO de la société (D-097).
+    Kind("extrait_ubo", "Extrait du registre UBO",
+         (("registre des beneficiaires effectifs", "registre ubo", "ubo-register",
+           "register van de uiteindelijke begunstigden"), ("extrait", "uittreksel")),
+         "administratif", "administratif", case="ubo", doc_type="extrait_ubo"),
 )  # fmt: skip
 YEAR = re.compile(r"exercice\s+d.imposition\s*:?\s*(20\d{2})|aanslagjaar\s*:?\s*(20\d{2})", re.I)
 NATIONAL = re.compile(r"(?<!\d)(\d{2})[.\s]?(\d{2})[.\s]?(\d{2})[-.\s]?(\d{3})[.\s]?(\d{2})(?!\d)")

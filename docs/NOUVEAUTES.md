@@ -3,6 +3,17 @@
 Ce qui a été ajouté à l'outil, du plus récent au plus ancien. Toutes les données de la démo
 sont inventées.
 
+## 29 octobre 2026 — Archives rangées, aperçu des XML
+
+- **Archives** : rangées par année (2026, 2025…), puis pour la TVA par période en sous-onglets
+  (T3-26, 09-26…, le XML et le PDF réunis) et pour le reste par thème (Biztax, avertissements-
+  extraits de rôle…).
+- **Fichier XML d'une déclaration TVA** : en l'ouvrant, vous voyez la déclaration en clair,
+  grille par grille, avec le montant à payer ou à récupérer.
+- **Extrait du registre UBO** : déposé, il va tout seul dans la case UBO de la société.
+- **Accueil** : rempli dès la fin d'une reprise FID (plus besoin d'attendre).
+- Les PDF non reconnus arrivent plus vite dans « À classer ».
+
 ## 28 octobre 2026 — Listing clients bien rangé
 
 - Un listing clients qui cite aussi les numéros de vos autres clients se range maintenant dans

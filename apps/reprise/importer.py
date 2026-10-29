@@ -445,6 +445,7 @@ class _Importer:
                 if key:
                     self.users.setdefault(normalize_text(key), user)
         self.seen: dict[tuple[str, str], int] = {}
+        self.created: list[int] = []
 
     def portfolio(self, name: str) -> Portfolio:
         name = name.strip() or DEFAULT_PORTFOLIO
@@ -521,6 +522,7 @@ class _Importer:
                 return
         if existing is None:
             self.report.created += 1
+            self.created.append(client.pk)
             events.emit(
                 "client.created",
                 subject=client,
@@ -705,6 +707,22 @@ def _import_relation(row: int, raw: dict[str, Any], mapping: Mapping, report: Re
     report.relations_added += 1
 
 
+GENERATE_NOW_MAX = 300  # au-delà, les échéances viennent avec le passage automatique (5 min)
+
+
+def _deadlines_now(client_ids: list[int]) -> None:
+    """Échéances des dossiers créés, tout de suite : l'accueil et l'échéancier sont remplis dès
+    la fin de l'import (grand test de Jeremy : accueil vide juste après la reprise)."""
+    if not client_ids or len(client_ids) > GENERATE_NOW_MAX:
+        return
+    from apps.tasks.generator import generate_for_client
+    from apps.tasks.rules import load_rules
+
+    rules = load_rules()
+    for client in Client.objects.filter(pk__in=client_ids).prefetch_related("assignments__user"):
+        generate_for_client(client, rules=rules)
+
+
 def run_import(
     source: Path | IO[bytes], *, file_name: str, apply: bool, actor: User | None = None
 ) -> Report:
@@ -722,6 +740,8 @@ def run_import(
                 raise _DryRun
     except _DryRun:
         pass
+    else:
+        _deadlines_now(importer.created)
     report.applied = apply
     if "name" not in report.columns.values():
         report.issues.insert(0, Issue(report.header_row, "name", "aucune colonne « Nom » reconnue"))

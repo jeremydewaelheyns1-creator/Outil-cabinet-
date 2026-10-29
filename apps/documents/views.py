@@ -206,6 +206,19 @@ def _place_label(document: Document) -> str:
     return f"Archives › {folder.label}" if folder else "Archives"
 
 
+def _xml_preview(document: Document) -> Any:
+    """Fichier XML d'Intervat : ses grilles en tableau lisible dans le visualiseur (D-097)."""
+    is_xml = document.content_type in ("application/xml", "text/xml") or (
+        document.original_name.lower().endswith(".xml")
+    )
+    if not is_xml or document.size > 2_000_000:
+        return None
+    from apps.vat import intervat
+
+    with document.file.open("rb") as handle:
+        return intervat.preview(handle.read())
+
+
 def _viewer_context(request: AppRequest, client: Client, document: Document) -> dict[str, Any]:
     from . import preview
 
@@ -238,6 +251,7 @@ def _viewer_context(request: AppRequest, client: Client, document: Document) -> 
         "place": _place_label(document),
         "pages": range(1, pages + 1),
         "cards": list(document.identity_cards.all()),
+        "xml_preview": _xml_preview(document),
         "extension": (document.original_name.rsplit(".", 1)[-1].lower()
                       if "." in document.original_name else ""),
     }  # fmt: skip

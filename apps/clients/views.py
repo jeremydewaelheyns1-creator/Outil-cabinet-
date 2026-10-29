@@ -644,6 +644,12 @@ def client_archive(request: AppRequest, pk: int, slug: str) -> HttpResponse:
             context.update(_official(client, OfficialSnapshot.Source.MONITEUR))
         if slug == "courriels":
             _attach_replies(client, context["documents"])
+        from apps.documents import archive_groups
+
+        context.update(archive_groups.group(
+            client, slug, list(context["documents"]),
+            request.GET.get("annee", ""), request.GET.get("periode", ""),
+        ))  # fmt: skip
         return context
 
     return render_section(request, pk, found.key, "clients/sections/archive.html", build)

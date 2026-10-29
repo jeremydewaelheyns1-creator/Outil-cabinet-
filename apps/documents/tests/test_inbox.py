@@ -160,3 +160,14 @@ def test_panel_gets_one_plain_line_per_file(web):
     assert 'data-level="inbox"' in html and "x.pdf" in html and "choisir le dossier" in html
     assert web.post(url, {}).status_code == 400
     assert not [m for m in web.get(reverse("depot:index")).context["messages"]]  # pas de bandeaux
+
+
+def test_text_pdf_is_not_read_as_an_identity_card(web, card_reader, monkeypatch):
+    """Grand test : un PDF plein de texte passait par la lecture (lente) de carte d'identité."""
+    from apps.documents import spf_docs
+
+    calls = []
+    monkeypatch.setattr(identity, "CARD_READER", lambda c, t: calls.append(1))
+    monkeypatch.setattr(spf_docs, "text_of", lambda content: "Courrier ordinaire fictif. " * 40)
+    web.post(reverse("depot:index"), {"files": [SimpleUploadedFile("lettre.pdf", PDF)]})
+    assert not calls and InboxItem.objects.count() == 1

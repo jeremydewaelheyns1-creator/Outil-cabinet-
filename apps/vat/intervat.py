@@ -272,3 +272,82 @@ def payment_extras(text: str) -> tuple[str, str]:
                 bic.group(1) if bic else "",
             )
     return "", ""
+
+
+# --- Aperçu lisible d'un fichier XML (D-097) --------------------------------------------------
+
+# Libellés des grilles de la déclaration périodique (formulaire du SPF Finances).
+GRID_LABELS: dict[str, str] = {
+    "00": "Opérations soumises à un régime particulier",
+    "01": "Opérations soumises au taux de 6 %",
+    "02": "Opérations soumises au taux de 12 %",
+    "03": "Opérations soumises au taux de 21 %",
+    "44": "Services intracommunautaires (art. 21, § 2)",
+    "45": "Opérations pour lesquelles la TVA est due par le cocontractant",
+    "46": "Livraisons intracommunautaires exemptées et ventes ABC",
+    "47": "Autres opérations exemptées et opérations à l'étranger",
+    "48": "Notes de crédit sur les opérations des grilles 44 et 46",
+    "49": "Notes de crédit sur les autres opérations",
+    "54": "TVA due sur les opérations des grilles 01, 02 et 03",
+    "55": "TVA due sur les acquisitions intracommunautaires (grilles 86 et 88)",
+    "56": "TVA due sur les opérations de la grille 87",
+    "57": "TVA due sur les importations avec report de perception",
+    "59": "TVA déductible",
+    "61": "Régularisations en faveur de l'État",
+    "62": "Régularisations en faveur du déclarant",
+    "63": "TVA à reverser mentionnée sur les notes de crédit reçues",
+    "64": "TVA à récupérer mentionnée sur les notes de crédit délivrées",
+    "71": "Taxe due à l'État",
+    "72": "Somme due par l'État",
+    "81": "Marchandises, matières premières et auxiliaires",
+    "82": "Services et biens divers",
+    "83": "Biens d'investissement",
+    "84": "Notes de crédit reçues (grilles 86 et 88)",
+    "85": "Autres notes de crédit reçues",
+    "86": "Acquisitions intracommunautaires et ventes ABC",
+    "87": "Autres opérations à l'entrée avec TVA due par le déclarant",
+    "88": "Services intracommunautaires reçus (art. 21, § 2)",
+    "91": "TVA réellement due pour la période du 1er au 20 décembre",
+}
+GRID_SECTIONS = (
+    ("Opérations à la sortie", ("00", "01", "02", "03", "44", "45", "46", "47", "48", "49")),
+    ("Opérations à l'entrée", ("81", "82", "83", "84", "85", "86", "87", "88")),
+    ("Taxes dues", ("54", "55", "56", "57", "61", "63")),
+    ("Taxes déductibles", ("59", "62", "64")),
+    ("Solde", ("71", "72", "91")),
+)
+
+
+@dataclass(frozen=True)
+class Preview:
+    kind: str
+    enterprise_number: str
+    period: str
+    sections: list[tuple[str, list[tuple[str, str, Decimal]]]]
+    clients: list[tuple[str, str, Decimal]]  # listing IC : (n° de TVA, code, montant)
+
+
+def preview(content: bytes) -> Preview | None:
+    """Le XML d'Intervat mis en tableau lisible (déclaration ou listing). None : pas lisible."""
+    try:
+        declarations = parse_xml(content)
+    except IntervatError:
+        return None
+    first = declarations[0]
+    period = (f"{first.quarter}e trimestre {first.year}" if first.quarter
+              else f"{first.month:02d}/{first.year}")  # fmt: skip
+    sections = []
+    for title, grids in GRID_SECTIONS:
+        rows = [(g, GRID_LABELS[g], first.grids[g]) for g in grids if g in first.grids]
+        if rows:
+            sections.append((title, rows))
+    clients: list[tuple[str, str, Decimal]] = []
+    if first.kind == IC:
+        root = SafeET.fromstring(content)
+        for node in _children(root, "IntraClient"):
+            number = _first_text(node, "CompanyVATNumber")
+            issued = next((e.get("issuedBy", "") for e in _children(node, "CompanyVATNumber")), "")
+            amount = _first_text(node, "Amount")
+            clients.append((f"{issued}{number}", _first_text(node, "Code"),
+                            _amount(amount) if amount else Decimal("0.00")))  # fmt: skip
+    return Preview(first.kind, first.enterprise_number, period, sections, clients)

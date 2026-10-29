@@ -1535,3 +1535,24 @@ button:active, .button:active { transform: scale(.98); }
 .client-select-bar { display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap; margin: 0 0 .6rem; }
 .check-col { width: 2.2rem; }
 .trash-list { margin: .4rem 0 1rem; padding-left: 1.2rem; }
+
+/* Aperçu lisible d'un XML d'Intervat (D-097) */
+.xml-preview { width: 100%; max-width: 860px; margin: 0 auto; background: var(--surface); border-radius: 16px; padding: 1rem 1.2rem; }
+.xml-preview h3 { margin: 0; }
+.xml-grids { margin: .6rem 0; }
+.xml-grids th { text-align: left; }
+.xml-grids .num { text-align: right; white-space: nowrap; }
+.xml-grids .xml-total td { font-weight: 800; }
+
+/* Archives par année, période et thème (D-097) */
+.archive-tabs { display: flex; flex-wrap: wrap; gap: .4rem; margin: 0 0 .8rem; }
+.archive-tab { padding: .35rem .85rem; border-radius: 999px; background: var(--surface-muted); color: var(--text); font-weight: 700; text-decoration: none; }
+.archive-tab:hover { background: var(--primary-soft); color: var(--text); }
+.archive-tab.is-current { background: var(--ink, #1e1b3a); color: #fff; }
+.archive-tab.is-current .muted { color: rgb(255 255 255 / 70%); }
+.archive-subtabs .archive-tab { font-size: .85rem; padding: .25rem .7rem; }
+.archive-group { margin: .4rem 0 1.1rem; }
+.archive-group h3 { font-size: 1rem; margin: 0 0 .3rem; }
+.xml-grids { table-layout: fixed; width: 100%; }
+.xml-grids td:first-child { width: 4rem; }
+.xml-grids td.num { width: 10rem; }

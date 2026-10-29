@@ -170,6 +170,12 @@ def _spf_document(
                      else "plusieurs dossiers correspondent"))  # fmt: skip
         return to_inbox(upload, content_type, user, reason)
     client = found.clients[0]
+    if found.kind.case and not client.is_person:
+        documents.store(client, upload, title=label, case=found.kind.case,
+                        doc_type=found.kind.doc_type, user=user)  # fmt: skip
+        url = reverse("clients:ubo", args=[client.pk])
+        return Result(upload.name or "document", OK, f"{label} rangé dans {client.display_name}.",
+                      client, url, label)  # fmt: skip
     place = spf_docs.folder(found, client)
     document = documents.store(client, upload, title=label, folder=place, user=user)
     url = reverse("clients:archive", args=[client.pk, place])
@@ -225,7 +231,12 @@ def receive(
                 if outcome.level != importer.ERROR:
                     results.append(_from_vat(outcome))
                     continue
-        if content_type == PDF or content_type in IMAGES:
+        # Un PDF plein de texte n'est pas une photo de carte : pas de lecture (lente) de carte
+        # (grand test : l'extrait UBO tournait longtemps avant d'arriver « À classer »).
+        looks_like_card = content_type in IMAGES or (
+            content_type == PDF and (len(text.strip()) < 300 or "IDBEL" in text.upper())
+        )
+        if looks_like_card:
             card = _identity_card(upload, content_type, clients, user)
             if card is not None:
                 results.append(card)

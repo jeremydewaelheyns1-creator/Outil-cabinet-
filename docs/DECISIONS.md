@@ -1158,3 +1158,23 @@ Deuxième grand test (10 dossiers) : le listing clients annuel d'un indépendant
 numéros de TVA de ses clients ; si l'un d'eux est aussi client du cabinet, le document partait
 dans « À classer » (« plusieurs dossiers correspondent »). Un document du SPF s'adresse au
 contribuable cité en premier (déclarant, destinataire) : c'est désormais lui qui est choisi.
+
+## D-097 — Après le 2e grand test : accueil rempli, aperçu des XML, archives rangées, extrait UBO
+
+Retours de Jeremy sur le dépôt de ses 10 dossiers de test :
+- **Accueil vide juste après la reprise** : les échéances des dossiers créés par la reprise FID
+  étaient faites en arrière-plan (passage toutes les 5 minutes). Elles sont maintenant créées
+  pendant l'import (jusqu'à 300 dossiers ; au-delà, toujours en arrière-plan).
+- **Aperçu des XML d'Intervat** : le visualiseur montre la déclaration en clair (grilles par
+  partie : sortie, entrée, taxes dues, déductibles, solde ; libellés du formulaire) et, pour un
+  listing intracommunautaire, la liste des clients. Rien n'est modifié dans le fichier.
+- **Archives par année** (2027, 2026, 2025…), puis **par période pour la TVA** (« T3-26 »,
+  « 09-26 », en sous-onglets, le XML et le PDF d'une même déclaration réunis) et **par thème
+  pour le reste** (Biztax, avertissements-extraits de rôle, compte courant TVA…). Année : celle
+  de la période TVA, sinon celle du titre (« exercice 2025 »), sinon l'année d'ajout. Affichage
+  seulement : rien n'est déplacé. Courriels et Moniteur restent en liste simple.
+- **Extrait du registre UBO** : reconnu (« registre des bénéficiaires effectifs » + « extrait »)
+  et rangé directement dans la case UBO de la société, avec sa date d'expiration.
+- **Le rond qui tournait** : un PDF plein de texte passait aussi par la lecture de carte
+  d'identité (reconnaissance de texte sur l'image, lente sur le serveur). Elle est réservée aux
+  photos et aux PDF quasi sans texte.

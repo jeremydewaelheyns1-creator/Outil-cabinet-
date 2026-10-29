@@ -185,6 +185,17 @@ def test_bulk_import_defers_bce_completion():
     assert Event.objects.filter(type="client.created", status=Event.Status.PENDING).count() == 4
 
 
+def test_deadlines_exist_right_after_the_import():
+    """Grand test de Jeremy : l'accueil était vide juste après la reprise."""
+    from apps.tasks.models import Task
+
+    run_import(workbook(sample_rows()), file_name="x.xlsx", apply=False)
+    assert not Task.objects.exists()  # l'analyse ne crée rien
+    run_import(workbook(sample_rows()), file_name="x.xlsx", apply=True)
+    bakery = Client.objects.get(reference="C001")
+    assert Task.objects.filter(client=bakery, kind="comptes_annuels").exists()
+
+
 def test_stale_uploads_are_purged(make_user):
     from datetime import timedelta
 

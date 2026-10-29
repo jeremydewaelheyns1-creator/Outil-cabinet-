@@ -88,3 +88,16 @@ def test_client_listing_goes_to_the_declarant_not_to_its_customers(web):
     web.post(reverse("depot:index"), {"files": [upload]})
     document = Document.objects.get()
     assert document.client == declarant and document.folder == "tva"
+
+
+def test_ubo_register_extract_goes_to_the_ubo_case(web):
+    """Grand test : l'extrait du registre UBO restait « À classer »."""
+    company = ClientFactory(enterprise_number=enterprise_number(7201))
+    upload = pdf("SPF FINANCES — Registre des bénéficiaires effectifs (UBO)",
+                 "Extrait du registre des bénéficiaires effectifs — établi le 26/10/2026",
+                 f"Numéro d'entreprise : {number(7201)}",
+                 "Bénéficiaire effectif : DUPONT Jean (fictif), actionnaire 100 %")  # fmt: skip
+    web.post(reverse("depot:index"), {"files": [upload]})
+    document = Document.objects.get(client=company)
+    assert (document.case, document.doc_type) == ("ubo", "extrait_ubo")
+    assert document.expires_on is not None  # se renouvelle comme dans la case UBO
