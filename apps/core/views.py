@@ -30,7 +30,22 @@ def home(request: AppRequest) -> HttpResponse:
     """Accueil personnel (D-063) : la période en cours pour MES dossiers."""
     from . import accueil
 
-    return render(request, "core/accueil.html", accueil.build(request.user, timezone.localdate()))
+    today = timezone.localdate()
+    context = accueil.build(request.user, today)
+    shown = accueil.parse_month(request.GET.get("mois", ""))
+    if shown is not None:  # sans JavaScript : les flèches rechargent l'Accueil
+        context["calendar"] = accueil.calendar_for(request.user, today, shown)
+    return render(request, "core/accueil.html", context)
+
+
+def home_calendar(request: AppRequest) -> HttpResponse:
+    """Calendrier fiscal de l'Accueil, mois par mois (flèches ‹ ›, D-104)."""
+    from . import accueil
+
+    today = timezone.localdate()
+    shown = accueil.parse_month(request.GET.get("mois", "")) or today
+    calendar = accueil.calendar_for(request.user, today, shown)
+    return render(request, "core/_calendar.html", {"calendar": calendar})
 
 
 def today_view(request: AppRequest) -> HttpResponse:

@@ -3,6 +3,12 @@
 Ce qui a été ajouté à l'outil, du plus récent au plus ancien. Toutes les données de la démo
 sont inventées.
 
+## 29 octobre 2026 — Calendrier : changer de mois
+
+- Deux flèches ‹ › sur le calendrier fiscal de l'Accueil pour passer d'un mois à l'autre ;
+  « Aujourd'hui » pour revenir.
+- IPP des revenus 2025 : reporté par le SPF au **16 novembre 2026**.
+
 ## 29 octobre 2026 — Retours du test des demandes de documents
 
 - Le client qui envoie sa carte par le lien n'attend plus : la carte est lue juste après, en

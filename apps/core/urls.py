@@ -6,6 +6,7 @@ app_name = "core"
 
 urlpatterns = [
     path("", views.home, name="home"),
+    path("accueil/calendrier/", views.home_calendar, name="home_calendar"),
     path("ma-journee/", views.today_view, name="today"),
     path("parametres/cabinet/", views.cabinet_settings, name="cabinet_settings"),
     path("parametres/cabinet/logo.png", views.signature_logo, name="signature_logo"),

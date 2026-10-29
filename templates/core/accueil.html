@@ -127,16 +127,7 @@
     </div>
 
     <aside class="acc-side">
-      <section class="card acc-cal" aria-label="Calendrier fiscal">
-        <div><div class="acc-eyebrow">Calendrier fiscal</div><h2 class="acc-h2">{{ calendar.name|capfirst }}</h2></div>
-        <div class="acc-cal-grid">
-          {% for d in "LMMJVSD" %}<span class="acc-cal-dow">{{ d }}</span>{% endfor %}
-          {% for c in calendar.cells %}{% if c.day %}<span class="acc-cal-day{% if c.mark %} is-mark{% endif %}{% if c.today %} is-today{% endif %}">{{ c.day }}</span>{% else %}<span></span>{% endif %}{% endfor %}
-        </div>
-        {% if calendar.legend %}
-          <ul class="acc-cal-legend">{% for day, text in calendar.legend %}<li><strong>{{ day }}</strong><span>{{ text }}</span></li>{% endfor %}</ul>
-        {% else %}<p class="muted small">Aucune échéance de mes dossiers ce mois-ci.</p>{% endif %}
-      </section>
+      {% include "core/_calendar.html" %}
       {% if also %}
         <section class="card acc-also" aria-labelledby="acc-also-title">
           <h2 id="acc-also-title" class="acc-h2">Aussi en cours</h2>

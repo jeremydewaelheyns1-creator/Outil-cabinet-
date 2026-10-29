@@ -1309,3 +1309,13 @@ seul ». L'IPP n'avait aucune date : aucune échéance, rien au calendrier.
 - **Conformité › envoyer** : n'envoie que ce qui peut partir tout de suite (cartes, et documents
   déjà préparés en attente de signature, D-051) ; un document jamais préparé ne part pas
   d'office.
+
+## D-104 — Calendrier fiscal : flèches mois par mois ; report IPP au 16 novembre
+
+- **Flèches ‹ ›** sur le calendrier de l'Accueil : mois précédent / suivant sans recharger la
+  page (et « Aujourd'hui » pour revenir) ; sans JavaScript, l'Accueil s'ouvre au mois demandé
+  (`?mois=2026-11`). Le mois affiché montre mes échéances de ce mois et les dates légales.
+- **Report du SPF (29/10/2026, cyberattaque)** : les déclarations attendues vers le 31/10
+  passent au **16/11/2026**, dont l'IPP avec revenus spécifiques (revenus 2025) — date mise à
+  jour dans `regles.yaml` — et l'ISOC des exercices clôturés le 31/03/2026 — à encoder par un
+  administrateur sur « Délais SPF » (l'article de l'ITAA est repéré par la veille quotidienne).

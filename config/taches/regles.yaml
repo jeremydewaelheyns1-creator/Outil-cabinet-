@@ -141,9 +141,10 @@ regles:
       type: dates_par_annee
       dates:
         2024: 2025-10-16   # SPF Finances, exercice d'imposition 2025
-        2025: 2026-10-16   # SPF Finances, exercice d'imposition 2026
+        2025: 2026-11-16   # SPF Finances, exercice d'imposition 2026 : 16/10, reporté au
+                           # 16/11/2026 (cyberattaque du SPF, annonce du 29/10/2026)
       par_defaut: {mois: 10, jour: 16}
-    # Pas d'échéance rétroactive : les déclarations des revenus 2025 (16/10/2026) sont faites.
+    # Pas d'échéance rétroactive : les échéances IPP commencent avec les revenus 2026.
     premiere_periode: 2026
     responsable: manager
     etapes:

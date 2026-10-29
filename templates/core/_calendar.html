@@ -1,0 +1,18 @@
+{# Calendrier fiscal de l'Accueil, avec flèches pour changer de mois (D-104). #}
+<section class="card acc-cal" id="acc-cal" aria-label="Calendrier fiscal">
+  <div class="acc-cal-head">
+    <div><div class="acc-eyebrow">Calendrier fiscal</div><h2 class="acc-h2">{{ calendar.name|capfirst }}</h2></div>
+    <div class="acc-cal-nav">
+      {% if not calendar.current %}<a class="acc-cal-today" href="{% url 'core:home' %}" hx-get="{% url 'core:home_calendar' %}" hx-target="#acc-cal" hx-swap="outerHTML">Aujourd'hui</a>{% endif %}
+      <a class="acc-cal-arrow" href="{% url 'core:home' %}?mois={{ calendar.previous }}" hx-get="{% url 'core:home_calendar' %}?mois={{ calendar.previous }}" hx-target="#acc-cal" hx-swap="outerHTML" aria-label="Mois précédent">‹</a>
+      <a class="acc-cal-arrow" href="{% url 'core:home' %}?mois={{ calendar.next }}" hx-get="{% url 'core:home_calendar' %}?mois={{ calendar.next }}" hx-target="#acc-cal" hx-swap="outerHTML" aria-label="Mois suivant">›</a>
+    </div>
+  </div>
+  <div class="acc-cal-grid">
+    {% for d in "LMMJVSD" %}<span class="acc-cal-dow">{{ d }}</span>{% endfor %}
+    {% for c in calendar.cells %}{% if c.day %}<span class="acc-cal-day{% if c.mark %} is-mark{% endif %}{% if c.today %} is-today{% endif %}">{{ c.day }}</span>{% else %}<span></span>{% endif %}{% endfor %}
+  </div>
+  {% if calendar.legend %}
+    <ul class="acc-cal-legend">{% for day, text in calendar.legend %}<li><strong>{{ day }}</strong><span>{{ text }}</span></li>{% endfor %}</ul>
+  {% else %}<p class="muted small">Aucune échéance ce mois-là.</p>{% endif %}
+</section>

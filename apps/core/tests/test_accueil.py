@@ -90,16 +90,16 @@ def test_calendar_marks_my_deadlines_of_the_month(user):
     cal = accueil.month_calendar(OCT, list(Task.objects.all()))
     assert cal["name"] == "octobre 2026"
     # Dates légales toujours montrées (D-094) : mensuelle le 20, trimestrielle le 25 (dimanche).
-    # Et l'IPP (D-102) : le 16 octobre pour les revenus 2025.
+    # L'IPP des revenus 2025 a été reporté au 16 novembre (SPF, 29/10/2026) : plus en octobre.
     assert cal["legend"] == [
-        (16, "IPP (revenus 2025)"),
         (20, "TVA mensuelle · TVA trimestrielle"),
         (25, "TVA trimestrielle"),
     ]
     marked = [c["day"] for c in cal["cells"] if c.get("mark")]
-    assert marked == [16, 20, 25] and cal["cells"][3]["day"] == 1  # le 1er octobre : un jeudi
+    assert marked == [20, 25] and cal["cells"][3]["day"] == 1  # le 1er octobre : un jeudi
     november = accueil.month_calendar(date(2026, 11, 3), [])
-    assert november["legend"] == [(20, "TVA mensuelle")]  # pas de trimestrielle en novembre
+    # Pas de trimestrielle en novembre ; l'IPP des revenus 2025, reporté au 16 novembre.
+    assert november["legend"] == [(16, "IPP (revenus 2025)"), (20, "TVA mensuelle")]
 
 
 def test_home_page_renders_and_shows_no_colleague_name(web, user, make_user):
@@ -283,12 +283,12 @@ def test_vat_deadline_opens_the_vat_tab(user):
 
 
 def test_calendar_shows_ipp_even_without_dossier_and_follows_the_spf(user):
-    """D-102 : le 16 octobre (revenus 2025), date publiée ; l'année d'après, « provisoire »
-    jusqu'à ce que le SPF publie, puis la date confirmée par un administrateur."""
+    """D-102 : la date publiée (revenus 2025 : 16 novembre, après le report) ; l'année d'après,
+    « provisoire » jusqu'à ce que le SPF publie, puis la date confirmée par un administrateur."""
     from apps.tasks.models import DeadlineExtension
 
-    october = accueil.month_calendar(date(2026, 10, 29), [])
-    assert (16, "IPP (revenus 2025)") in october["legend"]
+    november = accueil.month_calendar(date(2026, 10, 29), [], date(2026, 11, 1))
+    assert (16, "IPP (revenus 2025)") in november["legend"]
     october_2027 = accueil.month_calendar(date(2027, 10, 1), [])
     assert (16, "IPP (revenus 2026) — date provisoire") in october_2027["legend"]
     DeadlineExtension.objects.create(kind="ipp", period_key="2026", label="IPP revenus 2026",
@@ -297,3 +297,18 @@ def test_calendar_shows_ipp_even_without_dossier_and_follows_the_spf(user):
     moved = accueil.month_calendar(date(2027, 10, 1), [])
     assert (21, "IPP (revenus 2026)") in moved["legend"]
     assert all(day != 16 for day, _ in moved["legend"])
+
+
+def test_calendar_arrows_go_from_month_to_month(web, user):
+    """D-104 : « deux petites flèches pour naviguer de mois en mois »."""
+    from django.urls import reverse
+
+    page = web.get(reverse("core:home")).content.decode()
+    assert 'aria-label="Mois suivant"' in page and 'aria-label="Mois précédent"' in page
+    task(mine(user), "isoc", date(2027, 1, 31), label="exercice 2026")
+    january = web.get(reverse("core:home_calendar"), {"mois": "2027-01"}).content.decode()
+    assert "Janvier 2027" in january and "ISOC" in january and "Aujourd'hui" in january
+    assert "?mois=2026-12" in january and "?mois=2027-02" in january
+    # Sans JavaScript : l'Accueil affiche le mois demandé.
+    assert "Janvier 2027" in web.get(reverse("core:home"), {"mois": "2027-01"}).content.decode()
+    assert web.get(reverse("core:home_calendar"), {"mois": "n'importe"}).status_code == 200

@@ -247,25 +247,61 @@ def legal_dates(year: int, month: int) -> list[tuple[date, str]]:
     return found
 
 
-def month_calendar(today: date, tasks: list[Task]) -> dict[str, object]:
-    """Calendrier fiscal du mois : mes dates limites, avec ce qui tombe ce jour-là, et les dates
-    légales de la TVA même sans dossier concerné."""
-    first_weekday, days = calendar.monthrange(today.year, today.month)
+def _add_month(day: date, months: int) -> date:
+    index = day.year * 12 + day.month - 1 + months
+    return date(index // 12, index % 12 + 1, 1)
+
+
+def month_calendar(today: date, tasks: list[Task], shown: date | None = None) -> dict[str, object]:
+    """Calendrier fiscal du mois `shown` (par défaut, le mois en cours) : mes dates limites, avec
+    ce qui tombe ce jour-là, et les dates légales (TVA, IPP) même sans dossier concerné. Les
+    flèches passent au mois d'avant ou d'après (D-104)."""
+    month = (shown or today).replace(day=1)
+    first_weekday, days = calendar.monthrange(month.year, month.month)
     marks: dict[int, list[str]] = defaultdict(list)
-    for due, label in legal_dates(today.year, today.month):
+    for due, label in legal_dates(month.year, month.month):
         marks[due.day].append(label)
     for task in tasks:
         family = BY_KIND.get(task.kind)  # seulement les échéances fiscales (pas les rappels perso)
-        if family and task.due_date.year == today.year and task.due_date.month == today.month:
+        if family and task.due_date.year == month.year and task.due_date.month == month.month:
             label = CALENDAR_LABELS.get(task.kind, family.label)
             if task.kind == "ipp" and any(m.startswith("IPP") for m in marks[task.due_date.day]):
                 continue
             if label not in marks[task.due_date.day]:
                 marks[task.due_date.day].append(label)
     cells: list[dict[str, object]] = [{"day": 0} for _ in range(first_weekday)]
-    cells += [{"day": d, "mark": d in marks, "today": d == today.day} for d in range(1, days + 1)]
+    current = (month.year, month.month) == (today.year, today.month)
+    cells += [{"day": d, "mark": d in marks, "today": current and d == today.day}
+              for d in range(1, days + 1)]  # fmt: skip
     legend = [(d, " · ".join(labels[:3])) for d, labels in sorted(marks.items())]
-    return {"name": f"{MONTHS[today.month - 1]} {today.year}", "cells": cells, "legend": legend}
+    return {
+        "name": f"{MONTHS[month.month - 1]} {month.year}",
+        "cells": cells,
+        "legend": legend,
+        "current": current,
+        "previous": f"{_add_month(month, -1):%Y-%m}",
+        "next": f"{_add_month(month, 1):%Y-%m}",
+    }
+
+
+def calendar_for(user: User, today: date, shown: date) -> dict[str, object]:
+    """Le calendrier d'un autre mois : mes échéances de ce mois-là."""
+    month = shown.replace(day=1)
+    tasks = list(
+        Task.objects.filter(
+            client__in=my_clients(user), due_date__gte=month, due_date__lt=_add_month(month, 1)
+        )
+    )
+    return month_calendar(today, tasks, month)
+
+
+def parse_month(value: str) -> date | None:
+    """« 2026-11 » → 1er novembre 2026 ; rien ou invalide → None."""
+    try:
+        year, month = (int(part) for part in value.split("-"))
+        return date(year, month, 1) if 2000 <= year <= 2100 else None
+    except (ValueError, TypeError):
+        return None
 
 
 def build(user: User, today: date) -> dict[str, object]:
