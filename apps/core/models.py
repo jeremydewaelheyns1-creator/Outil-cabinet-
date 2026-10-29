@@ -325,6 +325,14 @@ class CabinetSettings(models.Model):
     hybrid_release_days = models.PositiveSmallIntegerField(
         "dossier hybride rendu libre après (jours sans temps encodé)", default=14
     )
+    # Nom du cabinet (D-105) : en-tête des documents, signatures, et reconnaissance des factures
+    # du cabinet déposées (l'émetteur). Vide : le nom donné à l'installation (CABINET_NAME).
+    name = models.CharField(
+        "nom du cabinet",
+        max_length=150,
+        blank=True,
+        help_text="Tel qu'il figure sur vos factures et vos documents.",
+    )
     # Mandats SPF (D-075) : ce qui est recopié dans l'application des mandats du SPF.
     enterprise_number = models.CharField(
         "numéro d'entreprise du cabinet",
@@ -347,6 +355,12 @@ class CabinetSettings(models.Model):
 
     def __str__(self) -> str:
         return "Réglages du cabinet"
+
+    def save(self, *args: Any, **kwargs: Any) -> None:
+        super().save(*args, **kwargs)
+        from .cabinet import forget
+
+        forget()  # le nom du cabinet change partout tout de suite
 
     @classmethod
     def current(cls) -> CabinetSettings:

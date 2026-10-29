@@ -31,6 +31,7 @@ from django.utils import timezone
 
 from apps.clients.models import Client
 from apps.core import events
+from apps.core.cabinet import cabinet_name
 from apps.core.models import User
 
 from .models import RiskAssessment
@@ -446,7 +447,7 @@ def _pdf(assessment: RiskAssessment) -> bytes:
     html = render_to_string(
         "documents/modeles/fiche_risque.html",
         {
-            "cabinet": settings.CABINET_NAME,
+            "cabinet": cabinet_name(),
             "client": assessment.client,
             "today": timezone.localdate(),
             "doc_label": "Évaluation du niveau de risque du client",

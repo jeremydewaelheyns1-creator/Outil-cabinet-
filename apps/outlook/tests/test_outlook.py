@@ -283,5 +283,5 @@ def test_client_reply_is_shown_under_the_request_email(web, user, monkeypatch):
     Browser().post(
         "/" + link_of(request), {"files": [photo("r.png", "red"), photo("v.png", "blue")]}
     )
-    html = web.get(reverse("clients:archive", args=[company.pk, "courriels"])).content.decode()
+    html = web.get(reverse("clients:archives", args=[company.pk])).content.decode()
     assert "Réponse du client" in html and "Carte d" in html

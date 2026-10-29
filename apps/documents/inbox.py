@@ -208,6 +208,29 @@ def _spf_document(
                   client, url, label)  # fmt: skip
 
 
+def _cabinet_invoice(
+    upload: UploadedFile[bytes], content_type: str, clients: QuerySet[Client], user: User,
+    text: str,
+) -> Result | None:  # fmt: skip
+    from apps.core.models import CabinetSettings
+
+    from . import invoices
+
+    # Seulement ce que le cabinet a encodé (jamais le nom par défaut « Cabinet »).
+    cabinet = CabinetSettings.current()
+    found = invoices.recognise(text, clients, cabinet.name, cabinet.enterprise_number)
+    if found is None:
+        return None
+    if found.reason:
+        return to_inbox(upload, content_type, user, f"{found.title} du cabinet reconnue, mais "
+                        f"{found.reason}")  # fmt: skip
+    client = found.clients[0]
+    documents.store(client, upload, title=found.title, folder=invoices.FOLDER, user=user)
+    return Result(upload.name or "document", OK, f"{found.title} rangée dans "
+                  f"{client.display_name}.", client,
+                  dossier.folder_url(client.pk, invoices.FOLDER), found.title)  # fmt: skip
+
+
 def _xbrl_document(
     upload: UploadedFile[bytes], content_type: str, clients: QuerySet[Client], user: User
 ) -> Result | None:
@@ -310,6 +333,11 @@ def receive(
             spf = _spf_document(upload, content_type, clients, user, text)
             if spf is not None:
                 results.append(spf)
+                continue
+            # Facture émise par le cabinet : rangée chez le client (D-105).
+            invoice = _cabinet_invoice(upload, content_type, clients, user, text)
+            if invoice is not None:
+                results.append(invoice)
                 continue
             clues = intervat.read_pdf(_content(upload))
             if clues.looks_like_vat:

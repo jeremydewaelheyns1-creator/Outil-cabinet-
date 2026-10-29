@@ -11,6 +11,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
+from apps.core.cabinet import cabinet_name
+
 from .models import Client, SpfMandate
 
 Kind = SpfMandate.Kind
@@ -85,7 +87,6 @@ def email(client: Client, kinds: list[str], url: str, reminder: bool = False) ->
     """Objet et texte de l'e-mail au client : tous ses mandats à signer, en une fois.
 
     Aucune donnée sensible : le nom des mandats, le lien public du SPF, la marche à suivre."""
-    from django.conf import settings
 
     count = len(kinds)
     plural = "s" if count > 1 else ""
@@ -102,7 +103,7 @@ def email(client: Client, kinds: list[str], url: str, reminder: bool = False) ->
         f"{'les' if count > 1 else 'le'} signer :\n\n{items}\n\n"
         f"1. Ouvrez l'application des mandats du SPF : {url}\n"
         f"2. Connectez-vous avec itsme ou votre carte d'identité, {who}.\n"
-        f"3. Signez les mandats créés par {settings.CABINET_NAME}.\n\n"
+        f"3. Signez les mandats créés par {cabinet_name()}.\n\n"
         "Cela prend deux minutes. N'hésitez pas à nous appeler en cas de question.\n"
     )
     return subject, body

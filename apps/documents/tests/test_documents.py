@@ -217,5 +217,6 @@ def test_archive_folder_lists_and_accepts_documents(web):
     company = ClientFactory()
     services.store(company, SimpleUploadedFile("scan.png", PNG), title="Déclaration ISOC 2024",
                    folder="isoc")  # fmt: skip
-    html = web.get(reverse("clients:archive", args=[company.pk, "isoc"])).content.decode()
+    url = reverse("clients:archive", args=[company.pk, "isoc"])
+    html = web.get(url, follow=True).content.decode()  # → classeur, sujet ISOC (D-105)
     assert "Déclaration ISOC 2024" in html and "Ajouter un document" in html

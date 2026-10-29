@@ -135,6 +135,7 @@
   <div class="muted small">
     Ajouté le {{ client.created_at|date:"d/m/Y H:i" }}
     {% if last_change %} · Dernière modification le {{ last_change.history_date|date:"d/m/Y H:i" }}{% if last_change.history_user %} par {{ last_change.history_user }}{% endif %}{% endif %}
+    · <a href="{% url 'clients:history' client.pk %}">Historique du dossier</a> · <a href="{% url 'clients:tasks' client.pk %}">Échéances du dossier</a>
   </div>
   {% if external_links %}
     <div class="ext-links">

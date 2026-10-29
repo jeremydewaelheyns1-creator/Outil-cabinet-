@@ -14,12 +14,12 @@ import logging
 from collections.abc import Sequence
 from datetime import datetime
 
-from django.conf import settings
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.template.loader import render_to_string
 from django.utils import timezone
 
 from apps.clients.models import Assignment, Client
+from apps.core.cabinet import cabinet_name
 from apps.core.models import User
 from apps.outlook import graph
 
@@ -60,7 +60,7 @@ def archive_copy(
     html = render_to_string(
         "documents/courriel.html",
         {
-            "cabinet": settings.CABINET_NAME,
+            "cabinet": cabinet_name(),
             "sender": sender,
             "to": to,
             "subject": subject,

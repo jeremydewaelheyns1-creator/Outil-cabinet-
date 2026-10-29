@@ -1581,3 +1581,30 @@ button:active, .button:active { transform: scale(.98); }
 .readable-sheet td { font-size: .82rem; padding: .3rem .5rem; white-space: nowrap; }
 .readable-text p { margin: .4rem 0; }
 .dup-preview .xml-preview { text-align: left; max-height: 560px; overflow: auto; }
+
+/* Archives en classeur : années › sujets, qui s'ouvrent et se ferment (D-105). */
+.classeur { display: grid; gap: 4px; }
+.classeur details > summary { list-style: none; cursor: pointer; display: flex; align-items: center; gap: 12px; border-radius: 12px; }
+.classeur details > summary::-webkit-details-marker { display: none; }
+.classeur details > summary:hover { background: var(--surface-muted, #f5f5fa); }
+.classeur-chev { display: inline-grid; place-items: center; width: 26px; height: 26px; border-radius: 8px; background: var(--surface-muted, #f1f1f6); font-size: 11px; transition: transform .2s; flex: none; }
+.classeur details[open] > summary > .classeur-chev { transform: rotate(90deg); }
+.classeur-year { border-top: 1px solid var(--border); }
+.classeur-year:first-child { border-top: 0; }
+.classeur-year > summary { padding: 12px 8px; }
+.classeur-year-title { font-size: 1.25rem; font-weight: 800; }
+.classeur-dots { display: flex; gap: 4px; }
+.classeur-dots span { width: 9px; height: 9px; border-radius: 50%; }
+.classeur-count { margin-left: auto; }
+.classeur-subjects { padding: 0 6px 12px 38px; display: grid; gap: 6px; }
+.classeur-subject { border-left: 4px solid var(--subject); border-radius: 10px; background: var(--surface); }
+.classeur-subject > summary { padding: 9px 12px; flex-wrap: wrap; }
+.classeur-subject-title { color: var(--subject); min-width: 140px; }
+.classeur-n { min-width: 56px; }
+.classeur-last { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.classeur-periods { display: flex; gap: 3px; flex-wrap: wrap; }
+.classeur-periods span { font-size: 11px; font-weight: 700; padding: 3px 6px; border-radius: 6px; background: var(--surface-muted, #f1f1f6); color: var(--text-muted); }
+.classeur-periods span.is-done { background: #dcfce7; color: #15803d; }
+.classeur-docs { padding: 0 12px 8px 50px; }
+.classeur-official { margin: 10px 0 0; }
+@media (max-width: 760px) { .classeur-subjects { padding-left: 4px; } .classeur-docs { padding-left: 4px; overflow-x: auto; } }

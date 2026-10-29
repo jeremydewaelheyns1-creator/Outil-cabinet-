@@ -246,20 +246,50 @@ def test_identity_page_links_to_public_sites(web):
     assert "kbopub" not in html
 
 
-def test_archives_folders_on_the_left(web):
+def test_one_archives_entry_on_the_left(web):
+    """D-105 : une seule entrée « Archives » (classeur), plus les 8 dossiers de FID-Manager."""
     company, person = ClientFactory(), PersonFactory()
     html = web.get(reverse("clients:identity", args=[company.pk])).content.decode()
-    for slug in ("legal", "moniteur", "isoc", "tva", "administratif", "courriels"):
-        assert reverse("clients:archive", args=[company.pk, slug]) in html
-    assert reverse("clients:annual_accounts", args=[company.pk]) in html
-    assert "Anti-blanchiment" not in html  # ira dans l'onglet Documents
-    page = web.get(reverse("clients:archive", args=[company.pk, "isoc"]))
+    assert reverse("clients:archives", args=[company.pk]) in html
+    for slug in ("legal", "isoc", "tva", "administratif", "courriels"):
+        assert reverse("clients:archive", args=[company.pk, slug]) not in html
+    for hidden in ("Honoraires", ">Historique<", ">Échéances<"):
+        assert hidden not in html.split('class="dossier-side"')[1].split("</aside>")[0]
+    assert (
+        "Heures prestées" in html
+        and reverse("clients:archive", args=[company.pk, "factures"]) in html
+    )
+    # En bas de la fiche : l'historique et les échéances restent à un clic.
+    assert reverse("clients:history", args=[company.pk]) in html
+    assert reverse("clients:tasks", args=[company.pk]) in html
+    page = web.get(reverse("clients:archives", args=[company.pk]))
     assert page.status_code == 200 and "Aucun document archivé" in page.content.decode()
-    # Une personne : dossier IPP, pas d'ISOC ni de statuts.
-    html = web.get(reverse("clients:identity", args=[person.pk])).content.decode()
-    assert reverse("clients:archive", args=[person.pk, "ipp"]) in html
-    assert reverse("clients:archive", args=[person.pk, "isoc"]) not in html
+    # Les anciennes adresses mènent au bon sujet du classeur.
+    old = web.get(reverse("clients:archive", args=[company.pk, "isoc"]))
+    assert old.status_code == 302 and old["Location"].endswith("/archives/?sujet=isoc")
     assert web.get(reverse("clients:archive", args=[company.pk, "inconnu"])).status_code == 404
+    html = web.get(reverse("clients:archives", args=[person.pk])).content.decode()
+    assert "comptes déposés à la Banque Nationale" not in html  # pas pour un particulier
+
+
+def test_classeur_years_then_subjects(web):
+    from django.core.files.uploadedfile import SimpleUploadedFile
+
+    from apps.documents import services
+
+    company = ClientFactory(vat_periodicity="quarterly")
+    for title, folder in (("Avertissement-extrait de rôle ISOC — exercice 2025", "isoc"),
+                          ("Biztax — exercice 2026", "isoc"), ("Statuts", "legal")):  # fmt: skip
+        services.store(company, SimpleUploadedFile("a.pdf", f"%PDF-1.4 {title}".encode()),
+                       title=title, folder=folder)  # fmt: skip
+    html = web.get(
+        reverse("clients:archives", args=[company.pk]), {"sujet": "isoc"}
+    ).content.decode()
+    assert 'id="annee-2026"' in html and 'id="annee-2025"' in html
+    assert html.index('id="annee-2026"') < html.index('id="annee-2025"')  # récente d'abord
+    assert 'id="annee-2026-isoc" data-remember style="--subject: #9333ea" open' in html
+    assert "Dernier : Biztax — exercice 2026" in html
+    assert "Tout ouvrir" in html and "Tout fermer" in html
 
 
 def test_moniteur_archive_lists_publications(web):

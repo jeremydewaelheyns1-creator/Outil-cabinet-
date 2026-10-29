@@ -1319,3 +1319,25 @@ seul ». L'IPP n'avait aucune date : aucune échéance, rien au calendrier.
   passent au **16/11/2026**, dont l'IPP avec revenus spécifiques (revenus 2025) — date mise à
   jour dans `regles.yaml` — et l'ISOC des exercices clôturés le 31/03/2026 — à encoder par un
   administrateur sur « Délais SPF » (l'article de l'ITAA est repéré par la veille quotidienne).
+
+## D-105 — Fiche client allégée : Archives en classeur, Factures du cabinet
+
+Jeremy : « le but c'est pas de copier-coller FID-Manager ».
+- **Une seule entrée « Archives »** (au lieu de Légal, Moniteur, Comptes annuels, ISOC, IPP, TVA,
+  Administratif, Courriels) : un **classeur** — les années (la plus récente ouverte), puis les
+  sujets en lignes qui s'ouvrent et se ferment (maquette C2 choisie). Résumé de chaque sujet :
+  pour la TVA les 12 mois ou 4 trimestres (en vert : déposés), sinon le dernier document.
+  « Tout ouvrir / Tout fermer » ; l'outil se souvient de ce qui était ouvert (navigateur). Les
+  anciennes adresses mènent au bon sujet. Le Moniteur belge et les comptes déposés à la BNB
+  (données des sites officiels) restent à un clic, en bas du classeur.
+- **Suivi retiré du panneau** : Échéances (badge « en retard » de l'en-tête, lien en bas de la
+  fiche) et Historique (lien en bas de la fiche) restent à un clic.
+- **Facturation** : « Honoraires » retiré (rien n'y était construit) ; « Temps passé » devient
+  « Heures prestées » ; **Factures** : les factures et notes de crédit **émises par le cabinet**,
+  déposées dans « Déposer des documents », sont reconnues (le mot facture + le nom ou le numéro
+  du cabinet) et rangées chez le client (numéro d'entreprise du client, sinon son nom, s'il est
+  seul à correspondre). Les montants ne sont pas lus.
+- **Nom du cabinet** dans Paramètres › Réglages du cabinet (« Identité du cabinet ») : en tête
+  des documents, dans les e-mails, et pour reconnaître les factures. Sans nom ni numéro encodés,
+  aucune facture n'est reconnue (jamais le nom par défaut « Cabinet »).
+- Les pages cachées existent toujours (`Section.hidden`) : rien n'est perdu.

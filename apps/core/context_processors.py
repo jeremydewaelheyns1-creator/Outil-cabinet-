@@ -1,11 +1,12 @@
 from typing import Any
 
-from django.conf import settings
 from django.http import HttpRequest
+
+from apps.core.cabinet import cabinet_name
 
 
 def app_context(request: HttpRequest) -> dict[str, Any]:
-    context: dict[str, Any] = {"CABINET_NAME": settings.CABINET_NAME}
+    context: dict[str, Any] = {"CABINET_NAME": cabinet_name()}
     user = getattr(request, "user", None)
     if user is not None and user.is_authenticated:
         context["unread_notifications"] = user.notifications.filter(read_at__isnull=True).count()

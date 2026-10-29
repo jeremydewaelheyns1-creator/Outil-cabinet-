@@ -3,8 +3,8 @@
 <form method="post" class="card" style="max-width: 760px; margin-top: 1rem">
   {% csrf_token %}
   <input type="hidden" name="action" value="mandats">
-  <h2>Mandats SPF</h2>
-  <p class="muted">Utilisé par « Demander les mandats manquants » dans la page Documents d'un dossier.</p>
+  <h2>Identité du cabinet</h2>
+  <p class="muted">Le nom apparaît en tête des documents et dans les e-mails ; avec le numéro d'entreprise, il permet aussi de reconnaître <strong>vos factures</strong> déposées et de les ranger dans le dossier du client. Le numéro et le lien servent aussi aux mandats SPF.</p>
   <div class="form-grid">{% for field in mandates_form %}{{ field.as_field_group }}{% endfor %}</div>
   <div class="actions"><button type="submit">Enregistrer</button></div>
 </form>

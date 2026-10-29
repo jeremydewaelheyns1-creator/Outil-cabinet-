@@ -24,7 +24,11 @@ def current_dossier(request: HttpRequest) -> dict[str, Any]:
         "current_section": dossier.section_of(request),
         "dossier_top": dossier.top_for(client),
         "dossier_side": dossier.side_for(client),
-        "dossier_counts": {**_relation_counts(client, user), "overdue": overdue},
+        "dossier_counts": {
+            **_relation_counts(client, user),
+            "overdue": overdue,
+            "archives": _archives(client),
+        },
         "dossier_overdue": overdue,
         "dossier_unanswered": _unanswered(client),
         "dossier_progress": _progress(client),
@@ -77,3 +81,10 @@ def _progress(client: Client) -> dict[str, int]:
     from apps.documents.compliance import progress
 
     return progress(client)
+
+
+def _archives(client: Client) -> int:
+    """Nombre de documents du classeur « Archives » (D-105)."""
+    from apps.documents.models import Document  # les documents dépendent des clients
+
+    return Document.objects.filter(client=client, folder__in=dossier.CLASSEUR_FOLDERS).count()

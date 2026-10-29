@@ -1,0 +1,58 @@
+{% extends "clients/sections/_base.html" %}
+{% block head_title %}Archives · {{ client.display_name }}{% endblock %}
+{% block page_title %}Archives{% endblock %}
+{% block page_actions %}
+  {% if years %}<button type="button" class="link-button small" data-classeur="open">Tout ouvrir</button>
+  <button type="button" class="link-button small" data-classeur="close">Tout fermer</button>{% endif %}
+{% endblock %}
+{% block content %}
+{# D-105 : un classeur — les années, puis les sujets, qui s'ouvrent et se ferment. #}
+<section class="card classeur" data-classeur-root="dossier-{{ client.pk }}">
+  {% for y in years %}
+    <details class="classeur-year" id="annee-{{ y.year }}" data-remember{% if y.year == opened_year %} open{% endif %}>
+      <summary>
+        <span class="classeur-chev" aria-hidden="true">▶</span>
+        <span class="classeur-year-title">📁 {{ y.year }}</span>
+        <span class="classeur-dots">{% for s in y.subjects %}<span title="{{ s.label }}" style="background: {{ s.color }}"></span>{% endfor %}</span>
+        <span class="muted small classeur-count">{{ y.count }} document{{ y.count|pluralize }}</span>
+      </summary>
+      <div class="classeur-subjects">
+        {% for s in y.subjects %}
+          <details class="classeur-subject" id="annee-{{ y.year }}-{{ s.folder }}" data-remember style="--subject: {{ s.color }}"{% if s.folder == wanted and y.year == opened_year %} open{% endif %}>
+            <summary>
+              <span class="classeur-chev" aria-hidden="true">▶</span>
+              <strong class="classeur-subject-title">{{ s.label }}</strong>
+              <span class="muted small classeur-n">{{ s.documents|length }} doc.</span>
+              {% if s.periods %}
+                <span class="classeur-periods" aria-label="Périodes TVA déposées">{% for label, ok in s.periods %}<span class="{% if ok %}is-done{% endif %}" title="{{ label }}-{{ y.year|slice:'2:' }}{% if ok %} : déposée{% endif %}">{{ label }}</span>{% endfor %}</span>
+              {% else %}
+                <span class="muted small classeur-last">Dernier : {{ s.documents.0.title }}</span>
+              {% endif %}
+            </summary>
+            <div class="classeur-docs">{% include "documents/_list.html" with documents=s.documents %}</div>
+          </details>
+        {% endfor %}
+      </div>
+    </details>
+  {% empty %}
+    <p class="empty">Aucun document archivé pour l'instant. Les documents déposés (déclarations, courriers du SPF, comptes annuels…) se rangent ici tout seuls, par année et par sujet.</p>
+  {% endfor %}
+  {% if not client.is_person %}
+    <p class="small muted classeur-official">Sites officiels : <a href="{% url 'clients:archive' client.pk 'moniteur' %}">publications au Moniteur belge</a> · <a href="{% url 'clients:annual_accounts' client.pk %}">comptes déposés à la Banque Nationale</a></p>
+  {% endif %}
+  {% if can_edit %}
+  <details class="doc-upload" id="ajouter">
+    <summary class="small">+ Ajouter un document</summary>
+    <form method="post" action="{% url 'clients:document_upload' client.pk %}" enctype="multipart/form-data">
+      {% csrf_token %}
+      <input type="hidden" name="retour" value="{{ request.path }}">
+      <label class="small">Sujet
+        <select name="folder" required>{% for slug, label in subjects %}<option value="{{ slug }}">{{ label }}</option>{% endfor %}</select></label>
+      <label class="small">Titre <input type="text" name="title" maxlength="200" required></label>
+      <label class="small">Fichier <input type="file" name="file" required></label>
+      <button type="submit" class="small">Ajouter</button>
+    </form>
+  </details>
+  {% endif %}
+</section>
+{% endblock %}

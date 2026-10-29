@@ -13,6 +13,8 @@ import re
 import nh3
 from django.utils.html import escape, linebreaks
 
+from apps.core.cabinet import cabinet_name
+
 TAGS = {"p", "br", "div", "strong", "b", "em", "i", "u", "ul", "ol", "li"}
 MAX_LENGTH = 100_000
 _BLOCK = re.compile(r"</(p|div|li)>|<br\s*/?>", re.IGNORECASE)
@@ -60,12 +62,11 @@ def with_signature(message_html: str, signature_html: str, *, logo: str = "") ->
 
 def logo_tag() -> str:
     """Balise du logo (affiché depuis la pièce jointe « cid: »), vide sans logo déposé."""
-    from django.conf import settings
 
     from apps.core import logo
     from apps.core.models import CabinetSettings
 
     if not CabinetSettings.current().signature_logo:
         return ""
-    return LOGO_TAG.format(cid=logo.CONTENT_ID, alt=escape(settings.CABINET_NAME),
+    return LOGO_TAG.format(cid=logo.CONTENT_ID, alt=escape(cabinet_name()),
                            height=logo.DISPLAY_HEIGHT)  # fmt: skip

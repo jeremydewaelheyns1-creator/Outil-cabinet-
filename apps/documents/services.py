@@ -25,6 +25,7 @@ from django.utils import timezone
 
 from apps.clients.models import Client, ContactPoint, Relation
 from apps.core import events
+from apps.core.cabinet import cabinet_name
 from apps.core.models import User
 
 from . import types
@@ -365,7 +366,7 @@ def _email_body(request: DocumentRequest, reminder: bool, sender: User | None) -
         )
     signature = [sender.get_full_name()] if sender is not None and sender.get_full_name() else []
     lines = [greeting, "", intro, "", action, "", "Merci d'avance pour votre aide.", "",
-             "Bien à vous,", *signature, settings.CABINET_NAME, "",
+             "Bien à vous,", *signature, cabinet_name(), "",
              f"Référence de la demande : {request.reference}"]  # fmt: skip
     return "\n".join(lines)
 

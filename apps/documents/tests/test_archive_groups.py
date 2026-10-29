@@ -25,23 +25,22 @@ def declarations(user):
     return company
 
 
-def test_vat_archive_by_year_then_quarter(web, user):
+def test_vat_in_the_classeur_by_year_with_its_quarters(web, user):
+    """D-097 puis D-105 : par année, la TVA avec ses trimestres (déposés en vert)."""
     company = declarations(user)
     services.store(company, SimpleUploadedFile("cc.pdf", b"%PDF-1.4 fictif"),
                    title="Compte courant TVA", folder="tva", user=user)  # fmt: skip
     title = "Déclaration TVA 4e trimestre 2025 (PDF)"
-    old = services.store(company, SimpleUploadedFile("t4.pdf", b"%PDF-1.4 fictif 2"),
-                         title=title, folder="tva", user=user)  # fmt: skip
-    url = reverse("clients:archive", args=[company.pk, "tva"])
-    html = web.get(url).content.decode()
-    assert "?annee=2026" in html and "?annee=2025" in html  # dossiers par année
-    assert "T3-26" in html and "T2-26" in html  # sous-onglets par trimestre
-    assert "Compte courant TVA" in html  # par thème
-    assert old.title not in html  # 2025 : sous son propre onglet
-    only_t3 = web.get(url, {"annee": "2026", "periode": "p:2026-T3"}).content.decode()
-    assert only_t3.count("(XML)") == 1 and only_t3.count("(PDF)") == 1  # XML et PDF réunis
-    assert "2e trimestre" not in only_t3
-    assert old.title in web.get(url, {"annee": "2025"}).content.decode()
+    services.store(company, SimpleUploadedFile("t4.pdf", b"%PDF-1.4 fictif 2"),
+                   title=title, folder="tva", user=user)  # fmt: skip
+    html = web.get(reverse("clients:archives", args=[company.pk])).content.decode()
+    assert 'id="annee-2026-tva"' in html and 'id="annee-2025-tva"' in html
+    part_2026 = html.split('id="annee-2026"')[1].split('id="annee-2025"')[0]
+    assert 'class="is-done" title="T2-26 : déposée"' in part_2026
+    assert 'class="is-done" title="T3-26 : déposée"' in part_2026
+    assert 'title="T4-26"' in part_2026  # pas encore déposé
+    assert part_2026.count("(XML)") == 2 and "Compte courant TVA" in part_2026
+    assert title in html.split('id="annee-2025"')[1]
 
 
 def test_xml_is_shown_as_a_readable_table(web, user):

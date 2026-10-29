@@ -37,6 +37,8 @@ class Section:
     vat_only: bool = False  # seulement pour un client assujetti à la TVA
     slug: str = ""  # page générique : à construire (WORK) ou dossier d'archives (ARCHIVE)
     count: str = ""  # compteur affiché à côté (clé de `counts`)
+    # Page qui existe mais n'a pas d'entrée dans le panneau : on y arrive par un lien (D-105).
+    hidden: bool = False
 
     @property
     def key(self) -> str:
@@ -56,7 +58,6 @@ class Group:
 
 WORK = "work"  # page « à construire » (onglets du haut, entrées prévues à gauche)
 ARCHIVE = "archive"  # dossier d'archives (documents du passé, D-031)
-HISTORY = Section("history", "Historique")
 
 # D-026 — En haut : le travail le plus fréquent. Contenu défini un par un avec Jeremy.
 TOP: tuple[Section, ...] = (
@@ -66,7 +67,8 @@ TOP: tuple[Section, ...] = (
     Section("documents", "Documents"),
 )
 
-# À gauche : la « paperasse », comme le panneau latéral de FID-Manager.
+# À gauche : la « paperasse ». Allégé avec Jeremy (D-105) : pas une copie de FID-Manager.
+# Les pages cachées (`hidden`) existent toujours et s'ouvrent par un lien (en-tête, Archives…).
 SIDE: tuple[Group, ...] = (
     Group("Fiche", (Section("identity", "Identité et coordonnées"),)),
     Group(
@@ -76,27 +78,37 @@ SIDE: tuple[Group, ...] = (
             Section("shareholders", "Actionnaires", count="shareholders"),
         ),
     ),
-    # D-031 — Archives : ce qui est terminé et rangé, comme les Archives de FID-Manager.
+    # D-031, D-105 — Une seule entrée « Archives » : un classeur par année puis par sujet.
+    # Les anciens dossiers restent les sujets du classeur (et leurs adresses y mènent).
     Group(
         "Archives",
         (
-            Section(ARCHIVE, "Légal et statuts", slug="legal", for_persons=False),
-            Section(ARCHIVE, "Moniteur belge", slug="moniteur", for_persons=False),
-            Section("annual_accounts", "Comptes annuels (BNB)", for_persons=False),
-            Section(ARCHIVE, "ISOC", slug="isoc", for_persons=False),
-            Section(ARCHIVE, "IPP", slug="ipp", for_entities=False),
-            Section(ARCHIVE, "TVA", slug="tva"),
-            Section(ARCHIVE, "Administratif", slug="administratif"),
-            Section(ARCHIVE, "Courriels", slug="courriels"),
+            Section("archives", "Archives", count="archives"),
+            Section(ARCHIVE, "Légal et statuts", slug="legal", for_persons=False, hidden=True),
+            Section(ARCHIVE, "Moniteur belge", slug="moniteur", for_persons=False, hidden=True),
+            Section("annual_accounts", "Comptes annuels (BNB)", for_persons=False, hidden=True),
+            Section(ARCHIVE, "ISOC", slug="isoc", for_persons=False, hidden=True),
+            Section(ARCHIVE, "IPP", slug="ipp", for_entities=False, hidden=True),
+            Section(ARCHIVE, "TVA", slug="tva", hidden=True),
+            Section(ARCHIVE, "Administratif", slug="administratif", hidden=True),
+            Section(ARCHIVE, "Courriels", slug="courriels", hidden=True),
         ),
     ),
-    Group("Suivi", (Section("tasks", "Échéances", count="overdue"), HISTORY)),
+    # Échéances (badge « en retard » de l'en-tête) et Historique (lien en bas de la fiche).
+    Group(
+        "Suivi",
+        (
+            Section("tasks", "Échéances", count="overdue", hidden=True),
+            Section("history", "Historique", hidden=True),
+        ),
+    ),
     Group(
         "Facturation",
         (
-            Section("time_spent", "Temps passé"),
-            Section(WORK, "Honoraires", slug="honoraires"),
-            Section(WORK, "Factures", slug="factures"),
+            Section("time_spent", "Heures prestées"),
+            Section(WORK, "Honoraires", slug="honoraires", hidden=True),
+            # Factures du cabinet déposées : reconnues et rangées ici (D-105).
+            Section(ARCHIVE, "Factures", slug="factures"),
         ),
     ),
 )
@@ -105,6 +117,9 @@ SECTIONS: tuple[Section, ...] = (*TOP, *(s for g in SIDE for s in g.sections))
 SECTION_NAMES = {s.url_name for s in SECTIONS if not s.slug}
 WORK_PAGES = {s.slug: s for s in SECTIONS if s.url_name == WORK}
 ARCHIVE_FOLDERS = {s.slug: s for s in SECTIONS if s.url_name == ARCHIVE}
+# Sujets du classeur « Archives » (tous les dossiers d'archives sauf les factures, D-105).
+CLASSEUR_FOLDERS = ("tva", "isoc", "ipp", "comptes", "legal", "moniteur", "administratif",
+                    "courriels")  # fmt: skip
 # Comptes annuels déposés (PDF, XBRL) : rangés à part, affichés sur la page « Comptes annuels
 # (BNB) » sous les dépôts lus à la Banque Nationale (D-098).
 ACCOUNTS_FOLDER = "comptes"
@@ -116,8 +131,8 @@ def folder_url(client_pk: int, folder: str) -> str:
     """Page où se trouvent les documents d'un dossier d'archives."""
     from django.urls import reverse
 
-    if folder == ACCOUNTS_FOLDER:
-        return reverse("clients:annual_accounts", args=[client_pk])
+    if folder in CLASSEUR_FOLDERS and folder != "moniteur":
+        return f"{reverse('clients:archives', args=[client_pk])}?sujet={folder}"  # D-105
     return reverse("clients:archive", args=[client_pk, folder])
 
 
@@ -229,7 +244,10 @@ def top_for(client: Client) -> list[Section]:
 
 
 def side_for(client: Client) -> list[Group]:
-    groups = [Group(g.label, tuple(s for s in g.sections if _allowed(s, client))) for g in SIDE]
+    groups = [
+        Group(g.label, tuple(s for s in g.sections if _allowed(s, client) and not s.hidden))
+        for g in SIDE
+    ]
     return [g for g in groups if g.sections]
 
 

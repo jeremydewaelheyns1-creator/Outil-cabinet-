@@ -23,13 +23,13 @@ import hashlib
 import io
 from typing import Any
 
-from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.template.loader import render_to_string
 from django.utils import timezone
 
 from apps.core import events
+from apps.core.cabinet import cabinet_name
 
 from . import types
 from .models import Document, DocumentRequest, Signature
@@ -101,7 +101,7 @@ def _certificate(
     html = render_to_string(
         "documents/modeles/certificat_signature.html",
         {
-            "cabinet": settings.CABINET_NAME,
+            "cabinet": cabinet_name(),
             "title": document.title,
             "client": request.client.display_name,
             "reference": request.reference,
@@ -261,7 +261,7 @@ def _send_copy(request: DocumentRequest, document: Document, content: bytes) -> 
         "Merci pour votre signature. Vous trouverez en pièce jointe une copie du document "
         "signé, avec son certificat de signature.", "",
         "Bien à vous,", *([sender.get_full_name()] if sender and sender.get_full_name() else []),
-        settings.CABINET_NAME,
+        cabinet_name(),
     ])  # fmt: skip
     attachment = graph.Attachment(f"{document.title[:80]}.pdf".replace("/", "-"), content)
     try:

@@ -29,6 +29,7 @@ urlpatterns = [
     path("<int:pk>/relations/", views.client_relations, name="relations"),
     path("<int:pk>/mandataires/", views.client_mandates, name="mandates"),
     path("<int:pk>/actionnaires/", views.client_shareholders, name="shareholders"),
+    path("<int:pk>/archives/", views.client_archives, name="archives"),
     path("<int:pk>/documents/beneficiaires-effectifs/", views.client_ubo, name="ubo"),
     path(
         "<int:pk>/documents/beneficiaires-effectifs/confirmer-registre/",

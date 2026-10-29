@@ -16,6 +16,7 @@ from django.db import IntegrityError, transaction
 from django.db.models import Q, QuerySet
 from django.http import Http404, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.http import require_POST
 from openpyxl import Workbook
@@ -675,12 +676,40 @@ def _attach_replies(client: Client, emails: list[Any]) -> None:
         )
 
 
+def client_archives(request: AppRequest, pk: int) -> HttpResponse:
+    """Archives du dossier en classeur : années, puis sujets, qui s'ouvrent et se ferment
+    (D-105). Une seule entrée au lieu des 8 dossiers copiés de FID-Manager."""
+    from apps.documents import archive_groups
+    from apps.documents.models import Document
+
+    def build(client: Client) -> dict[str, Any]:
+        documents = list(
+            Document.objects.filter(client=client, folder__in=dossier.CLASSEUR_FOLDERS)
+            .select_related("person", "uploaded_by")
+            .order_by("-uploaded_at")
+        )
+        _attach_replies(client, [d for d in documents if d.folder == "courriels"])
+        years = archive_groups.classeur(client, documents)
+        wanted = request.GET.get("sujet", "")
+        opened = next((y.year for y in years if any(s.folder == wanted for s in y.subjects)), "")
+        choices = [(slug, archive_groups.SUBJECTS[slug][0]) for slug, _ in
+                   dossier.folders_for(client) if slug in archive_groups.SUBJECTS]  # fmt: skip
+        return {"years": years, "wanted": wanted, "opened_year": opened or
+                (years[0].year if years else ""), "subjects": choices}  # fmt: skip
+
+    return render_section(request, pk, "archives", "clients/sections/archives.html", build)
+
+
 def client_archive(request: AppRequest, pk: int, slug: str) -> HttpResponse:
     """Dossier d'archives (D-031). Le Moniteur se remplit seul ; les autres, avec l'onglet
     Documents (les documents traités y seront rangés automatiquement)."""
     found = dossier.ARCHIVE_FOLDERS.get(slug)
     if found is None:
         raise Http404
+    if slug in dossier.CLASSEUR_FOLDERS and slug != "moniteur":
+        # Les anciens dossiers sont devenus des sujets du classeur (D-105) ; le Moniteur garde
+        # sa page (publications lues sur le site officiel).
+        return redirect(f"{reverse('clients:archives', args=[pk])}?sujet={slug}")
 
     def build(client: Client) -> dict[str, Any]:
         context: dict[str, Any] = {"folder": found, **_documents_block(client, folder=slug)}

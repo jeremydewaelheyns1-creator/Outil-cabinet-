@@ -21,12 +21,12 @@ from collections.abc import Callable, Iterator
 from dataclasses import dataclass
 from typing import Any
 
-from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.utils import timezone
 from django.utils.html import escape
 
 from apps.clients.models import Client, Relation
+from apps.core.cabinet import cabinet_name
 from apps.core.text import normalize_text
 
 MAX_SIZE = 5 * 1024 * 1024
@@ -56,7 +56,7 @@ FIELDS: dict[str, tuple[str, Callable[[Client], str]]] = {
     "client.numero": ("Numéro d'entreprise", lambda c: c.enterprise_number_display or ""),
     "client.siege": ("Adresse (siège social)", lambda c: ", ".join(c.address_lines)),
     "client.representant": ("Représentant du client (gérant, administrateur)", _representative),
-    "cabinet.nom": ("Nom du cabinet", lambda c: settings.CABINET_NAME),
+    "cabinet.nom": ("Nom du cabinet", lambda c: cabinet_name()),
     "date.jour": ("Date du jour", lambda c: f"{timezone.localdate():%d/%m/%Y}"),
 }
 CHOICES: list[tuple[str, str]] = [

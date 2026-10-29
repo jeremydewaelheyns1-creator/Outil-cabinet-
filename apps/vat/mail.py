@@ -15,6 +15,7 @@ from django.utils import timezone
 
 from apps.clients.models import ContactPoint
 from apps.core import events
+from apps.core.cabinet import cabinet_name
 from apps.core.models import User
 from apps.core.templatetags.app_tags import euros
 from apps.outlook import graph
@@ -94,7 +95,7 @@ def compose(
 
 def _signature(user: User | None) -> list[str]:
     signature = user.get_full_name() if user is not None else ""
-    return [line for line in (signature, settings.CABINET_NAME) if line]
+    return [line for line in (signature, cabinet_name()) if line]
 
 
 def _compose_documents(filing: VatFiling, user: User | None) -> tuple[str, str]:

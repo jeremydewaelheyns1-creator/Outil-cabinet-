@@ -28,6 +28,7 @@ from django.utils import timezone
 
 from apps.clients.models import Client, Relation
 from apps.core import events
+from apps.core.cabinet import cabinet_name
 from apps.core.models import User
 
 from . import freshness, types
@@ -173,7 +174,7 @@ def _context(
         "client": client,
         "person": person,
         "today": today,
-        "cabinet": settings.CABINET_NAME,
+        "cabinet": cabinet_name(),
         "author": user,
         "doc_label": types.BY_SLUG[doc_type].label,
         "management": list(management),

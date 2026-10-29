@@ -346,8 +346,8 @@ def test_biztax_deposit_goes_to_isoc(web):
     deposit(web, xbrl_upload("isoc_2026.biztax", biztax(enterprise_number(8061))))
     document = Document.objects.get(client=company)
     assert document.folder == "isoc"
-    page = web.get(reverse("clients:archive", args=[company.pk, "isoc"])).content.decode()
-    assert "Déclaration ISOC Biztax" in page and "?annee=2026" in page
+    page = web.get(reverse("clients:archives", args=[company.pk])).content.decode()
+    assert "Déclaration ISOC Biztax" in page and 'id="annee-2026-isoc"' in page
     url = reverse("clients:document_viewer", args=[company.pk, document.pk])
     html = web.get(url, HTTP_HX_REQUEST="true").content.decode()
     assert "Résultat fiscal" in html and "127\u202f853,02" in html
@@ -385,7 +385,7 @@ def test_annual_accounts_is_a_place_for_companies_only():
 
 def test_upload_on_the_page_then_delete_returns_to_the_page(web):
     company = ClientFactory(enterprise_number=enterprise_number(8081))
-    url = reverse("clients:annual_accounts", args=[company.pk])
+    url = reverse("clients:archives", args=[company.pk]) + "?sujet=comptes"  # D-105
     upload = SimpleUploadedFile("c.pdf", b"%PDF-1.4 fictif", content_type="application/pdf")
     web.post(reverse("clients:document_upload", args=[company.pk]),
              {"file": upload, "title": "Comptes annuels 2024", "folder": "comptes",
@@ -393,6 +393,9 @@ def test_upload_on_the_page_then_delete_returns_to_the_page(web):
     document = Document.objects.get(client=company)
     assert document.folder == "comptes"
     assert "Comptes annuels 2024" in web.get(url).content.decode()
+    # Toujours visibles aussi sur la page des comptes déposés à la Banque Nationale.
+    accounts = reverse("clients:annual_accounts", args=[company.pk])
+    assert "Comptes annuels 2024" in web.get(accounts).content.decode()
     delete = reverse("clients:document_delete", args=[company.pk, document.pk])
     response = web.post(delete, {"confirme": "1"})
     assert response.status_code == 302 and response["Location"] == url

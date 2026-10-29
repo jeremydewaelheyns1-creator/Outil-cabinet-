@@ -246,7 +246,7 @@ def cabinet_settings(request: AppRequest) -> HttpResponse:
     class MandatesForm(forms.ModelForm[CabinetSettings]):
         class Meta:
             model = CabinetSettings
-            fields = ("enterprise_number", "spf_mandates_url")
+            fields = ("name", "enterprise_number", "spf_mandates_url")
 
     settings = CabinetSettings.current()
     if request.method == "POST" and request.POST.get("action") in {"logo", "retirer_logo"}:
@@ -255,9 +255,12 @@ def cabinet_settings(request: AppRequest) -> HttpResponse:
         mandates_form = MandatesForm(request.POST, instance=settings)
         if mandates_form.is_valid():
             mandates_form.save()
-            details = {"écran": "réglages du cabinet", "partie": "mandats SPF"}
+            from .cabinet import forget
+
+            forget()  # le nouveau nom s'affiche tout de suite
+            details = {"écran": "réglages du cabinet", "partie": "identité du cabinet"}
             log_access(request, AccessLog.Action.UPDATE, settings, details=details)
-            messages.success(request, "Réglages des mandats SPF enregistrés.")
+            messages.success(request, "Identité du cabinet enregistrée.")
             return redirect("core:cabinet_settings")
         form = SettingsForm(instance=settings)
         context = {"form": form, "mandates_form": mandates_form, "settings": settings}

@@ -446,3 +446,36 @@ document.addEventListener("change", function (event) {
     })();
   }
 })();
+
+// Archives en classeur (D-105) : « Tout ouvrir / Tout fermer », et l'outil se souvient, pour ce
+// dossier et ce navigateur, de ce qui était ouvert. Rien de sensible : seulement des identifiants
+// d'années et de sujets.
+(function () {
+  var root = document.querySelector("[data-classeur-root]");
+  if (!root) return;
+  var key = "classeur:" + root.getAttribute("data-classeur-root");
+  var hasWanted = /[?&]sujet=/.test(location.search);
+  var saved = null;
+  try { saved = JSON.parse(localStorage.getItem(key) || "null"); } catch (e) { saved = null; }
+  var items = root.querySelectorAll("details[data-remember]");
+  if (saved && !hasWanted) {
+    items.forEach(function (d) { d.open = saved.indexOf(d.id) !== -1; });
+  }
+  function save() {
+    var open = [];
+    items.forEach(function (d) { if (d.open) open.push(d.id); });
+    try { localStorage.setItem(key, JSON.stringify(open)); } catch (e) { /* stockage indisponible */ }
+  }
+  items.forEach(function (d) { d.addEventListener("toggle", save); });
+  document.querySelectorAll("[data-classeur]").forEach(function (button) {
+    button.addEventListener("click", function () {
+      var open = button.getAttribute("data-classeur") === "open";
+      items.forEach(function (d) { d.open = open; });
+      save();
+    });
+  });
+  if (hasWanted) {
+    var target = root.querySelector("details.classeur-subject[open]");
+    if (target) target.scrollIntoView({ block: "center" });
+  }
+})();

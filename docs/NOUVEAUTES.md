@@ -3,6 +3,16 @@
 Ce qui a été ajouté à l'outil, du plus récent au plus ancien. Toutes les données de la démo
 sont inventées.
 
+## 29 octobre 2026 — Fiche client allégée
+
+- **Archives** : une seule entrée, en classeur. Les années, puis les sujets (TVA, ISOC,
+  Comptes annuels, Légal…) qui s'ouvrent et se ferment. Pour la TVA, les mois déposés en vert.
+- Le panneau de gauche est plus court : Échéances et Historique s'ouvrent depuis l'en-tête et
+  le bas de la fiche ; « Honoraires » retiré ; « Temps passé » devient « Heures prestées ».
+- **Factures** : déposez vos factures (PDF) dans « Déposer des documents » ; l'outil trouve le
+  client et les range dans ses Factures. Indiquez d'abord le **nom du cabinet** dans
+  Paramètres › Réglages du cabinet (il apparaît aussi en tête de vos documents).
+
 ## 29 octobre 2026 — Calendrier : changer de mois
 
 - Deux flèches ‹ › sur le calendrier fiscal de l'Accueil pour passer d'un mois à l'autre ;
