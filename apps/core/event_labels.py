@@ -24,6 +24,7 @@ EVENT_LABELS = {
     "vat.return_imported": "Déclaration TVA importée",
     "vat.client_informed": "Client informé de sa déclaration TVA",
     "inbox.filed": "Document déposé et classé automatiquement",
+    "ubo.register_confirmed": "Registre UBO confirmé conforme au calcul",
 }
 
 

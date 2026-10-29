@@ -22,6 +22,7 @@ import hashlib
 from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import datetime, timedelta
+from typing import Any
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
@@ -82,7 +83,8 @@ def _check(upload: UploadedFile[bytes]) -> str:
 
 
 def _keep(upload: UploadedFile[bytes], content_type: str, user: User, reason: str,
-          duplicate: Document | None = None) -> InboxItem:  # fmt: skip
+          duplicate: Document | None = None, intended: dict[str, Any] | None = None,
+          ) -> InboxItem:  # fmt: skip
     content = _content(upload)
     item = InboxItem(
         original_name=(upload.name or "document")[-255:],
@@ -92,6 +94,7 @@ def _keep(upload: UploadedFile[bytes], content_type: str, user: User, reason: st
         reason=reason[:200],
         uploaded_by=user,
         duplicate_of=duplicate,
+        intended=intended or {},
     )
     item.file.save("document", ContentFile(content), save=False)
     item.save()
@@ -234,9 +237,12 @@ def _xbrl_document(
 def duplicate_of(content: bytes, clients: QuerySet[Client]) -> Document | None:
     """Document déjà rangé avec exactement le même contenu (même empreinte SHA-256), parmi
     les dossiers visibles. Un fichier seulement ressemblant n'est jamais un doublon."""
+    from django.db.models import Q
+
     digest = hashlib.sha256(content).hexdigest()
     return (
-        Document.objects.filter(client__in=clients, sha256=digest)
+        Document.objects.filter(client__in=clients)
+        .filter(Q(sha256=digest) | Q(source_hashes__contains=[digest]))
         .select_related("client")
         .order_by("-uploaded_at")
         .first()
@@ -244,10 +250,13 @@ def duplicate_of(content: bytes, clients: QuerySet[Client]) -> Document | None:
 
 
 def hold_duplicate(
-    upload: UploadedFile[bytes], content_type: str, user: User, existing: Document
-) -> Result:
-    """Doublon : rien n'est rangé ni supprimé ; le fichier attend la décision (D-099)."""
-    item = _keep(upload, content_type, user, "Déjà dans l'outil : à comparer", existing)
+    upload: UploadedFile[bytes], content_type: str, user: User, existing: Document,
+    intended: dict[str, Any] | None = None,
+) -> Result:  # fmt: skip
+    """Doublon : rien n'est rangé ni supprimé ; le fichier attend la décision (D-099).
+    `intended` : l'endroit choisi dans l'onglet Documents, utilisé si on confirme (D-103)."""
+    item = _keep(upload, content_type, user, "Déjà dans l'outil : à comparer", existing,
+                 intended)  # fmt: skip
     return Result(item.original_name, DUPLICATE,
                   f"Déjà dans {existing.client.display_name} : à comparer",
                   url=reverse("depot:duplicate", args=[item.pk]), title=item.original_name,
@@ -366,6 +375,19 @@ def confirm_duplicate(item: InboxItem, *, clients: QuerySet[Client], user: User)
     if existing is not None and not clients.filter(pk=existing.client_id).exists():
         existing = None
     upload = SimpleUploadedFile(item.original_name, content, item.content_type)
+    target = item.intended or {}
+    client = clients.filter(pk=target.get("client") or 0).first() if target else None
+    if client is not None:
+        # Ajouté dans une case précise : rangé là, comme prévu.
+        person = Client.objects.filter(pk=target.get("person") or 0).first()
+        document = documents.store(
+            client, upload, title=target.get("title") or item.original_name,
+            case=target.get("case", ""), folder=target.get("folder", ""), person=person,
+            user=user, doc_type=target.get("doc_type", ""),
+        )  # fmt: skip
+        discard(item)
+        return [Result(item.original_name, OK, f"{document.title} rangé dans "
+                       f"{client.display_name}.", client, "", document.title)]  # fmt: skip
     if existing is None:
         results = receive([upload], clients=clients, user=user, allow_duplicates=True)
     else:

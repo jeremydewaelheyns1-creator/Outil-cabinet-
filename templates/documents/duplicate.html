@@ -40,7 +40,7 @@
 <section class="card dup-actions">
   <form method="post" action="{% url 'depot:duplicate_confirm' item.pk %}">{% csrf_token %}
     <button type="submit">Confirmer l'import</button>
-    <p class="small muted">Le fichier est rangé une deuxième fois, comme un dépôt normal.</p>
+    <p class="small muted">{% if item.intended %}Le fichier est ajouté là où vous l'aviez déposé (onglet Documents), en plus du document existant.{% else %}Le fichier est rangé une deuxième fois, comme un dépôt normal.{% endif %}</p>
   </form>
   <form method="post" action="{% url 'depot:duplicate_delete' item.pk %}">{% csrf_token %}
     <button type="submit" class="danger">Supprimer le doublon</button>

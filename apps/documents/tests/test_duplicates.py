@@ -166,3 +166,21 @@ def test_confirm_an_unrecognised_file_puts_it_beside_the_original(web):
     copies = Document.objects.filter(client=garage, folder="administratif", title="Facture garage")
     assert copies.count() == 2
     assert not InboxItem.objects.exists()  # pas renvoyé dans « À classer »
+
+
+def test_duplicate_added_in_a_case_is_held_then_filed_where_chosen(web):
+    """D-103 : « dans Documents aussi il doit détecter les doublons »."""
+    garage = company()
+    url = reverse("clients:document_upload", args=[garage.pk])
+    data = {"title": "Statuts", "folder": "legal"}
+    web.post(url, {**data, "file": SimpleUploadedFile("statuts.pdf", PDF)})
+    response = web.post(url, {**data, "file": SimpleUploadedFile("statuts-bis.pdf", PDF)})
+    item = InboxItem.objects.get()
+    assert response.status_code == 302
+    assert response["Location"] == reverse("depot:duplicate", args=[item.pk])
+    assert Document.objects.filter(client=garage).count() == 1  # pas ajouté d'office
+    assert item.intended["folder"] == "legal"
+    html = web.get(response["Location"]).content.decode()
+    assert "là où vous l'aviez déposé" in html
+    web.post(reverse("depot:duplicate_confirm", args=[item.pk]))
+    assert Document.objects.filter(client=garage, folder="legal", title="Statuts").count() == 2

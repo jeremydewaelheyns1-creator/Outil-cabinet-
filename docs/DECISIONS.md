@@ -1279,3 +1279,33 @@ seul ». L'IPP n'avait aucune date : aucune échéance, rien au calendrier.
 - **Calendrier** : la date IPP apparaît comme la TVA, même sans dossier concerné.
 - **Pas de rétroactif** (`premiere_periode: 2026`) : les échéances IPP commencent avec les
   revenus 2026 (16/10/2027) ; celles des revenus 2025, déjà passées, ne sont pas créées.
+
+## D-103 — Test des demandes de documents : 8 retours de Jeremy
+
+- **Carte envoyée par le lien : 30 à 45 s d'attente** → la lecture de la carte se fait après
+  la réponse, au passage des travaux automatiques (toutes les 5 minutes) : le client a sa
+  page « merci » tout de suite. Le cabinet voit la carte lue quelques minutes plus tard.
+- **Document long illisible sans téléchargement** → le visualiseur défile jusqu'à la dernière
+  page (page du document : toute la page défile).
+- **Doublons dans l'onglet Documents aussi** : un fichier identique ajouté dans une case ou un
+  dossier est retenu et comparé (D-099) ; « Confirmer l'import » le range là où il avait été
+  déposé. Les photos recto/verso réunies en PDF par le lien gardent leur empreinte : les
+  redéposer est reconnu comme doublon.
+- **Déclaration UBO signée** : les réponses (lieu de naissance, PPE) et la signature sont
+  reportées dans la déclaration elle-même, plus seulement sur le certificat. Seulement si le
+  document, refait sans signature, est mot pour mot celui que le client a lu ; sinon il reste
+  tel quel. Le document lu reste aux archives avec son empreinte ; le certificat explique
+  l'ajout. Valeur juridique : signature électronique simple (eIDAS ; livre 8 du Code civil,
+  art. 8.1 et 8.18), recevable, appréciée par le juge ; la loi anti-blanchiment n'impose pas de
+  forme pour cette déclaration. À faire confirmer par l'AMLCO / l'expert-comptable.
+- **Fiche de risque : signature de l'AMLCO** possible à tout niveau (obligatoire seulement
+  pour un risque élevé) : bouton « Signer (AMLCO) » pour qui a la capacité AMLCO.
+- **Identifications** : modèles ITAA 3.1 à 3.4 internes au cabinet (signés par le cabinet, pas
+  par le client). L'identification d'un mandataire exige maintenant la fiche de risque, comme
+  celle du client, et les deux sont signalées « à mettre à jour » quand le niveau de risque
+  change (ou si elles ont été faites avant la fiche).
+- **UBO « à confirmer »** : après l'extrait du registre, un bouton « Oui, le registre montre
+  ces personnes : confirmer » note les bénéficiaires calculés comme déclarés (journalisé).
+- **Conformité › envoyer** : n'envoie que ce qui peut partir tout de suite (cartes, et documents
+  déjà préparés en attente de signature, D-051) ; un document jamais préparé ne part pas
+  d'office.

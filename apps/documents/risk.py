@@ -545,7 +545,8 @@ def save(
 
 
 def approve(assessment: RiskAssessment, user: User) -> None:
-    """Validation d'un risque élevé par l'AMLCO."""
+    """Signature de la fiche par l'AMLCO : obligatoire pour un risque élevé, possible pour
+    tous les niveaux (D-103)."""
     if not user.has_capability("aml.decide"):
         raise PermissionError("Réservé à l'AMLCO.")
     assessment.approved_at, assessment.approved_by = timezone.now(), user

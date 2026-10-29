@@ -30,6 +30,11 @@ urlpatterns = [
     path("<int:pk>/mandataires/", views.client_mandates, name="mandates"),
     path("<int:pk>/actionnaires/", views.client_shareholders, name="shareholders"),
     path("<int:pk>/documents/beneficiaires-effectifs/", views.client_ubo, name="ubo"),
+    path(
+        "<int:pk>/documents/beneficiaires-effectifs/confirmer-registre/",
+        views.client_ubo_confirm,
+        name="ubo_confirm",
+    ),
     path("<int:pk>/devient-client/", spf_views.become_client, name="become_client"),
     path("<int:pk>/supprimer-prospect/", spf_views.prospect_delete, name="prospect_delete"),
     path(

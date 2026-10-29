@@ -80,3 +80,41 @@ def test_answers_are_shown_on_the_ubo_page(client, web):
     assert "Réponses du client" in page and "Namur" in page
     pep = next(p for p in risk.propose(company) if p.question.key == "pep")
     assert pep.answer == "low"
+
+
+def answers_for(marc, sophie):
+    return {f"lieu-{marc.pk}": "Namur", f"pep-{marc.pk}": "non",
+            f"lieu-{sophie.pk}": "Liège", f"pep-{sophie.pk}": "oui"}  # fmt: skip
+
+
+def test_answers_and_signature_are_written_in_the_declaration_itself(client):
+    """D-103 : « dommage que tu ne remplisses pas le document de base »."""
+    from apps.documents.models import Document
+
+    company, marc, sophie, path = sent()
+    client.post(path, {"signer_name": "Anne Fictif", "signature": signature_png(), "approve": "1",
+                       **answers_for(marc, sophie)})  # fmt: skip
+    text = " ".join(text_of(Signature.objects.get().document).split())
+    declaration = text.split("Certificat de signature électronique")[0]
+    assert "à Namur" in declaration and "à Liège" in declaration
+    assert "☒ Non" in declaration and "☒ Oui" in declaration
+    assert "Signé en ligne le" in declaration and "Anne Fictif" in declaration
+    assert "Fait à …" not in declaration
+    assert "reportées par l'outil" in text  # le certificat le dit
+    # Le document tel que lu par le client reste aux archives (preuve).
+    read = Document.objects.get(client=company, state=Document.State.AWAITING_SIGNATURE)
+    assert read.archived_at is not None
+
+
+def test_changed_data_keeps_the_document_as_read(client):
+    """Si le dossier a changé depuis l'envoi, l'outil ne régénère pas : le client a signé
+    ce qu'il a lu ; ses réponses restent sur le certificat."""
+    _company, marc, sophie, path = sent()
+    marc.first_name = "Marcel"
+    marc.save()
+    client.post(path, {"signer_name": "Anne Fictif", "signature": signature_png(), "approve": "1",
+                       **answers_for(marc, sophie)})  # fmt: skip
+    text = " ".join(text_of(Signature.objects.get().document).split())
+    declaration = text.split("Certificat de signature électronique")[0]
+    assert "à …" in declaration and "reportées par l'outil" not in text
+    assert "Liège" in text  # sur le certificat

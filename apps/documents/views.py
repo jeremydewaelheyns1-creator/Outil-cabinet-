@@ -173,6 +173,11 @@ def case_page(request: AppRequest, pk: int, slug: str) -> HttpResponse:
         if slug == "fiche-risque":
             latest = client.risk_assessments.first()
             context["risk_pending"] = latest if latest and latest.awaiting_approval else None
+            # Fiche non élevée pas encore signée : l'AMLCO peut la signer (D-103).
+            context["risk_unsigned"] = (
+                latest if latest and not latest.awaiting_approval and not latest.approved_at
+                else None
+            )  # fmt: skip
             context["can_decide"] = request.user.has_capability(Capability.AML_DECIDE)
         if slug == "a-recevoir":
             from .compliance import overview
@@ -318,6 +323,25 @@ def upload(request: AppRequest, pk: int) -> HttpResponse:
     if not form.is_valid():
         _form_errors(request, form)
         return _back(request, client)
+    from . import inbox
+
+    upload_file = form.cleaned_data["file"]
+    upload_file.seek(0)
+    existing = inbox.duplicate_of(upload_file.read(), Client.objects.visible_to(request.user))
+    upload_file.seek(0)
+    if existing is not None:
+        # Doublon aussi dans l'onglet Documents (D-103) : comparer, puis décider.
+        person = form.cleaned_data["person"]
+        held = inbox.hold_duplicate(
+            upload_file, services.detect_type(upload_file).content_type, request.user, existing,
+            {"client": client.pk, "case": form.cleaned_data["case"],
+             "folder": form.cleaned_data["folder"], "title": form.cleaned_data["title"],
+             "doc_type": form.cleaned_data["doc_type"] or "",
+             "person": person.pk if person else None},
+        )  # fmt: skip
+        messages.warning(request, f"« {held.name} » est déjà dans l'outil : comparez avant de "
+                         "l'ajouter une deuxième fois.")  # fmt: skip
+        return redirect(held.url)
     try:
         document = services.store(
             client,

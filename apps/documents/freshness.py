@@ -43,7 +43,16 @@ LABELS = {
     "carte": "carte d'identité",
     "beneficiaires": "bénéficiaires effectifs",
     "mission": "conditions de la mission",
+    "risque": "fiche de risque",
 }
+
+
+def _risk(client: Client) -> Any:
+    """Niveau de la dernière fiche de risque : les identifications le recopient (D-103)."""
+    from .models import RiskAssessment
+
+    latest = RiskAssessment.objects.filter(client=client).order_by("-created_at").first()
+    return [latest.level, latest.created_at.date()] if latest else None
 
 
 def _digest(value: Any) -> str:
@@ -69,6 +78,7 @@ def _parts(client: Client, doc_type: str, person: Client | None) -> dict[str, An
             "adresse": _fields(client, ADDRESS),
             "activite": [c.get("code") if isinstance(c, dict) else c for c in client.nace_codes],
             "mandataires": _management(client),
+            "risque": _risk(client),
         }
     if doc_type == "identification_mandataire" and person is not None:
         from .models import IdentityCard
@@ -80,6 +90,7 @@ def _parts(client: Client, doc_type: str, person: Client | None) -> dict[str, An
             "adresse": _fields(person, ADDRESS),
             "fonctions": sorted(roles.values_list("role", flat=True)),
             "carte": card.valid_until if card else None,
+            "risque": _risk(client),
         }
     if doc_type in ("declaration_ubo", "extrait_ubo"):
         from apps.clients.services import ubo
@@ -120,7 +131,12 @@ def changes(document: Document, client: Client | None = None) -> list[str]:
     if not saved:
         return []
     current = fingerprint(client or document.client, document.doc_type, document.person)
-    return [LABELS.get(k, k) for k, v in saved.items() if k in current and current[k] != v]
+    changed = [LABELS.get(k, k) for k, v in saved.items() if k in current and current[k] != v]
+    # Identification faite avant la fiche de risque (empreinte sans « risque ») : son niveau de
+    # risque est resté vide ; elle est à refaire dès qu'une fiche existe (D-103).
+    if "risque" in current and "risque" not in saved and current["risque"] != _digest(None):
+        changed.append(LABELS["risque"])
+    return changed
 
 
 # --- Suivi quotidien -------------------------------------------------------------------------

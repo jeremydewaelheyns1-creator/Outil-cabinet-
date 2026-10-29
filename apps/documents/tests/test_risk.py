@@ -188,7 +188,7 @@ def test_high_risk_waits_for_the_amlco(web, make_user, client):
     from .test_generation import text_of
 
     text = " ".join(text_of(document).split())
-    assert "AMLCO" in text and "Fait le" in text and "Synthèse" in text
+    assert "AMLCO" in text and "Signé électroniquement" in text and "Synthèse" in text
 
 
 def test_reader_cannot_fill_the_sheet(client, make_user):
@@ -196,3 +196,24 @@ def test_reader_cannot_fill_the_sheet(client, make_user):
     client.force_login(make_user(capabilities=[]))
     response = client.post(reverse("clients:risk_sheet", args=[target.pk]), ALL_LOW)
     assert response.status_code == 404 and not RiskAssessment.objects.exists()
+
+
+def test_amlco_can_sign_a_standard_sheet_too(web, make_user, client):
+    """D-103 : « ajoute une option pour signer le document, pour l'AMLCO »."""
+    from .test_generation import text_of
+
+    target = ClientFactory()
+    web.post(reverse("clients:risk_sheet", args=[target.pk]), ALL_LOW)
+    assessment = RiskAssessment.objects.get()
+    assert not assessment.awaiting_approval
+    amlco = make_user(
+        first_name="Anne", last_name="Amlco", capabilities=["clients.edit", "aml.decide"]
+    )
+    client.force_login(amlco)
+    page = client.get(reverse("clients:document_case", args=[target.pk, "fiche-risque"]))
+    assert "Signer (AMLCO)" in page.content.decode()
+    client.post(reverse("clients:risk_approve", args=[target.pk, assessment.pk]))
+    assessment.refresh_from_db()
+    assert assessment.approved_by == amlco
+    text = " ".join(text_of(Document.objects.get(pk=assessment.document.pk)).split())
+    assert "Anne Amlco" in text and "Signé électroniquement" in text

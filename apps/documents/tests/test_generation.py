@@ -98,6 +98,7 @@ def test_cabinet_documents_are_validated_not_sent(web):
 
     client, manager = company()
     complete(manager)
+    complete(client)  # fiche de risque : exigée avant l'identification (D-103)
     old = services.store(client, SimpleUploadedFile("a.pdf", b"%PDF-1.4 ancien"),
                          title="Ancienne", case="identification-mandataires",
                          doc_type="identification_mandataire", person=manager)  # fmt: skip

@@ -15,6 +15,7 @@ Sécurité :
 from __future__ import annotations
 
 import base64
+import hashlib
 
 from django.conf import settings
 from django.contrib.auth.decorators import login_not_required
@@ -62,7 +63,8 @@ def _combine(images: list[tuple[UploadedFile[bytes], str]]) -> SimpleUploadedFil
     return SimpleUploadedFile("piece.pdf", content, content_type="application/pdf")
 
 
-def _prepare(files: list[UploadedFile[bytes]]) -> UploadedFile[bytes]:
+def _prepare(files: list[UploadedFile[bytes]]) -> tuple[UploadedFile[bytes], list[str]]:
+    """Le fichier à ranger, et les empreintes des photos d'origine s'il a fallu les réunir."""
     if not 1 <= len(files) <= MAX_FILES:
         raise ValidationError(f"Déposez un ou {MAX_FILES} fichiers.")
     checked = []
@@ -74,10 +76,15 @@ def _prepare(files: list[UploadedFile[bytes]]) -> UploadedFile[bytes]:
             raise ValidationError("Formats acceptés : photo (JPG, PNG) ou PDF.")
         checked.append((upload, content_type))
     if len(checked) == 1:
-        return checked[0][0]
+        return checked[0][0], []
     if any(content_type not in IMAGES for _, content_type in checked):
         raise ValidationError("Déposez soit un seul PDF, soit deux photos (recto et verso).")
-    return _combine(checked)
+    hashes = []
+    for upload, _ in checked:
+        upload.seek(0)
+        hashes.append(hashlib.sha256(upload.read()).hexdigest())
+        upload.seek(0)
+    return _combine(checked), hashes
 
 
 @login_not_required
@@ -98,8 +105,9 @@ def page(request: HttpRequest, token: str) -> HttpResponse:
     if request.method == "POST":
         DocumentRequest.objects.filter(pk=found.pk).update(link_attempts=F("link_attempts") + 1)
         try:
-            upload = _prepare(request.FILES.getlist("files"))
-            document = services.receive(found, upload)
+            upload, hashes = _prepare(request.FILES.getlist("files"))
+            # La lecture de la carte se fait ensuite, en arrière-plan : le client n'attend pas.
+            document = services.receive(found, upload, source_hashes=hashes, defer=True)
         except ValidationError as error:
             context["error"] = " ".join(error.messages)
         else:

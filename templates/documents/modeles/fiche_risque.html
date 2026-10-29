@@ -62,11 +62,11 @@ puis modèle 5.2 « Formulaire de synthèse d'évaluation des risques du client 
     <div class="who">AMLCO — nom et signature</div>
     {% if assessment.approved_at %}
       <div>{{ assessment.approved_by.get_full_name|default:assessment.approved_by.email }}</div>
-      <div class="stamp">Fait le {{ assessment.approved_at|date:"d/m/Y" }}</div>
+      <div class="stamp">Signé électroniquement dans l'outil du cabinet le {{ assessment.approved_at|date:"d/m/Y à H:i" }}</div>
     {% elif assessment.level == "high" %}
       <div class="blank">Risque élevé : validation de l'AMLCO en attente</div>
     {% else %}
-      <div class="blank">Validation de l'AMLCO non requise (risque {{ assessment.get_level_display|lower }})</div>
+      <div class="blank">Pas encore signée par l'AMLCO (obligatoire seulement pour un risque élevé)</div>
     {% endif %}
   </div>
 </div>

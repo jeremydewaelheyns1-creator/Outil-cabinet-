@@ -3,6 +3,18 @@
 Ce qui a été ajouté à l'outil, du plus récent au plus ancien. Toutes les données de la démo
 sont inventées.
 
+## 29 octobre 2026 — Retours du test des demandes de documents
+
+- Le client qui envoie sa carte par le lien n'attend plus : la carte est lue juste après, en
+  arrière-plan.
+- Un long document se lit en entier dans l'outil, en faisant défiler.
+- Les doublons sont aussi repérés quand on ajoute un fichier dans une case de « Documents ».
+- La déclaration des bénéficiaires effectifs signée en ligne contient maintenant les réponses
+  du client (lieu de naissance, personne politiquement exposée) et sa signature.
+- Fiche de risque : l'AMLCO peut la signer, quel que soit le niveau.
+- UBO : un bouton confirme que le registre montre les mêmes personnes que le calcul.
+- Identification d'un mandataire : suit la fiche de risque, et signale quand elle est à refaire.
+
 ## 29 octobre 2026 — IPP dans le calendrier et les échéances
 
 - Le **16 octobre** (déclarations IPP par le cabinet) apparaît dans le calendrier fiscal, comme

@@ -107,8 +107,13 @@ def store(
     user: User | None = None,
     doc_type: str = "",
     expires_on: date | None = None,
+    source_hashes: list[str] | None = None,
+    defer: bool = False,
 ) -> Document:
-    """Vérifie et enregistre un document (dans une case, ou directement aux archives)."""
+    """Vérifie et enregistre un document (dans une case, ou directement aux archives).
+
+    `defer` : les traitements (lecture de la carte…) attendent le passage des travaux
+    automatiques, pour ne pas faire attendre le client sur la page du lien (D-103)."""
     if not case and not folder:
         raise ValueError("Un document doit être rangé dans une case ou un dossier.")
     if upload.size is None or upload.size == 0:
@@ -145,6 +150,7 @@ def store(
             archived_at=timezone.now() if folder and not case else None,
             doc_type=doc_type,
             expires_on=expires_on,
+            source_hashes=source_hashes or [],
         )
         if doc_type == "extrait_ubo" and case:
             # Bénéficiaires au moment de l'extrait : un changement se verra (D-078).
@@ -158,6 +164,7 @@ def store(
         subject=client,
         actor=user,
         payload={"document": str(document.pk), "case": case, "folder": folder},
+        process_now=not defer,
     )
     return document
 
@@ -425,8 +432,9 @@ def create_request(
 
 
 def receive(
-    request: DocumentRequest, upload: UploadedFile[bytes], *, user: User | None = None
-) -> Document:
+    request: DocumentRequest, upload: UploadedFile[bytes], *, user: User | None = None,
+    source_hashes: list[str] | None = None, defer: bool = False,
+) -> Document:  # fmt: skip
     """La pièce demandée est arrivée : elle va dans sa case (ou aux archives)."""
     if request.status != DocumentRequest.Status.PENDING:
         raise ValidationError("Cette demande n'est plus en attente.")
@@ -445,6 +453,8 @@ def receive(
             request=request,
             user=user,
             doc_type=request.doc_type,
+            source_hashes=source_hashes,
+            defer=defer,
         )
         # La version envoyée pour signature est gardée aux archives, comme preuve.
         for sent in request.documents.filter(state=Document.State.AWAITING_SIGNATURE):
@@ -463,6 +473,7 @@ def receive(
         subject=request.client,
         actor=user,
         payload={"request": str(request.pk), "document": str(document.pk)},
+        process_now=not defer,
     )
     return document
 

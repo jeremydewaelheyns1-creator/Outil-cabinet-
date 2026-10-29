@@ -40,6 +40,7 @@
   <table>
     <tr><th>Empreinte du document lu (SHA-256)</th><td class="mono">{{ original_sha256 }}</td></tr>
   </table>
+  {% if filled %}<p class="note">Les réponses et la signature ci-dessus ont été reportées par l'outil, telles que saisies par le signataire, aux endroits prévus du document. Le document tel qu'il a été lu, sans ces ajouts, est conservé aux archives du dossier : son empreinte est celle indiquée ci-dessus.</p>{% endif %}
   <p class="note">Signature électronique simple (dessinée), avec piste d'audit conservée par {{ cabinet }}. L'empreinte permet de vérifier que le document n'a pas été modifié depuis sa lecture par le signataire.</p>
 </body>
 </html>

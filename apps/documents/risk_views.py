@@ -90,8 +90,11 @@ def risk_sheet(request: AppRequest, pk: int) -> HttpResponse:
 def risk_approve(request: AppRequest, pk: int, assessment_id: int) -> HttpResponse:
     client = _get_client(request, pk)
     assessment = get_object_or_404(RiskAssessment, pk=assessment_id, client=client)
-    if assessment.awaiting_approval:
+    # L'AMLCO peut signer toute fiche ; c'est obligatoire pour un risque élevé (D-103).
+    if assessment.approved_at is None:
         risk.approve(assessment, request.user)
         log_access(request, AccessLog.Action.UPDATE, client, details={"risque validé": 1})
-        messages.success(request, "Risque élevé validé : la relation peut être acceptée.")
+        high = assessment.level == "high"
+        messages.success(request, "Risque élevé validé : la relation peut être acceptée."
+                         if high else "Fiche signée par l'AMLCO.")  # fmt: skip
     return redirect("clients:document_case", pk=client.pk, slug="fiche-risque")

@@ -43,10 +43,15 @@
       <div class="stamp">Signé électroniquement le {{ today|date:"d/m/Y" }}</div>
     </div>
     {% block client_signature %}
-    <div class="sign">
+    <div class="sign{% if signed %} signed{% endif %}">
       <div class="who">Pour le client</div>
       <div>{{ client.display_name }}</div>
+      {% if signed %}
+      <div><img src="{{ signed.signature_uri }}" alt="Signature" style="max-height:50px;max-width:200px"></div>
+      <div>{{ signed.name }}{% if signed.role %}, {{ signed.role }}{% endif %} — signé en ligne le {{ signed.at|date:"d/m/Y à H:i" }}</div>
+      {% else %}
       <div class="blank">Signature, nom et date</div>
+      {% endif %}
     </div>
     {% endblock %}
   </div>

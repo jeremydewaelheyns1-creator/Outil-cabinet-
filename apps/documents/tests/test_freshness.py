@@ -34,7 +34,13 @@ def row(client, case="identification-client"):
 def test_generated_document_keeps_a_fingerprint_without_personal_data():
     client = company()
     document = finalized(client)
-    assert set(document.data_fingerprint) == {"identite", "adresse", "activite", "mandataires"}
+    assert set(document.data_fingerprint) == {
+        "identite",
+        "adresse",
+        "activite",
+        "mandataires",
+        "risque",
+    }
     assert "Namur" not in str(document.data_fingerprint)
     assert row(client).level == "ok"
 
@@ -96,3 +102,30 @@ def test_expiring_risk_sheet_becomes_a_task_closed_by_the_new_sheet():
     task.refresh_from_db()
     assert task.status == "done"
     assert Document.objects.filter(doc_type="fiche_risque", archived_at__isnull=True).count() == 2
+
+
+def test_new_risk_level_makes_both_identifications_out_of_date():
+    """D-103 : l'identification du mandataire ne suivait pas la fiche de risque."""
+    from apps.documents.models import RiskAssessment
+
+    client = company()  # fiche de risque « faible »
+    manager = complete(types.mandataires(client)[0])
+    generation.finalize(generation.generate(client, "identification_mandataire", person=manager))
+    finalized(client)
+    assert row(client).level == "ok"
+    review = timezone.localdate() + timedelta(days=300)
+    RiskAssessment.objects.create(client=client, answers={}, score=9, level="high",
+                                  next_review=review)  # fmt: skip
+    rows = types.rows(client, "identification-mandataires")
+    assert rows[0].level == "warning" and "fiche de risque" in rows[0].text
+    assert row(client).level == "warning" and "fiche de risque" in row(client).text
+
+
+def test_mandataire_identification_needs_the_risk_sheet_first():
+    from apps.documents.models import RiskAssessment
+
+    client = company()
+    RiskAssessment.objects.filter(client=client).delete()
+    manager = types.mandataires(client)[0]
+    missing = generation.missing_data(client, "identification_mandataire", manager)
+    assert "niveau de risque (fiche de risque)" in missing

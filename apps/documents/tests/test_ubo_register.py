@@ -70,3 +70,27 @@ def test_boards_read_the_stored_result_and_events_refresh_it(django_capture_on_c
     with CaptureQueriesContext(connection) as ctx:
         compliance.overview(company, batch)
     assert not any("clients_relation" in q["sql"] for q in ctx.captured_queries)
+
+
+def test_ubo_is_confirmed_in_one_click_once_the_extract_is_filed(web):
+    """D-103 : « l'UBO s'est mis dans à confirmer et je ne peux pas le confirmer »."""
+    from apps.core.models import AccessLog
+
+    company, marc, sophie = owned_company()
+    url = reverse("clients:ubo", args=[company.pk])
+    assert "Oui, le registre montre ces personnes" not in web.get(url).content.decode()
+    store_extract(company)
+    page = web.get(url).content.decode()
+    assert "Oui, le registre montre ces personnes" in page
+    web.post(reverse("clients:ubo_confirm", args=[company.pk]))
+    declared = Relation.objects.filter(entity=company, role=Relation.Role.BENEFICIAL_OWNER)
+    assert {r.person_id for r in declared} == {marc.pk, sophie.pk}
+    assert AccessLog.objects.filter(details__has_key="registre UBO confirmé").exists()
+    page = web.get(url).content.decode()
+    assert "conforme aux déclarations" in page
+    assert "Oui, le registre montre ces personnes" not in page
+
+
+def test_ubo_confirm_needs_an_extract(web):
+    company, _, _ = owned_company()
+    assert web.post(reverse("clients:ubo_confirm", args=[company.pk])).status_code == 404

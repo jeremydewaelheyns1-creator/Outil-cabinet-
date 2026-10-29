@@ -566,6 +566,42 @@ def client_ubo(request: AppRequest, pk: int) -> HttpResponse:
     )
 
 
+@require_POST
+@require_capability(Capability.CLIENTS_EDIT)
+def client_ubo_confirm(request: AppRequest, pk: int) -> HttpResponse:
+    """« Le registre UBO montre ces mêmes personnes » : les bénéficiaires calculés sont notés
+    comme déclarés au registre (D-103). C'est l'utilisateur qui confirme, après avoir lu
+    l'extrait ; l'outil ne devine rien."""
+    client = _get_client(request, pk)
+    if client.is_person or _register(client)["extract"] is None:
+        raise Http404
+    analysis = ubo.analyse(client)
+    declared = set(
+        Relation.objects.filter(entity=client, role=Relation.Role.BENEFICIAL_OWNER).values_list(
+            "person_id", flat=True
+        )
+    )
+    added = 0
+    with transaction.atomic():
+        for candidate in analysis.candidates:
+            person = candidate.person
+            if not isinstance(person, Client) or person.pk in declared:
+                continue
+            ownership = candidate.basis == "ownership"
+            Relation.objects.create(
+                entity=client, person=person, role=Relation.Role.BENEFICIAL_OWNER,
+                share_percentage=candidate.share_percentage if ownership else None,
+                voting_percentage=candidate.voting_percentage if ownership else None,
+            )  # fmt: skip
+            added += 1
+    log_access(request, AccessLog.Action.UPDATE, client, details={"registre UBO confirmé": added})
+    events.emit("ubo.register_confirmed", subject=client, actor=request.user,
+                payload={"ajoutes": added})  # fmt: skip
+    messages.success(request, "Registre UBO confirmé : les bénéficiaires calculés sont ceux "
+                     "déclarés au registre.")  # fmt: skip
+    return redirect("clients:ubo", pk=client.pk)
+
+
 def _official(client: Client, source: str) -> dict[str, Any]:
     """Dernier relevé d'un site officiel (et le dernier réussi, s'il est plus ancien)."""
     last = official.latest(client, source)

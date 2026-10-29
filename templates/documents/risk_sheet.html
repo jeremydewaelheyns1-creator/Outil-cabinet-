@@ -47,7 +47,7 @@
     <tbody>
     {% for a in history %}
       <tr><td>{{ a.created_at|date:"d/m/Y" }}</td><td>{{ a.get_level_display }} </td><td>{{ a.next_review|date:"d/m/Y" }}</td><td>{{ a.created_by|default:"—" }}</td>
-        <td>{% if a.level == "high" %}{% if a.approved_at %}validée le {{ a.approved_at|date:"d/m/Y" }}{% elif can_decide %}<form method="post" action="{% url 'clients:risk_approve' client.pk a.pk %}" class="inline">{% csrf_token %}<button type="submit" class="small">Valider</button></form>{% else %}en attente{% endif %}{% else %}—{% endif %}</td></tr>
+        <td>{% if a.approved_at %}signée le {{ a.approved_at|date:"d/m/Y" }}{% if a.approved_by %} par {{ a.approved_by }}{% endif %}{% elif can_decide %}<form method="post" action="{% url 'clients:risk_approve' client.pk a.pk %}" class="inline">{% csrf_token %}<button type="submit" class="small">{% if a.level == "high" %}Valider et signer{% else %}Signer (AMLCO){% endif %}</button></form>{% elif a.level == "high" %}en attente{% else %}—{% endif %}</td></tr>
     {% endfor %}
     </tbody>
   </table>

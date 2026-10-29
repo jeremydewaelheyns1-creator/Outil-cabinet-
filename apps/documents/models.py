@@ -140,6 +140,9 @@ class Document(models.Model):
     # [{"person": id, "name": "…"}] — une ligne par bénéficiaire effectif.
     questions = models.JSONField("questions au signataire", default=list, blank=True)
     sha256 = models.CharField(max_length=64, db_index=True)  # repère les doublons (D-099)
+    # Empreintes des fichiers d'origine quand l'outil les a réunis (recto + verso d'une carte
+    # en un PDF) : redéposer ces photos est aussi un doublon (D-103).
+    source_hashes = models.JSONField("empreintes des fichiers d'origine", default=list, blank=True)
     uploaded_at = models.DateTimeField("ajouté le", default=timezone.now)
     uploaded_by = models.ForeignKey(
         User, on_delete=models.SET_NULL, null=True, blank=True, related_name="+"
@@ -266,6 +269,9 @@ class InboxItem(models.Model):
         "Document", on_delete=models.SET_NULL, null=True, blank=True, related_name="+",
         verbose_name="doublon de",
     )  # fmt: skip
+    # Doublon ajouté dans une case ou un dossier précis (onglet Documents) : où le ranger si
+    # l'utilisateur confirme (dossier, case / dossier d'archives, titre, type, personne).
+    intended = models.JSONField("destination prévue", default=dict, blank=True)
     uploaded_by = models.ForeignKey(User, on_delete=models.PROTECT, related_name="+")
     uploaded_at = models.DateTimeField("déposé le", default=timezone.now, db_index=True)
 

@@ -694,7 +694,7 @@ a.badge:hover { text-decoration: none; filter: brightness(0.95); }
 .viewer-tabs button { background: none; border: none; border-bottom: 3px solid transparent; border-radius: 0; color: var(--text-muted); padding: 0.55rem 0.8rem; font-weight: 600; }
 .viewer-tabs button:hover { background: none; color: var(--text); }
 .viewer-tabs button[aria-selected="true"] { color: var(--primary); border-bottom-color: var(--primary); }
-.viewer-body { flex: 1; overflow: auto; background: #e6e9ee; }
+.viewer-body { flex: 1; min-height: 0; overflow: auto; background: #e6e9ee; } /* min-height : défile jusqu'à la dernière page (D-103) */
 .viewer-body > section[data-viewer-panel="infos"], .viewer-body > section[data-viewer-panel="lu"] { background: var(--surface); padding: 1.2rem; min-height: 100%; }
 .viewer-pages { display: grid; grid-template-columns: minmax(0, 1fr); justify-items: center; gap: 1rem; padding: 1.2rem; }
 .viewer-pages img { width: min(100%, 860px); background: #fff; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15); }
@@ -702,7 +702,9 @@ a.badge:hover { text-decoration: none; filter: brightness(0.95); }
 .viewer-foot { padding: 0.6rem 1.2rem; border-top: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; gap: 1rem; }
 .viewer-foot-actions { display: flex; align-items: center; gap: 0.75rem; }
 .viewer-foot-actions form { margin: 0; }
-.viewer-inline { padding: 0; height: 80vh; overflow: hidden; }
+/* Page du document : toute la page défile, jusqu'à la dernière page du document (D-103). */
+.viewer-inline { padding: 0; overflow: hidden; }
+.viewer-inline .viewer-body { overflow: visible; }
 @media print {
   body.printing-document > *:not(.app), body.printing-document .app > *:not(.doc-viewer) { display: none !important; }
   body.printing-document .doc-viewer { position: static; width: auto; height: auto; max-height: none; box-shadow: none; }

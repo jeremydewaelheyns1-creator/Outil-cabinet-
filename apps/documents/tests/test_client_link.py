@@ -184,3 +184,38 @@ def _blank_png() -> bytes:
     buffer = io.BytesIO()
     Image.new("RGBA", (400, 150), (255, 255, 255, 0)).save(buffer, format="PNG")
     return buffer.getvalue()
+
+
+def test_card_is_read_after_the_answer_not_while_the_client_waits(client, monkeypatch):
+    """D-103 : 30 à 45 secondes d'attente côté client. La lecture se fait ensuite, au passage
+    des travaux automatiques ; le client a sa réponse tout de suite."""
+    from apps.core import events
+    from apps.core.models import Event
+    from apps.documents import identity
+
+    calls = []
+    monkeypatch.setattr(identity, "process", lambda document, **kw: calls.append(document.pk))
+    _request, path = new_request()
+    response = client.post(path, {"files": [photo("recto.png", "red"), photo("verso.png", "blue")]})
+    assert "reçu" in response.content.decode() and calls == []  # rien lu pendant la requête
+    added = Event.objects.get(type="document.added")
+    assert added.status == Event.Status.PENDING
+    events.retry_pending(older_than_seconds=0)  # passage des travaux automatiques
+    assert calls == [Document.objects.get(case="pieces-identite").pk]
+
+
+def test_photos_combined_by_the_link_are_duplicates_when_dropped_again(client, web):
+    """D-103 : Jeremy a redéposé les photos de la carte envoyées par le lien : doublon."""
+    from django.urls import reverse
+
+    from apps.documents.models import InboxItem
+
+    _request, path = new_request()
+    recto, verso = photo("recto.png", "red"), photo("verso.png", "blue")
+    client.post(path, {"files": [recto, verso]})
+    document = Document.objects.get(case="pieces-identite")
+    assert len(document.source_hashes) == 2
+    verso.seek(0)
+    web.post(reverse("depot:index"), {"files": [SimpleUploadedFile("verso.png", verso.read())]})
+    item = InboxItem.objects.get()
+    assert item.duplicate_of == document

@@ -30,6 +30,13 @@
     {% else %}
       <p class="empty">Aucun bénéficiaire ne peut être calculé : encodez les actionnaires (avec leurs pourcentages) ou les dirigeants.</p>
     {% endif %}
+    {% if can_edit and register.extract and ubo.candidates and ubo.missing and not ubo.unexpected %}
+      <form method="post" action="{% url 'clients:ubo_confirm' client.pk %}" class="ubo-confirm">{% csrf_token %}
+        <p class="small" style="margin:0 0 .4rem">Vous avez l'extrait du registre UBO du {{ register.extract.uploaded_at|date:"d/m/Y" }}. Y figurent-ils les mêmes personnes que le calcul ci-dessus ?</p>
+        <button type="submit" class="small">Oui, le registre montre ces personnes : confirmer</button>
+        <span class="small muted">Sinon : encodez chaque personne du registre comme « Bénéficiaire effectif déclaré » (onglet Actionnaires).</span>
+      </form>
+    {% endif %}
     {% if ubo.missing %}<p class="alert alert-warning small">Non déclaré{{ ubo.missing|pluralize }} comme bénéficiaire{{ ubo.missing|pluralize }} effectif{{ ubo.missing|pluralize }} : {% for p in ubo.missing %}{{ p }}{% if not forloop.last %}, {% endif %}{% endfor %}.</p>{% endif %}
     {% if ubo.unexpected %}<p class="alert alert-warning small">Déclaré{{ ubo.unexpected|pluralize }} mais non retrouvé{{ ubo.unexpected|pluralize }} par le calcul : {% for p in ubo.unexpected %}{{ p }}{% if not forloop.last %}, {% endif %}{% endfor %}.</p>{% endif %}
     {% if ubo.unresolved_entities %}<p class="alert alert-info small">Actionnariat inconnu pour : {% for e in ubo.unresolved_entities %}{% if e.is_hidden %}{{ e }}{% else %}<a href="{{ e.get_absolute_url }}">{{ e }}</a>{% endif %}{% if not forloop.last %}, {% endif %}{% endfor %}. Le calcul est incomplet.</p>{% endif %}

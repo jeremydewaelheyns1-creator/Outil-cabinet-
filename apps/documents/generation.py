@@ -128,10 +128,9 @@ def missing_data(client: Client, doc_type: str, person: Client | None = None) ->
                     missing.append(label + who)
             if doc_type == "identification_client" and not types.mandataires(client):
                 missing.append("au moins un dirigeant (Mandataires)")
-        if (
-            doc_type == "identification_client"
-            and not RiskAssessment.objects.filter(client=client).exists()
-        ):
+        # Les deux identifications recopient le niveau de risque (rubrique « Estimation du
+        # risque ») : la fiche de risque d'abord (D-103).
+        if not RiskAssessment.objects.filter(client=client).exists():
             missing.append("niveau de risque (fiche de risque)")
     if doc_type == "declaration_ubo" and not client.is_person:
         from apps.clients.services import ubo
@@ -154,13 +153,14 @@ def needs_signature(doc_type: str) -> bool:
 
 
 def _context(
-    client: Client, doc_type: str, person: Client | None, user: User | None
-) -> dict[str, Any]:
+    client: Client, doc_type: str, person: Client | None, user: User | None,
+    signed: dict[str, Any] | None = None, day: Any = None,
+) -> dict[str, Any]:  # fmt: skip
     from apps.clients.services import ubo
 
     from .identity import situation
 
-    today = timezone.localdate()
+    today = day or timezone.localdate()
     management = (
         Relation.objects.current()
         .filter(
@@ -178,6 +178,8 @@ def _context(
         "doc_label": types.BY_SLUG[doc_type].label,
         "management": list(management),
         "provisional": MODELS[doc_type].provisional,
+        # Version signée en ligne : réponses et signature du client reportées (D-103).
+        "signed": signed,
     }
     subject = person if person is not None else client
     if subject.is_person:  # carte de la personne identifiée (client IPP ou mandataire)
@@ -192,15 +194,23 @@ def _context(
     if doc_type == "declaration_ubo" and not client.is_person:
         context["ubo"] = ubo.analyse(client)
         context["nonprofit"] = client.kind == Client.Kind.NONPROFIT
+        answers = (signed or {}).get("answers") or {}
+        context["ubo_rows"] = [
+            {"c": c, "a": answers.get(str(getattr(c.person, "pk", "")))}
+            for c in context["ubo"].candidates
+        ]
     return context
 
 
-def render_pdf(client: Client, doc_type: str, person: Client | None, user: User | None) -> bytes:
+def render_pdf(
+    client: Client, doc_type: str, person: Client | None, user: User | None,
+    signed: dict[str, Any] | None = None, day: Any = None,
+) -> bytes:  # fmt: skip
     from weasyprint import HTML
 
     html = render_to_string(
         f"documents/modeles/{MODELS[doc_type].template}",
-        _context(client, doc_type, person, user),
+        _context(client, doc_type, person, user, signed, day),
     )
     return bytes(HTML(string=html, base_url=str(settings.BASE_DIR)).write_pdf())
 

@@ -4,8 +4,9 @@ Le client reçoit un lien personnel (D-046). Il lit le document (pages affichée
 le signe en dessinant sa signature. L'outil :
 1. vérifie la signature dessinée (vraie image, pas vide, taille raisonnable) et la redessine
    (aucun contenu caché ne passe) ;
-2. ajoute au document **inchangé** une page « certificat de signature » : qui, quand, d'où,
-   empreinte SHA-256 du document lu ;
+2. reporte ses réponses et sa signature dans le document (s'il a été produit par l'outil et
+   que rien n'a changé depuis sa lecture, D-103) et ajoute une page « certificat de
+   signature » : qui, quand, d'où, empreinte SHA-256 du document lu (gardé aux archives) ;
 3. range le document signé à sa place (l'ancien part aux archives), clôture la demande,
    garde la preuve (`Signature`) et envoie une copie au client depuis la boîte Outlook.
 
@@ -93,7 +94,7 @@ def answers_from(document: Document, posted: Any) -> dict[str, dict[str, Any]]:
 def _certificate(
     request: DocumentRequest, document: Document, *, signer_name: str, signer_role: str,
     signature_png: bytes, signed_at: object, ip: str | None, original_sha256: str,
-    answers: dict[str, dict[str, Any]] | None = None,
+    answers: dict[str, dict[str, Any]] | None = None, filled: bool = False,
 ) -> bytes:  # fmt: skip
     from weasyprint import HTML
 
@@ -112,9 +113,45 @@ def _certificate(
             "original_sha256": original_sha256,
             "signature_uri": "data:image/png;base64," + base64.b64encode(signature_png).decode(),
             "answers": list((answers or {}).values()),
+            "filled": filled,
         },
     )
     return bytes(HTML(string=html).write_pdf())
+
+
+def _filled(
+    document: Document, *, signer_name: str, signer_role: str, signature_png: bytes,
+    signed_at: Any, answers: dict[str, dict[str, Any]] | None,
+) -> bytes | None:  # fmt: skip
+    """Le document tel que lu, avec les réponses et la signature du client reportées à leur
+    place (D-103). Seulement pour un document produit par l'outil dont les données n'ont pas
+    changé depuis (sinon il ne serait plus identique à ce que le client a lu) : on garde alors
+    le document lu tel quel, les réponses restant sur le certificat."""
+    from . import generation
+
+    if not document.generated or document.doc_type not in generation.MODELS:
+        return None
+    day = timezone.localtime(document.uploaded_at).date()
+    args = (document.client, document.doc_type, document.person, document.uploaded_by)
+    with document.file.open("rb") as handle:
+        read = handle.read()
+    # Le même document, refait aujourd'hui sans signature, doit être mot pour mot celui lu.
+    if _words(generation.render_pdf(*args, day=day)) != _words(read):
+        return None
+    signed = {
+        "name": signer_name, "role": signer_role.strip()[:100], "at": signed_at,
+        "signature_uri": "data:image/png;base64," + base64.b64encode(signature_png).decode(),
+        "answers": answers or {},
+    }  # fmt: skip
+    return generation.render_pdf(*args, signed=signed, day=day)
+
+
+def _words(content: bytes) -> list[str]:
+    from pypdf import PdfReader
+
+    return " ".join(
+        page.extract_text() or "" for page in PdfReader(io.BytesIO(content)).pages
+    ).split()
 
 
 def _merge(original: bytes, certificate: bytes) -> bytes:
@@ -152,12 +189,14 @@ def sign(
         original = handle.read()
     original_sha256 = hashlib.sha256(original).hexdigest()
     signed_at = timezone.localtime()
+    filled = _filled(original_doc, signer_name=signer_name, signer_role=signer_role,
+                     signature_png=signature_png, signed_at=signed_at, answers=answers)  # fmt: skip
     certificate = _certificate(
         request, original_doc, signer_name=signer_name, signer_role=signer_role.strip()[:100],
         signature_png=signature_png, signed_at=signed_at, ip=ip, original_sha256=original_sha256,
-        answers=answers,
+        answers=answers, filled=filled is not None,
     )  # fmt: skip
-    merged = _merge(original, certificate)
+    merged = _merge(filled or original, certificate)
     name = f"{original_doc.doc_type or 'document'}-signe.pdf"
     upload = SimpleUploadedFile(name, merged, content_type="application/pdf")
     document = receive(request, upload)

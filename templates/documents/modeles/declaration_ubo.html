@@ -2,8 +2,9 @@
 {% comment %}
 Déclaration des bénéficiaires effectifs — modèles ITAA 4.2 (société) et 4.3 (ASBL, fondation),
 « Recueil de modèles de formulaires » anti-blanchiment (D-071). Signée par le client seul.
-Les questions PEP et le lieu de naissance sont répondus en ligne au moment de la signature et
-figurent sur le certificat joint ; sur papier, les cases sont à cocher.
+Les questions PEP et le lieu de naissance sont répondus en ligne au moment de la signature :
+ils sont reportés dans la déclaration et sur le certificat joint (D-103) ; sur papier, les cases
+sont à cocher.
 {% endcomment %}
 {% block body %}
 <table>
@@ -19,23 +20,23 @@ figurent sur le certificat joint ; sur papier, les cases sont à cocher.
 <p>Le(s) soussigné(s) déclare(nt) qu'en date du {{ today|date:"d/m/Y" }}, la ou les personnes physiques suivantes sont les bénéficiaires effectifs {% if nonprofit %}de l'association ou de la fondation{% else %}de la société{% endif %} :</p>
 <table class="list">
   <tr><th>Nom et prénom</th><th>Date et lieu de naissance</th><th>Adresse</th><th>{% if nonprofit %}Qualité{% else %}Contrôle{% endif %}</th></tr>
-  {% for c in ubo.candidates %}
+  {% for row in ubo_rows %}{% with c=row.c %}
     <tr>
       <td>{{ c.person }}</td>
-      <td>{{ c.person.birth_date|date:"d/m/Y"|default:"……" }}, à …………</td>
+      <td>{{ c.person.birth_date|date:"d/m/Y"|default:"……" }}, à {% if row.a.lieu %}<strong>{{ row.a.lieu }}</strong>{% else %}…………{% endif %}</td>
       <td>{% if c.person.address_lines %}{{ c.person.address_lines|join:", " }}{% else %}……{% endif %}</td>
       <td>{{ c.control_label }}{% if c.basis == "ownership" %}<br><span class="muted">capital {{ c.share_percentage|floatformat:"-2" }} % · votes {{ c.voting_percentage|floatformat:"-2" }} %</span>{% endif %}</td>
     </tr>
-  {% empty %}<tr><td colspan="4" class="muted">Aucun bénéficiaire effectif calculé : actionnariat à compléter.</td></tr>{% endfor %}
+  {% endwith %}{% empty %}<tr><td colspan="4" class="muted">Aucun bénéficiaire effectif calculé : actionnariat à compléter.</td></tr>{% endfor %}
 </table>
 <p class="muted">Une copie de la pièce d'identité de chaque personne est jointe ou déjà en possession de {{ cabinet }}.</p>
 
 <h2>C. Personnes politiquement exposées</h2>
 <table class="list">
   <tr><th>Bénéficiaire effectif</th><th>Personne politiquement exposée, membre de sa famille ou personne connue pour lui être étroitement associée ?</th></tr>
-  {% for c in ubo.candidates %}<tr><td>{{ c.person }}</td><td>☐ Oui &nbsp; ☐ Non</td></tr>{% endfor %}
+  {% for row in ubo_rows %}<tr><td>{{ row.c.person }}</td><td>{% if row.a %}{% if row.a.pep %}☒ Oui &nbsp; ☐ Non{% else %}☐ Oui &nbsp; ☒ Non{% endif %}{% else %}☐ Oui &nbsp; ☐ Non{% endif %}</td></tr>{% endfor %}
 </table>
-<p class="muted">En cas de signature en ligne, les réponses figurent sur le certificat de signature joint.</p>
+<p class="muted">{% if signed %}Réponses données par le signataire lors de la signature en ligne du {{ signed.at|date:"d/m/Y" }} (voir aussi le certificat joint).{% else %}En cas de signature en ligne, les réponses sont reportées ici et sur le certificat de signature joint.{% endif %}</p>
 
 <h2>Déclaration</h2>
 <p>{{ cabinet }} peut mettre fin à la relation d'affaires si les informations communiquées se révèlent inexactes ou incomplètes.</p>
@@ -55,8 +56,14 @@ figurent sur le certificat joint ; sur papier, les cases sont à cocher.
 <div class="signatures">
   <div class="sign">
     <div class="who">Pour le client{% if management %} — {% for m in management %}{{ m.person.display_name }}{% if not forloop.last %}, {% endif %}{% endfor %}{% endif %}</div>
+    {% if signed %}
+    <div>Signé en ligne le {{ signed.at|date:"d/m/Y à H:i" }}</div>
+    <div><img src="{{ signed.signature_uri }}" alt="Signature" style="max-height:60px;max-width:220px"></div>
+    <div><strong>{{ signed.name }}</strong>{% if signed.role %}, {{ signed.role }}{% endif %}</div>
+    {% else %}
     <div>Fait à …………………, le …………………</div>
     <div class="blank">Nom, prénom, qualité et signature</div>
+    {% endif %}
   </div>
 </div>
 {% endblock %}
