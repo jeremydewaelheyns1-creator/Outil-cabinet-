@@ -31,4 +31,9 @@
   {% endif %}
 </section>
 {% endif %}
+<section class="card">
+  <div class="card-header"><h2>Comptes déposés au cabinet</h2></div>
+  {% include "clients/sections/_archive_list.html" with empty_text="Aucun compte annuel pour l'instant. Déposez le PDF ou le fichier XBRL de la Banque Nationale : il se range ici tout seul." %}
+  {% include "documents/_upload.html" %}
+</section>
 {% endblock %}

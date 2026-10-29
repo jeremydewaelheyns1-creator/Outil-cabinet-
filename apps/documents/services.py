@@ -55,10 +55,16 @@ FILE_TYPES = (
         (b"PK\x03\x04",),
         False,
     ),
-    # Fichiers XML d'Intervat (déclarations TVA, listings) : téléchargés, jamais affichés.
-    FileType("application/xml", (".xml",), (b"<?xml", b"\xef\xbb\xbf<?xml"), False),
+    # Fichiers XML d'Intervat (déclarations TVA, listings), comptes annuels XBRL de la Banque
+    # Nationale et déclarations Biztax (D-098) : téléchargés, jamais affichés tels quels.
+    FileType(
+        "application/xml",
+        (".xml", ".xbrl", ".biztax"),
+        (b"<?xml", b"\xef\xbb\xbf<?xml", b"<biztax", b"<xbrl"),
+        False,
+    ),
 )
-ACCEPTED = "PDF, JPG, PNG, Word (.docx), Excel (.xlsx) ou XML"
+ACCEPTED = "PDF, JPG, PNG, Word (.docx), Excel (.xlsx), XML, XBRL ou Biztax"
 
 
 def detect_type(upload: UploadedFile[bytes]) -> FileType:

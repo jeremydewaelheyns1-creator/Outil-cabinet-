@@ -3,6 +3,18 @@
 Ce qui a été ajouté à l'outil, du plus récent au plus ancien. Toutes les données de la démo
 sont inventées.
 
+## 29 octobre 2026 — Vrais documents officiels reconnus
+
+- **Procuration** (modèle FID-Manager) : déposée, elle va dans la case « Procuration » du
+  dossier (elle partait avant dans la TVA ou « À classer »).
+- **Comptes annuels** en PDF (modèle de la Banque Nationale) ou en fichier **XBRL** : rangés sur
+  la page « Comptes annuels (BNB) » du dossier, par année.
+- **Déclaration Biztax** (fichier `.biztax`) : rangée dans ISOC ; en l'ouvrant, vous voyez le
+  résultat fiscal, la base imposable, les versements anticipés et la liste des annexes.
+- **Copie de la déclaration IPP** : rangée dans IPP du particulier, même si elle cite son
+  employeur.
+- L'extrait du registre UBO de MyMinfin est reconnu sous sa vraie mise en page.
+
 ## 29 octobre 2026 — Archives rangées, aperçu des XML
 
 - **Archives** : rangées par année (2026, 2025…), puis pour la TVA par période en sous-onglets

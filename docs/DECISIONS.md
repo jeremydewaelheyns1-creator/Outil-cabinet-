@@ -1178,3 +1178,36 @@ Retours de Jeremy sur le dépôt de ses 10 dossiers de test :
 - **Le rond qui tournait** : un PDF plein de texte passait aussi par la lecture de carte
   d'identité (reconnaissance de texte sur l'image, lente sur le serveur). Elle est réservée aux
   photos et aux PDF quasi sans texte.
+
+## D-098 — Vrais documents officiels : procuration, comptes annuels, IPP, XBRL et Biztax
+
+Jeremy a fourni six vrais documents anonymisés pour « entraîner » le dépôt. Ils ne sont **pas**
+dans le dépôt et ont été effacés après usage : seule leur structure a été apprise ; les tests
+(`apps/documents/tests/test_official_files.py`) en reprennent la forme avec des données
+inventées.
+- **Procuration fiscale et administrative** (modèle FID-Manager, « mandant » / « mandataire »)
+  → case « Procuration » du dossier (société ou particulier). Reconnue en premier : elle cite
+  aussi « TVA », « demandes de renseignements », « versements anticipés », « comptes
+  annuels », « UBO », et partait sinon dans l'import TVA ou « à revoir ».
+- **Copie de la déclaration IPP** (« copie de votre déclaration » / « document préparatoire »)
+  → archives IPP du particulier. Pour les documents d'un particulier (déclaration IPP,
+  avertissement-extrait de rôle IPP, Tax-on-web), le **numéro national passe avant** les
+  numéros d'entreprise : une déclaration peut citer l'employeur, client lui aussi.
+- **Comptes annuels PDF** (modèle BNB) et **comptes annuels XBRL** (`.xbrl`) → nouvel
+  emplacement « comptes », affiché sur la page **Comptes annuels (BNB)** sous les dépôts lus à
+  la Banque Nationale (par année, comme les archives) ; on peut aussi y déposer et y classer à
+  la main. Pas de nouvelle entrée dans le panneau de gauche. Exercice : la fin de la période.
+- **Déclaration Biztax** (`.biztax`) → archives ISOC (IPM ou INR selon le type de
+  déclaration). Exercice d'imposition lu dans le fichier.
+- **Extrait UBO** : la mise en page réelle de MyMinfin (« Informations relatives aux
+  bénéficiaires effectifs ») est reconnue.
+- **Aperçu** des XBRL dans le visualiseur : période, modèle, date de l'assemblée générale et
+  quelques chiffres clés (bilan, capitaux propres, résultat ; résultat fiscal, base imposable,
+  versements anticipés), et le nom des annexes jointes à la déclaration Biztax. Aucun nom ni
+  adresse n'est repris. Lecture sûre (defusedxml).
+- Dossier trouvé par le numéro d'entreprise du fichier, parmi les dossiers visibles de la
+  personne qui dépose ; inconnu ou personne physique → « À classer » avec la raison.
+
+Constat de sécurité remonté à Jeremy : dans la procuration, la signature électronique (nom du
+signataire et certificat) et la propriété « enregistré par » du PDF gardaient des noms réels,
+invisibles à l'écran. Conseil : imprimer en PDF (aplatir) et vider les propriétés avant envoi.

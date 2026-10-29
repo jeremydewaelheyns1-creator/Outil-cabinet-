@@ -4,7 +4,8 @@ Complète le dépôt unique (D-041), qui reconnaît déjà les déclarations TVA
 PDF) et les cartes d'identité. Ici : les autres courriers et documents du SPF —
 avertissements-extraits de rôle (IPP, ISOC, IPM), accusés de réception Biztax et Tax-on-web,
 listing clients annuel, avis de rectification, demandes de renseignements, versements
-anticipés, compte courant TVA.
+anticipés, compte courant TVA ; et, appris sur de vrais documents anonymisés (D-098) : la
+procuration du cabinet, la copie de la déclaration IPP, les comptes annuels PDF de la BNB.
 
 Comment :
 1. le texte du PDF (pdftotext ; pour un courrier scanné sans texte, lecture de la 1re page sur
@@ -47,25 +48,53 @@ class Kind:
     folder_person: str  # dossier d'archives pour une personne physique
     folder_entity: str  # … pour une société ou une association
     action: bool = False  # courrier qui demande une réponse : rangé « à revoir »
-    case: str = ""  # case de l'onglet Documents (au lieu d'une archive), pour une société
+    case: str = ""  # case de l'onglet Documents (au lieu d'une archive), si le dossier l'a
     doc_type: str = ""
+    person_first: bool = False  # document d'un particulier : le numéro national d'abord
+    year: re.Pattern[str] | None = None  # où lire l'exercice, si ce n'est pas « exercice d'imp. »
 
 
 AER = ("avertissement-extrait de role", "avertissement extrait de role", "aanslagbiljet")
+# Comptes annuels (modèle BNB) : « …exercice couvrant la période du 01/01/2020 au 31/12/2020 ».
+ACCOUNTS_YEAR = re.compile(
+    r"couvrant\s+la\s+p[ée]riode\s+du.{0,160}?au\s*\d{0,2}\s*/\s*\d{0,2}\s*/\s*(20\d{2})"
+    r"|periode\s+van.{0,160}?tot\s*\d{0,2}\s*/\s*\d{0,2}\s*/\s*(20\d{2})",
+    re.I | re.S,
+)
 KINDS: tuple[Kind, ...] = (
+    # Documents entiers qui citent beaucoup d'autres mots (« demandes de renseignements »,
+    # « versements anticipés », « TVA »…) : reconnus en premier (vrais documents, D-098).
+    # Procuration générale donnée au cabinet (modèle FID-Manager) → case « Procuration ».
+    Kind("procuration", "Procuration fiscale et administrative",
+         (("procuration", "volmacht"), ("mandant", "lastgever", "volmachtgever"),
+          ("mandataire", "lasthebber", "volmachthebber")),
+         "administratif", "administratif", case="procuration", doc_type="procuration"),
+    # Copie de la déclaration IPP (Tax-on-web / MyMinfin) ou document préparatoire.
+    Kind("declaration_ipp", "Déclaration IPP",
+         (("declaration a l'impot des personnes physiques",
+           "aangifte in de personenbelasting"),
+          ("copie de votre declaration", "document preparatoire", "kopie van uw aangifte",
+           "voorbereidend document")),
+         "ipp", "ipp", person_first=True),
+    # Comptes annuels au modèle de la Banque Nationale (PDF).
+    Kind("comptes_annuels", "Comptes annuels (PDF)",
+         (("comptes annuels", "jaarrekening"),
+          ("deposer en vertu du code des societes", "code des societes et des associations",
+           "neer te leggen krachtens het wetboek", "wetboek van vennootschappen en verenigingen")),
+         "", "comptes", year=ACCOUNTS_YEAR),
     Kind("aer_isoc", "Avertissement-extrait de rôle ISOC",
          (AER, ("des societes", "vennootschapsbelasting")), "isoc", "isoc"),
     Kind("aer_ipm", "Avertissement-extrait de rôle IPM",
          (AER, ("personnes morales", "rechtspersonenbelasting")), "isoc", "isoc"),
     Kind("aer_ipp", "Avertissement-extrait de rôle IPP",
-         (AER, ("personnes physiques", "personenbelasting")), "ipp", "ipp"),
+         (AER, ("personnes physiques", "personenbelasting")), "ipp", "ipp", person_first=True),
     Kind("biztax", "Biztax — accusé de réception de la déclaration",
          (("biztax",), ("accuse de reception", "ontvangstbewijs", "bien ete deposee",
                         "bien ete enregistree", "a ete deposee")), "isoc", "isoc"),
     Kind("tax_on_web", "Tax-on-web — accusé de réception de la déclaration IPP",
          (("tax-on-web", "taxonweb", "myminfin"), ("accuse de reception", "ontvangstbewijs"),
           ("impot des personnes physiques", "personenbelasting", "declaration ipp")),
-         "ipp", "ipp"),
+         "ipp", "ipp", person_first=True),
     Kind("listing_clients", "Listing clients annuel (TVA)",
          (("listing annuel", "listing des clients", "klantenlisting", "jaarlijkse lijst"),
           ("assujetti", "btw-plichtige", "tva", "btw")), "tva", "tva"),
@@ -81,7 +110,9 @@ KINDS: tuple[Kind, ...] = (
     # Extrait du registre UBO (MyMinfin) → case UBO de la société (D-097).
     Kind("extrait_ubo", "Extrait du registre UBO",
          (("registre des beneficiaires effectifs", "registre ubo", "ubo-register",
-           "register van de uiteindelijke begunstigden"), ("extrait", "uittreksel")),
+           "register van de uiteindelijke begunstigden"),
+          ("extrait", "uittreksel", "informations relatives aux beneficiaires effectifs",
+           "informatie over de uiteindelijke begunstigden")),
          "administratif", "administratif", case="ubo", doc_type="extrait_ubo"),
 )  # fmt: skip
 YEAR = re.compile(r"exercice\s+d.imposition\s*:?\s*(20\d{2})|aanslagjaar\s*:?\s*(20\d{2})", re.I)
@@ -149,7 +180,7 @@ def identify(text: str, clients: QuerySet[Client], cabinet_number: str = "") -> 
     kind = kind_of(text)
     if kind is None:
         return None
-    match = YEAR.search(text)
+    match = (kind.year or YEAR).search(text)
     year = int(match.group(1) or match.group(2)) if match else None
     cabinet = intervat.normalize_number(cabinet_number or "")
     # Dans l'ordre du document : le destinataire (déclarant) est toujours cité en premier ; un
@@ -157,14 +188,20 @@ def identify(text: str, clients: QuerySet[Client], cabinet_number: str = "") -> 
     cited = (intervat.normalize_number(m) for m in intervat.NUMBER.findall(text))
     ordered = [n for n in dict.fromkeys(cited) if n and n != cabinet]
     found: list[Client] = []
+    nationals = _national_numbers(text)
+    if kind.person_first and nationals:
+        # Déclaration d'un particulier : elle peut citer l'entreprise d'un employeur, client
+        # lui aussi ; le numéro national désigne le bon dossier.
+        persons = clients.filter(kind=Client.Kind.PERSON, national_number__in=nationals)
+        found = list(persons[:3])
+        if found:
+            return Found(kind, year, found)
     if ordered:
         known = {c.enterprise_number: c for c in clients.filter(enterprise_number__in=ordered)}
         first = next((known[n] for n in ordered if n in known), None)
         found = [first] if first is not None else []
-    if not found:
-        nationals = _national_numbers(text)
-        if nationals:
-            found = list(clients.filter(kind=Client.Kind.PERSON, national_number__in=nationals)[:3])
+    if not found and nationals:
+        found = list(clients.filter(kind=Client.Kind.PERSON, national_number__in=nationals)[:3])
     return Found(kind, year, found)
 
 

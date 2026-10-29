@@ -1,0 +1,21 @@
+{# Liste d'archives par année, puis par période (TVA) ou par thème (D-097). #}
+  {% if grouped %}
+    {# D-097 : par année, puis par période (TVA) ou par thème. #}
+    <nav class="archive-tabs" aria-label="Années">
+      {% for y, count in years %}<a href="?annee={{ y }}" class="archive-tab{% if y == year %} is-current{% endif %}"{% if y == year %} aria-current="page"{% endif %}>{{ y }} <span class="muted small">{{ count }}</span></a>{% endfor %}
+    </nav>
+    {% if period_tabs|length > 1 %}
+    <nav class="archive-tabs archive-subtabs" aria-label="Périodes">
+      <a href="?annee={{ year }}" class="archive-tab{% if not period %} is-current{% endif %}">Tout {{ year }}</a>
+      {% for key, label in period_tabs %}<a href="?annee={{ year }}&amp;periode={{ key|urlencode }}" class="archive-tab{% if key == period %} is-current{% endif %}">{{ label }}</a>{% endfor %}
+    </nav>
+    {% endif %}
+    {% for g in groups %}
+      <div class="archive-group">
+        <h3>{{ g.label }}{% if g.subtitle %} <span class="muted small">· {{ g.subtitle }}</span>{% endif %} <span class="muted small">· {{ g.documents|length }} document{{ g.documents|pluralize }}</span></h3>
+        {% include "documents/_list.html" with documents=g.documents %}
+      </div>
+    {% endfor %}
+  {% else %}
+  {% include "documents/_list.html" %}
+  {% endif %}

@@ -41,7 +41,7 @@ def _period_label(period_key: str) -> str:
 
 def _theme(title: str) -> str:
     theme = title.split(" — ")[0]
-    return re.sub(r"\s*\((PDF|XML)[^)]*\)\s*$", "", theme).strip() or "Autres documents"
+    return re.sub(r"\s*\((PDF|XML|XBRL)[^)]*\)\s*$", "", theme).strip() or "Autres documents"
 
 
 def group(client: Any, folder: str, documents: list[Document], year: str = "",

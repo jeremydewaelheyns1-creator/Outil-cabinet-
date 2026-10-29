@@ -37,7 +37,16 @@ def recognize(
 ) -> tuple[str, str]:
     """(sorte, description courte) d'une pièce jointe."""
     lowered_name = name.lower()
-    if content_type in ("application/xml", "text/xml") or lowered_name.endswith(".xml"):
+    if content_type in ("application/xml", "text/xml") or lowered_name.endswith(
+        (".xml", ".xbrl", ".biztax")
+    ):
+        from apps.documents import xbrl
+
+        official = xbrl.read(content)
+        if official is not None:  # comptes annuels BNB ou déclaration Biztax (D-098)
+            if official.kind == xbrl.BIZTAX:
+                return Kind.TAX, f"Déclaration {official.tax or 'ISOC'} Biztax"
+            return Kind.OTHER, "Comptes annuels (XBRL)"
         declarations: list[intervat.Declaration] = []
         # Fichier XML quelconque : simplement pas une déclaration Intervat.
         with contextlib.suppress(ValueError, SyntaxError, KeyError, AttributeError, TypeError):

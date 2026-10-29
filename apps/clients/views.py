@@ -581,12 +581,20 @@ def _official(client: Client, source: str) -> dict[str, Any]:
 
 def client_annual_accounts(request: AppRequest, pk: int) -> HttpResponse:
     """Comptes annuels déposés à la Banque Nationale."""
+    from apps.documents import archive_groups
+
+    def build(client: Client) -> dict[str, Any]:
+        # Dépôts lus à la Banque Nationale, puis les comptes déposés au cabinet (D-098).
+        context = {**_official(client, OfficialSnapshot.Source.NBB),
+                   **_documents_block(client, folder=dossier.ACCOUNTS_FOLDER)}  # fmt: skip
+        context.update(archive_groups.group(
+            client, dossier.ACCOUNTS_FOLDER, list(context["documents"]),
+            request.GET.get("annee", ""), request.GET.get("periode", ""),
+        ))  # fmt: skip
+        return context
+
     return render_section(
-        request,
-        pk,
-        "annual_accounts",
-        "clients/sections/annual_accounts.html",
-        lambda client: _official(client, OfficialSnapshot.Source.NBB),
+        request, pk, "annual_accounts", "clients/sections/annual_accounts.html", build
     )
 
 

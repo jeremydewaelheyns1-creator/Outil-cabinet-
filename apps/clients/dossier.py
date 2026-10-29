@@ -105,6 +105,25 @@ SECTIONS: tuple[Section, ...] = (*TOP, *(s for g in SIDE for s in g.sections))
 SECTION_NAMES = {s.url_name for s in SECTIONS if not s.slug}
 WORK_PAGES = {s.slug: s for s in SECTIONS if s.url_name == WORK}
 ARCHIVE_FOLDERS = {s.slug: s for s in SECTIONS if s.url_name == ARCHIVE}
+# Comptes annuels déposés (PDF, XBRL) : rangés à part, affichés sur la page « Comptes annuels
+# (BNB) » sous les dépôts lus à la Banque Nationale (D-098).
+ACCOUNTS_FOLDER = "comptes"
+ACCOUNTS_SECTION = next(s for s in SECTIONS if s.url_name == "annual_accounts")
+DOCUMENT_FOLDERS: dict[str, Section] = {**ARCHIVE_FOLDERS, ACCOUNTS_FOLDER: ACCOUNTS_SECTION}
+
+
+def folder_url(client_pk: int, folder: str) -> str:
+    """Page où se trouvent les documents d'un dossier d'archives."""
+    from django.urls import reverse
+
+    if folder == ACCOUNTS_FOLDER:
+        return reverse("clients:annual_accounts", args=[client_pk])
+    return reverse("clients:archive", args=[client_pk, folder])
+
+
+def folders_for(client: Client) -> list[tuple[str, Section]]:
+    """Dossiers où ranger un document de ce client (archives et comptes annuels)."""
+    return [(slug, s) for slug, s in DOCUMENT_FOLDERS.items() if _allowed(s, client)]
 
 
 # Pages « Organisation » : quels rôles de relation chacune montre.
@@ -172,6 +191,14 @@ DOCUMENT_CASE_SLUGS = {c.slug: c for c in DOCUMENT_CASES}
 
 def document_cases_for(client: Client) -> list[DocumentCase]:
     return [c for c in DOCUMENT_CASES if c.for_persons or not client.is_person]
+
+
+def case_url(client_pk: int, case: DocumentCase) -> str:
+    from django.urls import reverse
+
+    if case.url_name == "document_case":
+        return reverse("clients:document_case", args=[client_pk, case.slug])
+    return reverse(f"clients:{case.url_name}", args=[client_pk])
 
 
 RELATION_PAGES: dict[str, tuple[str, ...]] = {

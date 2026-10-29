@@ -69,7 +69,7 @@ class UploadForm(forms.Form):
         case, folder = data.get("case") or "", data.get("folder") or ""
         if case and case not in dossier.DOCUMENT_CASE_SLUGS:
             raise ValidationError("Case inconnue.")
-        if folder and folder not in dossier.ARCHIVE_FOLDERS:
+        if folder and folder not in dossier.DOCUMENT_FOLDERS:
             raise ValidationError("Dossier inconnu.")
         if not case and not folder:
             raise ValidationError("Choisissez où ranger le document.")
@@ -202,7 +202,7 @@ def _place_label(document: Document) -> str:
     if document.case:
         case = dossier.DOCUMENT_CASE_SLUGS.get(document.case)
         return f"Documents › {case.label}" if case else "Documents"
-    folder = dossier.ARCHIVE_FOLDERS.get(document.folder)
+    folder = dossier.DOCUMENT_FOLDERS.get(document.folder)
     return f"Archives › {folder.label}" if folder else "Archives"
 
 
@@ -217,6 +217,17 @@ def _xml_preview(document: Document) -> Any:
 
     with document.file.open("rb") as handle:
         return intervat.preview(handle.read())
+
+
+def _xbrl_preview(document: Document) -> Any:
+    """Comptes annuels XBRL ou déclaration Biztax : chiffres clés lisibles (D-098)."""
+    name = document.original_name.lower()
+    if document.content_type != "application/xml" or not name.endswith((".xbrl", ".biztax")):
+        return None
+    from . import xbrl
+
+    with document.file.open("rb") as handle:
+        return xbrl.read(handle.read())
 
 
 def _viewer_context(request: AppRequest, client: Client, document: Document) -> dict[str, Any]:
@@ -252,6 +263,7 @@ def _viewer_context(request: AppRequest, client: Client, document: Document) -> 
         "pages": range(1, pages + 1),
         "cards": list(document.identity_cards.all()),
         "xml_preview": _xml_preview(document),
+        "xbrl_preview": _xbrl_preview(document),
         "extension": (document.original_name.rsplit(".", 1)[-1].lower()
                       if "." in document.original_name else ""),
     }  # fmt: skip
@@ -604,7 +616,7 @@ def document_delete(request: AppRequest, pk: int, document_id: str) -> HttpRespo
         reverse("clients:document_case", args=[client.pk, document.case])
         if document.case and document.case != "ubo"
         else reverse("clients:ubo", args=[client.pk]) if document.case == "ubo"
-        else reverse("clients:archive", args=[client.pk, document.folder]) if document.folder
+        else dossier.folder_url(client.pk, document.folder) if document.folder
         else reverse("clients:documents", args=[client.pk])
     )  # fmt: skip
     if request.method == "POST" and not refused and request.POST.get("confirme") == "1":

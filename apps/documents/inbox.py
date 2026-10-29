@@ -3,6 +3,8 @@
 On dépose n'importe quel fichier à un seul endroit (barre du haut) ; l'outil cherche seul le
 dossier et la place :
 1. XML d'Intervat (déclaration TVA, listing IC) → grille TVA du bon dossier (D-040) ;
+   comptes annuels XBRL de la BNB → page « Comptes annuels » ; déclaration Biztax → ISOC
+   (D-098) ;
 2. PDF d'Intervat → rejoint sa déclaration (ou « à confirmer » dans le bon dossier) ;
 3. carte d'identité (photo ou PDF) → lignes codées lues sur le serveur, personne retrouvée
    par son numéro national → case « Cartes d'identité » de son dossier, où la carte est
@@ -170,15 +172,19 @@ def _spf_document(
                      else "plusieurs dossiers correspondent"))  # fmt: skip
         return to_inbox(upload, content_type, user, reason)
     client = found.clients[0]
-    if found.kind.case and not client.is_person:
+    cases = {c.slug: c for c in dossier.document_cases_for(client)}
+    if found.kind.case in cases:
         documents.store(client, upload, title=label, case=found.kind.case,
                         doc_type=found.kind.doc_type, user=user)  # fmt: skip
-        url = reverse("clients:ubo", args=[client.pk])
+        url = dossier.case_url(client.pk, cases[found.kind.case])
         return Result(upload.name or "document", OK, f"{label} rangé dans {client.display_name}.",
                       client, url, label)  # fmt: skip
     place = spf_docs.folder(found, client)
+    if not place:
+        what = "une personne physique" if client.is_person else "une société"
+        return to_inbox(upload, content_type, user, f"{label} reconnu, mais le dossier est {what}")
     document = documents.store(client, upload, title=label, folder=place, user=user)
-    url = reverse("clients:archive", args=[client.pk, place])
+    url = dossier.folder_url(client.pk, place)
     if found.kind.action:
         document.review_needed = True
         document.review_reason = "Courrier du SPF qui demande une réponse"
@@ -187,6 +193,29 @@ def _spf_document(
                       " : il demande une réponse, à traiter.", client, url, label)  # fmt: skip
     return Result(upload.name or "document", OK, f"{label} rangé dans {client.display_name}.",
                   client, url, label)  # fmt: skip
+
+
+def _xbrl_document(
+    upload: UploadedFile[bytes], content_type: str, clients: QuerySet[Client], user: User
+) -> Result | None:
+    """Comptes annuels XBRL (BNB) ou déclaration Biztax → le bon dossier (D-098)."""
+    from . import xbrl
+
+    filing = xbrl.read(_content(upload))
+    if filing is None:
+        return None
+    label = filing.title
+    client = clients.filter(enterprise_number=filing.enterprise_number).first()
+    if client is None:
+        return to_inbox(upload, content_type, user, f"{label} reconnu, mais aucun dossier "
+                        "ne correspond")  # fmt: skip
+    place = dossier.ACCOUNTS_FOLDER if filing.kind == xbrl.ACCOUNTS else "isoc"
+    if client.is_person:
+        return to_inbox(upload, content_type, user,
+                        f"{label} reconnu, mais le dossier est une personne physique")  # fmt: skip
+    documents.store(client, upload, title=label, folder=place, user=user)
+    return Result(upload.name or "document", OK, f"{label} rangé dans {client.display_name}.",
+                  client, dossier.folder_url(client.pk, place), label)  # fmt: skip
 
 
 # --- Point d'entrée --------------------------------------------------------------------------
@@ -206,6 +235,10 @@ def receive(
     # Les XML d'abord : un PDF déposé avec son XML le rejoint.
     for upload, content_type in accepted:
         if content_type != XML:
+            continue
+        official = _xbrl_document(upload, content_type, clients, user)
+        if official is not None:
+            results.append(official)
             continue
         outcome = importer.import_xml(upload, clients, user, classified)
         if outcome.level == importer.ERROR:
@@ -260,10 +293,7 @@ def places(client: Client) -> list[tuple[str, str]]:
         if c.slug != "a-recevoir"
     ]
     choices += [
-        (f"folder:{s.slug}", f"Archives › {s.label}")
-        for g in dossier.side_for(client)
-        for s in g.sections
-        if s.is_folder
+        (f"folder:{slug}", f"Archives › {s.label}") for slug, s in dossier.folders_for(client)
     ]
     return choices
 
