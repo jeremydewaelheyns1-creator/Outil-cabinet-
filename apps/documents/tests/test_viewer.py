@@ -62,14 +62,14 @@ def test_pdf_pages_are_shown_as_images(web):
     )
 
 
-def test_office_files_have_no_preview_but_can_be_downloaded(web):
+def test_unreadable_office_file_has_no_preview_but_can_be_downloaded(web):
     company = ClientFactory()
     xlsx = b"PK\x03\x04" + b"0" * 20
     document = stored(company, content=xlsx, name="tableau.xlsx")
     html = web.get(
         reverse("clients:document_viewer", args=[company.pk, document.pk]), HTTP_HX_REQUEST="true"
     ).content
-    assert "Pas d&#x27;aperçu" in html.decode() or "Pas d'aperçu" in html.decode()
+    assert "Pas d'aperçu" in html.decode()
 
 
 def test_download_forces_attachment(web):

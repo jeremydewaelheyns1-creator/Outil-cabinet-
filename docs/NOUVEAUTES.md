@@ -3,6 +3,12 @@
 Ce qui a été ajouté à l'outil, du plus récent au plus ancien. Toutes les données de la démo
 sont inventées.
 
+## 29 octobre 2026 — Tous les fichiers lisibles
+
+- En ouvrant un document, vous voyez maintenant son contenu en clair quel que soit son format :
+  XML, XBRL, Biztax, Excel et Word (plus seulement les PDF et les photos).
+- Pareil sur la page « Doublon à vérifier », des deux côtés.
+
 ## 29 octobre 2026 — Doublons repérés au dépôt
 
 - Si vous déposez un fichier **identique** à un document déjà rangé, il n'est pas rangé une

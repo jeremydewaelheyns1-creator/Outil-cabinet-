@@ -35,46 +35,10 @@
 
   <div class="viewer-body">
     <section data-viewer-panel="apercu" class="viewer-pages">
-      {% if xml_preview %}
-        {% with p=xml_preview %}
-        <div class="xml-preview">
-          <h3>{% if p.kind == "ic" %}Listing intracommunautaire{% else %}Déclaration périodique à la TVA{% endif %} — {{ p.period }}</h3>
-          <p class="small muted">Numéro de TVA BE {{ p.enterprise_number }} · lu dans le fichier XML d'Intervat</p>
-          {% for title, rows in p.sections %}
-            <table class="table xml-grids"><thead><tr><th colspan="3">{{ title }}</th></tr></thead><tbody>
-            {% for grid, label, amount in rows %}<tr{% if grid == "71" or grid == "72" %} class="xml-total"{% endif %}><td class="mono">{{ grid }}</td><td>{{ label }}</td><td class="num">{{ amount|euros }}</td></tr>{% endfor %}
-            </tbody></table>
-          {% endfor %}
-          {% if p.clients %}
-            <table class="table xml-grids"><thead><tr><th>Numéro de TVA du client</th><th>Code</th><th class="num">Montant</th></tr></thead><tbody>
-            {% for number, code, amount in p.clients %}<tr><td class="mono">{{ number }}</td><td>{{ code }}</td><td class="num">{{ amount|euros }}</td></tr>{% endfor %}
-            </tbody></table>
-          {% endif %}
-        </div>
-        {% endwith %}
-      {% endif %}
-      {% if xbrl_preview %}
-        {% with p=xbrl_preview %}
-        <div class="xml-preview">
-          {% if p.kind == "comptes" %}
-            <h3>Comptes annuels{% if p.model %} (modèle {{ p.model }}){% endif %}</h3>
-            <p class="small muted">Numéro d'entreprise BE {{ p.enterprise_number }} · exercice {{ p.period }}{% if p.approved_on %} · approuvés par l'assemblée générale du {{ p.approved_on|date:"d/m/Y" }}{% endif %} · lu dans le fichier XBRL de la Banque Nationale</p>
-          {% else %}
-            <h3>Déclaration {{ p.tax|default:"ISOC" }} (Biztax){% if p.assessment_year %} — exercice d'imposition {{ p.assessment_year }}{% endif %}</h3>
-            <p class="small muted">Numéro d'entreprise BE {{ p.enterprise_number }}{% if p.period %} · période {{ p.period }}{% endif %} · lu dans le fichier Biztax</p>
-          {% endif %}
-          {% if p.figures %}
-            <table class="table xml-grids"><thead><tr><th colspan="2">Chiffres clés</th></tr></thead><tbody>
-            {% for label, amount in p.figures %}<tr><td>{{ label }}</td><td class="num">{{ amount|euros }}</td></tr>{% endfor %}
-            </tbody></table>
-          {% endif %}
-          {% if p.annexes %}<p class="small">Annexes jointes : {{ p.annexes|join:", " }}.</p>{% endif %}
-        </div>
-        {% endwith %}
-      {% endif %}
+      {% include "documents/_readable.html" %}
       {% for n in pages %}
         <img src="{% url 'clients:document_page' client.pk document.pk n %}" alt="Page {{ n }}" loading="lazy">
-      {% empty %}{% if not xml_preview and not xbrl_preview %}
+      {% empty %}{% if not readable %}
         <div class="viewer-empty">
           <p>Pas d'aperçu pour ce format ({{ document.original_name }}).</p>
           <a class="button button-small" href="{% url 'clients:document_file' client.pk document.pk %}?telecharger=1">Télécharger le fichier</a>

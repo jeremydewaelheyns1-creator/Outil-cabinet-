@@ -1233,3 +1233,18 @@ documents avec « Confirmer l'import » et « Supprimer le doublon ».
   classer ».
 - Concerne le dépôt unique (barre du haut / Déposer des documents). L'import TVA de l'onglet
   Déclaration TVA et l'ajout dans une case gardent leur fonctionnement.
+
+## D-100 — Tous les formats lisibles, pas seulement le PDF
+
+Retour de Jeremy sur la page « Doublon à vérifier » : « pas que PDF, on a souvent XBRL, XML ».
+Un seul aperçu lisible (`apps/documents/readable.py`), utilisé par le visualiseur ET par la
+page des doublons (des deux côtés) :
+- PDF et photos : page par page, comme avant ;
+- XML d'Intervat : grilles TVA ; XBRL de la BNB et Biztax : chiffres clés (D-097, D-098) ;
+- **autre XML** : l'arbre des balises et leurs valeurs, indenté (valeurs longues raccourcies,
+  400 lignes au plus) ;
+- **Excel** : les 60 premières lignes de 5 feuilles au plus ; **Word** : le texte et les
+  tableaux.
+Rien n'est exécuté : XML lu avec defusedxml, Word et Excel refusés s'ils dépassent 60 Mo une
+fois décompressés ; un fichier abîmé affiche simplement « Pas d'aperçu » avec le bouton de
+téléchargement.

@@ -16,6 +16,7 @@
     <div class="dup-preview">
       {% if existing_pages %}<img src="{% url 'clients:document_page' existing.client.pk existing.pk 1 %}" alt="Page 1 du document déjà rangé">
       {% if existing_pages > 1 %}<p class="small muted">Page 1 sur {{ existing_pages }}</p>{% endif %}
+      {% elif existing_readable %}{% include "documents/_readable.html" with readable=existing_readable %}
       {% else %}<p class="small muted">Pas d'aperçu pour ce format.</p>{% endif %}
     </div>
     <a class="button button-secondary button-small" href="{% url 'clients:document_viewer_page' existing.client.pk existing.pk %}">Ouvrir le document rangé</a>
@@ -30,6 +31,7 @@
     <div class="dup-preview">
       {% if item_pages %}<img src="{% url 'depot:page' item.pk 1 %}" alt="Page 1 du nouveau dépôt">
       {% if item_pages > 1 %}<p class="small muted">Page 1 sur {{ item_pages }}</p>{% endif %}
+      {% elif item_readable %}{% include "documents/_readable.html" with readable=item_readable %}
       {% else %}<p class="small muted">Pas d'aperçu pour ce format.</p>{% endif %}
     </div>
     <a class="button button-secondary button-small" href="{% url 'depot:file' item.pk %}" target="_blank" rel="noopener">Ouvrir le nouveau fichier</a>

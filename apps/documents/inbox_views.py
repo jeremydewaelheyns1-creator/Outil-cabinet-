@@ -190,7 +190,7 @@ def _duplicate(request: AppRequest, item_id: str) -> tuple[InboxItem, Document |
 @require_GET
 def duplicate(request: AppRequest, item_id: str) -> HttpResponse:
     """Les deux documents côte à côte : le déjà rangé et le nouveau dépôt."""
-    from . import preview
+    from . import preview, readable
 
     item, existing = _duplicate(request, item_id)
     if existing is None:
@@ -206,6 +206,8 @@ def duplicate(request: AppRequest, item_id: str) -> HttpResponse:
         "place": _place_label(existing),
         "existing_pages": preview.page_count(existing),
         "item_pages": preview.page_count(item),
+        "existing_readable": readable.of(existing),
+        "item_readable": readable.of(item),
     }
     return render(request, "documents/duplicate.html", context)
 

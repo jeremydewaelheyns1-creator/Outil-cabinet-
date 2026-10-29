@@ -1568,3 +1568,9 @@ button:active, .button:active { transform: scale(.98); }
 .dup-actions p { margin: .4rem 0 0; }
 .dup-grid > .card { margin: 0; }
 .dup-grid + .dup-actions { margin-top: 1rem; }
+
+/* Aperçu lisible des formats sans pages : XML, Excel, Word (D-100). */
+.readable-tree { margin: .6rem 0 0; padding: .8rem; background: var(--bg, #f3f2f9); border-radius: 10px; font-size: .78rem; line-height: 1.45; white-space: pre-wrap; overflow-wrap: anywhere; max-height: 560px; overflow: auto; }
+.readable-sheet td { font-size: .82rem; padding: .3rem .5rem; white-space: nowrap; }
+.readable-text p { margin: .4rem 0; }
+.dup-preview .xml-preview { text-align: left; max-height: 560px; overflow: auto; }

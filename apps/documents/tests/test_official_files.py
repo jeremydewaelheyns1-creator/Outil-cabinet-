@@ -335,7 +335,7 @@ def test_accounts_xbrl_deposit_preview_and_place(web, user):
     url = reverse("clients:document_viewer", args=[company.pk, document.pk])
     html = web.get(url, HTTP_HX_REQUEST="true").content.decode()
     assert "Comptes annuels (modèle abrégé)" in html and "368\u202f296,86" in html
-    assert "10/06/2026" in html and "Pas d&#x27;aperçu" not in html
+    assert "10/06/2026" in html and "Pas d'aperçu" not in html
     assert "Archives › Comptes annuels (BNB)" in html
     assert "SOCIÉTÉ FICTIVE" not in html  # aucun nom repris dans l'aperçu
     assert AccessLog.objects.filter(object_id=str(document.pk)).exists()

@@ -1,0 +1,63 @@
+{# Aperçu lisible des formats sans pages : XML, XBRL, Biztax, Excel, Word (D-100). #}
+      {% if readable.kind == "intervat" %}
+        {% with p=readable.data %}
+        <div class="xml-preview">
+          <h3>{% if p.kind == "ic" %}Listing intracommunautaire{% else %}Déclaration périodique à la TVA{% endif %} — {{ p.period }}</h3>
+          <p class="small muted">Numéro de TVA BE {{ p.enterprise_number }} · lu dans le fichier XML d'Intervat</p>
+          {% for title, rows in p.sections %}
+            <table class="table xml-grids"><thead><tr><th colspan="3">{{ title }}</th></tr></thead><tbody>
+            {% for grid, label, amount in rows %}<tr{% if grid == "71" or grid == "72" %} class="xml-total"{% endif %}><td class="mono">{{ grid }}</td><td>{{ label }}</td><td class="num">{{ amount|euros }}</td></tr>{% endfor %}
+            </tbody></table>
+          {% endfor %}
+          {% if p.clients %}
+            <table class="table xml-grids"><thead><tr><th>Numéro de TVA du client</th><th>Code</th><th class="num">Montant</th></tr></thead><tbody>
+            {% for number, code, amount in p.clients %}<tr><td class="mono">{{ number }}</td><td>{{ code }}</td><td class="num">{{ amount|euros }}</td></tr>{% endfor %}
+            </tbody></table>
+          {% endif %}
+        </div>
+        {% endwith %}
+      {% endif %}
+      {% if readable.kind == "xbrl" %}
+        {% with p=readable.data %}
+        <div class="xml-preview">
+          {% if p.kind == "comptes" %}
+            <h3>Comptes annuels{% if p.model %} (modèle {{ p.model }}){% endif %}</h3>
+            <p class="small muted">Numéro d'entreprise BE {{ p.enterprise_number }} · exercice {{ p.period }}{% if p.approved_on %} · approuvés par l'assemblée générale du {{ p.approved_on|date:"d/m/Y" }}{% endif %} · lu dans le fichier XBRL de la Banque Nationale</p>
+          {% else %}
+            <h3>Déclaration {{ p.tax|default:"ISOC" }} (Biztax){% if p.assessment_year %} — exercice d'imposition {{ p.assessment_year }}{% endif %}</h3>
+            <p class="small muted">Numéro d'entreprise BE {{ p.enterprise_number }}{% if p.period %} · période {{ p.period }}{% endif %} · lu dans le fichier Biztax</p>
+          {% endif %}
+          {% if p.figures %}
+            <table class="table xml-grids"><thead><tr><th colspan="2">Chiffres clés</th></tr></thead><tbody>
+            {% for label, amount in p.figures %}<tr><td>{{ label }}</td><td class="num">{{ amount|euros }}</td></tr>{% endfor %}
+            </tbody></table>
+          {% endif %}
+          {% if p.annexes %}<p class="small">Annexes jointes : {{ p.annexes|join:", " }}.</p>{% endif %}
+        </div>
+        {% endwith %}
+      {% endif %}
+      {% if readable.kind == "xml" %}
+        <div class="xml-preview">
+          <h3>Contenu du fichier XML</h3>
+          <p class="small muted">Les balises et leurs valeurs, telles qu'elles sont dans le fichier{% if readable.truncated %} (début seulement){% endif %}.</p>
+          <pre class="readable-tree">{% for line in readable.lines %}{{ line }}
+{% endfor %}</pre>
+        </div>
+      {% elif readable.kind == "sheets" %}
+        <div class="xml-preview">
+          {% for sheet in readable.sheets %}
+            <h3>Feuille « {{ sheet.name }} »</h3>
+            {% if sheet.rows %}<div class="table-wrap"><table class="table readable-sheet"><tbody>
+            {% for row in sheet.rows %}<tr>{% for cell in row %}<td>{{ cell }}</td>{% endfor %}</tr>{% endfor %}
+            </tbody></table></div>{% else %}<p class="small muted">Feuille vide.</p>{% endif %}
+            {% if sheet.more %}<p class="small muted">Seules les {{ sheet.rows|length }} premières lignes sont montrées : téléchargez le fichier pour le reste.</p>{% endif %}
+          {% endfor %}
+          {% if readable.truncated %}<p class="small muted">D'autres feuilles : téléchargez le fichier.</p>{% endif %}
+        </div>
+      {% elif readable.kind == "text" %}
+        <div class="xml-preview readable-text">
+          <h3>Texte du document Word</h3>
+          {% for line in readable.lines %}<p>{{ line }}</p>{% empty %}<p class="small muted">Document sans texte.</p>{% endfor %}
+          {% if readable.truncated %}<p class="small muted">Début seulement : téléchargez le fichier pour le reste.</p>{% endif %}
+        </div>
+      {% endif %}

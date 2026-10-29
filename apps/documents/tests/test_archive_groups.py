@@ -53,4 +53,4 @@ def test_xml_is_shown_as_a_readable_table(web, user):
     html = web.get(url, HTTP_HX_REQUEST="true").content.decode()
     assert "Déclaration périodique à la TVA — 3e trimestre 2026" in html
     assert "Taxe due à l&#x27;État" in html and "272,44" in html
-    assert "Pas d&#x27;aperçu" not in html
+    assert "Pas d'aperçu" not in html
