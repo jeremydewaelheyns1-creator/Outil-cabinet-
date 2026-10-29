@@ -330,7 +330,7 @@ document.addEventListener("change", function (event) {
   var MAX = 50;
   var hideTimer = null;
   var running = 0;
-  var counts = { ok: 0, doubt: 0, inbox: 0, error: 0 };
+  var counts = { ok: 0, doubt: 0, inbox: 0, duplicate: 0, error: 0 };
 
   function hasFiles(event) {
     var types = event.dataTransfer && event.dataTransfer.types;
@@ -368,7 +368,7 @@ document.addEventListener("change", function (event) {
 
   function reset() {
     lines.innerHTML = "";
-    counts = { ok: 0, doubt: 0, inbox: 0, error: 0 };
+    counts = { ok: 0, doubt: 0, inbox: 0, duplicate: 0, error: 0 };
     panel.querySelector("[data-depot-done]").hidden = true;
   }
   function pendingLine(file) {
@@ -397,10 +397,11 @@ document.addEventListener("change", function (event) {
     if (counts.ok) parts.push(plural(counts.ok, "rangé", "rangés"));
     if (counts.doubt) parts.push(plural(counts.doubt, "à vérifier", "à vérifier"));
     if (counts.inbox) parts.push(plural(counts.inbox, "à classer", "à classer"));
+    if (counts.duplicate) parts.push(plural(counts.duplicate, "doublon à comparer", "doublons à comparer"));
     if (counts.error) parts.push(plural(counts.error, "refusé", "refusés"));
     var done = panel.querySelector("[data-depot-done]");
-    done.querySelector("[data-depot-summary]").textContent = (counts.doubt || counts.inbox || counts.error ? "" : "✓ ") + parts.join(" · ");
-    done.className = "depot-panel-done" + (counts.doubt || counts.inbox || counts.error ? " has-todo" : "");
+    done.querySelector("[data-depot-summary]").textContent = (counts.doubt || counts.inbox || counts.duplicate || counts.error ? "" : "✓ ") + parts.join(" · ");
+    done.className = "depot-panel-done" + (counts.doubt || counts.inbox || counts.duplicate || counts.error ? " has-todo" : "");
     done.hidden = false;
     panel.querySelector("[data-depot-sub]").textContent = "Tout est lu. Cliquez sur une ligne pour l'ouvrir.";
   }

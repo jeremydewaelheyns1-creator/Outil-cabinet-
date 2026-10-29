@@ -3,6 +3,13 @@
 Ce qui a été ajouté à l'outil, du plus récent au plus ancien. Toutes les données de la démo
 sont inventées.
 
+## 29 octobre 2026 — Doublons repérés au dépôt
+
+- Si vous déposez un fichier **identique** à un document déjà rangé, il n'est pas rangé une
+  deuxième fois : il attend dans « Doublons à vérifier ».
+- « Comparer » montre les deux côte à côte. Vous choisissez : **Confirmer l'import** ou
+  **Supprimer le doublon** (le document déjà rangé reste toujours en place).
+
 ## 29 octobre 2026 — Vrais documents officiels reconnus
 
 - **Procuration** (modèle FID-Manager) : déposée, elle va dans la case « Procuration » du

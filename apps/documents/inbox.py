@@ -27,6 +27,7 @@ from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.core.files.base import ContentFile
 from django.core.files.uploadedfile import SimpleUploadedFile, UploadedFile
+from django.db import transaction
 from django.db.models import QuerySet
 from django.urls import reverse
 from django.utils import timezone
@@ -45,6 +46,7 @@ from .models import Document, InboxItem
 OK = "ok"  # rangé dans son dossier
 DOUBT = "doubt"  # rangé dans son dossier, un détail à confirmer
 INBOX = "inbox"  # pas reconnu : « À classer »
+DUPLICATE = "duplicate"  # déjà dans l'outil : retenu, à comparer (D-099)
 ERROR = "error"  # refusé (format, taille)
 
 XML = "application/xml"
@@ -60,6 +62,7 @@ class Result:
     client: Client | None = None
     url: str = ""
     title: str = ""  # ce qui a été rangé, en clair (panneau de dépôt, D-093)
+    where: str = ""  # doublon : le dossier où se trouve déjà le fichier (D-099)
 
 
 def _content(upload: UploadedFile[bytes]) -> bytes:
@@ -78,7 +81,8 @@ def _check(upload: UploadedFile[bytes]) -> str:
     return documents.detect_type(upload).content_type
 
 
-def to_inbox(upload: UploadedFile[bytes], content_type: str, user: User, reason: str) -> Result:
+def _keep(upload: UploadedFile[bytes], content_type: str, user: User, reason: str,
+          duplicate: Document | None = None) -> InboxItem:  # fmt: skip
     content = _content(upload)
     item = InboxItem(
         original_name=(upload.name or "document")[-255:],
@@ -87,9 +91,15 @@ def to_inbox(upload: UploadedFile[bytes], content_type: str, user: User, reason:
         sha256=hashlib.sha256(content).hexdigest(),
         reason=reason[:200],
         uploaded_by=user,
+        duplicate_of=duplicate,
     )
     item.file.save("document", ContentFile(content), save=False)
     item.save()
+    return item
+
+
+def to_inbox(upload: UploadedFile[bytes], content_type: str, user: User, reason: str) -> Result:
+    item = _keep(upload, content_type, user, reason)
     return Result(item.original_name, INBOX, f"À classer : {reason}", title=item.original_name)
 
 
@@ -221,9 +231,33 @@ def _xbrl_document(
 # --- Point d'entrée --------------------------------------------------------------------------
 
 
+def duplicate_of(content: bytes, clients: QuerySet[Client]) -> Document | None:
+    """Document déjà rangé avec exactement le même contenu (même empreinte SHA-256), parmi
+    les dossiers visibles. Un fichier seulement ressemblant n'est jamais un doublon."""
+    digest = hashlib.sha256(content).hexdigest()
+    return (
+        Document.objects.filter(client__in=clients, sha256=digest)
+        .select_related("client")
+        .order_by("-uploaded_at")
+        .first()
+    )
+
+
+def hold_duplicate(
+    upload: UploadedFile[bytes], content_type: str, user: User, existing: Document
+) -> Result:
+    """Doublon : rien n'est rangé ni supprimé ; le fichier attend la décision (D-099)."""
+    item = _keep(upload, content_type, user, "Déjà dans l'outil : à comparer", existing)
+    return Result(item.original_name, DUPLICATE,
+                  f"Déjà dans {existing.client.display_name} : à comparer",
+                  url=reverse("depot:duplicate", args=[item.pk]), title=item.original_name,
+                  where=existing.client.display_name)  # fmt: skip
+
+
 def receive(
-    uploads: Sequence[UploadedFile[bytes]], *, clients: QuerySet[Client], user: User
-) -> list[Result]:
+    uploads: Sequence[UploadedFile[bytes]], *, clients: QuerySet[Client], user: User,
+    allow_duplicates: bool = False,
+) -> list[Result]:  # fmt: skip
     results: list[Result] = []
     accepted: list[tuple[UploadedFile[bytes], str]] = []
     for upload in uploads:
@@ -232,9 +266,19 @@ def receive(
         except ValidationError as error:
             results.append(Result(upload.name or "fichier", ERROR, " ".join(error.messages)))
     classified: list[tuple[intervat.Declaration, VatFiling]] = []
+
+    def held(upload: UploadedFile[bytes], content_type: str) -> bool:
+        if allow_duplicates:
+            return False
+        existing = duplicate_of(_content(upload), clients)
+        if existing is None:
+            return False
+        results.append(hold_duplicate(upload, content_type, user, existing))
+        return True
+
     # Les XML d'abord : un PDF déposé avec son XML le rejoint.
     for upload, content_type in accepted:
-        if content_type != XML:
+        if content_type != XML or held(upload, content_type):
             continue
         official = _xbrl_document(upload, content_type, clients, user)
         if official is not None:
@@ -246,7 +290,7 @@ def receive(
         else:
             results.append(_from_vat(outcome))
     for upload, content_type in accepted:
-        if content_type == XML:
+        if content_type == XML or held(upload, content_type):
             continue
         if content_type == PDF:
             from . import spf_docs
@@ -310,6 +354,46 @@ def classify(item: InboxItem, client: Client, place: str, title: str, user: User
     )  # fmt: skip
     discard(item)
     return document
+
+
+def confirm_duplicate(item: InboxItem, *, clients: QuerySet[Client], user: User) -> list[Result]:
+    """« Confirmer l'import » : le fichier est traité comme un dépôt normal, doublon accepté.
+    S'il n'est pas reconnu, il rejoint le document identique (même dossier, même place) au
+    lieu de repartir dans « À classer »."""
+    with item.file.open("rb") as handle:
+        content = handle.read()
+    existing = item.duplicate_of
+    if existing is not None and not clients.filter(pk=existing.client_id).exists():
+        existing = None
+    upload = SimpleUploadedFile(item.original_name, content, item.content_type)
+    if existing is None:
+        results = receive([upload], clients=clients, user=user, allow_duplicates=True)
+    else:
+        with transaction.atomic():
+            sid = transaction.savepoint_create()
+            results = receive([upload], clients=clients, user=user, allow_duplicates=True)
+            if [r.level for r in results] == [INBOX]:
+                transaction.savepoint_rollback(sid)  # pas reconnu : on annule « À classer »
+                results = [_beside(existing, item, content, user)]
+    discard(item)
+    return results
+
+
+def _beside(existing: Document, item: InboxItem, content: bytes, user: User) -> Result:
+    upload = SimpleUploadedFile(item.original_name, content, item.content_type)
+    client = existing.client
+    case, folder = existing.case, existing.folder
+    if not case and not folder:
+        folder = "administratif"
+    document = documents.store(
+        client, upload, title=existing.title, case=case, folder=folder,
+        person=existing.person, user=user, doc_type=existing.doc_type,
+    )  # fmt: skip
+    cases = {c.slug: c for c in dossier.document_cases_for(client)}
+    url = (dossier.case_url(client.pk, cases[case]) if case in cases
+           else dossier.folder_url(client.pk, folder))  # fmt: skip
+    return Result(item.original_name, OK, f"{document.title} rangé dans {client.display_name}.",
+                  client, url, document.title)  # fmt: skip
 
 
 def discard(item: InboxItem) -> None:

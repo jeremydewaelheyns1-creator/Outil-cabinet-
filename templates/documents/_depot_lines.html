@@ -1,11 +1,12 @@
 {# Panneau de dépôt (D-093) : une ligne par fichier déposé, en clair. #}
 {% for r in results %}
 <li class="depot-line is-{{ r.level }}" data-level="{{ r.level }}">
-  <span class="depot-line-icon" aria-hidden="true">{% if r.level == "ok" %}✓{% elif r.level == "error" %}✕{% elif r.level == "inbox" %}?{% else %}!{% endif %}</span>
+  <span class="depot-line-icon" aria-hidden="true">{% if r.level == "ok" %}✓{% elif r.level == "error" %}✕{% elif r.level == "inbox" %}?{% elif r.level == "duplicate" %}={% else %}!{% endif %}</span>
   <div class="depot-line-text">
-    {% if r.url %}<a href="{{ r.url }}"><strong>{{ r.title|default:r.name }}</strong></a>{% else %}<strong>{{ r.title|default:r.name }}</strong>{% endif %}
+    {% if r.url and r.level != "duplicate" %}<a href="{{ r.url }}"><strong>{{ r.title|default:r.name }}</strong></a>{% else %}<strong>{{ r.title|default:r.name }}</strong>{% endif %}
     <div class="small">
       {% if r.level == "inbox" %}À classer — <a href="{% url 'depot:index' %}">choisir le dossier</a>
+      {% elif r.level == "duplicate" %}Déjà dans {{ r.where }} — <a href="{{ r.url }}">comparer</a>
       {% elif r.level == "error" %}{{ r.message }}
       {% elif r.level == "doubt" %}→ {{ r.client.display_name }} · à vérifier
       {% else %}→ {{ r.client.display_name|default:"rangé" }}{% endif %}

@@ -1211,3 +1211,25 @@ inventées.
 Constat de sécurité remonté à Jeremy : dans la procuration, la signature électronique (nom du
 signataire et certificat) et la propriété « enregistré par » du PDF gardaient des noms réels,
 invisibles à l'écran. Conseil : imprimer en PDF (aplatir) et vider les propriétés avant envoi.
+
+## D-099 — Doublons au dépôt : retenus, comparés, l'utilisateur décide
+
+Demande de Jeremy : « être sûr de son coup » ; ne jamais supprimer soi-même ; montrer les deux
+documents avec « Confirmer l'import » et « Supprimer le doublon ».
+- **Doublon = contenu strictement identique** (même empreinte SHA-256, octet pour octet), avec
+  un document déjà rangé dans un dossier **visible** par la personne qui dépose. Un fichier
+  ressemblant (une correction, une autre version) n'est jamais un doublon. Un document d'un
+  dossier invisible n'est jamais révélé : le dépôt suit alors son cours normal.
+- Le fichier n'est **ni rangé ni supprimé** : il attend dans « Doublons à vérifier » (page
+  Déposer des documents ; ligne « Déjà dans … — comparer » dans le panneau de dépôt). Comme
+  « À classer », il n'est visible que par son auteur et effacé après le délai de conservation.
+- **Comparer** : les deux côte à côte (dossier, emplacement, date et auteur du document rangé ;
+  nom et date du nouveau dépôt ; aperçu de la 1re page). L'ouverture est journalisée.
+- **Confirmer l'import** : le fichier est traité comme un dépôt normal (rangé une 2e fois) ;
+  s'il n'est pas reconnu (une facture rangée à la main, par exemple), il rejoint le document
+  identique, au même endroit, plutôt que de repartir dans « À classer ».
+  **Supprimer le doublon** : seul le nouveau fichier est effacé ; le document déjà rangé n'est
+  jamais touché. Si ce dernier a disparu entre-temps, le fichier redevient un simple « À
+  classer ».
+- Concerne le dépôt unique (barre du haut / Déposer des documents). L'import TVA de l'onglet
+  Déclaration TVA et l'ajout dans une case gardent leur fonctionnement.

@@ -1,0 +1,49 @@
+{% extends "layouts/app.html" %}
+{% block head_title %}Doublon à vérifier{% endblock %}
+{% block page_title %}Doublon à vérifier{% endblock %}
+{% block page_subtitle %}<p class="muted" style="margin:.2rem 0 0">« {{ item.original_name }} » est identique, au caractère près, à un document déjà rangé. Rien n'a été rangé ni supprimé : à vous de décider.</p>{% endblock %}
+{% block content %}
+<div class="dup-grid">
+  <section class="card">
+    <h2>Déjà dans l'outil</h2>
+    <dl class="dup-facts small">
+      <dt>Document</dt><dd>{{ existing.title }}</dd>
+      <dt>Dossier</dt><dd><a href="{% url 'clients:detail' existing.client.pk %}">{{ existing.client.display_name }}</a></dd>
+      <dt>Rangé dans</dt><dd>{{ place }}</dd>
+      <dt>Ajouté le</dt><dd>{{ existing.uploaded_at|date:"d/m/Y H:i" }}{% if existing.uploaded_by %} par {{ existing.uploaded_by.get_full_name|default:existing.uploaded_by }}{% endif %}</dd>
+      <dt>Fichier</dt><dd>{{ existing.original_name }} · {{ existing.size|filesizeformat }}</dd>
+    </dl>
+    <div class="dup-preview">
+      {% if existing_pages %}<img src="{% url 'clients:document_page' existing.client.pk existing.pk 1 %}" alt="Page 1 du document déjà rangé">
+      {% if existing_pages > 1 %}<p class="small muted">Page 1 sur {{ existing_pages }}</p>{% endif %}
+      {% else %}<p class="small muted">Pas d'aperçu pour ce format.</p>{% endif %}
+    </div>
+    <a class="button button-secondary button-small" href="{% url 'clients:document_viewer_page' existing.client.pk existing.pk %}">Ouvrir le document rangé</a>
+  </section>
+  <section class="card">
+    <h2>Nouveau dépôt</h2>
+    <dl class="dup-facts small">
+      <dt>Fichier</dt><dd>{{ item.original_name }} · {{ item.size|filesizeformat }}</dd>
+      <dt>Déposé le</dt><dd>{{ item.uploaded_at|date:"d/m/Y H:i" }}</dd>
+      <dt>Contenu</dt><dd>Identique au document déjà rangé (même empreinte numérique)</dd>
+    </dl>
+    <div class="dup-preview">
+      {% if item_pages %}<img src="{% url 'depot:page' item.pk 1 %}" alt="Page 1 du nouveau dépôt">
+      {% if item_pages > 1 %}<p class="small muted">Page 1 sur {{ item_pages }}</p>{% endif %}
+      {% else %}<p class="small muted">Pas d'aperçu pour ce format.</p>{% endif %}
+    </div>
+    <a class="button button-secondary button-small" href="{% url 'depot:file' item.pk %}" target="_blank" rel="noopener">Ouvrir le nouveau fichier</a>
+  </section>
+</div>
+<section class="card dup-actions">
+  <form method="post" action="{% url 'depot:duplicate_confirm' item.pk %}">{% csrf_token %}
+    <button type="submit">Confirmer l'import</button>
+    <p class="small muted">Le fichier est rangé une deuxième fois, comme un dépôt normal.</p>
+  </form>
+  <form method="post" action="{% url 'depot:duplicate_delete' item.pk %}">{% csrf_token %}
+    <button type="submit" class="danger">Supprimer le doublon</button>
+    <p class="small muted">Seul le fichier que vous venez de déposer est effacé. Le document déjà rangé reste en place.</p>
+  </form>
+</section>
+<p><a href="{% url 'depot:index' %}">← Retour à « Déposer des documents »</a></p>
+{% endblock %}

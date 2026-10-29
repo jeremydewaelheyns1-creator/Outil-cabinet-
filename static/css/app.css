@@ -1514,7 +1514,7 @@ button:active, .button:active { transform: scale(.98); }
 .depot-line-icon { flex: none; width: 26px; height: 26px; border-radius: 999px; display: grid; place-items: center; font-size: .8rem; font-weight: 800; }
 .depot-line.is-pending .depot-line-icon { border: 3px solid var(--border); border-top-color: var(--primary); animation: depot-spin .8s linear infinite; }
 .depot-line.is-ok .depot-line-icon { background: var(--success, #166534); color: #fff; animation: depot-pop .35s ease-out; }
-.depot-line.is-doubt .depot-line-icon, .depot-line.is-inbox .depot-line-icon { background: var(--warning-soft); color: var(--warning); animation: depot-pop .35s ease-out; }
+.depot-line.is-doubt .depot-line-icon, .depot-line.is-inbox .depot-line-icon, .depot-line.is-duplicate .depot-line-icon { background: var(--warning-soft); color: var(--warning); animation: depot-pop .35s ease-out; }
 .depot-line.is-error .depot-line-icon { background: var(--danger-soft); color: var(--danger); }
 .depot-line.is-error .depot-line-icon::after { content: "✕"; }
 .depot-panel-done { margin-top: .7rem; padding: .7rem .85rem; border-radius: 14px; background: var(--success-soft); display: grid; gap: .2rem; animation: depot-in .25s ease-out; }
@@ -1556,3 +1556,15 @@ button:active, .button:active { transform: scale(.98); }
 .xml-grids { table-layout: fixed; width: 100%; }
 .xml-grids td:first-child { width: 4rem; }
 .xml-grids td.num { width: 10rem; }
+
+/* Doublons au dépôt : les deux documents côte à côte (D-099). */
+.dup-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem; }
+.dup-facts { display: grid; grid-template-columns: max-content 1fr; gap: .25rem .75rem; margin: 0 0 .8rem; }
+.dup-facts dt { color: var(--text-muted); }
+.dup-facts dd { margin: 0; overflow-wrap: anywhere; }
+.dup-preview { background: var(--surface-2, #f4f4f2); border-radius: 10px; padding: .75rem; margin-bottom: .8rem; text-align: center; }
+.dup-preview img { max-width: 100%; max-height: 520px; background: #fff; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15); }
+.dup-actions { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1rem; }
+.dup-actions p { margin: .4rem 0 0; }
+.dup-grid > .card { margin: 0; }
+.dup-grid + .dup-actions { margin-top: 1rem; }

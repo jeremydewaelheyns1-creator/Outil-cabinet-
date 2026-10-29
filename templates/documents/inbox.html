@@ -19,8 +19,11 @@
     <ul class="small">
       <li>déclarations TVA et listings intracommunautaires d'Intervat (XML et PDF) → onglet Déclaration TVA du dossier ;</li>
       <li>cartes d'identité (photo du dos ou PDF) → case Cartes d'identité du dossier, après vérification ;</li>
-      <li>courriers et documents du SPF (PDF, même scannés) : avertissements-extraits de rôle IPP / ISOC / IPM, accusés de réception Biztax et Tax-on-web, listing clients, compte courant TVA, versements anticipés → archives ISOC, IPP ou TVA du dossier ; demande de renseignements et avis de rectification → rangés « à traiter ».</li>
+      <li>courriers et documents du SPF (PDF, même scannés) : avertissements-extraits de rôle IPP / ISOC / IPM, accusés de réception Biztax et Tax-on-web, listing clients, compte courant TVA, versements anticipés → archives ISOC, IPP ou TVA du dossier ; demande de renseignements et avis de rectification → rangés « à traiter » ;</li>
+      <li>procuration → case Procuration ; extrait du registre UBO → case UBO ; copie de la déclaration IPP → archives IPP ;</li>
+      <li>comptes annuels (PDF ou XBRL de la Banque Nationale) → page Comptes annuels ; déclaration Biztax (.biztax) → archives ISOC.</li>
     </ul>
+    <p class="small muted">Un fichier identique à un document déjà rangé n'est pas rangé deux fois : il attend dans « Doublons à vérifier ».</p>
     <p class="small muted">Le reste va dans « À classer » ci-dessous : visible par vous seul, effacé après {{ retention }} jours s'il n'est pas classé.</p>
   </div>
 </section>
@@ -49,6 +52,20 @@
         <div class="depot-item-name">{{ d.title }}
           <div class="small muted">{{ d.client.display_name }} · {{ d.review_reason }}</div></div>
         <a class="button button-secondary button-small" href="{% url 'clients:document_case' d.client.pk 'pieces-identite' %}">Vérifier</a>
+      </div>
+    {% endfor %}
+  </section>
+{% endif %}
+
+{% if duplicates %}
+  <section class="card">
+    <h2>Doublons à vérifier <span class="muted small">({{ duplicates|length }})</span></h2>
+    <p class="small muted">Ces fichiers sont identiques (au caractère près) à un document déjà rangé. Rien n'a été rangé ni supprimé : comparez, puis décidez.</p>
+    {% for item in duplicates %}
+      <div class="depot-item">
+        <div class="depot-item-name">{{ item.original_name }}
+          <div class="small muted">Déposé le {{ item.uploaded_at|date:"d/m/Y H:i" }} · déjà dans {{ item.duplicate_of.client.display_name }} (« {{ item.duplicate_of.title }} »)</div></div>
+        <a class="button button-small" href="{% url 'depot:duplicate' item.pk %}">Comparer</a>
       </div>
     {% endfor %}
   </section>

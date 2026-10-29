@@ -139,7 +139,7 @@ class Document(models.Model):
     # Questions posées au client quand il signe en ligne (D-071, déclaration UBO) :
     # [{"person": id, "name": "…"}] — une ligne par bénéficiaire effectif.
     questions = models.JSONField("questions au signataire", default=list, blank=True)
-    sha256 = models.CharField(max_length=64)
+    sha256 = models.CharField(max_length=64, db_index=True)  # repère les doublons (D-099)
     uploaded_at = models.DateTimeField("ajouté le", default=timezone.now)
     uploaded_by = models.ForeignKey(
         User, on_delete=models.SET_NULL, null=True, blank=True, related_name="+"
@@ -260,6 +260,12 @@ class InboxItem(models.Model):
     size = models.PositiveIntegerField("taille")
     sha256 = models.CharField(max_length=64)
     reason = models.CharField("pourquoi il n'a pas été classé", max_length=200, blank=True)
+    # Fichier identique (même empreinte) à un document déjà rangé : retenu ici, à comparer ;
+    # rien n'est supprimé sans l'accord de l'utilisateur (D-099).
+    duplicate_of = models.ForeignKey(
+        "Document", on_delete=models.SET_NULL, null=True, blank=True, related_name="+",
+        verbose_name="doublon de",
+    )  # fmt: skip
     uploaded_by = models.ForeignKey(User, on_delete=models.PROTECT, related_name="+")
     uploaded_at = models.DateTimeField("déposé le", default=timezone.now, db_index=True)
 

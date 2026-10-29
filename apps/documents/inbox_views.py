@@ -7,7 +7,7 @@ from typing import Any
 from django.conf import settings
 from django.contrib import messages
 from django.core.exceptions import PermissionDenied
-from django.http import FileResponse, HttpResponse
+from django.http import FileResponse, Http404, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_GET, require_POST
 
@@ -22,14 +22,16 @@ from apps.vat.models import VatPending
 
 from . import inbox
 from .models import Document, InboxItem
-from .views import SAFE_HEADERS
+from .views import SAFE_HEADERS, _place_label
 
 MAX_FILES = 50
 
 
 def _items(request: AppRequest) -> list[InboxItem]:
     # Un fichier pas encore classé n'appartient à aucun dossier : seul son auteur le voit.
-    return list(InboxItem.objects.filter(uploaded_by=request.user))
+    return list(
+        InboxItem.objects.filter(uploaded_by=request.user).select_related("duplicate_of__client")
+    )
 
 
 @require_capability(Capability.CLIENTS_EDIT)
@@ -43,8 +45,13 @@ def index(request: AppRequest) -> HttpResponse:
     cards = Document.objects.filter(
         client__in=visible, case="pieces-identite", review_needed=True, archived_at__isnull=True
     ).select_related("client", "person")
+    items = _items(request)
+    # Doublon d'un document qu'on ne voit plus (dossier retiré, document supprimé) : à classer.
+    seen = set(visible.values_list("pk", flat=True))
+    duplicates = [i for i in items if i.duplicate_of and i.duplicate_of.client_id in seen]
     context: dict[str, Any] = {
-        "items": _items(request),
+        "items": [i for i in items if i not in duplicates],
+        "duplicates": duplicates,
         "vat_pending": [
             (p, KIND_LABELS.get(p.kind, ""), list(p.document.client.vat_filings.all()))
             for p in pending
@@ -68,23 +75,31 @@ def _receive(request: AppRequest) -> HttpResponse:
         messages.error(request, f"{MAX_FILES} fichiers au maximum à la fois.")
         return redirect("depot:index")
     results = inbox.receive(uploads, clients=_visible_clients(request), user=request.user)
+    _log_results(request, results)
+    if request.GET.get("panneau"):
+        # Panneau de dépôt (D-093) : une ligne par fichier, sans recharger la page.
+        return render(request, "documents/_depot_lines.html", {"results": results})
+    _announce(request, results)
+    return redirect("depot:index")
+
+
+def _log_results(request: AppRequest, results: list[inbox.Result]) -> None:
     for result in results:
         if result.client is not None:
             log_access(request, AccessLog.Action.IMPORT, result.client,
                        details={"depot": result.level})  # fmt: skip
-    if request.GET.get("panneau"):
-        # Panneau de dépôt (D-093) : une ligne par fichier, sans recharger la page.
-        return render(request, "documents/_depot_lines.html", {"results": results})
+
+
+def _announce(request: AppRequest, results: list[inbox.Result]) -> None:
     for result in results:
         where = f" → {result.client.display_name}" if result.client is not None else ""
         text = f"{result.name} : {result.message}{where}"
         if result.level == inbox.ERROR:
             messages.error(request, text)
-        elif result.level in (inbox.DOUBT, inbox.INBOX):
+        elif result.level in (inbox.DOUBT, inbox.INBOX, inbox.DUPLICATE):
             messages.warning(request, text)
         else:
             messages.success(request, text)
-    return redirect("depot:index")
 
 
 @require_GET
@@ -139,4 +154,82 @@ def item_delete(request: AppRequest, item_id: str) -> HttpResponse:
     item = get_object_or_404(InboxItem, pk=item_id, uploaded_by=request.user)
     inbox.discard(item)
     messages.success(request, "Fichier supprimé.")
+    return redirect("depot:index")
+
+
+@require_GET
+def item_page(request: AppRequest, item_id: str, number: int) -> HttpResponse:
+    """Image d'une page d'un fichier à classer (comparaison des doublons, D-099)."""
+    from . import preview
+
+    if not request.user.has_capability(Capability.CLIENTS_EDIT):
+        raise PermissionDenied
+    item = get_object_or_404(InboxItem, pk=item_id, uploaded_by=request.user)
+    rendered = preview.render_page(item, number)
+    if rendered is None:
+        raise Http404
+    response = HttpResponse(rendered[0], content_type=rendered[1])
+    for header, value in SAFE_HEADERS.items():
+        response[header] = value
+    return response
+
+
+# --- Doublons (D-099) ------------------------------------------------------------------------
+
+
+def _duplicate(request: AppRequest, item_id: str) -> tuple[InboxItem, Document | None]:
+    """Le fichier retenu et le document déjà rangé — seulement s'il est encore visible."""
+    item = get_object_or_404(InboxItem, pk=item_id, uploaded_by=request.user)
+    existing = item.duplicate_of
+    if existing is None or not _visible_clients(request).filter(pk=existing.client_id).exists():
+        return item, None
+    return item, existing
+
+
+@require_capability(Capability.CLIENTS_EDIT)
+@require_GET
+def duplicate(request: AppRequest, item_id: str) -> HttpResponse:
+    """Les deux documents côte à côte : le déjà rangé et le nouveau dépôt."""
+    from . import preview
+
+    item, existing = _duplicate(request, item_id)
+    if existing is None:
+        messages.info(
+            request, "Ce doublon n'est plus à vérifier : le fichier est dans « À classer »."
+        )
+        return redirect("depot:index")
+    log_access(request, AccessLog.Action.VIEW, existing,
+               details={"client": existing.client_id, "doublon": True})  # fmt: skip
+    context = {
+        "item": item,
+        "existing": existing,
+        "place": _place_label(existing),
+        "existing_pages": preview.page_count(existing),
+        "item_pages": preview.page_count(item),
+    }
+    return render(request, "documents/duplicate.html", context)
+
+
+@require_POST
+@require_capability(Capability.CLIENTS_EDIT)
+def duplicate_confirm(request: AppRequest, item_id: str) -> HttpResponse:
+    """« Confirmer l'import » : rangé comme un dépôt normal, en plus du document existant."""
+    item = get_object_or_404(InboxItem, pk=item_id, uploaded_by=request.user,
+                             duplicate_of__isnull=False)  # fmt: skip
+    results = inbox.confirm_duplicate(item, clients=_visible_clients(request), user=request.user)
+    _log_results(request, results)
+    _announce(request, results)
+    return redirect("depot:index")
+
+
+@require_POST
+@require_capability(Capability.CLIENTS_EDIT)
+def duplicate_delete(request: AppRequest, item_id: str) -> HttpResponse:
+    """« Supprimer le doublon » : seul le fichier qui vient d'être déposé est effacé ; le
+    document déjà rangé n'est jamais touché."""
+    item = get_object_or_404(InboxItem, pk=item_id, uploaded_by=request.user,
+                             duplicate_of__isnull=False)  # fmt: skip
+    name = item.original_name
+    inbox.discard(item)
+    messages.success(request, f"Doublon « {name} » supprimé. Le document déjà rangé est gardé.")
     return redirect("depot:index")
