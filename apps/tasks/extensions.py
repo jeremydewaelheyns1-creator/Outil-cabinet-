@@ -203,8 +203,8 @@ def create(
     source_url: str = "",
     notice: DeadlineNotice | None = None,
 ) -> DeadlineExtension:
-    if new_date <= deadline.due_date:
-        raise ValueError("La nouvelle date doit être après la date limite actuelle.")
+    if new_date == deadline.due_date:
+        raise ValueError("La nouvelle date est la même que la date limite actuelle.")
     with transaction.atomic():
         extension = DeadlineExtension.objects.create(
             kind=deadline.kind, period_key=deadline.period_key, label=deadline.label[:200],

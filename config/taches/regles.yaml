@@ -19,6 +19,8 @@
 #   {type: mois_apres_fin, mois: 7, jour: dernier}          → dernier jour du 7e mois après la fin
 #   {type: date_annee_suivante, mois: 3, jour: 31}          → 31 mars de l'année suivante
 #   {type: dates_par_annee, dates: {2025: 2026-10-16}}       → date publiée chaque année
+#     (+ par_defaut: {mois: 10, jour: 16} : date « provisoire » des années pas encore publiées)
+# premiere_periode : 2026 → aucune tâche pour les périodes d'avant (pas de rétroactif)
 # report_jour_ouvrable : true → samedi, dimanche ou jour férié : reporté au jour ouvrable suivant
 # report_jusqu_au : 2025-09-30 → ce report ne vaut que pour les dates limites jusqu'à ce jour
 # responsable : rôle d'affectation du client (assistant, manager, partner…) ; à défaut, le
@@ -131,11 +133,18 @@ regles:
     periodicite: annuelle
     conditions:
       type: [person]
-    # Date limite pour les déclarations déposées par un mandataire, publiée chaque année par le
-    # SPF Finances. Tant qu'elle n'est pas indiquée ici, aucune tâche IPP n'est créée.
+    # Date limite des déclarations déposées par le cabinet (revenus spécifiques : indépendants,
+    # dirigeants), publiée chaque année par le SPF Finances (D-102). Année pas encore publiée :
+    # le 16 octobre de l'année suivante, « provisoire » ; si le SPF annonce une autre date,
+    # l'outil prévient les administrateurs, qui la confirment (page « Délais SPF »).
     echeance:
       type: dates_par_annee
-      dates: {}
+      dates:
+        2024: 2025-10-16   # SPF Finances, exercice d'imposition 2025
+        2025: 2026-10-16   # SPF Finances, exercice d'imposition 2026
+      par_defaut: {mois: 10, jour: 16}
+    # Pas d'échéance rétroactive : les déclarations des revenus 2025 (16/10/2026) sont faites.
+    premiere_periode: 2026
     responsable: manager
     etapes:
       - Documents demandés au client

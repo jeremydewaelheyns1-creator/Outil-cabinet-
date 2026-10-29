@@ -1262,3 +1262,20 @@ procuration, extrait UBO), trois défauts trouvés et corrigés :
 - **Carte d'identité** : sur une photo, la lecture pouvait prendre la 1re ligne machine une 2e
   fois à la place du nom (les contrôles passent, le nom n'en a pas). Une lecture n'est
   acceptée que si le nom ressemble à un nom ; sinon on essaie l'image autrement.
+
+## D-102 — IPP : un calendrier qui suit le SPF tout seul
+
+Jeremy : « ça m'inquiète qu'on n'arrive pas à créer ce calendrier dynamique qui s'adapte tout
+seul ». L'IPP n'avait aucune date : aucune échéance, rien au calendrier.
+- **Date du cabinet : 16 octobre** (déclarations déposées par le mandataire, revenus
+  spécifiques), confirmée par Jeremy. Dates publiées par le SPF encodées : revenus 2024 →
+  16/10/2025, revenus 2025 → 16/10/2026.
+- **Année pas encore publiée** : le 16 octobre de l'année suivante, marqué « date provisoire »
+  au calendrier (`par_defaut` dans `regles.yaml`). Plus jamais de trou.
+- **Le SPF annonce une autre date** (report ou date différente) : la veille quotidienne
+  (D-089) prévient les administrateurs ; une fois encodée sur « Délais SPF », échéances et
+  calendrier suivent (la mention « provisoire » disparaît). Une date peut désormais aussi être
+  avancée, pas seulement reculée.
+- **Calendrier** : la date IPP apparaît comme la TVA, même sans dossier concerné.
+- **Pas de rétroactif** (`premiere_periode: 2026`) : les échéances IPP commencent avec les
+  revenus 2026 (16/10/2027) ; celles des revenus 2025, déjà passées, ne sont pas créées.

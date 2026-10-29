@@ -90,9 +90,14 @@ def test_calendar_marks_my_deadlines_of_the_month(user):
     cal = accueil.month_calendar(OCT, list(Task.objects.all()))
     assert cal["name"] == "octobre 2026"
     # Dates légales toujours montrées (D-094) : mensuelle le 20, trimestrielle le 25 (dimanche).
-    assert cal["legend"] == [(20, "TVA mensuelle · TVA trimestrielle"), (25, "TVA trimestrielle")]
+    # Et l'IPP (D-102) : le 16 octobre pour les revenus 2025.
+    assert cal["legend"] == [
+        (16, "IPP (revenus 2025)"),
+        (20, "TVA mensuelle · TVA trimestrielle"),
+        (25, "TVA trimestrielle"),
+    ]
     marked = [c["day"] for c in cal["cells"] if c.get("mark")]
-    assert marked == [20, 25] and cal["cells"][3]["day"] == 1  # le 1er octobre 2026 est un jeudi
+    assert marked == [16, 20, 25] and cal["cells"][3]["day"] == 1  # le 1er octobre : un jeudi
     november = accueil.month_calendar(date(2026, 11, 3), [])
     assert november["legend"] == [(20, "TVA mensuelle")]  # pas de trimestrielle en novembre
 
@@ -275,3 +280,20 @@ def test_vat_deadline_opens_the_vat_tab(user):
     other = task(client, "isoc", OCT, label="2025")
     assert vat.work_url == reverse("clients:vat", args=[client.pk])
     assert other.work_url == reverse("clients:tasks", args=[client.pk])
+
+
+def test_calendar_shows_ipp_even_without_dossier_and_follows_the_spf(user):
+    """D-102 : le 16 octobre (revenus 2025), date publiée ; l'année d'après, « provisoire »
+    jusqu'à ce que le SPF publie, puis la date confirmée par un administrateur."""
+    from apps.tasks.models import DeadlineExtension
+
+    october = accueil.month_calendar(date(2026, 10, 29), [])
+    assert (16, "IPP (revenus 2025)") in october["legend"]
+    october_2027 = accueil.month_calendar(date(2027, 10, 1), [])
+    assert (16, "IPP (revenus 2026) — date provisoire") in october_2027["legend"]
+    DeadlineExtension.objects.create(kind="ipp", period_key="2026", label="IPP revenus 2026",
+                                     previous_date=date(2027, 10, 16),
+                                     new_date=date(2027, 10, 21))  # fmt: skip
+    moved = accueil.month_calendar(date(2027, 10, 1), [])
+    assert (21, "IPP (revenus 2026)") in moved["legend"]
+    assert all(day != 16 for day, _ in moved["legend"])

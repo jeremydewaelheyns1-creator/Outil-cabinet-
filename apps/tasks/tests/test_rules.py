@@ -6,6 +6,7 @@ from pathlib import Path
 import pytest
 
 from apps.clients.models import Client
+from apps.core.testing.factories import ClientFactory
 from apps.tasks.holidays import easter, is_business_day, next_business_day
 from apps.tasks.rules import RuleError, load_rules
 
@@ -90,10 +91,24 @@ def test_conditions():
     assert not rule("tva_trimestrielle").applies_to(company(status=Client.Status.FORMER))
 
 
-def test_ipp_without_published_date_creates_nothing():
+def test_ipp_published_dates_then_provisional_16_october():
+    """D-102 : dates publiées par le SPF, sinon le 16 octobre de l'année suivante, provisoire."""
     r = rule("ipp")
-    period = next(iter(r.periods(company(kind="person"), 2026, 2026)))
-    assert r.due_date(period) is None
+    person = company(kind="person")
+    published = next(iter(r.periods(person, 2025, 2025)))
+    assert r.due_date(published) == date(2026, 10, 16) and not r.is_provisional(published)
+    future = next(iter(r.periods(person, 2027, 2027)))
+    assert r.due_date(future) == date(2028, 10, 16) and r.is_provisional(future)
+    assert r.first_year == 2026  # rien de rétroactif
+
+
+def test_ipp_tasks_start_with_2026_income(db):
+    from apps.tasks.generator import generate_for_client
+
+    person = ClientFactory(kind=Client.Kind.PERSON)
+    generate_for_client(person, date(2026, 10, 29))
+    ipp = list(person.tasks.filter(kind="ipp").values_list("period_key", "due_date"))
+    assert ipp == [("2026", date(2027, 10, 16))]  # pas les revenus 2025, déjà passés
 
 
 def test_invalid_rule_files_are_refused(tmp_path: Path):

@@ -110,8 +110,8 @@ def test_extension_moves_every_dossier_and_survives_the_daily_generation(
     assert first.tasks.get(period_key="2026-T3", kind="tva_trimestrielle").due_date == date(
         2026, 10, 25
     )
-    with pytest.raises(ValueError, match="après"):
-        extensions.create(deadline, date(2026, 10, 1), user=admin)
+    with pytest.raises(ValueError, match="même"):
+        extensions.create(deadline, deadline.due_date, user=admin)
 
 
 def test_everyone_sees_the_message_once(client, make_user):

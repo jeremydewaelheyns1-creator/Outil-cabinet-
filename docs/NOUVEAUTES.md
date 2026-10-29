@@ -3,6 +3,13 @@
 Ce qui a été ajouté à l'outil, du plus récent au plus ancien. Toutes les données de la démo
 sont inventées.
 
+## 29 octobre 2026 — IPP dans le calendrier et les échéances
+
+- Le **16 octobre** (déclarations IPP par le cabinet) apparaît dans le calendrier fiscal, comme
+  la TVA. Les échéances IPP de vos particuliers sont créées (revenus 2026 : 16/10/2027).
+- Tant que le SPF n'a pas publié la date de l'année, elle est marquée « provisoire ». S'il
+  annonce une autre date, l'outil vous prévient ; une fois confirmée, tout suit.
+
 ## 29 octobre 2026 — Pièces signées reconnues
 
 - **Lettre de mission** et **déclaration des bénéficiaires effectifs** signées : déposées,

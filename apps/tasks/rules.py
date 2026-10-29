@@ -58,6 +58,8 @@ class Rule:
     business_day_until: date | None = None
     assignee_role: str = ""
     steps: tuple[str, ...] = field(default_factory=tuple)
+    # Pas de tâche pour les périodes d'avant cette année (ex. IPP : rien de rétroactif, D-102).
+    first_year: int | None = None
 
     # --- Le client est-il concerné ? -----------------------------------------------------
 
@@ -118,6 +120,10 @@ class Rule:
             due = _day_in_month(period.end.year + 1, int(self.due["mois"]), self.due["jour"])
         else:  # dates_par_annee
             value = (self.due.get("dates") or {}).get(period.end.year)
+            default = self.due.get("par_defaut")
+            if value is None and default:
+                # Pas encore publiée par le SPF : date habituelle, « provisoire » (D-102).
+                value = _day_in_month(period.end.year + 1, int(default["mois"]), default["jour"])
             if value is None:
                 return None
             due = value if isinstance(value, date) else date.fromisoformat(str(value))
@@ -126,6 +132,12 @@ class Rule:
         ):
             return next_business_day(due)
         return due
+
+    def is_provisional(self, period: Period) -> bool:
+        """Date pas encore publiée par le SPF : celle de « par_defaut » (D-102)."""
+        return self.due.get("type") == "dates_par_annee" and (
+            period.end.year not in (self.due.get("dates") or {})
+        )
 
     def render_title(self, period: Period) -> str:
         return self.title.replace("{periode}", period.label)[:200]
@@ -195,6 +207,7 @@ def _parse_rule(raw: dict[str, Any]) -> Rule:
         business_day_until=_until(raw.get("report_jusqu_au")),
         assignee_role=str(raw.get("responsable", "")),
         steps=tuple(str(s) for s in raw.get("etapes") or ()),
+        first_year=int(raw["premiere_periode"]) if raw.get("premiere_periode") else None,
     )
 
 

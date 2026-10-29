@@ -103,6 +103,8 @@ def generate_for_client(
                     )  # fmt: skip
                     result.moved += 1
                 continue
+            if rule.first_year and period.end.year < rule.first_year:
+                continue
             due = due_for(rule, period)
             if due is None or not (window_start <= due <= window_end):
                 continue

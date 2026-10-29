@@ -225,17 +225,41 @@ def legal_vat_dates(year: int, month: int) -> list[tuple[date, str]]:
     return found
 
 
+def legal_dates(year: int, month: int) -> list[tuple[date, str]]:
+    """Dates légales du mois, avec ou sans dossier concerné : TVA (D-094) et IPP (D-102). La
+    date IPP des revenus de l'année d'avant, prolongation du SPF comprise ; « provisoire » tant
+    que le SPF ne l'a pas publiée."""
+    from apps.tasks.extensions import overrides
+    from apps.tasks.rules import Period, load_rules
+
+    found = legal_vat_dates(year, month)
+    rule = load_rules().get("ipp")
+    if rule is not None:
+        income = year - 1
+        period = Period(str(income), str(income), date(income, 1, 1), date(income, 12, 31))
+        base = rule.due_date(period)
+        moved = overrides().get((rule.code, period.key, base)) if base else None
+        due = moved or base
+        if due is not None and (due.year, due.month) == (year, month):
+            provisional = rule.is_provisional(period) and moved is None
+            found.append((due, f"IPP (revenus {income})"
+                          + (" — date provisoire" if provisional else "")))  # fmt: skip
+    return found
+
+
 def month_calendar(today: date, tasks: list[Task]) -> dict[str, object]:
     """Calendrier fiscal du mois : mes dates limites, avec ce qui tombe ce jour-là, et les dates
     légales de la TVA même sans dossier concerné."""
     first_weekday, days = calendar.monthrange(today.year, today.month)
     marks: dict[int, list[str]] = defaultdict(list)
-    for due, label in legal_vat_dates(today.year, today.month):
+    for due, label in legal_dates(today.year, today.month):
         marks[due.day].append(label)
     for task in tasks:
         family = BY_KIND.get(task.kind)  # seulement les échéances fiscales (pas les rappels perso)
         if family and task.due_date.year == today.year and task.due_date.month == today.month:
             label = CALENDAR_LABELS.get(task.kind, family.label)
+            if task.kind == "ipp" and any(m.startswith("IPP") for m in marks[task.due_date.day]):
+                continue
             if label not in marks[task.due_date.day]:
                 marks[task.due_date.day].append(label)
     cells: list[dict[str, object]] = [{"day": 0} for _ in range(first_weekday)]
