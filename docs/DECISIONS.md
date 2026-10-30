@@ -1396,8 +1396,8 @@ raison.
 
 Jeremy (30/10, maquettes « Checklist de clôture ») : l'onglet Clôture remplace la page à
 construire. Une ligne par exercice (créée toute seule pour le dernier exercice terminé, d'après
-la date de clôture de la fiche), dans son propre cadre : Checklist · Clôture comptable · Fiscal
-(réservé pour plus tard) · Resp. · Assis. · Mon temps · Remarque. La ligne devient verte quand
+la date de clôture de la fiche), dans son propre cadre : Checklist · Clôture comptable · Resp. · Assis. · Mon temps ·
+Remarque (colonne « Fiscal » retirée le 30/10 : la déclaration ISOC aura sa propre case). La ligne devient verte quand
 la checklist est complète ET la clôture comptable cochée ; cocher la clôture avec une checklist
 incomplète demande confirmation.
 
