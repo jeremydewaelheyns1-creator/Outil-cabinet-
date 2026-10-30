@@ -50,6 +50,9 @@ FOLDERS: dict[str, str] = {
 ORDER = [Kind.AG, Kind.BNB, Kind.ISOC, Kind.ANNEXES_270, Kind.PRECOMPTE,
          Kind.FICHES_281_20, Kind.FICHES_281_50, Kind.LISTING]  # fmt: skip
 FICHES = (Kind.FICHES_281_20, Kind.FICHES_281_50)
+# Nom court dans la case (toutes les cases tiennent sur une ligne) ; le nom complet est dans
+# la fenêtre de la case.
+BOX_LABEL: dict[str, str] = {Kind.PRECOMPTE: "Précompte"}
 VAT_SUBJECT = {"subject", "mixed", "franchise"}  # comme la règle listing_clients_tva
 HINTS: dict[str, str] = {
     Kind.AG: "Assemblée générale ordinaire : procès-verbal",
@@ -94,6 +97,7 @@ class Box:
     deposit: Deposit | None
     task: Task | None
     files: list[Document]
+    name: str = ""  # nom court affiché dans la case
     deadline: date | None = None  # date limite sans échéance (précompte : AG + 15 jours)
     parts: list[Box] = field(default_factory=list)  # « Fiches 281 » : 281.20 et 281.50
 
@@ -154,12 +158,15 @@ def boxes(year: ClosingYear, kinds: list[str]) -> list[Box]:
         task = tasks.get((TASKS.get(kind, ""), _period(year, kind)))
         files = list(deposit.documents.all()) if deposit else []
         box = Box(kind, Kind(kind).label, SHORT[kind], HINTS[kind], deposit, task, files)
+        box.name = BOX_LABEL.get(kind, box.label)
         if kind == Kind.PRECOMPTE:
             ag = found.get(Kind.AG)
             box.deadline = ag.done_on + timedelta(days=15) if ag and ag.done_on else None
         if kind in FICHES:
             if not fiches:
-                result.append(Box("281", "Fiches 281", "281", "", None, None, [], parts=fiches))
+                result.append(
+                    Box("281", "Fiches 281", "281", "", None, None, [], "Fiches 281", parts=fiches)
+                )
             fiches.append(box)
         else:
             result.append(box)

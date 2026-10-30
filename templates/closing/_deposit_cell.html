@@ -2,9 +2,9 @@
 281.20 et 281.50 : orange tant qu'une des deux manque.{% endcomment %}
 <details class="vat-menu cl-dep">
   <summary class="cl-box cl-deposit{% if b.done_on %} is-done{% elif b.parts and b.done_count %} is-wip{% endif %}" title="{{ b.hint|default:b.label }}">
-    <span class="cl-box-label">{{ b.label }}</span>
+    <span class="cl-box-label">{{ b.name|default:b.label }}</span>
     <strong>{% if b.done_on %}✓ {{ b.done_on|date:"d/m" }}{% elif b.parts|length > 1 %}{{ b.done_count }} / {{ b.parts|length }}{% else %}à faire{% endif %}</strong>
-    <span class="cl-box-foot">{% if b.parts|length > 1 and not b.done_on %}{% for p in b.parts %}{{ p.short }}{% if p.done_on %} ✓{% endif %}{% if not forloop.last %} · {% endif %}{% endfor %}{% elif b.files %}{{ b.files|length }} fichier{{ b.files|length|pluralize }}{% elif not b.done_on and b.due %}pour le {{ b.due|date:"d/m" }}{% elif b.done_on and not b.parts %}{{ b.deposit.done_by.get_short_name|default:"" }}{% else %}&nbsp;{% endif %}</span>
+    <span class="cl-box-foot">{% if b.parts|length > 1 and not b.done_on %}{% for p in b.parts %}{{ p.short }}{% if p.done_on %} ✓{% endif %}{% if not forloop.last %} {% endif %}{% endfor %}{% elif b.files %}{{ b.files|length }} fichier{{ b.files|length|pluralize }}{% elif not b.done_on and b.due %}pour le {{ b.due|date:"d/m" }}{% elif b.done_on and not b.parts %}{{ b.deposit.done_by.get_short_name|default:"" }}{% else %}&nbsp;{% endif %}</span>
   </summary>
   <div class="vat-pop cl-dep-pop">
     <div class="vat-pop-head">{{ b.label }} · {{ y.label }}</div>

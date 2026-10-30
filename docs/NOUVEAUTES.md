@@ -3,6 +3,13 @@
 Ce qui a été ajouté à l'outil, du plus récent au plus ancien. Toutes les données de la démo
 sont inventées.
 
+## 30 octobre 2026 — Clôture : toutes les déclarations sur une seule ligne
+
+- Les cases « Dépôts » tiennent maintenant sur une seule ligne, alignées sur les cases
+  « Clôture » au-dessus (mêmes colonnes, même taille).
+- Noms plus courts dans les cases (« Checklist compta. », « Précompte »…) ; le nom complet
+  reste dans la fenêtre de la case.
+
 ## 30 octobre 2026 — Clôture : tous les dépôts, seulement ceux du dossier
 
 - Nouvelles cases dans « Dépôts » : Précompte mobilier, Fiches 281 (281.20 et 281.50 dans une

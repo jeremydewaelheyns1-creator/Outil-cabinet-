@@ -20,13 +20,13 @@
     {% if y.remark %}<p class="cl-remark-text small">{{ y.remark|linebreaksbr }}</p>{% endif %}
     {% if row_error %}<span class="cl-error">{{ row_error }}</span>{% endif %}
   </div>
-  <div class="cl-lines">
+  <div class="cl-lines" style="--cl-cols: {{ row.cols }}">
     <div class="cl-line-label">Clôture</div>
     <div class="cl-boxes">
-      {% include "closing/_check_cell.html" with part="comptable" name="Checklist comptable" %}
-      {% include "closing/_close_cell.html" with part="comptable" on=y.closed_on by=y.closed_by label="Clôture comptable" %}
-      {% with s=row.manager_sheet %}{% include "closing/_check_cell.html" with part="gestionnaire" name="Checklist gestionnaire" %}{% endwith %}
-      {% with s=row.manager_sheet %}{% include "closing/_close_cell.html" with part="gestionnaire" on=y.manager_closed_on by=y.manager_closed_by label="Clôture gestionnaire" %}{% endwith %}
+      {% include "closing/_check_cell.html" with part="comptable" name="Checklist comptable" short="Checklist compta." %}
+      {% include "closing/_close_cell.html" with part="comptable" on=y.closed_on by=y.closed_by label="Clôture comptable" short="Clôture compta." %}
+      {% with s=row.manager_sheet %}{% include "closing/_check_cell.html" with part="gestionnaire" name="Checklist gestionnaire" short="Checklist gestion." %}{% endwith %}
+      {% with s=row.manager_sheet %}{% include "closing/_close_cell.html" with part="gestionnaire" on=y.manager_closed_on by=y.manager_closed_by label="Clôture gestionnaire" short="Clôture gestion." %}{% endwith %}
     </div>
     {% if row.boxes %}
       <div class="cl-line-label">Dépôts</div>

@@ -60,6 +60,7 @@ def _rows(client: Client, user: User) -> list[dict[str, Any]]:
         boxes = deposits.boxes(y, kinds)
         rows.append({
             "year": y, "sheet": sheet, "manager_sheet": manager_sheet, "boxes": boxes,
+            "cols": max(4, len(boxes)),  # colonnes communes aux deux lignes (une ligne chacune)
             "finished": services.finished(sheet, manager_sheet) and deposits.complete(boxes),
         })  # fmt: skip
     return rows
