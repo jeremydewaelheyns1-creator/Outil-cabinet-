@@ -72,16 +72,26 @@ def test_edit_and_delete(web, user):
     assert not TimeEntry.objects.exists()
 
 
-def test_time_spent_in_the_dossier(web, user, make_user):
-    client = ClientFactory()
+def test_hours_on_a_dossier_are_for_the_administrator(client, web, user, make_user):
+    """D-107 : un employé ne voit pas combien de temps ses collègues passent sur un dossier."""
+    dossier = ClientFactory()
     colleague = make_user(capabilities=["clients.edit"])
-    TimeEntry.objects.create(user=user, client=client, day=MONDAY, start=time(9), end=time(10),
+    TimeEntry.objects.create(user=user, client=dossier, day=MONDAY, start=time(9), end=time(10),
                              activity="tva", description="Ma ligne")  # fmt: skip
-    TimeEntry.objects.create(user=colleague, client=client, day=MONDAY, start=time(9),
+    TimeEntry.objects.create(user=colleague, client=dossier, day=MONDAY, start=time(9),
                              end=time(11), activity="cloture", description="Bilan-XYZ")  # fmt: skip
-    html = web.get(reverse("clients:time_spent", args=[client.pk])).content.decode()
-    assert "3 h" in html and "Ma ligne" in html
-    assert "Bilan-XYZ" not in html and "1 ligne de collègues" in html
+    url = reverse("clients:time_spent", args=[dossier.pk])
+    assert web.get(url).status_code == 403
+    identity = web.get(reverse("clients:identity", args=[dossier.pk])).content.decode()
+    assert "Heures prestées" not in identity
+    admin = make_user(capabilities=["clients.edit", "timesheet.all"])
+    client.force_login(admin)
+    html = client.get(url).content.decode()
+    assert "3 h" in html and "Ma ligne" in html and "Bilan-XYZ" in html
+    assert (
+        "Heures prestées"
+        in client.get(reverse("clients:identity", args=[dossier.pk])).content.decode()
+    )
 
 
 def test_hours_label():

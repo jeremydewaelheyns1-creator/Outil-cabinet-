@@ -109,8 +109,11 @@ def delete(request: AppRequest, entry_id: int) -> HttpResponse:
 
 
 def client_time(request: AppRequest, pk: int) -> HttpResponse:
-    """Rubrique « Temps passé » du dossier : totaux pour tous ; le détail des lignes de
-    collègues seulement avec le droit « timesheet.all »."""
+    """Rubrique « Heures prestées » du dossier : réservée à l'administrateur (droit
+    « timesheet.all », D-107) — un employé ne voit pas le temps de ses collègues sur un dossier.
+    Chacun encode toujours ses heures dans « Ma journée »."""
+    if not request.user.has_capability(Capability.TIMESHEET_ALL):
+        raise PermissionDenied
 
     def build(client: Client) -> dict[str, Any]:
         sees_all = request.user.has_capability(Capability.TIMESHEET_ALL)

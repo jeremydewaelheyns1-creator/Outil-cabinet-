@@ -23,7 +23,7 @@ def current_dossier(request: HttpRequest) -> dict[str, Any]:
         "current_client": client,
         "current_section": dossier.section_of(request),
         "dossier_top": dossier.top_for(client),
-        "dossier_side": dossier.side_for(client),
+        "dossier_side": dossier.side_for(client, user),
         "dossier_counts": {
             **_relation_counts(client, user),
             "overdue": overdue,

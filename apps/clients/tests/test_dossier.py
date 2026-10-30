@@ -253,10 +253,8 @@ def test_one_archives_entry_on_the_left(web):
         assert reverse("clients:archive", args=[company.pk, slug]) not in html
     for hidden in ("Honoraires", ">Historique<", ">Échéances<", ">Mandataires<", ">Actionnaires<"):
         assert hidden not in html.split('class="dossier-side"')[1].split("</aside>")[0]
-    assert (
-        "Heures prestées" in html
-        and reverse("clients:archive", args=[company.pk, "factures"]) in html
-    )
+    assert reverse("clients:archive", args=[company.pk, "factures"]) in html
+    assert "Heures prestées" not in html  # réservé à l'administrateur (D-107)
     # En bas de la fiche : l'historique et les échéances restent à un clic.
     assert reverse("clients:history", args=[company.pk]) in html
     assert reverse("clients:tasks", args=[company.pk]) in html

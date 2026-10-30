@@ -39,6 +39,8 @@ class Section:
     count: str = ""  # compteur affiché à côté (clé de `counts`)
     # Page qui existe mais n'a pas d'entrée dans le panneau : on y arrive par un lien (D-105).
     hidden: bool = False
+    # Réservée à qui a ce droit (ex. heures prestées : vue de l'administrateur, D-107).
+    capability: str = ""
 
     @property
     def key(self) -> str:
@@ -106,7 +108,8 @@ SIDE: tuple[Group, ...] = (
     Group(
         "Facturation",
         (
-            Section("time_spent", "Heures prestées"),
+            # D-107 : les heures de chacun sur un dossier, c'est pour l'administrateur.
+            Section("time_spent", "Heures prestées", capability="timesheet.all"),
             Section(WORK, "Honoraires", slug="honoraires", hidden=True),
             # Factures du cabinet déposées : reconnues et rangées ici (D-105).
             Section(ARCHIVE, "Factures", slug="factures"),
@@ -244,11 +247,13 @@ def top_for(client: Client) -> list[Section]:
     return [s for s in TOP if _allowed(s, client)]
 
 
-def side_for(client: Client) -> list[Group]:
-    groups = [
-        Group(g.label, tuple(s for s in g.sections if _allowed(s, client) and not s.hidden))
-        for g in SIDE
-    ]
+def side_for(client: Client, user: User | None = None) -> list[Group]:
+    def shown(s: Section) -> bool:
+        if s.hidden or not _allowed(s, client):
+            return False
+        return not s.capability or (user is not None and user.has_capability(s.capability))
+
+    groups = [Group(g.label, tuple(s for s in g.sections if shown(s))) for g in SIDE]
     return [g for g in groups if g.sections]
 
 

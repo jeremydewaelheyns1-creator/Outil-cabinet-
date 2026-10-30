@@ -1350,3 +1350,11 @@ d'identité) — bouton « Ajouter / modifier les mandataires » — et les acti
 Documents › UBO — bouton « Encoder les actionnaires ». Les deux pages existent toujours (fil
 d'Ariane « Documents › … ») ; les noms de l'en-tête restent cliquables. Panneau : Fiche,
 Archives, Facturation.
+
+## D-107 — Heures prestées : vue de l'administrateur
+
+Jeremy : « les employés n'ont pas besoin de savoir combien leurs collègues passent de temps sur
+un dossier ». La page « Heures prestées » du dossier (et son entrée à gauche) est réservée au
+droit « Voir les heures de tous » (`timesheet.all`) ; chacun encode toujours ses heures dans
+« Ma journée ». Les idées du futur module Administrateur sont rassemblées dans
+`docs/ADMINISTRATEUR.md`.

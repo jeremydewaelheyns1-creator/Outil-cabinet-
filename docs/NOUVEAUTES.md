@@ -3,6 +3,11 @@
 Ce qui a été ajouté à l'outil, du plus récent au plus ancien. Toutes les données de la démo
 sont inventées.
 
+## 30 octobre 2026 — Heures prestées réservées à l'administrateur
+
+- Les heures passées sur un dossier ne sont plus visibles que par l'administrateur. Chacun
+  encode toujours ses heures dans « Ma journée ».
+
 ## 30 octobre 2026 — Mandataires et actionnaires depuis Documents
 
 - Plus d'entrées « Mandataires » et « Actionnaires » à gauche : on les encode depuis l'onglet
