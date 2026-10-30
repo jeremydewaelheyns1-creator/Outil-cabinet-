@@ -1,0 +1,30 @@
+{# Un cadre de « Mes déclarations TVA » (D-109) : la ligne de l'onglet « Déclaration TVA » du dossier. #}
+{% with row=card.row f=card.filing client=card.filing.client board=True %}
+<section class="card vb-card vb-{{ card.group }}{% if row.complete %} vb-complete{% endif %}" id="vb-{{ f.pk }}" aria-label="TVA {{ f.short_label }} · {{ client.display_name }}">
+  <div class="vb-who">
+    <a href="{% url 'clients:vat' client.pk %}" class="vb-name">{{ client.display_name }}</a>
+    <span class="vb-period">{{ f.short_label }} · pour le {{ card.task.due_date|date:"d/m" }}</span>
+    {% with b=f.balance %}{% if b %}<span class="vb-balance">{{ b.1|euros }} {% if b.0 == "72" %}à récupérer{% elif b.1 %}à payer{% else %}· solde nul{% endif %}</span>{% endif %}{% endwith %}
+  </div>
+  <table class="vat-grid vb-steps"><tbody><tr>
+    {% for cell in row.cells %}{% include "vat/_cell.html" %}{% endfor %}
+  </tr></tbody></table>
+  <div class="vb-side">
+    <span class="acc-pill acc-{{ card.tone }}">{{ card.tag }}</span>
+    <details class="vb-time">
+      <summary><span class="vb-minutes" title="Mon temps TVA sur ce dossier pour cette période">{{ card.time_label }}</span><span class="vb-add">+ Temps</span></summary>
+      <form class="vb-time-form" method="post" action="{% url 'temps:save' %}">{% csrf_token %}
+        <input type="hidden" name="client" value="{{ client.pk }}">
+        <input type="hidden" name="activity" value="tva">
+        <input type="hidden" name="retour" value="{{ back }}">
+        <strong>Ajouter à ma journée · TVA {{ f.short_label }}</strong>
+        <label class="small vb-day">Jour<input type="date" name="day" value="{{ time.day }}" required></label>
+        <label class="small">De<input type="time" name="start" value="{{ time.start }}" step="300" required></label>
+        <label class="small">À<input type="time" name="end" value="{{ time.end }}" step="300" required></label>
+        <label class="small vb-note">Ce qui a été fait<input name="description" maxlength="200" value="TVA {{ f.short_label }}"></label>
+        <button type="submit">Ajouter</button>
+      </form>
+    </details>
+  </div>
+</section>
+{% endwith %}

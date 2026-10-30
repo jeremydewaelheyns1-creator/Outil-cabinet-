@@ -1,0 +1,37 @@
+{% extends "layouts/app.html" %}
+{% block head_title %}Mes déclarations TVA{% endblock %}
+{% block page %}
+<div class="vb">
+  <div class="vb-head">
+    <div>
+      <p class="small"><a href="{% url 'core:home' %}">‹ Accueil</a></p>
+      <h1>Mes déclarations TVA</h1>
+      {% if campaign %}<p class="muted vb-sub">{{ campaign.periods }} · à déposer au plus tard le <strong>{{ deadline_label }}</strong></p>{% endif %}
+    </div>
+    {% if campaign %}
+      <div class="card vb-progress">
+        <div class="vb-progress-head"><strong>{{ campaign.done }} déposée{{ campaign.done|pluralize }} sur {{ campaign.total }}</strong><span class="muted">{{ campaign.percent }} %</span></div>
+        <div class="acc-bar"><span style="width: {{ campaign.percent }}%"></span></div>
+      </div>
+    {% endif %}
+  </div>
+
+  {% if not campaign %}
+    <div class="card"><p class="muted">Aucune déclaration TVA à faire pour mes dossiers en ce moment.</p></div>
+  {% else %}
+    <nav class="vb-filters" aria-label="Filtrer">
+      {% for key, label, count in filters %}
+        <a href="?{% if key %}etat={{ key }}{% endif %}" class="vb-filter{% if key == wanted %} is-on{% endif %}"{% if key == wanted %} aria-current="page"{% endif %}>{{ label }} ({{ count }})</a>
+      {% endfor %}
+    </nav>
+    {% for label, cards in groups %}
+      {% if cards %}
+        <h2 class="vb-group">{{ label }} <span>{{ cards|length }}</span></h2>
+        <div class="vb-list">{% for card in cards %}{% include "vat/_board_card.html" %}{% endfor %}</div>
+      {% endif %}
+    {% endfor %}
+    {% if can_edit %}<p class="small muted">Cliquer sur une case pour la changer : c'est la même ligne que dans l'onglet « Déclaration TVA » du client. Le cadre devient vert quand tout est fait.</p>{% endif %}
+  {% endif %}
+</div>
+<dialog id="doc-viewer" class="doc-viewer" aria-label="Document"><div id="doc-viewer-content"></div></dialog>
+{% endblock %}

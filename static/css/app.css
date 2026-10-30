@@ -1610,3 +1610,54 @@ button:active, .button:active { transform: scale(.98); }
 .classeur-docs { padding: 0 12px 8px 50px; }
 .classeur-official { margin: 10px 0 0; }
 @media (max-width: 760px) { .classeur-subjects { padding-left: 4px; } .classeur-docs { padding-left: 4px; overflow-x: auto; } }
+
+/* ==== Mes déclarations TVA (D-109) : un cadre par dossier, vert quand tout est fait ======== */
+.vb { display: grid; gap: 1rem; }
+.vb-head { display: flex; align-items: flex-end; gap: 1.5rem; flex-wrap: wrap; }
+.vb-head h1 { margin: 0; }
+.vb-head p { margin: 0; }
+.vb-sub { margin-top: .2rem !important; }
+.vb-progress { margin-left: auto; min-width: 300px; display: grid; gap: .5rem; padding: .9rem 1.1rem; }
+.vb-progress-head { display: flex; justify-content: space-between; gap: 1rem; }
+.vb-filters { display: flex; gap: .5rem; flex-wrap: wrap; }
+.vb-filter { background: var(--surface); border-radius: 999px; padding: .45rem 1rem; font-weight: 600; color: var(--text); }
+.vb-filter:hover { color: var(--ink); background: #fff; }
+.vb-filter.is-on { background: var(--ink); color: #fff; }
+.vb-group { margin: .6rem 0 0; font-size: .82rem; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: var(--text-muted); display: flex; gap: .5rem; align-items: center; }
+.vb-group span { background: var(--surface); color: var(--ink); border-radius: 999px; padding: 0 .55rem; letter-spacing: 0; }
+.vb-list { display: grid; gap: .6rem; }
+.vb-card { display: grid; grid-template-columns: minmax(180px, 1fr) minmax(0, 3fr) auto; gap: 1rem; align-items: center; padding: .9rem 1.2rem; border: 2px solid transparent; transition: background .2s ease, border-color .2s ease; }
+.vb-card + .vb-card { margin-top: 0; }
+.vb-who { display: grid; gap: .1rem; min-width: 0; }
+.vb-name { font-weight: 800; color: var(--ink); }
+.vb-period { font-size: .88rem; color: var(--text-muted); }
+.vb-balance { font-size: .88rem; font-weight: 700; color: var(--ink); }
+.vb-steps { width: 100%; border-collapse: separate; border-spacing: .35rem 0; table-layout: fixed; }
+.vb-steps .vat-cell { min-width: 0; }
+.vat-cell-label { flex-basis: 100%; font-size: .74rem; font-weight: 700; color: inherit; opacity: .85; }
+.vb-cell.vat-todo .vat-cell-label { color: var(--text-muted); opacity: 1; }
+.vb-side { display: grid; justify-items: end; gap: .4rem; }
+.vb-time { position: relative; }
+.vb-time > summary { list-style: none; display: flex; align-items: center; gap: .5rem; cursor: pointer; }
+.vb-time > summary::-webkit-details-marker { display: none; }
+.vb-minutes { font-size: .88rem; color: var(--text-muted); font-weight: 600; }
+.vb-add { border: 1.5px solid var(--primary); color: var(--primary-hover); border-radius: 999px; padding: .2rem .75rem; font-weight: 700; font-size: .88rem; background: #fff; }
+.vb-time[open] .vb-add { background: var(--primary); color: #fff; }
+.vb-time-form { position: absolute; right: 0; top: calc(100% + 6px); z-index: 20; width: 24rem; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: .5rem; padding: .9rem; background: var(--surface); border-radius: 16px; box-shadow: var(--shadow-raised); }
+.vb-time-form strong, .vb-time-form .vb-day { grid-column: 1 / -1; }
+.vb-time-form strong { font-size: .92rem; }
+.vb-time-form label { display: grid; gap: .2rem; margin: 0; }
+.vb-time-form input { width: 100%; min-width: 0; }
+.vb-time-form .vb-note { grid-column: 1 / -1; }
+.vb-time-form button { grid-column: 1 / -1; }
+/* Tout est fait : le cadre (et la ligne de l'onglet « Déclaration TVA ») passe au vert. */
+.vb-card.vb-complete { background: #dcfce7; border-color: #86efac; }
+.vb-card.vb-complete .vb-name, .vb-card.vb-complete .vb-balance { color: #14532d; }
+.vat-grid tr.vat-complete > *, .vat-grid tr.vat-complete:hover > * { background: #dcfce7; }
+.vat-grid tr.vat-complete > th:first-child { box-shadow: inset 4px 0 0 #22c55e; }
+.vb-steps tr > td, .vb-steps tr:hover > td { background: transparent !important; }
+@media (max-width: 1100px) {
+  .vb-card { grid-template-columns: minmax(0, 1fr); }
+  .vb-side { justify-items: start; grid-auto-flow: column; justify-content: start; align-items: center; }
+  .vb-time-form { left: 0; right: auto; }
+}

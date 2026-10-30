@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import date
+from datetime import date, datetime, time, timedelta
 from decimal import Decimal, InvalidOperation
 from typing import Any
 
@@ -10,18 +10,21 @@ from django.contrib import messages
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
+from django.utils import timezone
 from django.views.decorators.http import require_POST
 
 from apps.clients.models import Client
 from apps.clients.views import _get_client, render_section
+from apps.core import accueil
 from apps.core.audit import log_access
 from apps.core.capabilities import Capability
 from apps.core.http import AppRequest
-from apps.core.models import AccessLog
+from apps.core.models import AccessLog, User
 from apps.core.permissions import require_capability
 from apps.outlook import graph
+from apps.timesheet.models import TimeEntry
 
-from . import importer, mail, services
+from . import board, importer, mail, services
 from .models import COLUMN_HEADERS, Column, Status, VatFiling, VatMessage, VatPending
 
 # Choix proposés en cliquant sur une case (demande de Jeremy). Recliquer sur l'état en cours
@@ -51,6 +54,8 @@ def _filing(request: AppRequest, pk: int, filing_id: int) -> VatFiling:
 
 
 def _row_response(request: AppRequest, filing: VatFiling) -> HttpResponse:
+    if request.POST.get("vue") == "echeances":
+        return _card_response(request, filing)
     if not request.htmx:
         return redirect("clients:vat", pk=filing.client_id)
     filing = (
@@ -223,3 +228,67 @@ def _mail(request: AppRequest, pk: int, filing_id: int, kind: str) -> HttpRespon
             log_access(request, AccessLog.Action.UPDATE, filing.client,
                        details={"rubrique": "tva", "email envoyé": filing.period_key})  # fmt: skip
     return _mail_response(request, filing, message)
+
+
+# --- « Mes déclarations TVA » (D-109) ----------------------------------------------------------
+
+
+def _time_defaults(user: User) -> dict[str, str]:
+    """Créneau proposé par « + Temps » : à la suite de ma dernière entrée du jour, 30 minutes."""
+    now = timezone.localtime()
+    today = now.date()
+    last = TimeEntry.objects.filter(user=user, day=today).order_by("-end").first()
+    if last is not None:
+        start = datetime.combine(today, last.end)
+    else:
+        start = now.replace(second=0, microsecond=0) - timedelta(minutes=30 + now.minute % 5)
+    end = min(start + timedelta(minutes=30), datetime.combine(today, time(23, 55), start.tzinfo))
+    return {"day": f"{today:%Y-%m-%d}", "start": f"{start:%H:%M}", "end": f"{end:%H:%M}"}
+
+
+def _board_context(request: AppRequest) -> dict[str, Any]:
+    return {
+        "can_edit": request.user.has_capability(Capability.CLIENTS_EDIT),
+        "statuses": STATUS_CHOICES,
+        "time": _time_defaults(request.user),
+    }
+
+
+def my_vat(request: AppRequest) -> HttpResponse:
+    """La page ouverte par « Ouvrir mes échéances » de l'Accueil pendant le mois TVA."""
+    today = timezone.localdate()
+    data = board.build(request.user, today)
+    wanted = request.GET.get("etat", "")
+    if wanted not in board.FILTERS:
+        wanted = ""
+    context = {
+        **_board_context(request),
+        "board": data,
+        "campaign": data.campaign,
+        "wanted": wanted,
+        "filters": [(key, label, data.count(key)) for key, label in board.FILTERS.items()],
+        "groups": data.groups(wanted),
+        "deadline_label": accueil.long_date(data.campaign.deadline) if data.campaign else "",
+        "back": request.get_full_path(),
+    }
+    return render(request, "vat/board.html", context)
+
+
+def _card_response(request: AppRequest, filing: VatFiling) -> HttpResponse:
+    if not request.htmx:
+        return redirect("tasks:vat_board")
+    filing = (
+        VatFiling.objects.select_related(
+            "client", "task", "xml", "pdf", "ic_xml", "ic_pdf", "manager", "assistant"
+        )
+        .prefetch_related("cells__by", "messages")
+        .get(pk=filing.pk)
+    )
+    card = board.card_for(filing, request.user, timezone.localdate())
+    back = request.POST.get("retour", "")
+    context = {
+        **_board_context(request),
+        "card": card,
+        "back": back if back.startswith("/") and "//" not in back else reverse("tasks:vat_board"),
+    }
+    return render(request, "vat/_board_card.html", context)

@@ -1366,3 +1366,16 @@ Jeremy : « c'est un peu fin pour les yeux… change juste la police, rend le tr
 hébergée par l'outil (licence OFL, aucun appel extérieur) ; texte de base 16 px au lieu de 15,
 graisse 450 au lieu de 400, gris des libellés plus foncé (#46435f), numéros (BCE, TVA,
 montants) dans la même police que le texte, chiffres alignés. Rien d'autre ne bouge.
+
+## D-109 — « Mes déclarations TVA » : un cadre par dossier, vert quand tout est fait
+
+Jeremy (maquette B choisie le 30/10) : pendant le mois TVA, « Ouvrir mes échéances » de
+l'Accueil ouvre `echeances/tva/` (`tasks:vat_board`, pas d'entrée de menu : on n'y arrive que
+par ce bouton). Un cadre par dossier de MES dossiers (ceux de l'Accueil, `accueil.my_clients`),
+rangé en « À commencer / En cours / Terminées », avec filtres. Les cases sont celles de la ligne
+de l'onglet « Déclaration TVA » (même gabarit `vat/_cell.html`, même vue `vat_cell` : cocher
+ici coche là-bas, journalisé). Le cadre devient vert quand toute la ligne est faite ; la ligne
+de l'onglet aussi (vert plus marqué). « + Temps » ajoute une entrée à Ma journée (activité TVA,
+dossier prérempli, à la suite de ma dernière entrée du jour) et affiche MON temps TVA sur le
+dossier depuis le début de la période — jamais celui des collègues (D-107). Les autres
+périodes (comptes annuels…) gardent l'échéancier en attendant leur onglet.

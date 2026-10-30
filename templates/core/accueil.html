@@ -46,7 +46,7 @@
               {% endfor %}
             </div>
           {% endif %}
-          <div><a class="button acc-dark" href="{% url 'tasks:board' %}?qui=moi&amp;categorie={{ center.family.category }}&amp;quand=90">Ouvrir mes échéances</a></div>
+          <div><a class="button acc-dark" href="{% if center.family.code == "tva" %}{% url 'tasks:vat_board' %}{% else %}{% url 'tasks:board' %}?qui=moi&amp;categorie={{ center.family.category }}&amp;quand=90{% endif %}">Ouvrir mes échéances</a></div>
         </section>
         <section class="card" aria-labelledby="acc-remaining">
           <h2 id="acc-remaining" class="acc-h2">Mes dossiers encore à faire</h2>
@@ -61,7 +61,7 @@
                     <td><span class="acc-pill acc-{{ r.tone }}">{{ r.state }}</span></td></tr>
                 {% endfor %}</tbody>
               </table></div>
-              {% if rows|length > 8 %}<p class="small"><a href="{% url 'tasks:board' %}?qui=moi&amp;categorie={{ center.family.category }}&amp;quand=90">Voir les {{ rows|length }}</a></p>{% endif %}
+              {% if rows|length > 8 %}<p class="small"><a href="{% if center.family.code == "tva" %}{% url 'tasks:vat_board' %}{% else %}{% url 'tasks:board' %}?qui=moi&amp;categorie={{ center.family.category }}&amp;quand=90{% endif %}">Voir les {{ rows|length }}</a></p>{% endif %}
             {% else %}
               <p class="muted">Tout est fait pour cette période. Bravo !</p>
             {% endif %}

@@ -1,6 +1,7 @@
 {# Une case de suivi : clic → les sept états (comme FID), la date, l'auteur, une remarque. #}
-<td class="vat-cell vat-{{ cell.css }}">
+<td class="vat-cell vat-{{ cell.css }}{% if board %} vb-cell{% endif %}">
   {% if can_edit %}<details class="vat-menu"><summary title="{{ cell.label }} : {% if cell.never %}jamais nécessaire{% else %}{{ cell.status_label|lower }}{% endif %}">{% endif %}
+    {% if board %}<span class="vat-cell-label">{{ cell.header }}</span>{% endif %}
     <span class="vat-date">{% if cell.never %}&nbsp;{% elif cell.on %}{{ cell.on|date:"d/m" }}{% else %}&nbsp;{% endif %}</span>
     {% if cell.column == "client" and row.filing.declaration_messages or cell.column == "docs" and row.filing.documents_messages %}<svg class="vat-mailed" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" aria-label="E-mail préparé"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>{% endif %}
     {% if cell.comment %}<svg class="vat-note" viewBox="0 0 24 24" width="13" height="13" fill="currentColor" aria-label="Remarque"><path d="M4 4h16v12H8l-4 4z"/></svg>{% endif %}
@@ -14,7 +15,8 @@
       {% elif cell.on %}
         <p class="small">{{ cell.status_label }} — {{ cell.on|date:"d/m/Y" }}{% if cell.by %} · {{ cell.by }}{% endif %}</p>
       {% endif %}
-      <form method="post" action="{% url 'clients:vat_cell' client.pk row.filing.pk cell.column %}" hx-post="{% url 'clients:vat_cell' client.pk row.filing.pk cell.column %}" hx-target="closest tr" hx-swap="outerHTML">{% csrf_token %}
+      <form method="post" action="{% url 'clients:vat_cell' client.pk row.filing.pk cell.column %}" hx-post="{% url 'clients:vat_cell' client.pk row.filing.pk cell.column %}" hx-target="{% if board %}closest .vb-card{% else %}closest tr{% endif %}" hx-swap="outerHTML">{% csrf_token %}
+        {% if board %}<input type="hidden" name="vue" value="echeances"><input type="hidden" name="retour" value="{{ back }}">{% endif %}
         <div class="vat-choices">
           {% for value, label in statuses %}<button type="submit" name="status" value="{% if value == cell.css %}todo{% else %}{{ value }}{% endif %}" class="vat-choice vat-{{ value }}{% if value == cell.css %} is-current{% endif %}" data-status="{{ value }}"{% if value == cell.css %} title="Cliquer à nouveau pour vider la case"{% endif %}>{{ label }}{% if value == cell.css %} ✓{% endif %}</button>{% endfor %}
         </div>

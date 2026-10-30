@@ -3,6 +3,15 @@
 Ce qui a été ajouté à l'outil, du plus récent au plus ancien. Toutes les données de la démo
 sont inventées.
 
+## 30 octobre 2026 — Mes déclarations TVA
+
+- Pendant le mois TVA, « Ouvrir mes échéances » sur l'Accueil ouvre une nouvelle page : un
+  cadre par client avec sa ligne TVA (Doc. reçus, Fini, Déposée, IC, Com. client). On coche
+  directement les cases ; c'est la même ligne que dans l'onglet « Déclaration TVA » du client.
+- Le cadre devient vert quand tout est fait. Dans l'onglet « Déclaration TVA », la ligne
+  terminée est aussi bien verte.
+- « + Temps » sur chaque client : ajouter du temps à Ma journée sans quitter la page.
+
 ## 30 octobre 2026 — Texte plus lisible
 
 - Nouvelle police (Inter), un peu plus grande et plus épaisse ; les libellés gris sont plus
