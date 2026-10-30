@@ -1,26 +1,40 @@
-{# Case de dépôt (D-113) : AG, BNB, ISOC, fiches 281.50, annexes 270. Même taille que les autres. #}
+{% comment %}Case de dépôt (D-113, D-115). Même taille que les autres. « Fiches 281 » regroupe
+281.20 et 281.50 : orange tant qu'une des deux manque.{% endcomment %}
 <details class="vat-menu cl-dep">
-  <summary class="cl-box cl-deposit{% if b.done_on %} is-done{% endif %}" title="{{ b.hint }}">
+  <summary class="cl-box cl-deposit{% if b.done_on %} is-done{% elif b.parts and b.done_count %} is-wip{% endif %}" title="{{ b.hint|default:b.label }}">
     <span class="cl-box-label">{{ b.label }}</span>
-    <strong>{% if b.done_on %}✓ {{ b.done_on|date:"d/m" }}{% else %}à faire{% endif %}</strong>
-    <span class="cl-box-foot">{% if b.files %}{{ b.files|length }} fichier{{ b.files|length|pluralize }}{% elif not b.done_on and b.due %}pour le {{ b.due|date:"d/m" }}{% elif b.done_on %}{{ b.deposit.done_by.get_short_name|default:"" }}{% else %}&nbsp;{% endif %}</span>
+    <strong>{% if b.done_on %}✓ {{ b.done_on|date:"d/m" }}{% elif b.parts|length > 1 %}{{ b.done_count }} / {{ b.parts|length }}{% else %}à faire{% endif %}</strong>
+    <span class="cl-box-foot">{% if b.parts|length > 1 and not b.done_on %}{% for p in b.parts %}{{ p.short }}{% if p.done_on %} ✓{% endif %}{% if not forloop.last %} · {% endif %}{% endfor %}{% elif b.files %}{{ b.files|length }} fichier{{ b.files|length|pluralize }}{% elif not b.done_on and b.due %}pour le {{ b.due|date:"d/m" }}{% elif b.done_on and not b.parts %}{{ b.deposit.done_by.get_short_name|default:"" }}{% else %}&nbsp;{% endif %}</span>
   </summary>
   <div class="vat-pop cl-dep-pop">
     <div class="vat-pop-head">{{ b.label }} · {{ y.label }}</div>
-    <p class="small muted">{{ b.hint }}{% if b.task %} · échéance {{ b.due|date:"d/m/Y" }}{% endif %}</p>
-    {% if b.files %}
-      <ul class="cl-files">{% for d in b.files %}<li>{% include "documents/_open.html" %}{{ d.title }}</a></li>{% endfor %}</ul>
-    {% endif %}
-    {% if can_edit %}
-      <form method="post" action="{% url 'clients:closing_deposit_file' client.pk y.pk b.kind %}" hx-post="{% url 'clients:closing_deposit_file' client.pk y.pk b.kind %}" hx-encoding="multipart/form-data" hx-target="closest .cl-card" hx-swap="outerHTML" enctype="multipart/form-data" class="cl-dep-upload">{% csrf_token %}
-        <label class="small">Déposer un fichier<input type="file" name="fichier" required></label>
-        <button type="submit" class="button-small">Déposer</button>
-      </form>
-      <form method="post" action="{% url 'clients:closing_deposit' client.pk y.pk b.kind %}" hx-post="{% url 'clients:closing_deposit' client.pk y.pk b.kind %}" hx-target="closest .cl-card" hx-swap="outerHTML" class="cl-dep-actions">{% csrf_token %}
-        {% if b.done_on %}<button type="submit" name="action" value="decocher" class="button-small button-secondary">Décocher</button>
-        {% else %}<button type="submit" name="action" value="cocher" class="button-small">Marquer comme fait</button>{% endif %}
-        <button type="submit" name="action" value="retirer" class="link-button small cl-remove" hx-confirm="Retirer la case « {{ b.label }} » pour ce dossier (toutes les années) ?">Retirer pour ce dossier</button>
-      </form>
-    {% endif %}
+    {% for p in b.items %}
+      <div class="cl-dep-part">
+        {% if b.parts %}<strong class="small">{{ p.label }}{% if p.done_on %} · ✓ {{ p.done_on|date:"d/m/Y" }}{% endif %}</strong>{% endif %}
+        <p class="small muted">{{ p.hint }}{% if not p.done_on and p.due %} · pour le {{ p.due|date:"d/m/Y" }}{% endif %}</p>
+        {% if p.files %}
+          <ul class="cl-files">{% for d in p.files %}<li>{% include "documents/_open.html" %}{{ d.title }}</a></li>{% endfor %}</ul>
+        {% endif %}
+        {% if p.kind == "ag" and can_edit %}
+          <form method="post" action="{% url 'clients:closing_dividend' client.pk y.pk %}" hx-post="{% url 'clients:closing_dividend' client.pk y.pk %}" hx-target="closest .cl-card" hx-swap="outerHTML" class="cl-dividend">{% csrf_token %}
+            <span class="small">Dividende décidé ?</span>
+            <button type="submit" name="dividende" value="non" class="button-small{% if y.dividend is not False %} button-secondary{% endif %}"{% if y.dividend is False %} aria-pressed="true"{% endif %}>Non</button>
+            <button type="submit" name="dividende" value="oui" class="button-small{% if not y.dividend %} button-secondary{% endif %}"{% if y.dividend %} aria-pressed="true"{% endif %}>Oui</button>
+          </form>
+          <p class="small muted">« Oui » ajoute la case Précompte mobilier.</p>
+        {% endif %}
+        {% if can_edit %}
+          <form method="post" action="{% url 'clients:closing_deposit_file' client.pk y.pk p.kind %}" hx-post="{% url 'clients:closing_deposit_file' client.pk y.pk p.kind %}" hx-encoding="multipart/form-data" hx-target="closest .cl-card" hx-swap="outerHTML" enctype="multipart/form-data" class="cl-dep-upload">{% csrf_token %}
+            <label class="small">Déposer un fichier{% if b.parts %} ({{ p.short }}){% endif %}<input type="file" name="fichier" required></label>
+            <button type="submit" class="button-small">Déposer</button>
+          </form>
+          <form method="post" action="{% url 'clients:closing_deposit' client.pk y.pk p.kind %}" hx-post="{% url 'clients:closing_deposit' client.pk y.pk p.kind %}" hx-target="closest .cl-card" hx-swap="outerHTML" class="cl-dep-actions">{% csrf_token %}
+            {% if p.done_on %}<button type="submit" name="action" value="decocher" class="button-small button-secondary">Décocher</button>
+            {% else %}<button type="submit" name="action" value="cocher" class="button-small">Marquer comme fait</button>{% endif %}
+            <button type="submit" name="action" value="retirer" class="link-button small cl-remove" hx-confirm="Retirer la case « {{ p.label }} » pour ce dossier (toutes les années) ?">Retirer pour ce dossier</button>
+          </form>
+        {% endif %}
+      </div>
+    {% endfor %}
   </div>
 </details>

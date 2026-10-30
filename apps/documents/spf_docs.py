@@ -75,6 +75,12 @@ AG_YEAR = re.compile(
 INCOME_YEAR = re.compile(
     r"ann[ée]e\s+de\s+revenus?\s*:?\s*(20\d{2})|inkomstenjaar\s*:?\s*(20\d{2})", re.I
 )
+# Listing clients : « Listing clients 2025 », « année civile 2025 » (D-115).
+LISTING_YEAR = re.compile(
+    r"(?:listing|liste annuelle|jaarlijkse lijst|klantenlisting)[^\n]{0,60}?(20\d{2})"
+    r"|ann[ée]e\s+civile\s*:?\s*(20\d{2})|kalenderjaar\s*:?\s*(20\d{2})",
+    re.I,
+)
 KINDS: tuple[Kind, ...] = (
     # Documents entiers qui citent beaucoup d'autres mots (« demandes de renseignements »,
     # « versements anticipés », « TVA »…) : reconnus en premier (vrais documents, D-098).
@@ -112,6 +118,11 @@ KINDS: tuple[Kind, ...] = (
           ("assemblee generale", "algemene vergadering"),
           ("comptes annuels", "jaarrekening")),
          "", "legal", year=AG_YEAR, deposit="ag"),
+    # Accusé Belcotax des fiches 281.20 (rémunérations de dirigeants) → case « Fiches 281 »
+    # (D-115).
+    Kind("belcotax_28120", "Fiches 281.20 — Belcotax",
+         (("belcotax",), ("281.20", "281,20", "325.20", "325,20")),
+         "", "isoc", year=INCOME_YEAR, deposit="28120"),
     # Accusé Belcotax des fiches 281.50 (honoraires, commissions) → case « 281.50 » (D-114).
     Kind("belcotax_28150", "Fiches 281.50 — Belcotax",
          (("belcotax",), ("281.50", "281,50", "325.50", "325,50")),
@@ -138,7 +149,8 @@ KINDS: tuple[Kind, ...] = (
          "ipp", "ipp", person_first=True),
     Kind("listing_clients", "Listing clients annuel (TVA)",
          (("listing annuel", "listing des clients", "klantenlisting", "jaarlijkse lijst"),
-          ("assujetti", "btw-plichtige", "tva", "btw")), "tva", "tva"),
+          ("assujetti", "btw-plichtige", "tva", "btw")), "tva", "tva",
+         year=LISTING_YEAR, deposit="listing"),
     Kind("compte_tva", "Compte courant TVA",
          (("compte courant tva", "compte-courant tva", "btw-rekening-courant"),), "tva", "tva"),
     Kind("rectification", "Avis de rectification de la déclaration",
@@ -222,7 +234,8 @@ def identify(text: str, clients: QuerySet[Client], cabinet_number: str = "") -> 
     if kind is None:
         return None
     match = (kind.year or YEAR).search(text)
-    year = int(match.group(1) or match.group(2)) if match else None
+    digits = next((g for g in match.groups() if g), None) if match else None
+    year = int(digits) if digits else None
     cabinet = intervat.normalize_number(cabinet_number or "")
     # Dans l'ordre du document : le destinataire (déclarant) est toujours cité en premier ; un
     # listing clients cite ensuite les numéros de ses clients (grand test, D-096).
@@ -247,7 +260,10 @@ def identify(text: str, clients: QuerySet[Client], cabinet_number: str = "") -> 
 
 
 def title(found: Found) -> str:
-    return f"{found.kind.label}{f' — exercice {found.year}' if found.year else ''}"
+    if not found.year:
+        return found.kind.label
+    civil = found.kind.year in (INCOME_YEAR, LISTING_YEAR)  # année civile, pas un exercice
+    return f"{found.kind.label} — {'année' if civil else 'exercice'} {found.year}"
 
 
 def folder(found: Found, client: Client) -> str:

@@ -3,6 +3,14 @@
 Ce qui a été ajouté à l'outil, du plus récent au plus ancien. Toutes les données de la démo
 sont inventées.
 
+## 30 octobre 2026 — Clôture : tous les dépôts, seulement ceux du dossier
+
+- Nouvelles cases dans « Dépôts » : Précompte mobilier, Fiches 281 (281.20 et 281.50 dans une
+  seule case), Listing clients.
+- Chaque dossier ne voit que ce qui le concerne : le listing seulement s'il est soumis à TVA,
+  le précompte seulement si l'AG a décidé un dividende (question « Oui / Non » dans la case AG).
+- Une case peut toujours être retirée pour un dossier ; c'est gardé les années suivantes.
+
 ## 30 octobre 2026 — Agenda : le nom du dossier mène à la fiche client
 
 - Dans l'agenda, le nom du dossier se souligne au survol : un clic ouvre la fiche client.

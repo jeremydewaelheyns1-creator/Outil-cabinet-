@@ -57,6 +57,11 @@ urlpatterns = [
     # Déclaration TVA (D-040)
     path("<int:pk>/cloture/", closing_views.closing_tab, name="closing"),
     path(
+        "<int:pk>/cloture/<int:year_id>/dividende/",
+        closing_views.dividend,
+        name="closing_dividend",
+    ),
+    path(
         "<int:pk>/cloture/<int:year_id>/remarque/", closing_views.row_remark, name="closing_remark"
     ),
     path("<int:pk>/cloture/<int:year_id>/temps/", closing_views.add_time, name="closing_time"),

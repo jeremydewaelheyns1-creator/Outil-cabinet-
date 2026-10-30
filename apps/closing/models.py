@@ -147,6 +147,8 @@ class ClosingYear(models.Model):
     remark = models.TextField("remarque (ligne)", blank=True)
     checklist_remark = models.TextField("remarque générale de la checklist", blank=True)
     manager_remark = models.TextField("remarque générale (gestionnaire)", blank=True)
+    # Dividende décidé à l'AG (D-115) : « oui » fait apparaître la case Précompte mobilier.
+    dividend = models.BooleanField("dividende décidé à l'AG", null=True, blank=True)
     created_at = models.DateTimeField(default=timezone.now, editable=False)
     history = HistoricalRecords()
 
@@ -239,9 +241,13 @@ class Deposit(models.Model):
         ISOC = "isoc", "ISOC"
         FICHES_281_50 = "28150", "Fiches 281.50"
         ANNEXES_270 = "270", "Annexes 270"
+        # D-115 : cases ajoutées, montrées seulement aux dossiers concernés.
+        FICHES_281_20 = "28120", "Fiches 281.20"
+        LISTING = "listing", "Listing clients"
+        PRECOMPTE = "pm", "Précompte mobilier"
 
     year = models.ForeignKey(ClosingYear, on_delete=models.CASCADE, related_name="deposits")
-    kind = models.CharField("dépôt", max_length=6, choices=Kind.choices)
+    kind = models.CharField("dépôt", max_length=8, choices=Kind.choices)
     done_on = models.DateField("fait le", null=True, blank=True)
     done_by = models.ForeignKey(
         User, verbose_name="par", on_delete=models.SET_NULL, null=True, blank=True,

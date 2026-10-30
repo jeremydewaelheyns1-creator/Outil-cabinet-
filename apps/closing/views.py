@@ -315,6 +315,17 @@ def deposit(request: AppRequest, pk: int, year_id: int, kind: str) -> HttpRespon
 
 @require_POST
 @require_capability(Capability.CLIENTS_EDIT)
+def dividend(request: AppRequest, pk: int, year_id: int) -> HttpResponse:
+    """« Dividende décidé à l'AG ? » (D-115) : oui → case Précompte mobilier."""
+    year = _year(request, pk, year_id)
+    value = {"oui": True, "non": False}.get(request.POST.get("dividende", ""))
+    deposits.set_dividend(year, value, request.user)
+    _changed(request, year, f"dividende : {request.POST.get('dividende', '')}")
+    return _row_response(request, year)
+
+
+@require_POST
+@require_capability(Capability.CLIENTS_EDIT)
 def deposit_file(request: AppRequest, pk: int, year_id: int, kind: str) -> HttpResponse:
     year = _year(request, pk, year_id)
     if kind not in Deposit.Kind.values:

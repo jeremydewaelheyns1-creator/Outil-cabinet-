@@ -216,7 +216,7 @@ def test_deposit_box_ticks_its_deadline_and_back(web, user, django_capture_on_co
         web.post(reverse("tasks:status", args=[task.pk]), {"status": "done"})
     assert year.deposits.get(kind="bnb").done_on is not None
     assert [b.kind for b in deposits.boxes(year, deposits.kinds_for(client))] == [
-        "ag", "bnb", "isoc", "28150", "270",
+        "ag", "bnb", "isoc", "270", "281", "listing",
     ]  # fmt: skip
 
 
@@ -339,3 +339,78 @@ def test_biztax_receipt_citing_its_annexes_stays_an_isoc_receipt_and_no_year_no_
     web.post(reverse("depot:index"), {"files": [upload]})
     assert Document.objects.get(client=client).folder == "isoc"  # rangé quand même
     assert not ClosingYear.objects.filter(client=client).exists()
+
+
+def test_each_dossier_only_sees_its_boxes(web, user, django_capture_on_commit_callbacks):
+    """D-115 : listing clients seulement si TVA ; précompte mobilier seulement si l'AG a
+    décidé un dividende ; 281.20 et 281.50 dans une seule case « Fiches 281 »."""
+    from apps.closing import deposits
+    from apps.tasks.models import Task
+
+    asbl = company(vat="not_subject", name="ASBL Fictive")
+    kinds = [b.kind for b in deposits.boxes(year_of(asbl), deposits.kinds_for(asbl))]
+    assert kinds == ["ag", "bnb", "isoc", "270", "281"]
+
+    client = company(name="Garage Fictif SA")
+    year = year_of(client)
+    tab = web.get(reverse("clients:closing", args=[client.pk])).content.decode()
+    assert "Listing clients" in tab and "Précompte mobilier ·" not in unescape(tab)
+    assert "Dividende décidé ?" in unescape(tab)
+    # Dividende : oui → la case Précompte apparaît, avec AG + 15 jours.
+    web.post(
+        reverse("clients:closing_deposit", args=[client.pk, year.pk, "ag"]), {"action": "cocher"}
+    )
+    url = reverse("clients:closing_dividend", args=[client.pk, year.pk])
+    row = unescape(web.post(url, {"dividende": "oui"}, **HX).content.decode())
+    assert "Précompte mobilier ·" in row
+    year.refresh_from_db()
+    pm = next(b for b in deposits.boxes(year, deposits.kinds_for(client)) if b.kind == "pm")
+    assert pm.due == year.deposits.get(kind="ag").done_on + __import__("datetime").timedelta(15)
+    web.post(url, {"dividende": "non"}, **HX)
+    year.refresh_from_db()
+    assert year.dividend is False
+    assert "pm" not in [b.kind for b in deposits.boxes(year, deposits.kinds_for(client))]
+
+    # Fiches 281 : orange à moitié, verte quand les deux sont faites.
+    fiches_url = reverse("clients:closing_deposit", args=[client.pk, year.pk, "28120"])
+    row = unescape(web.post(fiches_url, {"action": "cocher"}, **HX).content.decode())
+    assert "cl-deposit is-wip" in row and "1 / 2" in row
+    fiche = next(b for b in deposits.boxes(year, deposits.kinds_for(client)) if b.kind == "281")
+    assert fiche.done_on is None and fiche.done_count == 1
+    web.post(reverse("clients:closing_deposit", args=[client.pk, year.pk, "28150"]),
+             {"action": "cocher"})  # fmt: skip
+    fiche = next(b for b in deposits.boxes(year, deposits.kinds_for(client)) if b.kind == "281")
+    assert fiche.done_on is not None
+    # Pas de dirigeant rémunéré : 281.20 retirée, la case garde 281.50 seule.
+    web.post(fiches_url, {"action": "retirer"}, **HX)
+    fiche = next(b for b in deposits.boxes(year, deposits.kinds_for(client)) if b.kind == "281")
+    assert [p.kind for p in fiche.parts] == ["28150"]
+
+    # Listing clients 2025 terminé dans l'échéancier : la case se coche.
+    task = Task.objects.create(
+        client=client, kind="listing_clients_tva", title="Listing 2025", due_date=date(2026, 3, 31),
+        period_key="2025", assignee=user,
+    )  # fmt: skip
+    with django_capture_on_commit_callbacks(execute=True):
+        web.post(reverse("tasks:status", args=[task.pk]), {"status": "done"})
+    assert year.deposits.get(kind="listing").done_on is not None
+
+
+@pytest.mark.parametrize(
+    ("text", "kind", "folder"),
+    [
+        ("Belcotax-on-web — accusé de réception. Fiches 281.20 et relevé 325.20. "
+         "Année de revenus 2025.", "28120", "isoc"),
+        ("Intervat — accusé de réception. Listing annuel des clients assujettis 2025.",
+         "listing", "tva"),
+    ],
+)  # fmt: skip
+def test_belcotax_28120_and_listing_receipts_tick_their_box(web, text, kind, folder):
+    from apps.documents.models import Document
+    from apps.documents.tests.test_official_files import pdf
+
+    client = company()
+    year = year_of(client)
+    web.post(reverse("depot:index"), {"files": [pdf("accuse.pdf", text, _number(client))]})
+    assert Document.objects.get(client=client).folder == folder
+    assert year.deposits.get(kind=kind).done_on is not None

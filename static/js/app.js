@@ -120,7 +120,19 @@ document.addEventListener("click", function (event) {
   }
   document.addEventListener("toggle", function (event) {
     var menu = event.target;
-    if (menu.classList && menu.classList.contains("vat-menu") && menu.open) closeMenus(menu);
+    if (menu.classList && menu.classList.contains("vat-menu") && menu.open) {
+      closeMenus(menu);
+      // Menu qui dépasserait à droite de l'écran : il s'ouvre vers la gauche.
+      var pop = menu.querySelector(".vat-pop");
+      if (pop && !menu.classList.contains("vat-menu-end")) {
+        pop.style.left = "";
+        pop.style.right = "";
+        if (pop.getBoundingClientRect().right > document.documentElement.clientWidth - 8) {
+          pop.style.left = "auto";
+          pop.style.right = "0";
+        }
+      }
+    }
   }, true);
   document.addEventListener("click", function (event) {
     if (!event.target.closest || !event.target.closest("details.vat-menu")) closeMenus(null);

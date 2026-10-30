@@ -1467,3 +1467,18 @@ même taille (« Clôture » : checklists et clôtures ; « Dépôts ») ; le no
   n'est jamais cochée.
 - Année : exercice d'imposition − 1 pour Biztax et annexe 270 ; année de l'AG / des revenus
   pour PV et 281.50. Règles écrites sans exemple réel : à ajuster sur des modèles anonymisés.
+
+## D-115 — Dépôts : chaque dossier ne voit que ses cases
+
+- Ajoutés à la ligne « Dépôts » de l'onglet Clôture : Précompte mobilier, Fiches 281 (une
+  seule case pour 281.20 dirigeants et 281.50 honoraires), Listing clients. Maquette « 2 »
+  choisie par Jeremy le 30/10/2026.
+- Listing clients : seulement pour un dossier soumis à TVA (assujetti, mixte, franchise) ;
+  relié à l'échéance « Listing annuel des clients » de l'année civile où l'exercice se termine.
+- Précompte mobilier : la case AG demande « Dividende décidé ? Oui / Non » ; « Oui » fait
+  apparaître la case, date limite = date de l'AG + 15 jours (déclaration 273 S et paiement).
+- Fiches 281 : orange « 1 / 2 » tant qu'une des deux manque, verte quand les deux sont faites ;
+  chaque morceau se retire pour le dossier (pas de dirigeant rémunéré → 281.50 seule).
+- Lecture des documents : accusé Belcotax 281.20 et accusé du listing clients cochent aussi
+  leur case. Le précompte mobilier se coche à la main (année du dividende trop incertaine).
+- Pas dans l'onglet Clôture : registre UBO (Documents), versements anticipés (leur onglet).

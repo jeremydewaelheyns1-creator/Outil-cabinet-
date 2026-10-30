@@ -1,4 +1,9 @@
-"""Cases de dépôt de l'exercice (D-113) : AG, BNB, ISOC, fiches 281.50, annexes 270.
+"""Cases de dépôt de l'exercice (D-113, D-115) : AG, BNB, ISOC, annexes 270, précompte
+mobilier, fiches 281 (281.20 et 281.50 dans une seule case), listing clients.
+
+Chaque dossier ne voit que ses cases (D-115) : listing clients seulement s'il est soumis à
+TVA ; précompte mobilier seulement si l'AG a décidé un dividende ; le reste se retire dans la
+case elle-même (« Retirer pour ce dossier »), gardé pour les années suivantes.
 
 Une case = une échéance = des fichiers :
 - cocher la case termine l'échéance correspondante (et la décocher la rouvre) ; terminer
@@ -10,8 +15,8 @@ Une case = une échéance = des fichiers :
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-from datetime import date
+from dataclasses import dataclass, field
+from datetime import date, timedelta
 
 from django.core.files.uploadedfile import UploadedFile
 from django.db import transaction
@@ -33,11 +38,19 @@ TASKS: dict[str, str] = {
     Kind.AG: "assemblee_generale",
     Kind.BNB: "comptes_annuels",
     Kind.ISOC: "isoc",
+    Kind.LISTING: "listing_clients_tva",  # annuelle : l'année civile où l'exercice se termine
 }
+ANNUAL = {Kind.LISTING}
 FOLDERS: dict[str, str] = {
     Kind.AG: "legal", Kind.BNB: "comptes", Kind.ISOC: "isoc",
-    Kind.FICHES_281_50: "isoc", Kind.ANNEXES_270: "isoc",
+    Kind.FICHES_281_50: "isoc", Kind.ANNEXES_270: "isoc", Kind.FICHES_281_20: "isoc",
+    Kind.LISTING: "tva", Kind.PRECOMPTE: "isoc",
 }  # fmt: skip
+# Ordre des cases sur la ligne ; 281.20 et 281.50 partagent la case « Fiches 281 ».
+ORDER = [Kind.AG, Kind.BNB, Kind.ISOC, Kind.ANNEXES_270, Kind.PRECOMPTE,
+         Kind.FICHES_281_20, Kind.FICHES_281_50, Kind.LISTING]  # fmt: skip
+FICHES = (Kind.FICHES_281_20, Kind.FICHES_281_50)
+VAT_SUBJECT = {"subject", "mixed", "franchise"}  # comme la règle listing_clients_tva
 HINTS: dict[str, str] = {
     Kind.AG: "Assemblée générale ordinaire : procès-verbal",
     Kind.BNB: "Comptes annuels déposés à la Banque Nationale (XBRL, PDF)",
@@ -45,11 +58,20 @@ HINTS: dict[str, str] = {
     Kind.FICHES_281_50: "Fiches que le client établit pour les honoraires et commissions payés "
     "(Belcotax)",
     Kind.ANNEXES_270: "Annexes 270 jointes à la déclaration (270 MLH…)",
+    Kind.FICHES_281_20: "Fiches des rémunérations de dirigeants (Belcotax)",
+    Kind.LISTING: "Listing annuel des clients assujettis (Intervat), année civile",
+    Kind.PRECOMPTE: "Déclaration 273 S et paiement, dans les 15 jours après l'attribution "
+    "du dividende",
 }
 SHORT: dict[str, str] = {
     Kind.AG: "AG", Kind.BNB: "BNB", Kind.ISOC: "ISOC", Kind.FICHES_281_50: "281.50",
-    Kind.ANNEXES_270: "270",
+    Kind.ANNEXES_270: "270", Kind.FICHES_281_20: "281.20", Kind.LISTING: "Listing",
+    Kind.PRECOMPTE: "PM",
 }  # fmt: skip
+
+
+def _period(year: ClosingYear, kind: str) -> str:
+    return str(year.end.year) if kind in ANNUAL else f"EX-{year.end.isoformat()}"
 
 
 def _task(year: ClosingYear, kind: str) -> Task | None:
@@ -57,7 +79,7 @@ def _task(year: ClosingYear, kind: str) -> Task | None:
     if code is None:
         return None
     return Task.objects.filter(
-        client=year.client, kind=code, period_key=f"EX-{year.end.isoformat()}"
+        client=year.client, kind=code, period_key=_period(year, kind)
     ).first()
 
 
@@ -72,16 +94,30 @@ class Box:
     deposit: Deposit | None
     task: Task | None
     files: list[Document]
+    deadline: date | None = None  # date limite sans échéance (précompte : AG + 15 jours)
+    parts: list[Box] = field(default_factory=list)  # « Fiches 281 » : 281.20 et 281.50
+
+    @property
+    def items(self) -> list[Box]:
+        return self.parts or [self]
 
     @property
     def done_on(self) -> date | None:
+        if self.parts:
+            dates = [p.done_on for p in self.parts]
+            return max(d for d in dates if d) if all(dates) else None
         if self.deposit is not None and self.deposit.done_on:
             return self.deposit.done_on
         return None
 
     @property
+    def done_count(self) -> int:
+        return sum(1 for p in self.items if p.done_on)
+
+    @property
     def due(self) -> date | None:
-        return self.task.due_date if self.task is not None else None
+        dates = [p.task.due_date if p.task else p.deadline for p in self.items if not p.done_on]
+        return min((d for d in dates if d), default=None)
 
 
 def hidden_for(client: Client) -> list[str]:
@@ -90,28 +126,57 @@ def hidden_for(client: Client) -> list[str]:
 
 
 def kinds_for(client: Client) -> list[str]:
-    """Les cases de dépôt du dossier (une société ; sans les cases retirées)."""
+    """Les cases de dépôt du dossier (une société ; sans les cases retirées ; listing clients
+    seulement si le dossier est soumis à TVA)."""
     if client.is_person:
         return []
     hidden = set(hidden_for(client))
-    return [k for k in Kind.values if k not in hidden]
+    if client.vat_status not in VAT_SUBJECT:
+        hidden.add(Kind.LISTING)
+    return [k for k in ORDER if k not in hidden]
 
 
 def boxes(year: ClosingYear, kinds: list[str]) -> list[Box]:
+    if not year.dividend:
+        kinds = [k for k in kinds if k != Kind.PRECOMPTE]  # pas de dividende : pas de case
     found = {d.kind: d for d in year.deposits.prefetch_related("documents")}
+    periods = {f"EX-{year.end.isoformat()}", str(year.end.year)}
     tasks = {
-        t.kind: t
+        (t.kind, t.period_key): t
         for t in Task.objects.filter(
-            client=year.client, kind__in=TASKS.values(), period_key=f"EX-{year.end.isoformat()}"
+            client=year.client, kind__in=TASKS.values(), period_key__in=periods
         )
     }
-    result = []
+    result: list[Box] = []
+    fiches: list[Box] = []
     for kind in kinds:
         deposit = found.get(kind)
-        task = tasks.get(TASKS.get(kind, ""))
+        task = tasks.get((TASKS.get(kind, ""), _period(year, kind)))
         files = list(deposit.documents.all()) if deposit else []
-        result.append(Box(kind, Kind(kind).label, SHORT[kind], HINTS[kind], deposit, task, files))
+        box = Box(kind, Kind(kind).label, SHORT[kind], HINTS[kind], deposit, task, files)
+        if kind == Kind.PRECOMPTE:
+            ag = found.get(Kind.AG)
+            box.deadline = ag.done_on + timedelta(days=15) if ag and ag.done_on else None
+        if kind in FICHES:
+            if not fiches:
+                result.append(Box("281", "Fiches 281", "281", "", None, None, [], parts=fiches))
+            fiches.append(box)
+        else:
+            result.append(box)
+    for box in result:
+        if box.parts:
+            box.files = [f for p in box.parts for f in p.files]
     return result
+
+
+def set_dividend(year: ClosingYear, value: bool | None, user: User | None) -> None:
+    """« Dividende décidé à l'AG ? » (D-115) : oui → la case Précompte mobilier apparaît."""
+    year.dividend = value
+    year.save(update_fields=["dividend"])
+    events.emit(
+        "closing.dividend", subject=year.client, actor=user,
+        payload={"exercice": year.label, "dividende": value},
+    )  # fmt: skip
 
 
 def complete(year_boxes: list[Box]) -> bool:
@@ -199,7 +264,7 @@ def document_found(
     """Un document reconnu dans « Déposer des documents » (PV d'AG, comptes annuels, accusé
     Biztax ou Belcotax, annexe 270) : il rejoint la case de l'exercice qui se termine cette
     année-là, et la coche (D-114). Aucun exercice → rien n'est coché (le document reste rangé)."""
-    if kind not in Kind.values or kind in hidden_for(client):
+    if kind not in kinds_for(client):  # case retirée, ou pas de TVA → pas de listing
         return None
     year = ClosingYear.objects.filter(client=client, end__year=end_year).order_by("-end").first()
     if year is None:
@@ -214,9 +279,16 @@ def task_completed_elsewhere(event: Event) -> None:
     payload = event.payload or {}
     kind = next((k for k, code in TASKS.items() if code == payload.get("kind")), None)
     task = Task.objects.filter(pk=int(payload.get("task") or 0)).first()
-    if kind is None or task is None or not task.period_key.startswith("EX-"):
+    if kind is None or task is None:
         return
-    end = date.fromisoformat(task.period_key[3:])
-    year = ClosingYear.objects.filter(client=task.client, end=end).first()
+    if kind in ANNUAL and task.period_key.isdigit():
+        # Listing clients 2025 : l'exercice qui se termine en 2025.
+        years = ClosingYear.objects.filter(client=task.client, end__year=int(task.period_key))
+        year = years.order_by("-end").first()
+    elif task.period_key.startswith("EX-"):
+        end = date.fromisoformat(task.period_key[3:])
+        year = ClosingYear.objects.filter(client=task.client, end=end).first()
+    else:
+        return
     if year is not None and not year.deposits.filter(kind=kind, done_on__isnull=False).exists():
         set_done(year, kind, True, task.completed_by, sync=False)
