@@ -3,6 +3,13 @@
 Ce qui a été ajouté à l'outil, du plus récent au plus ancien. Toutes les données de la démo
 sont inventées.
 
+## 30 octobre 2026 — Les documents de clôture se rangent tout seuls
+
+- Dans « Déposer des documents », l'outil lit maintenant aussi le PV d'assemblée générale,
+  l'accusé Belcotax (fiches 281.50) et les annexes 270.
+- Il les range dans le bon dossier et coche la bonne case de dépôt de l'exercice.
+- S'il n'est pas sûr (année illisible, exercice absent), il range sans rien cocher.
+
 ## 30 octobre 2026 — Dépôts de l'exercice dans l'onglet Clôture
 
 - Chaque exercice a maintenant ses cases de dépôt : AG, BNB, ISOC, Fiches 281.50, Annexes 270.

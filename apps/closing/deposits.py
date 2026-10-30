@@ -193,6 +193,21 @@ def xbrl_received(client: Client, kind: str, end: date | None, assessment_year: 
         attach(year, kind, document, user)
 
 
+def document_found(
+    client: Client, kind: str, end_year: int, document: Document, user: User | None
+) -> ClosingYear | None:
+    """Un document reconnu dans « Déposer des documents » (PV d'AG, comptes annuels, accusé
+    Biztax ou Belcotax, annexe 270) : il rejoint la case de l'exercice qui se termine cette
+    année-là, et la coche (D-114). Aucun exercice → rien n'est coché (le document reste rangé)."""
+    if kind not in Kind.values or kind in hidden_for(client):
+        return None
+    year = ClosingYear.objects.filter(client=client, end__year=end_year).order_by("-end").first()
+    if year is None:
+        return None
+    attach(year, kind, document, user)
+    return year
+
+
 @events.on("task.completed")
 def task_completed_elsewhere(event: Event) -> None:
     """Échéance terminée dans l'échéancier : la case de dépôt correspondante se coche."""

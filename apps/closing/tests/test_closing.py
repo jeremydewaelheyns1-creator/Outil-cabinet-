@@ -278,3 +278,64 @@ def test_bnb_xbrl_dropped_in_the_deposit_page_ticks_the_box(web):
     web.post(reverse("depot:index"), {"files": [upload]})
     deposit = year.deposits.get(kind="bnb")
     assert deposit.done_on is not None and deposit.documents.count() == 1
+
+
+def _number(client) -> str:
+    n = client.enterprise_number
+    return f"BE {n[:4]}.{n[4:7]}.{n[7:]}"
+
+
+@pytest.mark.parametrize(
+    ("kind", "name", "paragraphs"),
+    [
+        ("ag", "pv-ag.pdf", [
+            "PROCÈS-VERBAL DE L'ASSEMBLÉE GÉNÉRALE ORDINAIRE DU 30/06/2026",
+            "Société fictive, numéro d'entreprise {n}",
+            "L'assemblée approuve les comptes annuels de l'exercice clôturé le 31/12/2025.",
+        ]),
+        ("bnb", "comptes.pdf", [
+            "COMPTES ANNUELS ET AUTRES DOCUMENTS À DÉPOSER EN VERTU DU CODE DES SOCIÉTÉS "
+            "ET DES ASSOCIATIONS", "Numéro d'entreprise {n}",
+            "et relatifs à l'exercice couvrant la période du 01/01/2025 au 31/12/2025",
+        ]),
+        ("isoc", "biztax.pdf", [
+            "Biztax — accusé de réception", "Votre déclaration a bien été déposée.",
+            "Impôt des sociétés — exercice d'imposition 2026 — {n}",
+        ]),
+        ("28150", "belcotax.pdf", [
+            "Belcotax-on-web — accusé de réception", "Fiches 281.50 et relevé 325.50",
+            "Année de revenus 2025 — débiteur {n}",
+        ]),
+        ("270", "annexe.pdf", [
+            "Annexe 270 MLH à la déclaration — loyers et avantages locatifs",
+            "Exercice d'imposition 2026 — {n}",
+        ]),
+    ],
+)  # fmt: skip
+def test_documents_read_and_filed_in_their_deposit_box(web, kind, name, paragraphs):
+    from apps.documents.tests.test_official_files import pdf
+
+    client = company()
+    year = year_of(client)
+    upload = pdf(name, *(p.format(n=_number(client)) for p in paragraphs))
+    page = unescape(
+        web.post(reverse("depot:index"), {"files": [upload]}, follow=True).content.decode()
+    )
+    deposit = year.deposits.get(kind=kind)
+    assert deposit.done_on is not None and deposit.documents.count() == 1
+    assert "cochée" in page
+
+
+def test_biztax_receipt_citing_its_annexes_stays_an_isoc_receipt_and_no_year_no_tick(web):
+    from apps.documents import spf_docs
+    from apps.documents.models import Document
+    from apps.documents.tests.test_official_files import pdf
+
+    text = ("Biztax — accusé de réception. Votre déclaration a bien été déposée. "
+            "Annexes jointes : 270 MLH. Exercice d'imposition 2026.")  # fmt: skip
+    assert spf_docs.kind_of(text).slug == "biztax"
+    client = company()  # pas encore de ligne d'exercice dans l'onglet Clôture
+    upload = pdf("annexe.pdf", "Annexe 270 MLH — exercice d'imposition 2026", _number(client))
+    web.post(reverse("depot:index"), {"files": [upload]})
+    assert Document.objects.get(client=client).folder == "isoc"  # rangé quand même
+    assert not ClosingYear.objects.filter(client=client).exists()

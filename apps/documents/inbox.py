@@ -198,14 +198,23 @@ def _spf_document(
         return to_inbox(upload, content_type, user, f"{label} reconnu, mais le dossier est {what}")
     document = documents.store(client, upload, title=label, folder=place, user=user)
     url = dossier.folder_url(client.pk, place)
+    ticked = ""
+    if found.kind.deposit and found.year:
+        from apps.closing import deposits  # la case de l'onglet Clôture se coche (D-114)
+
+        end_year = found.year + found.kind.year_offset
+        year = deposits.document_found(client, found.kind.deposit, end_year, document, user)
+        if year is not None:
+            ticked = f" Case « {deposits.Kind(found.kind.deposit).label} » {year.label} cochée."
+            url = reverse("clients:closing", args=[client.pk])
     if found.kind.action:
         document.review_needed = True
         document.review_reason = "Courrier du SPF qui demande une réponse"
         document.save(update_fields=["review_needed", "review_reason"])
         return Result(upload.name or "document", DOUBT, f"{label} rangé dans {client.display_name}"
                       " : il demande une réponse, à traiter.", client, url, label)  # fmt: skip
-    return Result(upload.name or "document", OK, f"{label} rangé dans {client.display_name}.",
-                  client, url, label)  # fmt: skip
+    message = f"{label} rangé dans {client.display_name}.{ticked}"
+    return Result(upload.name or "document", OK, message, client, url, label)
 
 
 def _cabinet_invoice(

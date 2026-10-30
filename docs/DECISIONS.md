@@ -1455,3 +1455,15 @@ même taille (« Clôture » : checklists et clôtures ; « Dépôts ») ; le no
 - Le cadre devient vert quand les checklists, les clôtures et les dépôts sont faits.
 - Pas encore : les PDF (accusé Biztax, Belcotax, comptes PDF) ne cochent pas la case tout seuls
   (période pas toujours lisible) ; on les dépose dans la case.
+
+## D-114 — Lecture des documents de clôture et classement dans les cases de dépôt
+
+- « Déposer des documents » reconnaît aussi : procès-verbal d'AG, accusé Belcotax 281.50,
+  annexe 270 ; en plus des comptes annuels (PDF/XBRL) et de Biztax (PDF/XBRL) déjà connus.
+- Un document reconnu est rangé dans son dossier d'Archives, puis joint à la bonne case de
+  dépôt de l'exercice et la case est cochée (l'échéance liée aussi).
+- Prudence : seulement des mots clairs, sinon « À classer ». Pas d'année lisible ou pas
+  d'exercice correspondant → rangé, mais aucune case cochée. Une case retirée du dossier
+  n'est jamais cochée.
+- Année : exercice d'imposition − 1 pour Biztax et annexe 270 ; année de l'AG / des revenus
+  pour PV et 281.50. Règles écrites sans exemple réel : à ajuster sur des modèles anonymisés.

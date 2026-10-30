@@ -52,6 +52,10 @@ class Kind:
     doc_type: str = ""
     person_first: bool = False  # document d'un particulier : le numéro national d'abord
     year: re.Pattern[str] | None = None  # où lire l'exercice, si ce n'est pas « exercice d'imp. »
+    # Case de dépôt de l'onglet Clôture cochée par ce document (D-114), et décalage entre
+    # l'année lue et l'année de fin de l'exercice (exercice d'imposition N → exercice N-1).
+    deposit: str = ""
+    year_offset: int = 0
 
 
 AER = ("avertissement-extrait de role", "avertissement extrait de role", "aanslagbiljet")
@@ -60,6 +64,16 @@ ACCOUNTS_YEAR = re.compile(
     r"couvrant\s+la\s+p[ée]riode\s+du.{0,160}?au\s*\d{0,2}\s*/\s*\d{0,2}\s*/\s*(20\d{2})"
     r"|periode\s+van.{0,160}?tot\s*\d{0,2}\s*/\s*\d{0,2}\s*/\s*(20\d{2})",
     re.I | re.S,
+)
+# PV d'AG : « … l'exercice clôturé le 31/12/2025 ».
+AG_YEAR = re.compile(
+    r"exercice[^\n]{0,80}?cl[ôo]tur[ée]\w*\s+(?:le|au)\s+\d{1,2}\s*[/.-]\s*\d{1,2}\s*[/.-]\s*(20\d{2})"
+    r"|boekjaar[^\n]{0,80}?afgesloten\s+op\s+\d{1,2}\s*[/.-]\s*\d{1,2}\s*[/.-]\s*(20\d{2})",
+    re.I,
+)
+# Belcotax : « année de revenus 2025 ».
+INCOME_YEAR = re.compile(
+    r"ann[ée]e\s+de\s+revenus?\s*:?\s*(20\d{2})|inkomstenjaar\s*:?\s*(20\d{2})", re.I
 )
 KINDS: tuple[Kind, ...] = (
     # Documents entiers qui citent beaucoup d'autres mots (« demandes de renseignements »,
@@ -91,7 +105,17 @@ KINDS: tuple[Kind, ...] = (
          (("comptes annuels", "jaarrekening"),
           ("deposer en vertu du code des societes", "code des societes et des associations",
            "neer te leggen krachtens het wetboek", "wetboek van vennootschappen en verenigingen")),
-         "", "comptes", year=ACCOUNTS_YEAR),
+         "", "comptes", year=ACCOUNTS_YEAR, deposit="bnb"),
+    # Procès-verbal de l'assemblée générale qui approuve les comptes → case « AG » (D-114).
+    Kind("pv_ag", "Procès-verbal de l'assemblée générale",
+         (("proces-verbal", "proces verbal", "notulen"),
+          ("assemblee generale", "algemene vergadering"),
+          ("comptes annuels", "jaarrekening")),
+         "", "legal", year=AG_YEAR, deposit="ag"),
+    # Accusé Belcotax des fiches 281.50 (honoraires, commissions) → case « 281.50 » (D-114).
+    Kind("belcotax_28150", "Fiches 281.50 — Belcotax",
+         (("belcotax",), ("281.50", "281,50", "325.50", "325,50")),
+         "", "isoc", year=INCOME_YEAR, deposit="28150"),
     Kind("aer_isoc", "Avertissement-extrait de rôle ISOC",
          (AER, ("des societes", "vennootschapsbelasting")), "isoc", "isoc"),
     Kind("aer_ipm", "Avertissement-extrait de rôle IPM",
@@ -100,7 +124,14 @@ KINDS: tuple[Kind, ...] = (
          (AER, ("personnes physiques", "personenbelasting")), "ipp", "ipp", person_first=True),
     Kind("biztax", "Biztax — accusé de réception de la déclaration",
          (("biztax",), ("accuse de reception", "ontvangstbewijs", "bien ete deposee",
-                        "bien ete enregistree", "a ete deposee")), "isoc", "isoc"),
+                        "bien ete enregistree", "a ete deposee")), "isoc", "isoc",
+         deposit="isoc", year_offset=-1),
+    # Annexes 270 de la déclaration (270 MLH : loyers) → case « Annexes 270 » (D-114). Après
+    # l'accusé Biztax, qui peut citer les annexes jointes.
+    Kind("annexe_270", "Annexe 270",
+         (("270 mlh", "270mlh", "annexe 270", "bijlage 270", "modele 270", "model 270",
+           "formulaire 270", "formulier 270"),),
+         "", "isoc", deposit="270", year_offset=-1),
     Kind("tax_on_web", "Tax-on-web — accusé de réception de la déclaration IPP",
          (("tax-on-web", "taxonweb", "myminfin"), ("accuse de reception", "ontvangstbewijs"),
           ("impot des personnes physiques", "personenbelasting", "declaration ipp")),
