@@ -12,7 +12,6 @@ from datetime import date, timedelta
 from apps.core import accueil
 from apps.core.models import User
 from apps.tasks.models import Task
-from apps.timesheet.models import TimeEntry, hours_label, minutes_between
 
 from . import services
 from .models import Column, Status, VatFiling
@@ -33,7 +32,6 @@ class Card:
     group: str  # todo / doing / done
     tag: str
     tone: str  # rouge / orange / vert / gris
-    minutes: int = 0
 
     @property
     def filing(self) -> VatFiling:
@@ -42,10 +40,6 @@ class Card:
     @property
     def filed(self) -> bool:
         return self.row.cell(Column.FILED).status in (Status.DONE, Status.NOT_NEEDED)
-
-    @property
-    def time_label(self) -> str:
-        return hours_label(self.minutes)
 
 
 @dataclass
@@ -130,27 +124,6 @@ def _filing(task: Task) -> VatFiling:
     return services.filing_for(task.client, p)
 
 
-def _my_minutes(user: User, cards: list[Card]) -> None:
-    """Mon temps « TVA » sur chaque dossier, depuis le début de la période déclarée."""
-    if not cards:
-        return
-    since = min(c.filing.period_start for c in cards)
-    entries = TimeEntry.objects.filter(
-        user=user,
-        client__in=[c.filing.client_id for c in cards],
-        activity=TimeEntry.Activity.VAT,
-        day__gte=since,
-    ).values_list("client_id", "day", "start", "end")
-    totals: dict[int, int] = {}
-    for client_id, day, start, end in entries:
-        for card in cards:
-            if card.filing.client_id == client_id and day >= card.filing.period_start:
-                totals[client_id] = totals.get(client_id, 0) + minutes_between(start, end)
-                break
-    for card in cards:
-        card.minutes = totals.get(card.filing.client_id, 0)
-
-
 def build(user: User, today: date) -> Board:
     campaign = _campaign(user, today)
     board = Board(campaign)
@@ -170,7 +143,7 @@ def build(user: User, today: date) -> Board:
         row = services.row_for(filing)
         group, tag, tone = _state(row, task, today)
         board.cards.append(Card(row, task, group, tag, tone))
-    _my_minutes(user, board.cards)
+    services.add_my_time(user, [c.filing for c in board.cards])
     return board
 
 
@@ -180,5 +153,5 @@ def card_for(filing: VatFiling, user: User, today: date) -> Card:
     task = filing.task or Task(client=filing.client, due_date=filing.due_date or today)
     group, tag, tone = _state(row, task, today)
     card = Card(row, task, group, tag, tone)
-    _my_minutes(user, [card])
+    services.add_my_time(user, [filing])
     return card

@@ -5,27 +5,6 @@
     <div class="small muted">{{ f.get_periodicity_display }}{% if f.due_date %} · pour le {{ f.due_date|date:"d/m" }}{% endif %}</div>
   </th>
   {% for cell in row.cells|slice:":4" %}{% include "vat/_cell.html" %}{% endfor %}
-  <td class="vat-amount">
-    {% with b=f.balance %}
-      {% if can_edit %}<details class="vat-menu"><summary>{% endif %}
-      {% if b %}
-        <span class="{% if b.0 == '71' and b.1 %}vat-pay{% else %}vat-get{% endif %}">{{ b.1|euros }}</span>
-        <span class="small muted">{% if b.0 == "72" %}à récupérer{% elif b.1 %}à payer{% else %}solde nul{% endif %} [{{ b.0 }}]</span>
-        {% if f.advances_total %}{% with r=f.remaining %}<span class="vat-rest">{% if r > 0 %}reste {{ r|euros }}{% elif r < 0 %}en sa faveur {{ r|euros|slice:"1:" }}{% else %}plus rien à payer{% endif %}</span>{% endwith %}{% endif %}
-      {% else %}<span class="muted">—</span>{% endif %}
-      {% if can_edit %}</summary>
-        <div class="vat-pop">
-          <div class="vat-pop-head">Solde de la déclaration</div>
-          <p class="small muted">Repris tout seul à l'import du XML. À compléter ici sinon.</p>
-          <form method="post" action="{% url 'clients:vat_amounts' client.pk f.pk %}" hx-post="{% url 'clients:vat_amounts' client.pk f.pk %}" hx-target="closest tr" hx-swap="outerHTML">{% csrf_token %}
-            <label class="small">Grille 71 — à payer<input name="grid_71" inputmode="decimal" value="{{ f.grid_71|default_if_none:'' }}"></label>
-            <label class="small">Grille 72 — à récupérer<input name="grid_72" inputmode="decimal" value="{{ f.grid_72|default_if_none:'' }}"></label>
-            <button type="submit">Enregistrer</button>
-          </form>
-        </div>
-      </details>{% endif %}
-    {% endwith %}
-  </td>
   {% if quarterly %}
     <td class="vat-advances">
       {% if f.periodicity == "quarterly" %}
@@ -47,9 +26,31 @@
       {% endif %}
     </td>
   {% endif %}
+  <td class="vat-amount">
+    {% with b=f.balance %}
+      {% if can_edit %}<details class="vat-menu"><summary>{% endif %}
+      {% if b %}
+        <span class="{% if b.0 == '71' and b.1 %}vat-pay{% else %}vat-get{% endif %}">{{ b.1|euros }}</span>
+        <span class="small muted">{% if b.0 == "72" %}à récupérer{% elif b.1 %}à payer{% else %}solde nul{% endif %} [{{ b.0 }}]</span>
+        {% if f.advances_total %}{% with r=f.remaining %}<span class="vat-rest">{% if r > 0 %}reste {{ r|euros }}{% elif r < 0 %}en sa faveur {{ r|euros|slice:"1:" }}{% else %}plus rien à payer{% endif %}</span>{% endwith %}{% endif %}
+      {% else %}<span class="muted">—</span>{% endif %}
+      {% if can_edit %}</summary>
+        <div class="vat-pop">
+          <div class="vat-pop-head">Solde de la déclaration</div>
+          <p class="small muted">Repris tout seul à l'import du XML. À compléter ici sinon.</p>
+          <form method="post" action="{% url 'clients:vat_amounts' client.pk f.pk %}" hx-post="{% url 'clients:vat_amounts' client.pk f.pk %}" hx-target="closest tr" hx-swap="outerHTML">{% csrf_token %}
+            <label class="small">Grille 71 — à payer<input name="grid_71" inputmode="decimal" value="{{ f.grid_71|default_if_none:'' }}"></label>
+            <label class="small">Grille 72 — à récupérer<input name="grid_72" inputmode="decimal" value="{{ f.grid_72|default_if_none:'' }}"></label>
+            <button type="submit">Enregistrer</button>
+          </form>
+        </div>
+      </details>{% endif %}
+    {% endwith %}
+  </td>
   {% with cell=row.cells.4 %}{% include "vat/_cell.html" %}{% endwith %}
   <td class="nowrap" title="{{ f.manager|default:'' }}">{{ f.manager.get_short_name|default:"" }}</td>
   <td class="nowrap" title="{{ f.assistant|default:'' }}">{{ f.assistant.get_short_name|default:"" }}</td>
+  <td class="vat-time">{% include "vat/_time.html" %}</td>
   <td class="vat-remark">
     {% if can_edit %}<details class="vat-menu vat-menu-end"><summary>{% endif %}
     {% if f.remark %}<span class="small">{{ f.remark|linebreaksbr }}</span>{% elif can_edit %}<span class="muted small">+</span>{% endif %}

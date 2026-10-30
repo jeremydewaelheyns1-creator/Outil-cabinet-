@@ -7,6 +7,7 @@ from decimal import Decimal, InvalidOperation
 from typing import Any
 
 from django.contrib import messages
+from django.core.exceptions import ValidationError
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
@@ -22,7 +23,7 @@ from apps.core.http import AppRequest
 from apps.core.models import AccessLog, User
 from apps.core.permissions import require_capability
 from apps.outlook import graph
-from apps.timesheet.models import TimeEntry
+from apps.timesheet.models import TimeEntry, hours_label
 
 from . import board, importer, mail, services
 from .models import COLUMN_HEADERS, Column, Status, VatFiling, VatMessage, VatPending
@@ -34,18 +35,22 @@ STATUS_CHOICES = [(s.value, s.label) for s in OFFERED]
 ACCEPTED = {*(s.value for s in OFFERED), Status.TODO.value}
 
 
-def _context(client: Client) -> dict[str, Any]:
+def _context(client: Client, user: User) -> dict[str, Any]:
     rows = services.grid(client)
+    services.add_my_time(user, [r.filing for r in rows])
     return {
         "rows": rows,
         "headers": [(c.value, c.label, COLUMN_HEADERS[c]) for c in Column],
         "statuses": STATUS_CHOICES,
         "quarterly": any(r.filing.periodicity == VatFiling.Periodicity.QUARTERLY for r in rows),
+        "time": _time_defaults(user),
     }
 
 
 def vat_grid(request: AppRequest, pk: int) -> HttpResponse:
-    return render_section(request, pk, "vat", "vat/grid.html", _context)
+    return render_section(
+        request, pk, "vat", "vat/grid.html", lambda client: _context(client, request.user)
+    )
 
 
 def _filing(request: AppRequest, pk: int, filing_id: int) -> VatFiling:
@@ -63,13 +68,16 @@ def _row_response(request: AppRequest, filing: VatFiling) -> HttpResponse:
         .prefetch_related("cells__by", "messages")
         .get(pk=filing.pk)
     )
+    services.add_my_time(request.user, [filing])
     return render(
         request,
         "vat/_row.html",
         {
             "row": services.row_for(filing),
             "client": filing.client,
-            "can_edit": True,
+            "can_edit": request.user.has_capability(Capability.CLIENTS_EDIT),
+            "time": _time_defaults(request.user),
+            "time_error": getattr(request, "time_error", ""),
             "statuses": STATUS_CHOICES,
             "quarterly": filing.periodicity == VatFiling.Periodicity.QUARTERLY,
         },
@@ -289,6 +297,43 @@ def _card_response(request: AppRequest, filing: VatFiling) -> HttpResponse:
     context = {
         **_board_context(request),
         "card": card,
+        "time_error": getattr(request, "time_error", ""),
         "back": back if back.startswith("/") and "//" not in back else reverse("tasks:vat_board"),
     }
     return render(request, "vat/_board_card.html", context)
+
+
+@require_POST
+def vat_time(request: AppRequest, pk: int, filing_id: int) -> HttpResponse:
+    """« + Temps » sur une ligne TVA : une entrée dans MA journée, rattachée à la déclaration
+    (D-110). Pas besoin du droit de modifier la fiche : c'est mon temps."""
+    filing = _filing(request, pk, filing_id)
+    entry = TimeEntry(
+        user=request.user,
+        client=filing.client,
+        vat_filing=filing,
+        activity=TimeEntry.Activity.VAT,
+        description=(request.POST.get("description") or f"TVA {filing.short_label}")[:200],
+    )
+    error = ""
+    try:
+        entry.day = date.fromisoformat(request.POST.get("day", ""))
+        entry.start = time.fromisoformat(request.POST.get("start", ""))
+        entry.end = time.fromisoformat(request.POST.get("end", ""))
+        entry.full_clean()
+        entry.save()
+    except ValueError:
+        error = "Jour ou heure invalide."
+    except ValidationError as exc:
+        error = " ".join(exc.messages)
+    if not request.htmx:
+        if error:
+            messages.error(request, f"Rien n'a été enregistré : {error}")
+        else:
+            messages.success(request, f"Ajouté à ma journée : {hours_label(entry.minutes)}.")
+        back = request.POST.get("retour", "")
+        if back.startswith("/") and "//" not in back:
+            return redirect(back)
+        return redirect("clients:vat", pk=filing.client_id)
+    request.time_error = error  # type: ignore[attr-defined]
+    return _row_response(request, filing)

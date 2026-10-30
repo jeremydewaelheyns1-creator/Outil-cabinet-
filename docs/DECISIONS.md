@@ -1379,3 +1379,15 @@ de l'onglet aussi (vert plus marqué). « + Temps » ajoute une entrée à Ma jo
 dossier prérempli, à la suite de ma dernière entrée du jour) et affiche MON temps TVA sur le
 dossier depuis le début de la période — jamais celui des collègues (D-107). Les autres
 périodes (comptes annuels…) gardent l'échéancier en attendant leur onglet.
+
+## D-110 — Onglet « Déclaration TVA » : Acomptes avant Solde, colonne « Mon temps »
+
+Jeremy (30/10) : la grille dépassait de son cadre, les colonnes Acomptes et Solde devaient être
+échangées, et il manquait l'ajout de temps sur la ligne. Ordre : Période, Doc. reçus, Fini,
+Déposée, IC, Acomptes, Solde, Com. client, Resp., Assis., **Mon temps**, Remarque. Les titres et
+la période passent à la ligne pour que la grille tienne dans la page (défilement horizontal
+sous 1200 px). « + Temps » (même bouton que « Mes déclarations TVA ») crée une entrée de Ma
+journée rattachée à la déclaration (`TimeEntry.vat_filing`, activité TVA) ; la colonne montre
+MON temps sur cette déclaration, jamais celui des collègues (D-107). Il suffit de voir le
+dossier (c'est mon temps, pas une modification de la fiche) ; chevauchement refusé avec la
+raison.

@@ -3,6 +3,12 @@
 Ce qui a été ajouté à l'outil, du plus récent au plus ancien. Toutes les données de la démo
 sont inventées.
 
+## 30 octobre 2026 — Onglet Déclaration TVA retouché
+
+- La grille tient dans la page ; « Acomptes » vient maintenant avant « Solde ».
+- Nouvelle colonne « Mon temps » : « + Temps » ajoute du temps à Ma journée directement depuis
+  la ligne, et montre le temps que j'ai passé sur cette déclaration.
+
 ## 30 octobre 2026 — Mes déclarations TVA
 
 - Pendant le mois TVA, « Ouvrir mes échéances » sur l'Accueil ouvre une nouvelle page : un

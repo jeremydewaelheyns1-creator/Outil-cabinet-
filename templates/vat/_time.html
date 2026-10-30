@@ -1,0 +1,15 @@
+{# « + Temps » d'une déclaration TVA (D-110) : mon temps dessus, et l'ajout à Ma journée. #}
+<details class="vb-time"{% if time_error %} open{% endif %}>
+  <summary><span class="vb-minutes" title="Mon temps sur cette déclaration">{{ f.my_time|default:"0 h" }}</span><span class="vb-add">+ Temps</span></summary>
+  <form class="vb-time-form" method="post" action="{% url 'clients:vat_time' client.pk f.pk %}" hx-post="{% url 'clients:vat_time' client.pk f.pk %}" hx-target="{% if board %}closest .vb-card{% else %}closest tr{% endif %}" hx-swap="outerHTML">{% csrf_token %}
+    {% if board %}<input type="hidden" name="vue" value="echeances">{% endif %}
+    {% if back %}<input type="hidden" name="retour" value="{{ back }}">{% endif %}
+    <strong>Ajouter à ma journée · TVA {{ f.short_label }}</strong>
+    {% if time_error %}<p class="vb-time-error">{{ time_error }}</p>{% endif %}
+    <label class="small vb-day">Jour<input type="date" name="day" value="{{ time.day }}" required></label>
+    <label class="small">De<input type="time" name="start" value="{{ time.start }}" step="300" required></label>
+    <label class="small">À<input type="time" name="end" value="{{ time.end }}" step="300" required></label>
+    <label class="small vb-note">Ce qui a été fait<input name="description" maxlength="200" value="TVA {{ f.short_label }}"></label>
+    <button type="submit">Ajouter</button>
+  </form>
+</details>

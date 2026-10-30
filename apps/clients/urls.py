@@ -56,6 +56,7 @@ urlpatterns = [
     # Déclaration TVA (D-040)
     path("<int:pk>/tva/", vat_views.vat_grid, name="vat"),
     path("<int:pk>/tva/<int:filing_id>/case/<slug:column>/", vat_views.vat_cell, name="vat_cell"),
+    path("<int:pk>/tva/<int:filing_id>/temps/", vat_views.vat_time, name="vat_time"),
     path("<int:pk>/tva/<int:filing_id>/montants/", vat_views.vat_amounts, name="vat_amounts"),
     path("<int:pk>/tva/<int:filing_id>/email/", vat_views.vat_mail, name="vat_mail"),
     path(

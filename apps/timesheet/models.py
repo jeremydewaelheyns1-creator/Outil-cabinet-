@@ -55,6 +55,11 @@ class TimeEntry(models.Model):
         "activité", max_length=20, choices=Activity.choices, default=Activity.OTHER
     )
     description = models.CharField("ce qui a été fait", max_length=200, blank=True)
+    # Ajouté depuis une ligne TVA (« + Temps », D-110) : mon temps sur cette déclaration.
+    vat_filing = models.ForeignKey(
+        "vat.VatFiling", verbose_name="déclaration TVA", on_delete=models.SET_NULL, null=True,
+        blank=True, related_name="time_entries",
+    )  # fmt: skip
     billable = models.BooleanField("facturable", default=True)
     created_at = models.DateTimeField(default=timezone.now, editable=False)
     updated_at = models.DateTimeField(auto_now=True)

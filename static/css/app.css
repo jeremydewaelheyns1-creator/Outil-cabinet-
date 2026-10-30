@@ -1661,3 +1661,18 @@ button:active, .button:active { transform: scale(.98); }
   .vb-side { justify-items: start; grid-auto-flow: column; justify-content: start; align-items: center; }
   .vb-time-form { left: 0; right: auto; }
 }
+/* Onglet « Déclaration TVA » : tient dans la largeur (D-110), colonne « Mon temps ». */
+.vat-grid .vat-cell { min-width: 4.4rem; }
+.vat-remark { min-width: 5rem; max-width: 12rem; }
+.vat-time { white-space: nowrap; text-align: right; }
+.vat-time .vb-time > summary { justify-content: flex-end; }
+.vat-grid th, .vat-grid td { padding-left: .45rem; padding-right: .45rem; }
+.vb-time-error { grid-column: 1 / -1; margin: 0; color: var(--danger); font-size: .88rem; font-weight: 600; }
+.vat-time .vb-time > summary { flex-direction: column-reverse; gap: .15rem; align-items: center; }
+.vat-time { text-align: center; }
+.vat-grid .vat-cell { min-width: 4rem; }
+.vat-remark { min-width: 3rem; }
+.vat-grid th, .vat-grid td { padding-left: .35rem; padding-right: .35rem; }
+.vat-grid thead th { white-space: normal; line-height: 1.2; }
+.vat-grid tbody th { white-space: normal; min-width: 8.5rem; }
+@media (max-width: 1200px) { .vat-wrap { overflow-x: auto; } }

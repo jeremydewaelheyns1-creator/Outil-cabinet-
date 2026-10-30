@@ -12,11 +12,12 @@
       <tr>
         <th scope="col">Période</th>
         {% for key, label, header in headers|slice:":4" %}<th scope="col" title="{{ label }}">{{ header }}</th>{% endfor %}
-        <th scope="col" title="Grille 71 (à payer) ou 72 (à récupérer)">Solde</th>
         {% if quarterly %}<th scope="col">Acomptes</th>{% endif %}
+        <th scope="col" title="Grille 71 (à payer) ou 72 (à récupérer)">Solde</th>
         {% with h=headers.4 %}<th scope="col" title="{{ h.1 }}">{{ h.2 }}</th>{% endwith %}
         <th scope="col" title="Responsable">Resp.</th>
         <th scope="col" title="Assistant">Assis.</th>
+        <th scope="col" title="Mon temps sur cette déclaration, et l'ajout à Ma journée">Mon temps</th>
         <th scope="col">Remarque</th>
       </tr>
     </thead>
@@ -24,7 +25,7 @@
       {% for row in rows %}
         {% include "vat/_row.html" %}
       {% empty %}
-        <tr><td colspan="11" class="muted">Aucune période à déclarer pour l'instant. Les lignes apparaissent d'elles-mêmes avec les échéances TVA du dossier, ou à l'import d'une déclaration.</td></tr>
+        <tr><td colspan="12" class="muted">Aucune période à déclarer pour l'instant. Les lignes apparaissent d'elles-mêmes avec les échéances TVA du dossier, ou à l'import d'une déclaration.</td></tr>
       {% endfor %}
     </tbody>
   </table>

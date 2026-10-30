@@ -11,20 +11,7 @@
   </tr></tbody></table>
   <div class="vb-side">
     <span class="acc-pill acc-{{ card.tone }}">{{ card.tag }}</span>
-    <details class="vb-time">
-      <summary><span class="vb-minutes" title="Mon temps TVA sur ce dossier pour cette période">{{ card.time_label }}</span><span class="vb-add">+ Temps</span></summary>
-      <form class="vb-time-form" method="post" action="{% url 'temps:save' %}">{% csrf_token %}
-        <input type="hidden" name="client" value="{{ client.pk }}">
-        <input type="hidden" name="activity" value="tva">
-        <input type="hidden" name="retour" value="{{ back }}">
-        <strong>Ajouter à ma journée · TVA {{ f.short_label }}</strong>
-        <label class="small vb-day">Jour<input type="date" name="day" value="{{ time.day }}" required></label>
-        <label class="small">De<input type="time" name="start" value="{{ time.start }}" step="300" required></label>
-        <label class="small">À<input type="time" name="end" value="{{ time.end }}" step="300" required></label>
-        <label class="small vb-note">Ce qui a été fait<input name="description" maxlength="200" value="TVA {{ f.short_label }}"></label>
-        <button type="submit">Ajouter</button>
-      </form>
-    </details>
+    {% include "vat/_time.html" %}
   </div>
 </section>
 {% endwith %}

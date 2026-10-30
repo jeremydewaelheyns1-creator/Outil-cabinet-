@@ -176,6 +176,21 @@ def grid(client: Client, today: date | None = None) -> list[Row]:
     return [row_for(f, never) for f in filings]
 
 
+def add_my_time(user: User, filings: list[VatFiling]) -> None:
+    """Mon temps sur chaque déclaration (entrées ajoutées par « + Temps », D-110), jamais celui
+    des collègues (D-107) : `filing.my_time` (« 1 h 30 »)."""
+    from apps.timesheet.models import TimeEntry, hours_label, minutes_between
+
+    totals: dict[int, int] = {}
+    entries = TimeEntry.objects.filter(user=user, vat_filing__in=filings).values_list(
+        "vat_filing_id", "start", "end"
+    )
+    for filing_id, start, end in entries:
+        totals[filing_id] = totals.get(filing_id, 0) + minutes_between(start, end)
+    for filing in filings:
+        filing.my_time = hours_label(totals.get(filing.pk, 0))  # type: ignore[attr-defined]
+
+
 # --- Modifier une case ------------------------------------------------------------------------
 
 

@@ -7,7 +7,7 @@ import pytest
 from django.urls import reverse
 
 from apps.clients.models import Assignment
-from apps.core.testing.factories import ClientFactory
+from apps.core.testing.factories import ClientFactory, PortfolioFactory
 from apps.tasks.models import Task
 from apps.timesheet.models import TimeEntry
 from apps.vat import board, services
@@ -63,16 +63,49 @@ def test_late_and_filed_but_not_told_states(user):
     assert "informer" in cards["Dossier Déposé"].tag
 
 
-def test_my_vat_time_on_the_dossier_is_shown(user, make_user):
+def test_my_vat_time_on_the_declaration_is_shown(user, make_user):
     bakery = mine(user, "Boulangerie Fictive")
     vat_task(bakery)
-    TimeEntry.objects.create(user=user, client=bakery, day=date(2026, 10, 5), start=time(9),
-                             end=time(10, 30), activity=TimeEntry.Activity.VAT)  # fmt: skip
+    filing = services.filing_for(bakery, services.period(2026, quarter=3))
+    TimeEntry.objects.create(user=user, client=bakery, vat_filing=filing, day=date(2026, 10, 5),
+                             start=time(9), end=time(10, 30), activity="tva")  # fmt: skip
     colleague = make_user()
-    TimeEntry.objects.create(user=colleague, client=bakery, day=date(2026, 10, 5), start=time(9),
-                             end=time(12), activity=TimeEntry.Activity.VAT)  # fmt: skip
+    TimeEntry.objects.create(
+        user=colleague, client=bakery, vat_filing=filing, day=date(2026, 10, 5), start=time(9),
+        end=time(12), activity="tva",
+    )  # fmt: skip
     [card] = board.build(user, OCT).cards
-    assert card.time_label == "1 h 30"  # seulement mon temps
+    assert card.filing.my_time == "1 h 30"  # seulement mon temps
+
+
+def test_plus_time_on_a_vat_line_adds_to_my_day(web, user):
+    bakery = mine(user, "Boulangerie Fictive")
+    filing = services.filing_for(bakery, services.period(2026, quarter=3))
+    url = reverse("clients:vat_time", args=[bakery.pk, filing.pk])
+    data = {"day": "2026-10-14", "start": "09:00", "end": "09:45", "description": "TVA T3"}
+    row = web.post(url, data, HTTP_HX_REQUEST="true").content.decode()
+    entry = TimeEntry.objects.get(user=user)
+    assert (entry.client, entry.vat_filing, entry.activity) == (bakery, filing, "tva")
+    assert "45 min" in row and 'id="vat-' in row
+    # Créneau qui chevauche : refusé, avec la raison, rien d'enregistré en plus.
+    row = unescape(web.post(url, data, HTTP_HX_REQUEST="true").content.decode())
+    assert "chevauche" in row and TimeEntry.objects.count() == 1
+
+
+def test_plus_time_needs_a_dossier_i_may_see(web, make_user):
+    hidden = ClientFactory(name="Dossier Secret", portfolio=PortfolioFactory(is_private=True))
+    filing = services.filing_for(hidden, services.period(2026, quarter=3))
+    url = reverse("clients:vat_time", args=[hidden.pk, filing.pk])
+    response = web.post(url, {"day": "2026-10-14", "start": "09:00", "end": "09:30"})
+    assert response.status_code == 404 and not TimeEntry.objects.exists()
+
+
+def test_vat_tab_columns_order(web, user):
+    bakery = mine(user, "Boulangerie Fictive")
+    services.filing_for(bakery, services.period(2026, quarter=3))
+    html = unescape(web.get(reverse("clients:vat", args=[bakery.pk])).content.decode())
+    positions = [html.index(h) for h in (">Acomptes<", ">Solde<", ">Com. client<", ">Mon temps<")]
+    assert positions == sorted(positions)
 
 
 def test_page_and_card_turn_green_when_everything_is_done(web, user, monkeypatch):
