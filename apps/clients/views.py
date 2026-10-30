@@ -505,6 +505,8 @@ def client_documents(request: AppRequest, pk: int) -> HttpResponse:
         final = Document.State.FINAL
         cases = []
         for c in dossier.document_cases_for(client):
+            if not c.in_documents:  # D-117 : dans la case « UBO » de l'onglet Clôture
+                continue
             current = [d for d in loaded if d.case == c.slug and d.state == final]
             cases.append((c, case_status(client, c, request, every, current), current))
         from . import spf

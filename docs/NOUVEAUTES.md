@@ -3,6 +3,12 @@
 Ce qui a été ajouté à l'outil, du plus récent au plus ancien. Toutes les données de la démo
 sont inventées.
 
+## 30 octobre 2026 — UBO : un seul endroit, l'onglet Clôture
+
+- La page UBO (bénéficiaires effectifs, extrait du registre) et la déclaration signée par le
+  client ne sont plus dans Documents : elles s'ouvrent depuis la case « UBO » de la Clôture.
+- Un extrait du registre UBO déposé coche tout seul la case « UBO » du dernier exercice.
+
 ## 30 octobre 2026 — Clôture : case « UBO »
 
 - La confirmation annuelle du registre UBO a sa case dans la ligne « Dépôts » de chaque

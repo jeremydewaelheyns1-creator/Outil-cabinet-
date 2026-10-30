@@ -305,15 +305,15 @@ def test_moniteur_archive_lists_publications(web):
 def test_documents_tab_has_one_rectangle_per_fid_line(web):
     company = ClientFactory()
     html = web.get(reverse("clients:documents", args=[company.pk])).content.decode()
-    labels = ("À recevoir", "Lettre de mission", "Cartes d", "Déclaration des bénéficiaires",
+    labels = ("À recevoir", "Lettre de mission", "Cartes d",
               "Identification du client", "Identification des mandataires", "Procuration",
-              "Fiche de détermination du niveau de risque", ">UBO<")  # fmt: skip
+              "Fiche de détermination du niveau de risque")  # fmt: skip
     positions = [html.index(label) for label in labels]
     assert positions == sorted(positions)  # dans l'ordre de FID
-    assert "badge-danger" in html and "problème" in html  # aucun UBO calculé : rouge
-    # La case UBO s'ouvre sous l'onglet Documents.
+    # D-117 : UBO et déclaration UBO sont dans la case « UBO » de l'onglet Clôture.
+    assert "Déclaration des bénéficiaires" not in html and ">UBO<" not in html
     ubo_page = web.get(reverse("clients:ubo", args=[company.pk])).content.decode()
-    assert 'aria-current="page">Documents<' in ubo_page
+    assert 'aria-current="page">Clôture<' in ubo_page
     case = web.get(reverse("clients:document_case", args=[company.pk, "fiche-risque"]))
     assert case.status_code == 200 and "Manquant" in case.content.decode()
     assert web.get(reverse("clients:document_case", args=[company.pk, "ubo"])).status_code == 404

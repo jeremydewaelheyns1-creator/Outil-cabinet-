@@ -1,6 +1,6 @@
 {% extends "clients/sections/_base.html" %}
 {% block head_title %}{{ case.label }} · {{ client.display_name }}{% endblock %}
-{% block page_title %}<a href="{% url 'clients:documents' client.pk %}" class="muted">Documents</a> › {{ case.label }}{% endblock %}
+{% block page_title %}{% if case.in_documents %}<a href="{% url 'clients:documents' client.pk %}" class="muted">Documents</a>{% else %}<a href="{% url 'clients:closing' client.pk %}" class="muted">Clôture</a>{% endif %} › {{ case.label }}{% endblock %}
 {% block page_actions %}
   {# D-106 : l'encodage des dirigeants et des actionnaires se fait d'ici (plus d'entrée à gauche). #}
   {% if case.slug == "identification-mandataires" or case.slug == "pieces-identite" %}

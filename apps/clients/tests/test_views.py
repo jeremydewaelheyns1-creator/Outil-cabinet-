@@ -152,7 +152,7 @@ def test_add_shareholder_relation(web):
     assert relation.entity == company and relation.person == person
     detail = web.get(reverse("clients:shareholders", args=[company.pk])).content.decode()
     assert "Actionnaire" in detail
-    assert ">UBO<" in web.get(reverse("clients:documents", args=[company.pk])).content.decode()
+    assert "Actionnaire" in web.get(reverse("clients:ubo", args=[company.pk])).content.decode()
 
 
 def test_add_mandate_from_person_side(web):

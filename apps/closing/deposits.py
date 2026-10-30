@@ -300,3 +300,18 @@ def task_completed_elsewhere(event: Event) -> None:
         return
     if year is not None and not year.deposits.filter(kind=kind, done_on__isnull=False).exists():
         set_done(year, kind, True, task.completed_by, sync=False)
+
+
+@events.on("document.added")
+def ubo_extract_added(event: Event) -> None:
+    """Extrait du registre UBO rangé (page UBO ou « Déposer des documents ») : il rejoint la
+    case « UBO » du dernier exercice terminé et la coche (D-117)."""
+    pk = str((event.payload or {}).get("document") or "")
+    document = Document.objects.filter(pk=pk, doc_type="extrait_ubo").first() if pk else None
+    if document is None or Kind.UBO not in kinds_for(document.client):
+        return
+    day = timezone.localtime(document.uploaded_at).date()
+    year = ClosingYear.objects.filter(client=document.client, end__lte=day).order_by("-end").first()
+    if year is None or year.deposits.filter(kind=Kind.UBO, documents=document).exists():
+        return
+    attach(year, Kind.UBO, document, document.uploaded_by)

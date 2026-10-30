@@ -414,3 +414,28 @@ def test_belcotax_28120_and_listing_receipts_tick_their_box(web, text, kind, fol
     web.post(reverse("depot:index"), {"files": [pdf("accuse.pdf", text, _number(client))]})
     assert Document.objects.get(client=client).folder == folder
     assert year.deposits.get(kind=kind).done_on is not None
+
+
+def test_ubo_lives_in_the_closing_tab_not_in_documents(
+    web, user, django_capture_on_commit_callbacks
+):
+    """D-117 : pas de doublon. La page UBO et la déclaration UBO s'ouvrent depuis la case
+    « UBO » de la Clôture ; un extrait du registre rangé coche la case."""
+    from django.core.files.uploadedfile import SimpleUploadedFile
+
+    from apps.documents import services as documents
+
+    client = company(name="Garage Fictif SA")
+    year = year_of(client)
+    docs = unescape(web.get(reverse("clients:documents", args=[client.pk])).content.decode())
+    assert "Déclaration des bénéficiaires effectifs" not in docs
+    assert reverse("clients:ubo", args=[client.pk]) not in docs
+    tab = web.get(reverse("clients:closing", args=[client.pk])).content.decode()
+    assert reverse("clients:ubo", args=[client.pk]) in tab
+    assert reverse("clients:document_case", args=[client.pk, "declaration-ubo"]) in tab
+    upload = SimpleUploadedFile("extrait.pdf", b"%PDF-1.4 extrait fictif\n%%EOF")
+    with django_capture_on_commit_callbacks(execute=True):
+        document = documents.store(client, upload, title="Extrait du registre UBO", case="ubo",
+                                   doc_type="extrait_ubo", user=user)  # fmt: skip
+    deposit = year.deposits.get(kind="ubo")
+    assert deposit.done_on is not None and list(deposit.documents.all()) == [document]

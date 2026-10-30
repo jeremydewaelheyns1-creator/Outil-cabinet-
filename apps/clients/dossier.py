@@ -154,6 +154,9 @@ class DocumentCase:
     description: str
     for_persons: bool = True
     url_name: str = "document_case"  # page dédiée si elle existe déjà (UBO)
+    # D-117 : montrée dans l'onglet Documents ? (UBO et déclaration UBO : dans la case « UBO »
+    # de l'onglet Clôture ; elles restent des cases où les documents se rangent).
+    in_documents: bool = True
 
 
 # Une case par ligne de la rubrique « Loi anti-blanchiment » de FID-Manager (D-038).
@@ -179,6 +182,7 @@ DOCUMENT_CASES: tuple[DocumentCase, ...] = (
         "Déclaration des bénéficiaires effectifs",
         "La déclaration signée par le client.",
         for_persons=False,
+        in_documents=False,
     ),
     DocumentCase(
         "identification-client",
@@ -203,6 +207,7 @@ DOCUMENT_CASES: tuple[DocumentCase, ...] = (
         "Les bénéficiaires effectifs calculés et l'extrait du registre UBO.",
         for_persons=False,
         url_name="ubo",
+        in_documents=False,
     ),
 )
 DOCUMENT_CASE_SLUGS = {c.slug: c for c in DOCUMENT_CASES}
@@ -308,7 +313,7 @@ ACTION_SECTIONS = {
     # Onglet Documents (D-033) : les cases s'ouvrent sous l'onglet.
     "document_case": "documents",
     "document_viewer_page": "documents",
-    "ubo": "documents",
+    "ubo": "closing",  # D-117 : la page UBO s'ouvre depuis la case « UBO » de la Clôture
     "risk_sheet": "documents",
     "letter_prepare": "documents",
     "spf_mandate_request": "documents",

@@ -15,6 +15,12 @@
         {% if p.files %}
           <ul class="cl-files">{% for d in p.files %}<li>{% include "documents/_open.html" %}{{ d.title }}</a></li>{% endfor %}</ul>
         {% endif %}
+        {% if p.kind == "ubo" %}
+          <ul class="cl-files">
+            <li><a href="{% url 'clients:ubo' client.pk %}">Bénéficiaires effectifs et extrait du registre</a></li>
+            <li><a href="{% url 'clients:document_case' client.pk 'declaration-ubo' %}">Déclaration signée par le client</a></li>
+          </ul>
+        {% endif %}
         {% if p.kind == "ag" and can_edit %}
           <form method="post" action="{% url 'clients:closing_dividend' client.pk y.pk %}" hx-post="{% url 'clients:closing_dividend' client.pk y.pk %}" hx-target="closest .cl-card" hx-swap="outerHTML" class="cl-dividend">{% csrf_token %}
             <span class="small">Dividende décidé ?</span>

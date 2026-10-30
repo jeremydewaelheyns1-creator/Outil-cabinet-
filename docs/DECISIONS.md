@@ -1491,3 +1491,14 @@ même taille (« Clôture » : checklists et clôtures ; « Dépôts ») ; le no
 - La case « Déclaration UBO » de l'onglet Documents reste (le document signé) tant que
   Jeremy n'a pas décidé de la retirer.
 - Toutes les cases restent sur une seule ligne (8 dépôts) ; libellés un peu plus petits.
+
+## D-117 — Plus de doublon UBO : tout passe par la case « UBO » de la Clôture
+
+- Choix de Jeremy (30/10/2026) : la page « UBO » (bénéficiaires calculés, extrait du
+  registre, alerte annuelle) et la case « Déclaration des bénéficiaires effectifs » ne sont
+  plus montrées dans l'onglet Documents. Elles s'ouvrent depuis la fenêtre de la case
+  « UBO » de l'onglet Clôture (la page UBO s'affiche sous l'onglet Clôture).
+- Rien n'est effacé : ce sont toujours des cases où les documents se rangent (dépôt, signature,
+  « Déposer des documents »), et elles comptent toujours dans le dossier anti-blanchiment.
+- Un extrait du registre UBO rangé coche la case « UBO » du dernier exercice terminé.
+- Le mandat SPF « Registre UBO » (accès du cabinet au registre) reste dans Documents › Mandats.
