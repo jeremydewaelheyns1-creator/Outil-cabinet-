@@ -104,7 +104,7 @@ def test_dossier_customisation_is_kept_and_survives_common_changes(user):
 def test_tab_checklist_and_close_through_the_pages(web, user):
     client = company(name="Garage Fictif SA")
     html = unescape(web.get(reverse("clients:closing", args=[client.pk])).content.decode())
-    assert "2025" in html and "Checklist · 0 / 16" in html
+    assert "2025" in html and "Checklist comptable" in html and "0 / 16" in html
     year = ClosingYear.objects.get(client=client)
     key = services.items_for(client)[0].key
     url = reverse("clients:closing_tick", args=[client.pk, year.pk, "comptable", key])
@@ -182,10 +182,99 @@ def test_manager_checklist_is_common_and_customisable_per_dossier(web, user):
     )
     year.refresh_from_db()
     assert year.manager_closed_on is not None and year.closed_on is None
-    assert "Gestionnaire · 0 / 8" in unescape(row.content.decode())
+    assert "0 / 8" in unescape(row.content.decode())
     assert (
         web.get(
             reverse("clients:closing_checklist", args=[client.pk, year.pk, "x"]), **HX
         ).status_code
         == 404
     )
+
+
+# --- Cases de dépôt (D-113) ---------------------------------------------------------------------
+
+
+def test_deposit_box_ticks_its_deadline_and_back(web, user, django_capture_on_commit_callbacks):
+    from apps.closing import deposits
+    from apps.tasks.models import Task
+
+    client = company(name="Garage Fictif SA")
+    year = year_of(client)
+    task = Task.objects.create(
+        client=client, kind="comptes_annuels", title="Dépôt BNB", due_date=date(2026, 7, 31),
+        period_key="EX-2025-12-31", assignee=user,
+    )  # fmt: skip
+    url = reverse("clients:closing_deposit", args=[client.pk, year.pk, "bnb"])
+    row = unescape(web.post(url, {"action": "cocher"}, **HX).content.decode())
+    task.refresh_from_db()
+    assert task.status == Task.Status.DONE and "cl-deposit is-done" in row
+    web.post(url, {"action": "decocher"}, **HX)
+    task.refresh_from_db()
+    assert task.status != Task.Status.DONE
+    # Terminée dans l'échéancier : la case se coche.
+    with django_capture_on_commit_callbacks(execute=True):
+        web.post(reverse("tasks:status", args=[task.pk]), {"status": "done"})
+    assert year.deposits.get(kind="bnb").done_on is not None
+    assert [b.kind for b in deposits.boxes(year, deposits.kinds_for(client))] == [
+        "ag", "bnb", "isoc", "28150", "270",
+    ]  # fmt: skip
+
+
+def test_file_dropped_in_a_box_is_archived_and_ticks_it(web, user):
+    from django.core.files.uploadedfile import SimpleUploadedFile
+
+    from apps.documents.models import Document
+
+    client = company()
+    year = year_of(client)
+    url = reverse("clients:closing_deposit_file", args=[client.pk, year.pk, "270"])
+    upload = SimpleUploadedFile("annexe-270-mlh.pdf", b"%PDF-1.4 annexe fictive\n%%EOF")
+    row = unescape(web.post(url, {"fichier": upload}, **HX).content.decode())
+    document = Document.objects.get(client=client)
+    assert document.folder == "isoc" and "Annexes 270 2025" in document.title
+    deposit = year.deposits.get(kind="270")
+    assert deposit.done_on is not None and list(deposit.documents.all()) == [document]
+    assert "1 fichier" in row
+
+
+def test_box_can_be_removed_for_a_dossier_and_put_back(web):
+    from apps.closing import deposits
+
+    client = company()
+    year = year_of(client)
+    url = reverse("clients:closing_deposit", args=[client.pk, year.pk, "28150"])
+    web.post(url, {"action": "retirer"}, **HX)
+    assert "28150" not in deposits.kinds_for(client)
+    html = unescape(web.get(reverse("clients:closing", args=[client.pk])).content.decode())
+    assert "Fiches 281.50 — remettre" in html
+    web.post(reverse("clients:closing_restore", args=[client.pk]), {"kind": "28150"})
+    assert "28150" in deposits.kinds_for(client)
+
+
+def test_row_is_green_only_when_deposits_are_done_too(user):
+    from apps.closing import deposits
+
+    client = company(vat="not_subject")
+    year = year_of(client)
+    for part in (Part.ACCOUNTING, Part.MANAGER):
+        for item in services.items_for(client, part):
+            services.set_tick(year, item.key, "ok", user)
+        services.set_closed(year, True, user, part)
+    year.refresh_from_db()
+    kinds = deposits.kinds_for(client)
+    sheets = services.sheet(year), services.sheet(year, Part.MANAGER)
+    assert services.finished(*sheets) and not deposits.complete(deposits.boxes(year, kinds))
+    for kind in kinds:
+        deposits.set_done(year, kind, True, user)
+    assert deposits.complete(deposits.boxes(year, kinds))
+
+
+def test_bnb_xbrl_dropped_in_the_deposit_page_ticks_the_box(web):
+    from apps.documents.tests.test_official_files import accounts_xbrl, xbrl_upload
+
+    client = company()
+    year = year_of(client)
+    upload = xbrl_upload("comptes.xbrl", accounts_xbrl(client.enterprise_number))
+    web.post(reverse("depot:index"), {"files": [upload]})
+    deposit = year.deposits.get(kind="bnb")
+    assert deposit.done_on is not None and deposit.documents.count() == 1

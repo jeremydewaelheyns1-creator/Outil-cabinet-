@@ -2,17 +2,16 @@
 {% block head_title %}Clôture · {{ client.display_name }}{% endblock %}
 {% block page_title %}Clôture{% endblock %}
 {% block content %}
-<p class="small muted cl-intro">Checklist commune « {{ kind }} »{% if customised %} · personnalisée pour ce dossier{% endif %}. Une ligne par exercice ; elle devient verte quand les deux checklists sont complètes et les deux clôtures cochées.</p>
+<p class="small muted cl-intro">Checklist commune « {{ kind }} »{% if customised %} · personnalisée pour ce dossier{% endif %}. Une ligne par exercice ; le cadre devient vert quand les checklists, les clôtures et les dépôts sont faits.</p>
 {% if not client.fiscal_year_end_month %}
   <div class="card"><p class="muted">La date de clôture de l'exercice n'est pas encore renseignée : complétez-la dans <a href="{% url 'clients:identity' client.pk %}">la fiche</a> ; la ligne de l'exercice apparaîtra toute seule.</p></div>
 {% elif rows %}
-  <table class="cl-grid">
-    <thead><tr>
-      <th scope="col">Exercice</th><th scope="col">Checklist comptable</th><th scope="col">Clôture comptable</th><th scope="col">Checklist gestionnaire</th><th scope="col">Clôture gestionnaire</th>
-      <th scope="col" title="Responsable">Resp.</th><th scope="col" title="Assistant">Assis.</th>
-      <th scope="col" title="Mon temps sur cet exercice, et l'ajout à Ma journée">Mon temps</th><th scope="col">Remarque</th>
-    </tr></thead>
-    <tbody>{% for row in rows %}{% include "closing/_row.html" %}{% endfor %}</tbody>
-  </table>
+  <div class="cl-list">{% for row in rows %}{% include "closing/_row.html" %}{% endfor %}</div>
+  {% if hidden %}
+    <form method="post" action="{% url 'clients:closing_restore' client.pk %}" class="cl-restore small muted">{% csrf_token %}
+      Cases retirées pour ce dossier :
+      {% for kind, label in hidden %}<button type="submit" name="kind" value="{{ kind }}" class="link-button small">{{ label }} — remettre</button>{% endfor %}
+    </form>
+  {% endif %}
 {% endif %}
 {% endblock %}

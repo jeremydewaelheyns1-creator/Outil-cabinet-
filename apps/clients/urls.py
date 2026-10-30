@@ -60,6 +60,17 @@ urlpatterns = [
         "<int:pk>/cloture/<int:year_id>/remarque/", closing_views.row_remark, name="closing_remark"
     ),
     path("<int:pk>/cloture/<int:year_id>/temps/", closing_views.add_time, name="closing_time"),
+    path("<int:pk>/cloture/remettre-case/", closing_views.deposit_restore, name="closing_restore"),
+    path(
+        "<int:pk>/cloture/<int:year_id>/depot/<str:kind>/",
+        closing_views.deposit,
+        name="closing_deposit",
+    ),
+    path(
+        "<int:pk>/cloture/<int:year_id>/depot/<str:kind>/fichier/",
+        closing_views.deposit_file,
+        name="closing_deposit_file",
+    ),
     path(
         "<int:pk>/cloture/<int:year_id>/<slug:part>/",
         closing_views.checklist,

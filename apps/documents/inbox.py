@@ -249,7 +249,11 @@ def _xbrl_document(
     if client.is_person:
         return to_inbox(upload, content_type, user,
                         f"{label} reconnu, mais le dossier est une personne physique")  # fmt: skip
-    documents.store(client, upload, title=label, folder=place, user=user)
+    stored = documents.store(client, upload, title=label, folder=place, user=user)
+    from apps.closing import deposits  # la case BNB / ISOC de l'exercice se coche (D-113)
+
+    kind = deposits.Kind.BNB if filing.kind == xbrl.ACCOUNTS else deposits.Kind.ISOC
+    deposits.xbrl_received(client, kind, filing.end, filing.assessment_year, stored, user)
     return Result(upload.name or "document", OK, f"{label} rangé dans {client.display_name}.",
                   client, dossier.folder_url(client.pk, place), label)  # fmt: skip
 

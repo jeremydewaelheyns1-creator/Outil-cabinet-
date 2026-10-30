@@ -1,6 +1,6 @@
 {# Case « Checklist » d'un exercice (comptable ou gestionnaire, D-112) : l'ouvre dans le cadre. #}
-<a class="cl-box cl-check{% if s.complete %} is-done{% elif s.done or s.in_progress %} is-wip{% endif %}" href="{% url 'clients:closing' client.pk %}" hx-get="{% url 'clients:closing_checklist' client.pk y.pk part %}" hx-target="#doc-viewer-content" hx-swap="innerHTML">
-  <strong>{% if s.complete %}{{ name }} ✓{% else %}{{ name }} · {{ s.done }} / {{ s.total }}{% endif %}</strong>
-  {% if not s.complete %}<span class="cl-bar"><span style="width: {{ s.percent }}%"></span></span>{% endif %}
-  <small>{% if s.complete %}{{ s.total }} / {{ s.total }}{% elif s.in_progress %}{{ s.in_progress|length }} en cours ({% for l in s.in_progress|slice:":2" %}{{ l.item.label }}{% if not forloop.last %}, {% endif %}{% endfor %}){% else %}ouvrir{% endif %}</small>
+<a class="cl-box cl-check{% if s.complete %} is-done{% elif s.done or s.in_progress %} is-wip{% endif %}" href="{% url 'clients:closing' client.pk %}" hx-get="{% url 'clients:closing_checklist' client.pk y.pk part %}" hx-target="#doc-viewer-content" hx-swap="innerHTML" title="{% if s.in_progress %}En cours : {% for l in s.in_progress %}{{ l.item.label }}{% if not forloop.last %}, {% endif %}{% endfor %}{% endif %}">
+  <span class="cl-box-label">{{ name }}</span>
+  <strong>{% if s.complete %}✓ {{ s.total }} / {{ s.total }}{% else %}{{ s.done }} / {{ s.total }}{% endif %}</strong>
+  <span class="cl-box-foot">{% if s.complete %}terminée{% elif s.in_progress %}{{ s.in_progress|length }} en cours{% else %}<span class="cl-bar"><span style="width: {{ s.percent }}%"></span></span>{% endif %}</span>
 </a>

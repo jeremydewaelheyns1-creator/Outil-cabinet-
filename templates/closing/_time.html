@@ -1,7 +1,7 @@
 {# « + Temps » d'un exercice (D-111) : mon temps dessus, et l'ajout à Ma journée. #}
 <details class="vb-time"{% if row_error %} open{% endif %}>
   <summary><span class="vb-minutes" title="Mon temps sur cet exercice">{{ y.my_time|default:"0 h" }}</span><span class="vb-add">+ Temps</span></summary>
-  <form class="vb-time-form" method="post" action="{% url 'clients:closing_time' client.pk y.pk %}" hx-post="{% url 'clients:closing_time' client.pk y.pk %}" hx-target="closest tr" hx-swap="outerHTML">{% csrf_token %}
+  <form class="vb-time-form" method="post" action="{% url 'clients:closing_time' client.pk y.pk %}" hx-post="{% url 'clients:closing_time' client.pk y.pk %}" hx-target="closest .cl-card" hx-swap="outerHTML">{% csrf_token %}
     <strong>Ajouter à ma journée · clôture {{ y.label }}</strong>
     {% if row_error %}<p class="vb-time-error">{{ row_error }}</p>{% endif %}
     <label class="small vb-day">Jour<input type="date" name="day" value="{{ time.day }}" required></label>

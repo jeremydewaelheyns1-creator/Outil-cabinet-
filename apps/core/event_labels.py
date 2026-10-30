@@ -29,6 +29,8 @@ EVENT_LABELS = {
     "closing.accounting_reopened": "Clôture comptable rouverte",
     "closing.manager_closed": "Clôture gestionnaire terminée",
     "closing.manager_reopened": "Clôture gestionnaire rouverte",
+    "closing.deposit_done": "Dépôt de l'exercice fait",
+    "closing.deposit_undone": "Dépôt de l'exercice décoché",
 }
 
 

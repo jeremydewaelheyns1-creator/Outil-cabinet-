@@ -1751,3 +1751,39 @@ button.cl-box:not(.is-done):hover { border-color: #2ea043; color: #166534; backg
 .cl-tick.cl-tick-na, .cl-tick.cl-tick-na:hover { background: #d4d6da; border-color: #d4d6da; color: #4b5563; }
 .cl-tick.cl-tick-todo:hover { background: #f0fdf4; border-color: #22c55e; }
 .cl-tick:focus-visible { box-shadow: 0 0 0 3px #a5b4fc; }
+/* D-113 : un exercice = un cadre ; deux lignes de cases toutes de la même taille */
+.cl-list { display: grid; gap: .9rem; margin-top: .4rem; }
+.cl-card { background: var(--surface); border: 1px solid var(--border); border-radius: 18px; padding: 1rem 1.2rem; display: grid; grid-template-columns: 12.5rem minmax(0, 1fr); gap: 1.2rem; align-items: start; }
+.cl-card.cl-finished { background: #dcfce7; border-color: #86efac; box-shadow: inset 5px 0 0 #22c55e; }
+.cl-head { display: grid; gap: .15rem; align-content: start; min-width: 0; }
+.cl-head .cl-year { font-size: 1.5rem; }
+.cl-head-actions { display: flex; align-items: center; gap: .8rem; flex-wrap: wrap; margin-top: .5rem; }
+.cl-head-actions .vb-time > summary { flex-direction: row; }
+.cl-head-actions .vb-time-form { left: 0; right: auto; }
+.cl-remark > summary { list-style: none; cursor: pointer; color: var(--primary-hover); }
+.cl-remark > summary::-webkit-details-marker { display: none; }
+.cl-remark-text { margin: .3rem 0 0; color: var(--text-muted); }
+.cl-lines { display: grid; gap: .25rem; min-width: 0; }
+.cl-line-label { font-size: .7rem; font-weight: 800; letter-spacing: .07em; text-transform: uppercase; color: var(--text-muted); margin-top: .2rem; }
+.cl-boxes { display: flex; flex-wrap: wrap; gap: .5rem; }
+.cl-boxes > form { margin: 0; }
+.cl-card .cl-box { width: 9.4rem; min-width: 0; height: 4.3rem; min-height: 0; display: grid; grid-template-rows: auto auto auto; align-content: center; justify-items: center; gap: .05rem; padding: .3rem .5rem; text-align: center; overflow: hidden; }
+.cl-box-label { font-size: .68rem; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; opacity: .85; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cl-card .cl-box strong { font-size: 1rem; line-height: 1.2; white-space: nowrap; }
+.cl-box-foot { font-size: .74rem; font-weight: 600; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%; display: block; }
+.cl-box-foot .cl-bar { margin-top: .3rem; }
+.cl-box.is-done .cl-box-label { opacity: .95; }
+.cl-dep { position: relative; }
+.cl-dep > summary { list-style: none; cursor: pointer; }
+.cl-dep > summary::-webkit-details-marker { display: none; }
+.cl-dep > summary:hover:not(.is-done) { border-color: var(--primary); }
+.cl-deposit.is-done { background: #2ea043; border: none; color: #fff; }
+.cl-dep-pop { width: 20rem; display: grid; gap: .6rem; }
+.cl-dep-pop p { margin: 0; }
+.cl-files { margin: 0; padding-left: 1.1rem; font-size: .9rem; display: grid; gap: .2rem; }
+.cl-dep-upload { display: grid; gap: .4rem; }
+.cl-dep-upload input[type="file"] { width: 100%; margin-top: .2rem; }
+.cl-dep-actions { display: flex; align-items: center; gap: .8rem; flex-wrap: wrap; }
+.cl-restore { display: flex; gap: .8rem; align-items: center; flex-wrap: wrap; margin-top: .6rem; }
+@media (max-width: 900px) { .cl-card { grid-template-columns: minmax(0, 1fr); } }
+.cl-box-label { text-transform: none; letter-spacing: 0; font-size: .74rem; font-weight: 700; }

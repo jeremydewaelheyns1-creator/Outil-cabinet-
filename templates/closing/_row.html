@@ -1,31 +1,37 @@
-{# Une ligne de l'onglet Clôture : un exercice (D-111). #}
+{# Un exercice de l'onglet Clôture (D-111 à D-113) : un cadre, deux lignes de cases de même taille. #}
 {% with y=row.year s=row.sheet %}
-<tr id="cl-{{ y.pk }}" class="cl-row{% if row.finished %} cl-finished{% endif %}">
-  <th scope="row">
+<section id="cl-{{ y.pk }}" class="cl-card{% if row.finished %} cl-finished{% endif %}" aria-label="Exercice {{ y.label }}">
+  <div class="cl-head">
     <span class="cl-year">{{ y.label }}</span>
     <span class="cl-sub">Exercice {{ y.start|date:"d/m/Y" }} – {{ y.end|date:"d/m/Y" }}</span>
-    <span class="cl-sub">{{ row.deposit }}</span>
+    <span class="cl-sub" title="Responsable · assistant">{{ y.manager.get_short_name|default:"—" }} · {{ y.assistant.get_short_name|default:"—" }}</span>
+    <div class="cl-head-actions">
+      {% include "closing/_time.html" %}
+      {% if can_edit %}<details class="vat-menu cl-remark"><summary class="link-button small">{% if y.remark %}Remarque{% else %}+ Remarque{% endif %}</summary>
+        <div class="vat-pop">
+          <div class="vat-pop-head">Remarque</div>
+          <form method="post" action="{% url 'clients:closing_remark' client.pk y.pk %}" hx-post="{% url 'clients:closing_remark' client.pk y.pk %}" hx-target="closest .cl-card" hx-swap="outerHTML">{% csrf_token %}
+            <textarea name="remark" rows="3" maxlength="1000" aria-label="Remarque sur l'exercice {{ y.label }}">{{ y.remark }}</textarea>
+            <button type="submit">Enregistrer</button>
+          </form>
+        </div>
+      </details>{% endif %}
+    </div>
+    {% if y.remark %}<p class="cl-remark-text small">{{ y.remark|linebreaksbr }}</p>{% endif %}
     {% if row_error %}<span class="cl-error">{{ row_error }}</span>{% endif %}
-  </th>
-  <td>{% include "closing/_check_cell.html" with part="comptable" name="Checklist" %}</td>
-  <td>{% include "closing/_close_cell.html" with part="comptable" on=y.closed_on by=y.closed_by label="Clôture comptable" %}</td>
-  <td>{% with s=row.manager_sheet %}{% include "closing/_check_cell.html" with part="gestionnaire" name="Gestionnaire" %}{% endwith %}</td>
-  <td>{% with s=row.manager_sheet %}{% include "closing/_close_cell.html" with part="gestionnaire" on=y.manager_closed_on by=y.manager_closed_by label="Clôture gestionnaire" %}{% endwith %}</td>
-  <td class="nowrap" title="{{ y.manager|default:'' }}">{{ y.manager.get_short_name|default:"" }}</td>
-  <td class="nowrap" title="{{ y.assistant|default:'' }}">{{ y.assistant.get_short_name|default:"" }}</td>
-  <td class="vat-time">{% include "closing/_time.html" %}</td>
-  <td class="cl-remark">
-    {% if can_edit %}<details class="vat-menu vat-menu-end"><summary>{% endif %}
-    {% if y.remark %}<span class="small">{{ y.remark|linebreaksbr }}</span>{% elif can_edit %}<span class="muted small">+</span>{% endif %}
-    {% if can_edit %}</summary>
-      <div class="vat-pop">
-        <div class="vat-pop-head">Remarque</div>
-        <form method="post" action="{% url 'clients:closing_remark' client.pk y.pk %}" hx-post="{% url 'clients:closing_remark' client.pk y.pk %}" hx-target="closest tr" hx-swap="outerHTML">{% csrf_token %}
-          <textarea name="remark" rows="3" maxlength="1000" aria-label="Remarque sur l'exercice {{ y.label }}">{{ y.remark }}</textarea>
-          <button type="submit">Enregistrer</button>
-        </form>
-      </div>
-    </details>{% endif %}
-  </td>
-</tr>
+  </div>
+  <div class="cl-lines">
+    <div class="cl-line-label">Clôture</div>
+    <div class="cl-boxes">
+      {% include "closing/_check_cell.html" with part="comptable" name="Checklist comptable" %}
+      {% include "closing/_close_cell.html" with part="comptable" on=y.closed_on by=y.closed_by label="Clôture comptable" %}
+      {% with s=row.manager_sheet %}{% include "closing/_check_cell.html" with part="gestionnaire" name="Checklist gestionnaire" %}{% endwith %}
+      {% with s=row.manager_sheet %}{% include "closing/_close_cell.html" with part="gestionnaire" on=y.manager_closed_on by=y.manager_closed_by label="Clôture gestionnaire" %}{% endwith %}
+    </div>
+    {% if row.boxes %}
+      <div class="cl-line-label">Dépôts</div>
+      <div class="cl-boxes">{% for b in row.boxes %}{% include "closing/_deposit_cell.html" %}{% endfor %}</div>
+    {% endif %}
+  </div>
+</section>
 {% endwith %}

@@ -1435,3 +1435,23 @@ clôtures cochées.
 - « Clôture gestionnaire » : n'importe qui ayant le droit de modifier les fiches peut la cocher
   (à restreindre au responsable si Jeremy le demande) ; événements
   `closing.manager_closed` / `closing.manager_reopened`.
+
+## D-113 — Cases de dépôt de l'exercice ; un exercice = un cadre, cases de même taille
+
+Jeremy (30/10, maquette « ClotureDepots ») : dans l'onglet Clôture, chaque exercice a aussi ses
+dépôts : AG, BNB, ISOC, Fiches 281.50 (celles que le client établit pour les honoraires et
+commissions payés) et Annexes 270 (on y dépose toutes les annexes 270 : 270 MLH…). « Veille à ce
+que ce soit harmonieux » : un exercice devient un cadre, avec deux lignes de cases toutes de la
+même taille (« Clôture » : checklists et clôtures ; « Dépôts ») ; le nombre de fichiers est
+écrit dans la case au lieu d'étiquettes qui changeraient sa taille.
+
+- Une case = une échéance = des fichiers : cocher AG / BNB / ISOC termine l'échéance de
+  l'exercice (`assemblee_generale`, `comptes_annuels`, `isoc`) et décocher la rouvre ; terminer
+  l'échéance dans l'échéancier coche la case (`task.completed`).
+- Un fichier déposé dans la case est rangé aux archives (AG : légal ; BNB : comptes ; ISOC,
+  281.50, 270 : isoc) et coche la case. Les comptes annuels XBRL et le Biztax XBRL déposés dans
+  « Déposer des documents » cochent tout seuls BNB / ISOC du bon exercice.
+- Une case peut être retirée pour un dossier (ex. pas de 281.50), et remise.
+- Le cadre devient vert quand les checklists, les clôtures et les dépôts sont faits.
+- Pas encore : les PDF (accusé Biztax, Belcotax, comptes PDF) ne cochent pas la case tout seuls
+  (période pas toujours lisible) ; on les dépose dans la case.

@@ -3,6 +3,15 @@
 Ce qui a été ajouté à l'outil, du plus récent au plus ancien. Toutes les données de la démo
 sont inventées.
 
+## 30 octobre 2026 — Dépôts de l'exercice dans l'onglet Clôture
+
+- Chaque exercice a maintenant ses cases de dépôt : AG, BNB, ISOC, Fiches 281.50, Annexes 270.
+  On y dépose les fichiers (rangés aussi dans les Archives) et la case passe au vert.
+- Cocher AG, BNB ou ISOC termine aussi l'échéance (et l'inverse) : rien à cocher deux fois.
+- Les comptes annuels et la déclaration Biztax (XBRL) déposés dans « Déposer des documents »
+  cochent tout seuls la bonne case.
+- Un exercice est un cadre avec deux lignes de cases de même taille : Clôture et Dépôts.
+
 ## 30 octobre 2026 — Checklist gestionnaire
 
 - Dans l'onglet Clôture, chaque exercice a maintenant aussi une « Checklist gestionnaire »

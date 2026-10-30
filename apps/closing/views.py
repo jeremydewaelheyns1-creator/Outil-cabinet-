@@ -22,8 +22,8 @@ from apps.core.models import AccessLog, User
 from apps.core.permissions import require_capability
 from apps.timesheet.models import TimeEntry, hours_label
 
-from . import services
-from .models import ClosingYear, Comment, CommonItem, Kind, Part
+from . import deposits, services
+from .models import ClosingYear, Comment, CommonItem, Deposit, Kind, Part
 
 VIEWS = ("checklist", "configurer", "historique")
 
@@ -52,13 +52,15 @@ def _rows(client: Client, user: User) -> list[dict[str, Any]]:
         )
     )
     services.add_my_time(user, years)
+    kinds = deposits.kinds_for(client)
     rows = []
     for y in years:
         sheet = services.sheet(y, Part.ACCOUNTING, accounting)
         manager_sheet = services.sheet(y, Part.MANAGER, manager)
+        boxes = deposits.boxes(y, kinds)
         rows.append({
-            "year": y, "sheet": sheet, "manager_sheet": manager_sheet,
-            "finished": services.finished(sheet, manager_sheet), "deposit": services.deposit(y),
+            "year": y, "sheet": sheet, "manager_sheet": manager_sheet, "boxes": boxes,
+            "finished": services.finished(sheet, manager_sheet) and deposits.complete(boxes),
         })  # fmt: skip
     return rows
 
@@ -79,6 +81,7 @@ def closing_tab(request: AppRequest, pk: int) -> HttpResponse:
             or client.closing_items.filter(active=True).exists()
             or client.closing_changes.exclude(label="", hint="").exists(),
             "time": _time_defaults(request.user),
+            "hidden": [(k, Deposit.Kind(k).label) for k in deposits.hidden_for(client)],
         }
 
     return render_section(request, pk, "closing", "closing/tab.html", build)
@@ -290,6 +293,55 @@ def add_time(request: AppRequest, pk: int, year_id: int) -> HttpResponse:
     if not request.htmx and not error:
         messages.success(request, f"Ajouté à ma journée : {hours_label(entry.minutes)}.")
     return _row_response(request, year, error)
+
+
+# --- Cases de dépôt (D-113) -------------------------------------------------------------------
+
+
+@require_POST
+@require_capability(Capability.CLIENTS_EDIT)
+def deposit(request: AppRequest, pk: int, year_id: int, kind: str) -> HttpResponse:
+    year = _year(request, pk, year_id)
+    if kind not in Deposit.Kind.values:
+        raise Http404
+    action = request.POST.get("action", "")
+    if action in ("cocher", "decocher"):
+        deposits.set_done(year, kind, action == "cocher", request.user)
+    elif action == "retirer":
+        deposits.hide(year.client, kind, True)
+    _changed(request, year, f"dépôt {kind} : {action}")
+    return _row_response(request, year)
+
+
+@require_POST
+@require_capability(Capability.CLIENTS_EDIT)
+def deposit_file(request: AppRequest, pk: int, year_id: int, kind: str) -> HttpResponse:
+    year = _year(request, pk, year_id)
+    if kind not in Deposit.Kind.values:
+        raise Http404
+    upload = request.FILES.get("fichier")
+    error = ""
+    if upload is None:
+        error = "Choisissez un fichier."
+    else:
+        try:
+            deposits.add_file(year, kind, upload, request.user)
+            _changed(request, year, f"dépôt {kind} : fichier")
+        except ValidationError as exc:
+            error = " ".join(exc.messages)
+    return _row_response(request, year, error)
+
+
+@require_POST
+@require_capability(Capability.CLIENTS_EDIT)
+def deposit_restore(request: AppRequest, pk: int) -> HttpResponse:
+    client = _get_client(request, pk)
+    kind = request.POST.get("kind", "")
+    if kind in Deposit.Kind.values:
+        deposits.hide(client, kind, False)
+        details = {"rubrique": "cloture", "action": f"case {kind} remise"}
+        log_access(request, AccessLog.Action.UPDATE, client, details=details)
+    return redirect("clients:closing", pk=client.pk)
 
 
 # --- Réglages généraux : les checklists communes ------------------------------------------------

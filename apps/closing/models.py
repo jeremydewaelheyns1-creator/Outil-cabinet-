@@ -62,6 +62,8 @@ class DossierSetup(models.Model):
 
     client = models.OneToOneField(Client, on_delete=models.CASCADE, related_name="closing_setup")
     order = models.JSONField("ordre des champs", default=list, blank=True)
+    # Cases de dépôt retirées pour ce dossier (ex. pas de fiches 281.50), D-113.
+    hidden_deposits = models.JSONField("cases de dépôt retirées", default=list, blank=True)
     history = HistoricalRecords()
 
     class Meta:
@@ -225,3 +227,37 @@ class Comment(models.Model):
     @property
     def is_open(self) -> bool:
         return self.resolved_at is None
+
+
+class Deposit(models.Model):
+    """Une case de dépôt de l'exercice (D-113) : AG, BNB, ISOC, fiches 281.50, annexes 270.
+    Cochée à la main, ou toute seule quand le fichier arrive ; reliée à son échéance."""
+
+    class Kind(models.TextChoices):
+        AG = "ag", "AG"
+        BNB = "bnb", "BNB"
+        ISOC = "isoc", "ISOC"
+        FICHES_281_50 = "28150", "Fiches 281.50"
+        ANNEXES_270 = "270", "Annexes 270"
+
+    year = models.ForeignKey(ClosingYear, on_delete=models.CASCADE, related_name="deposits")
+    kind = models.CharField("dépôt", max_length=6, choices=Kind.choices)
+    done_on = models.DateField("fait le", null=True, blank=True)
+    done_by = models.ForeignKey(
+        User, verbose_name="par", on_delete=models.SET_NULL, null=True, blank=True,
+        related_name="+",
+    )  # fmt: skip
+    documents = models.ManyToManyField(
+        "documents.Document", verbose_name="fichiers", blank=True, related_name="closing_deposits"
+    )
+    history = HistoricalRecords(m2m_fields=[documents])
+
+    class Meta:
+        verbose_name = "dépôt de l'exercice"
+        verbose_name_plural = "dépôts de l'exercice"
+        constraints: ClassVar = [
+            models.UniqueConstraint(fields=["year", "kind"], name="one_deposit_per_kind")
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.get_kind_display()} {self.year.label}"
