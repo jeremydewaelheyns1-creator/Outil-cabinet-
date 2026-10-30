@@ -245,6 +245,7 @@ class Deposit(models.Model):
         FICHES_281_20 = "28120", "Fiches 281.20"
         LISTING = "listing", "Listing clients"
         PRECOMPTE = "pm", "Précompte mobilier"
+        UBO = "ubo", "Registre UBO"
 
     year = models.ForeignKey(ClosingYear, on_delete=models.CASCADE, related_name="deposits")
     kind = models.CharField("dépôt", max_length=8, choices=Kind.choices)

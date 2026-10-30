@@ -1482,3 +1482,12 @@ même taille (« Clôture » : checklists et clôtures ; « Dépôts ») ; le no
 - Lecture des documents : accusé Belcotax 281.20 et accusé du listing clients cochent aussi
   leur case. Le précompte mobilier se coche à la main (année du dividende trop incertaine).
 - Pas dans l'onglet Clôture : registre UBO (Documents), versements anticipés (leur onglet).
+
+## D-116 — Case « UBO » dans les dépôts de la clôture
+
+- Demande de Jeremy (30/10/2026) : la confirmation annuelle du registre UBO a sa place dans
+  la clôture. Nouvelle case « UBO » au bout de la ligne Dépôts, pour toutes les sociétés et
+  associations ; fichiers rangés dans Archives › Administratif ; retirable par dossier.
+- La case « Déclaration UBO » de l'onglet Documents reste (le document signé) tant que
+  Jeremy n'a pas décidé de la retirer.
+- Toutes les cases restent sur une seule ligne (8 dépôts) ; libellés un peu plus petits.

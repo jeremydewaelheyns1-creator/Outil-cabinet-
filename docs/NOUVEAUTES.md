@@ -3,6 +3,11 @@
 Ce qui a été ajouté à l'outil, du plus récent au plus ancien. Toutes les données de la démo
 sont inventées.
 
+## 30 octobre 2026 — Clôture : case « UBO »
+
+- La confirmation annuelle du registre UBO a sa case dans la ligne « Dépôts » de chaque
+  exercice : on y dépose la preuve, la case passe au vert.
+
 ## 30 octobre 2026 — Clôture : toutes les déclarations sur une seule ligne
 
 - Les cases « Dépôts » tiennent maintenant sur une seule ligne, alignées sur les cases

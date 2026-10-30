@@ -44,15 +44,15 @@ ANNUAL = {Kind.LISTING}
 FOLDERS: dict[str, str] = {
     Kind.AG: "legal", Kind.BNB: "comptes", Kind.ISOC: "isoc",
     Kind.FICHES_281_50: "isoc", Kind.ANNEXES_270: "isoc", Kind.FICHES_281_20: "isoc",
-    Kind.LISTING: "tva", Kind.PRECOMPTE: "isoc",
+    Kind.LISTING: "tva", Kind.PRECOMPTE: "isoc", Kind.UBO: "administratif",
 }  # fmt: skip
 # Ordre des cases sur la ligne ; 281.20 et 281.50 partagent la case « Fiches 281 ».
 ORDER = [Kind.AG, Kind.BNB, Kind.ISOC, Kind.ANNEXES_270, Kind.PRECOMPTE,
-         Kind.FICHES_281_20, Kind.FICHES_281_50, Kind.LISTING]  # fmt: skip
+         Kind.FICHES_281_20, Kind.FICHES_281_50, Kind.LISTING, Kind.UBO]  # fmt: skip
 FICHES = (Kind.FICHES_281_20, Kind.FICHES_281_50)
 # Nom court dans la case (toutes les cases tiennent sur une ligne) ; le nom complet est dans
 # la fenêtre de la case.
-BOX_LABEL: dict[str, str] = {Kind.PRECOMPTE: "Précompte"}
+BOX_LABEL: dict[str, str] = {Kind.PRECOMPTE: "Précompte", Kind.UBO: "UBO"}
 VAT_SUBJECT = {"subject", "mixed", "franchise"}  # comme la règle listing_clients_tva
 HINTS: dict[str, str] = {
     Kind.AG: "Assemblée générale ordinaire : procès-verbal",
@@ -63,13 +63,14 @@ HINTS: dict[str, str] = {
     Kind.ANNEXES_270: "Annexes 270 jointes à la déclaration (270 MLH…)",
     Kind.FICHES_281_20: "Fiches des rémunérations de dirigeants (Belcotax)",
     Kind.LISTING: "Listing annuel des clients assujettis (Intervat), année civile",
+    Kind.UBO: "Confirmation annuelle des bénéficiaires effectifs au registre UBO (MyMinfin)",
     Kind.PRECOMPTE: "Déclaration 273 S et paiement, dans les 15 jours après l'attribution "
     "du dividende",
 }
 SHORT: dict[str, str] = {
     Kind.AG: "AG", Kind.BNB: "BNB", Kind.ISOC: "ISOC", Kind.FICHES_281_50: "281.50",
     Kind.ANNEXES_270: "270", Kind.FICHES_281_20: "281.20", Kind.LISTING: "Listing",
-    Kind.PRECOMPTE: "PM",
+    Kind.PRECOMPTE: "PM", Kind.UBO: "UBO",
 }  # fmt: skip
 
 

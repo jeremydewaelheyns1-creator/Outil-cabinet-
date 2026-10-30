@@ -1809,3 +1809,5 @@ button.cl-box:not(.is-done):hover { border-color: #2ea043; color: #166534; backg
 .cl-card .cl-boxes { gap: .4rem; }
 .cl-card .cl-box-label { font-size: .7rem; }
 .cl-card .cl-box-foot { font-size: .7rem; }
+.cl-card .cl-box { padding: .3rem .2rem; }
+.cl-card .cl-box-label { font-size: .67rem; letter-spacing: -.005em; }

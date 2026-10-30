@@ -216,7 +216,7 @@ def test_deposit_box_ticks_its_deadline_and_back(web, user, django_capture_on_co
         web.post(reverse("tasks:status", args=[task.pk]), {"status": "done"})
     assert year.deposits.get(kind="bnb").done_on is not None
     assert [b.kind for b in deposits.boxes(year, deposits.kinds_for(client))] == [
-        "ag", "bnb", "isoc", "270", "281", "listing",
+        "ag", "bnb", "isoc", "270", "281", "listing", "ubo",
     ]  # fmt: skip
 
 
@@ -349,7 +349,7 @@ def test_each_dossier_only_sees_its_boxes(web, user, django_capture_on_commit_ca
 
     asbl = company(vat="not_subject", name="ASBL Fictive")
     kinds = [b.kind for b in deposits.boxes(year_of(asbl), deposits.kinds_for(asbl))]
-    assert kinds == ["ag", "bnb", "isoc", "270", "281"]
+    assert kinds == ["ag", "bnb", "isoc", "270", "281", "ubo"]
 
     client = company(name="Garage Fictif SA")
     year = year_of(client)
