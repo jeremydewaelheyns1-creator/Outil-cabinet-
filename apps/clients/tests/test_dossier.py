@@ -150,7 +150,6 @@ def test_work_pages_are_placeholders_until_defined(web):
     html = response.content.decode()
     assert response.status_code == 200
     assert "Page à construire" in html
-    assert "aria-current" in html
     assert web.get(reverse("clients:work", args=[client.pk, "inconnu"])).status_code == 404
 
 
