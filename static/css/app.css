@@ -1320,7 +1320,7 @@ button:active, .button:active { transform: scale(.98); }
 .acc-title { display: grid; gap: 4px; min-width: 0; }
 .acc-hello { color: var(--primary); font-weight: 700; }
 .acc-title h1 { margin: 0; font-size: clamp(30px, 4vw, 40px); font-weight: 800; letter-spacing: -0.03em; line-height: 1.05; }
-.acc-sub { margin: 2px 0 0; color: var(--text-muted); max-width: 62ch; }
+.acc-sub { margin: 2px 0 0; color: var(--text-muted); max-width: 90ch; }
 .acc-countdown { display: flex; align-items: center; gap: 14px; background: var(--ink, var(--text)); color: #fff; border-radius: 22px; padding: 14px 22px; }
 .acc-countdown strong { display: block; font-size: 30px; font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums; }
 .acc-countdown span { font-size: 13px; opacity: .85; }

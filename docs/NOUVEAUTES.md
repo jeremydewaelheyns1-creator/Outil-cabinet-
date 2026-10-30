@@ -8,6 +8,7 @@ sont inventées.
 - Nouvelle police (Inter), un peu plus grande et plus épaisse ; les libellés gris sont plus
   foncés. Les numéros (BCE, TVA) sont écrits dans la même police que le reste. Rien n'a changé
   de place.
+- Accueil : la date limite tient sur la même ligne que la phrase.
 
 ## 30 octobre 2026 — Heures prestées réservées à l'administrateur
 
