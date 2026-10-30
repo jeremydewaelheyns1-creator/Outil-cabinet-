@@ -35,13 +35,13 @@ def test_inside_a_dossier_only_the_dossier_is_shown(web):
     assert "Synthèse" not in html  # supprimée (D-025)
     # En haut : le travail fréquent (D-026).
     urls = [reverse("clients:closing", args=[client.pk]),
-            reverse("clients:vat", args=[client.pk]),
-            reverse("clients:work", args=[client.pk, "versements-anticipes"])]  # fmt: skip
+            reverse("clients:vat", args=[client.pk])]  # fmt: skip
     urls.append(reverse("clients:documents", args=[client.pk]))
     tabs = html[html.index('class="tabs"') :]  # l'en-tête a aussi un lien vers Documents
     positions = [tabs.index(u) for u in urls]
     assert positions == sorted(positions)  # ordre voulu par Jeremy
     assert "time-sheet" not in html
+    assert "Versements anticipés" not in tabs  # retiré (D-122)
     # Chaque page à un clic depuis la fiche (D-105, D-106 : panneau allégé, liens en bas).
     for name in ("identity", "archives", "documents", "tasks", "history"):
         assert reverse(f"clients:{name}", args=[client.pk]) in html
@@ -146,7 +146,7 @@ def test_relation_links_open_the_other_dossier(web):
 
 def test_work_pages_are_placeholders_until_defined(web):
     client = ClientFactory()
-    response = web.get(reverse("clients:work", args=[client.pk, "versements-anticipes"]))
+    response = web.get(reverse("clients:work", args=[client.pk, "honoraires"]))
     html = response.content.decode()
     assert response.status_code == 200
     assert "Page à construire" in html

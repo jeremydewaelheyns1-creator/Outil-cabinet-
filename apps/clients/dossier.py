@@ -65,7 +65,8 @@ ARCHIVE = "archive"  # dossier d'archives (documents du passé, D-031)
 TOP: tuple[Section, ...] = (
     Section("closing", "Clôture"),
     Section("vat", "Déclaration TVA", vat_only=True),
-    Section(WORK, "Versements anticipés", slug="versements-anticipes"),
+    # D-122 : onglet « Versements anticipés » retiré (Jeremy, 30/10/2026) : sans calcul, il
+    # doublait MyMinfin ; les dates restent dans les échéances.
     Section("documents", "Documents"),
 )
 

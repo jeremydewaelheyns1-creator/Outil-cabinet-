@@ -1560,3 +1560,9 @@ même taille (« Clôture » : checklists et clôtures ; « Dépôts ») ; le no
 - État : compte AWS en cours de création par Jeremy ; module « Assistant IA » à construire
   (éteint tant qu'il n'y a pas de clé). Avant la commercialisation (D-067) : contrat de
   sous-traitance éditeur–cabinet et mentions RGPD.
+
+## D-122 — Onglet « Versements anticipés » retiré
+
+- Choix de Jeremy (30/10/2026) : l'outil n'est pas un logiciel para-comptable et ne calcule pas
+  les versements anticipés (ambition pour plus tard). Sans calcul, l'onglet doublait MyMinfin :
+  il est retiré des onglets du haut. Les dates restent dans les échéances et sur l'Accueil.

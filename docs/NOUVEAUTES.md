@@ -3,6 +3,11 @@
 Ce qui a été ajouté à l'outil, du plus récent au plus ancien. Toutes les données de la démo
 sont inventées.
 
+## 30 octobre 2026 — Onglet « Versements anticipés » retiré
+
+- La fiche client a un onglet de moins : les versements anticipés se suivent dans MyMinfin,
+  et leurs dates restent dans les échéances.
+
 ## 30 octobre 2026 — PV d'assemblée générale préparé dans l'outil
 
 - Paramètres › Modèles de PV d'AG : on dépose ses modèles Word (un par forme de société si
