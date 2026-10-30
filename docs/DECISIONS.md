@@ -1358,3 +1358,11 @@ un dossier ». La page « Heures prestées » du dossier (et son entrée à gauc
 droit « Voir les heures de tous » (`timesheet.all`) ; chacun encode toujours ses heures dans
 « Ma journée ». Les idées du futur module Administrateur sont rassemblées dans
 `docs/ADMINISTRATEUR.md`.
+
+## D-108 — Police Inter, texte plus lisible
+
+Jeremy : « c'est un peu fin pour les yeux… change juste la police, rend le truc plus lisible »
+(sans toucher à la disposition). Manrope (D-057) est remplacée par **Inter**,
+hébergée par l'outil (licence OFL, aucun appel extérieur) ; texte de base 16 px au lieu de 15,
+graisse 450 au lieu de 400, gris des libellés plus foncé (#46435f), numéros (BCE, TVA,
+montants) dans la même police que le texte, chiffres alignés. Rien d'autre ne bouge.

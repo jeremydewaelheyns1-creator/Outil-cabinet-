@@ -3,6 +3,12 @@
 Ce qui a été ajouté à l'outil, du plus récent au plus ancien. Toutes les données de la démo
 sont inventées.
 
+## 30 octobre 2026 — Texte plus lisible
+
+- Nouvelle police (Inter), un peu plus grande et plus épaisse ; les libellés gris sont plus
+  foncés. Les numéros (BCE, TVA) sont écrits dans la même police que le reste. Rien n'a changé
+  de place.
+
 ## 30 octobre 2026 — Heures prestées réservées à l'administrateur
 
 - Les heures passées sur un dossier ne sont plus visibles que par l'administrateur. Chacun
