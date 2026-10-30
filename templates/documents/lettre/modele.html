@@ -1,11 +1,16 @@
 {% extends "layouts/app.html" %}
 {% block head_title %}{{ template.name }}{% endblock %}
-{% block page_title %}<a href="{% url 'core:cabinet_settings' %}" class="muted">Réglages du cabinet</a> › <a href="{% url 'lettre:models' %}" class="muted">Modèle de lettre de mission</a> › {{ template.name }}{% endblock %}
+{% block page_title %}{% if is_ag %}<a href="{% url 'core:settings' %}" class="muted">Paramètres</a> › <a href="{{ list_url }}" class="muted">Modèles de PV d'AG</a>{% else %}<a href="{% url 'core:cabinet_settings' %}" class="muted">Réglages du cabinet</a> › <a href="{{ list_url }}" class="muted">Modèle de lettre de mission</a>{% endif %} › {{ template.name }}{% endblock %}
 {% block content %}
 <form method="post" style="max-width: 980px">
   {% csrf_token %}
   <section class="card">
-    <div class="card-header"><h2>{{ template.name }}</h2>{% if template.active %}<span class="badge badge-success">utilisé pour les nouvelles lettres</span>{% endif %}</div>
+    <div class="card-header"><h2>{{ template.name }}</h2>{% if template.active %}<span class="badge badge-success">utilisé pour les nouveaux documents</span>{% endif %}</div>
+    {% if is_ag %}
+      <fieldset class="ag-forms"><legend class="small">Sert pour les sociétés de forme (rien coché : toutes)</legend>
+        {% for f in forms %}<label class="small"><input type="checkbox" name="forme" value="{{ f }}"{% if f in template.forms %} checked{% endif %}> {{ f }}</label>{% endfor %}
+      </fieldset>
+    {% endif %}
     {% if problems %}
       <p><strong>Avant de pouvoir l'utiliser :</strong></p>
       <ul class="small">{% for p in problems %}<li>{{ p }}</li>{% endfor %}</ul>
@@ -28,7 +33,7 @@
               <option value="">— à choisir —</option>
               {% for code, label in choices %}<option value="{{ code }}"{% if code == item.field %} selected{% endif %}>{{ label }}</option>{% endfor %}
             </select>
-            <input name="libelle-{{ item.hole.key }}" value="{{ item.label }}" maxlength="120" placeholder="Question posée au comptable (ex. Honoraires annuels HTVA)" aria-label="Question posée au comptable" data-show-if="trou-{{ item.hole.key }}=demander">
+            <input name="libelle-{{ item.hole.key }}" value="{{ item.label }}" maxlength="120" placeholder="{% if is_ag %}Question posée au comptable (ex. Bénéfice net de l'exercice){% else %}Question posée au comptable (ex. Honoraires annuels HTVA){% endif %}" aria-label="Question posée au comptable" data-show-if="trou-{{ item.hole.key }}=demander">
           </td>
         </tr>
       {% empty %}
@@ -38,6 +43,7 @@
     </table>
   </section>
 
+  {% if not is_ag %}
   <section class="card" style="margin-top: 1rem">
     <h2>2. Les éléments obligatoires (ITAA)</h2>
     <p class="small muted" style="margin-top:0">Retrouvés dans votre texte. Cochez après avoir vérifié l'extrait. Un élément obligatoire absent empêche d'utiliser le modèle ; un élément conseillé absent est seulement signalé.</p>
@@ -52,10 +58,11 @@
       </tbody>
     </table>
   </section>
+  {% endif %}
 
   <section class="card" style="margin-top: 1rem">
-    <h2>3. Les passages à options (facultatif)</h2>
-    <p class="small muted" style="margin-top:0">Par défaut tout le texte est gardé. Pour un passage qui ne vaut pas pour tous les clients (mission TVA, IPP du dirigeant, frais d'ouverture…), choisissez quand le garder.</p>
+    <h2>{% if is_ag %}2{% else %}3{% endif %}. Les passages à options (facultatif)</h2>
+    <p class="small muted" style="margin-top:0">Par défaut tout le texte est gardé. Pour un passage qui ne vaut pas pour tous les clients ({% if is_ag %}dividende ou report du bénéfice, rapport de gestion…{% else %}mission TVA, IPP du dirigeant, frais d'ouverture…{% endif %}), choisissez quand le garder.</p>
     <details>
       <summary>Voir les {{ paragraphs|length }} paragraphes</summary>
       <table class="table letter-holes">

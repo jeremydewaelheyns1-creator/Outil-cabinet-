@@ -1528,3 +1528,35 @@ même taille (« Clôture » : checklists et clôtures ; « Dépôts ») ; le no
 - `static/css/dark.css` est fabriqué par `python manage.py dark_css` depuis app.css (fonds
   clairs → foncés, textes foncés → clairs, palette sombre pour les variables). Un test vérifie
   qu'il est à jour : relancer la commande après toute modification de app.css.
+
+## D-120 — PV d'assemblée générale préparé depuis la case AG
+
+- Validé par Jeremy le 30/10/2026 (maquettes « PV d'AG »). Le texte est toujours celui d'un
+  modèle Word du cabinet (Paramètres › Modèles de PV d'AG) : autant de modèles qu'on veut,
+  chacun pour certaines formes (SRL, SA, ASBL… ; rien coché = toutes), plusieurs actifs.
+- Même moteur que la lettre de mission (D-069) : trous repérés (« [DATE] », « [MONTANT] »,
+  XXX, texte surligné), contenu deviné d'après le mot entre crochets et le texte autour
+  (société, adresse, localité, numéro, président, associés, date et heures de l'AG, année,
+  date de clôture, cabinet ; montants « à demander » avec une question proposée), réglé une
+  fois par un administrateur. Passages à options en plus : « si dividende », « sans dividende ».
+- Case AG › « Préparer le PV » : une page — date (proposée : 6 mois après la clôture),
+  heures, dividende oui/non, les montants du modèle, résolution libre si le modèle a un trou
+  pour cela ; « Déjà rempli » montre ce qui vient de la fiche. Brouillon PDF à relire, puis
+  envoi au client pour signature en ligne (comme la lettre). Case AG orange « à signer ».
+- Signé : rangé (Archives › Légal), case AG cochée ; « dividende : oui » fait apparaître la
+  case Précompte. Le brouillon n'apparaît pas dans les Archives. Aucune IA (voir D-121).
+
+## D-121 — IA : fournie par l'éditeur, en Europe, en appui du code
+
+- Choix de Jeremy (30/10/2026) : l'IA est intégrée au logiciel « clé en main » ; les cabinets
+  n'ont rien à brancher. Le code fait le travail ; l'IA propose quand les règles bloquent
+  (documents non reconnus, réglage des modèles Word de lettre de mission et de PV d'AG ;
+  plus tard les e-mails). L'humain valide toujours.
+- Fournisseur retenu : Claude via Amazon Bedrock, région européenne (Francfort), compte de
+  la société de Jeremy ; Amazon ne garde ni n'utilise les questions et réponses. Une clé
+  d'accès par cabinet, au droit minimal, posée par le script d'installation (jamais dans le
+  dépôt ni la conversation). Données minimisées (numéros remplacés par des repères, jamais
+  le numéro national), journal de chaque appel sans le contenu, plafond mensuel.
+- État : compte AWS en cours de création par Jeremy ; module « Assistant IA » à construire
+  (éteint tant qu'il n'y a pas de clé). Avant la commercialisation (D-067) : contrat de
+  sous-traitance éditeur–cabinet et mentions RGPD.

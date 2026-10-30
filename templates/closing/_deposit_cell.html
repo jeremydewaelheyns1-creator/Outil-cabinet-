@@ -1,9 +1,9 @@
 {% comment %}Case de dépôt (D-113, D-115). Même taille que les autres. « Fiches 281 » regroupe
 281.20 et 281.50 : orange tant qu'une des deux manque.{% endcomment %}
 <details class="vat-menu cl-dep">
-  <summary class="cl-box cl-deposit{% if b.done_on %} is-done{% elif b.parts and b.done_count or b.waiting %} is-wip{% endif %}" title="{{ b.hint|default:b.label }}">
+  <summary class="cl-box cl-deposit{% if b.done_on %} is-done{% elif b.parts and b.done_count or b.waiting or b.note %} is-wip{% endif %}" title="{{ b.hint|default:b.label }}">
     <span class="cl-box-label">{{ b.name|default:b.label }}</span>
-    <strong>{% if b.done_on %}✓ {{ b.done_on|date:"d/m" }}{% elif b.parts|length > 1 %}{{ b.done_count }} / {{ b.parts|length }}{% else %}à faire{% endif %}</strong>
+    <strong>{% if b.done_on %}✓ {{ b.done_on|date:"d/m" }}{% elif b.note %}{{ b.note }}{% elif b.parts|length > 1 %}{{ b.done_count }} / {{ b.parts|length }}{% else %}à faire{% endif %}</strong>
     <span class="cl-box-foot">{% if b.parts|length > 1 and not b.done_on %}{% for p in b.parts %}{{ p.short }}{% if p.done_on %} ✓{% endif %}{% if not forloop.last %} {% endif %}{% endfor %}{% elif b.files %}{{ b.files|length }} fichier{{ b.files|length|pluralize }}{% elif b.waiting %}{{ b.waiting }} demande{{ b.waiting|pluralize }} en attente{% elif not b.done_on and b.due %}pour le {{ b.due|date:"d/m" }}{% elif b.done_on and not b.parts %}{{ b.deposit.done_by.get_short_name|default:"" }}{% else %}&nbsp;{% endif %}</span>
   </summary>
   <div class="vat-pop cl-dep-pop">
@@ -24,6 +24,11 @@
             <li><a href="{% url 'clients:ubo' client.pk %}">Bénéficiaires effectifs et extrait du registre</a></li>
             <li><a href="{% url 'clients:document_case' client.pk 'declaration-ubo' %}">Déclaration signée par le client</a></li>
           </ul>
+        {% endif %}
+        {% if p.kind == "ag" and can_edit and not p.done_on %}
+          {% if b.can_prepare %}<a class="button button-small" href="{% url 'clients:closing_ag' client.pk y.pk %}">{% if y.ag_draft_id %}Reprendre le PV{% else %}Préparer le PV{% endif %}</a>
+          {% if b.note %}<p class="small muted">PV envoyé au client pour signature : la case se coche quand il a signé.</p>{% endif %}
+          {% elif user.is_staff %}<p class="small muted">Pour préparer le PV ici : déposez un modèle dans <a href="{% url 'lettre:models' %}?sorte=pv_ag">Paramètres › Modèles de PV d'AG</a>.</p>{% endif %}
         {% endif %}
         {% if p.kind == "ag" and can_edit %}
           <form method="post" action="{% url 'clients:closing_dividend' client.pk y.pk %}" hx-post="{% url 'clients:closing_dividend' client.pk y.pk %}" hx-target="closest .cl-card" hx-swap="outerHTML" class="cl-dividend">{% csrf_token %}

@@ -49,11 +49,16 @@ def _rows(client: Client, user: User) -> list[dict[str, Any]]:
     manager = services.items_for(client, Part.MANAGER) if checklists else []
     years = list(
         client.closing_years.select_related(
-            "manager", "assistant", "closed_by", "manager_closed_by"
+            "manager", "assistant", "closed_by", "manager_closed_by", "ag_draft"
         )
     )
     services.add_my_time(user, years)
     kinds = deposits.kinds_for(client)
+    from apps.documents import letter
+
+    from . import ag
+
+    ag_ready = bool(kinds) and bool(letter.ag_templates(client))
     ipp_kinds = deposits.ipp_kinds_for(client)
     waiting = deposits.waiting_requests(client) if ipp_kinds else 0
     profile = services.profile(client)
@@ -66,6 +71,11 @@ def _rows(client: Client, user: User) -> list[dict[str, Any]]:
         for b in ipp_boxes:
             if b.kind == deposits.Kind.IPP_PIECES and waiting and not b.done_on:
                 b.waiting = waiting
+        for b in boxes:
+            if b.kind == deposits.Kind.AG:
+                b.can_prepare = ag_ready
+                if not b.done_on and ag.waiting_signature(y):
+                    b.note = "à signer"
         closed = sheet is None or (
             manager_sheet is not None and services.finished(sheet, manager_sheet)
         )
@@ -331,6 +341,89 @@ def deposit(request: AppRequest, pk: int, year_id: int, kind: str) -> HttpRespon
         deposits.hide(year.client, kind, True)
     _changed(request, year, f"dépôt {kind} : {action}")
     return _row_response(request, year)
+
+
+@require_capability(Capability.CLIENTS_EDIT)
+def ag_prepare(request: AppRequest, pk: int, year_id: int) -> HttpResponse:
+    """Préparer le PV d'AG de l'exercice sur un modèle du cabinet (D-120)."""
+    from datetime import date as _date
+    from datetime import time as _time
+
+    from apps.documents import letter
+
+    from . import ag
+
+    year = _year(request, pk, year_id)
+    client = year.client
+    templates = letter.ag_templates(client)
+    chosen = next(
+        (t for t in templates if str(t.pk) == request.POST.get("modele", "")),
+        templates[0] if templates else None,
+    )
+    questions = letter.questions(chosen) if chosen is not None else []
+    saved = year.ag_answers or {}
+    errors: list[str] = []
+    if request.method == "POST" and chosen is not None:
+        answers = {key: request.POST.get(key, "").strip()[:300] for key, _ in questions}
+        try:
+            day = _date.fromisoformat(request.POST.get("date", ""))
+            start = _time.fromisoformat(request.POST.get("debut", ""))
+            end = _time.fromisoformat(request.POST.get("fin", ""))
+        except ValueError:
+            errors.append("la date et les heures de l'AG")
+            day, start, end = ag.today(), _time(18), _time(18, 30)
+        dividend = request.POST.get("dividende") == "oui"
+        skipped = {"sans_dividende"} if dividend else {"dividende"}  # passage retiré du PV
+        errors += [
+            label
+            for key, label in questions
+            if key.startswith("trou:")
+            and not answers[key]
+            and letter.condition_of(chosen, key) not in skipped
+        ]
+        if errors:
+            messages.error(request, "À compléter : " + ", ".join(errors) + ".")
+        else:
+            ctx = ag.context(year, day, start, end, request.POST.get("dividende") == "oui",
+                             request.POST.get("autres", "").strip()[:2000])  # fmt: skip
+            document = ag.prepare(year, chosen, answers, ctx, request.user)
+            log_access(request, AccessLog.Action.CREATE, document, details={"généré": "pv_ag"})
+            return redirect("clients:document_viewer_page", pk=client.pk, document_id=document.pk)
+    values = request.POST if request.method == "POST" else {
+        **{k: v for k, v in saved.items() if not k.startswith("ctx:")},
+        "date": _iso(saved.get("ctx:date", "")) or _deadline(year).isoformat(),
+        "debut": saved.get("ctx:debut", "18h00").replace("h", ":"),
+        "fin": saved.get("ctx:fin", "18h30").replace("h", ":"),
+        "dividende": saved.get("ctx:dividende", "oui" if year.dividend else "non"),
+        "autres": saved.get("ctx:autres", ""),
+    }  # fmt: skip
+
+    def build(c: Client) -> dict[str, Any]:
+        return {
+            "year": year, "templates": templates, "chosen": chosen, "questions": questions,
+            "values": values, "known": ag.known(c),
+            "others": chosen is not None and ag.uses_others(chosen),
+            "conditional": {
+                key: letter.condition_of(chosen, key) for key, _ in questions
+            } if chosen is not None else {},
+        }  # fmt: skip
+
+    return render_section(request, pk, "closing", "closing/ag_prepare.html", build)
+
+
+def _deadline(year: ClosingYear) -> date:
+    """Date proposée : le dernier jour du 6e mois après la clôture (délai légal de l'AG)."""
+    import calendar
+
+    month = year.end.month + 6
+    y, m = year.end.year + (month - 1) // 12, (month - 1) % 12 + 1
+    return date(y, m, calendar.monthrange(y, m)[1])
+
+
+def _iso(day: str) -> str:
+    """« 30/06/2026 » → « 2026-06-30 » (champ date du formulaire)."""
+    parts = day.split("/")
+    return f"{parts[2]}-{parts[1]}-{parts[0]}" if len(parts) == 3 else ""
 
 
 @require_POST

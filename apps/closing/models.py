@@ -155,6 +155,12 @@ class ClosingYear(models.Model):
     manager_remark = models.TextField("remarque générale (gestionnaire)", blank=True)
     # Dividende décidé à l'AG (D-115) : « oui » fait apparaître la case Précompte mobilier.
     dividend = models.BooleanField("dividende décidé à l'AG", null=True, blank=True)
+    # PV d'AG préparé dans l'outil (D-120) : le brouillon envoyé pour signature.
+    ag_draft = models.ForeignKey(
+        "documents.Document", verbose_name="PV d'AG préparé", on_delete=models.SET_NULL,
+        null=True, blank=True, related_name="+",
+    )  # fmt: skip
+    ag_answers = models.JSONField("réponses du PV d'AG", default=dict, blank=True)
     created_at = models.DateTimeField(default=timezone.now, editable=False)
     history = HistoricalRecords()
 

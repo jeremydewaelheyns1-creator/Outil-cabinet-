@@ -68,6 +68,16 @@ TYPES: tuple[DocType, ...] = (
     DocType(
         "extrait_ubo", "Extrait du registre UBO", "ubo", "legal", expires=True, for_persons=False
     ),
+    # D-120 : PV d'assemblée générale préparé sur un modèle du cabinet, signé par le client.
+    DocType(
+        "pv_ag",
+        "PV d'assemblée générale",
+        "",
+        "legal",
+        required=False,
+        from_client=True,
+        for_persons=False,
+    ),
     DocType("autre", "Autre document", "", "administratif", required=False),
 )
 TYPED_CASES = {t.case for t in TYPES if t.case}

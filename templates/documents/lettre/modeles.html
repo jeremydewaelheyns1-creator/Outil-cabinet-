@@ -1,11 +1,16 @@
 {% extends "layouts/app.html" %}
-{% block head_title %}Modèle de lettre de mission{% endblock %}
-{% block page_title %}<a href="{% url 'core:cabinet_settings' %}" class="muted">Réglages du cabinet</a> › Modèle de lettre de mission{% endblock %}
+{% block head_title %}{% if is_ag %}Modèles de PV d'AG{% else %}Modèle de lettre de mission{% endif %}{% endblock %}
+{% block page_title %}{% if is_ag %}<a href="{% url 'core:settings' %}" class="muted">Paramètres</a> › Modèles de PV d'assemblée générale{% else %}<a href="{% url 'core:cabinet_settings' %}" class="muted">Réglages du cabinet</a> › Modèle de lettre de mission{% endif %}{% endblock %}
 {% block content %}
 <section class="card" style="max-width: 860px">
   <h2>Déposer le modèle du cabinet</h2>
+  {% if is_ag %}
+  <p class="muted">Déposez vos modèles de PV Word (.docx) tels que vous les utilisez : un par forme de société si besoin (SRL, SA, ASBL…), autant que vous voulez. L'outil repère les endroits à compléter (« [DATE] », « [MONTANT] », « XXX », « …… » ou du texte surligné) et devine ce qu'il faut y mettre d'après le mot entre crochets et le texte autour. Vous vérifiez une fois, puis vous activez.</p>
+  {% else %}
   <p class="muted">Déposez votre lettre de mission Word (.docx) telle que vous l'utilisez. Rien à changer dedans : l'outil repère les endroits à compléter (« XXX », « …… », « ____ », « [à compléter] » ou du texte surligné) et propose ce qu'il faut y mettre. Vous vérifiez, puis vous activez.</p>
+  {% endif %}
   <form method="post" enctype="multipart/form-data">{% csrf_token %}
+    <input type="hidden" name="sorte" value="{{ kind }}">
     <label for="modele-file">Fichier Word (5 Mo au plus)</label>
     <input id="modele-file" type="file" name="modele" accept=".docx" required>
     <div class="actions" style="margin-top: .6rem"><button type="submit">Déposer</button></div>
@@ -15,17 +20,18 @@
   <h2>Modèles déposés</h2>
   {% if templates %}
   <table class="table">
-    <thead><tr><th>Fichier</th><th>Déposé</th><th>État</th></tr></thead>
+    <thead><tr><th>Fichier</th>{% if is_ag %}<th>Pour</th>{% endif %}<th>Déposé</th><th>État</th></tr></thead>
     <tbody>
     {% for t in templates %}
       <tr>
         <td><a href="{% url 'lettre:model' t.pk %}">{{ t.name }}</a></td>
+        {% if is_ag %}<td class="small">{{ t.forms|join:", "|default:"toutes les formes" }}</td>{% endif %}
         <td class="small">{{ t.uploaded_at|date:"d/m/Y" }}{% if t.uploaded_by %} · {{ t.uploaded_by }}{% endif %}</td>
         <td>{% if t.active %}<span class="badge badge-success">utilisé</span>{% else %}<span class="badge">pas activé</span>{% endif %}</td>
       </tr>
     {% endfor %}
     </tbody>
   </table>
-  {% else %}<p class="muted">Aucun modèle : tant qu'il n'y en a pas d'activé, l'outil ne peut pas faire de lettre de mission.</p>{% endif %}
+  {% else %}<p class="muted">Aucun modèle : tant qu'il n'y en a pas d'activé, l'outil ne peut pas {% if is_ag %}préparer de PV d'AG (on peut toujours déposer un PV signé dans la case AG){% else %}faire de lettre de mission{% endif %}.</p>{% endif %}
 </section>
 {% endblock %}

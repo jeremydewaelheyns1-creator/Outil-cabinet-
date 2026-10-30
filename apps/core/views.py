@@ -145,6 +145,12 @@ def settings_page(request: AppRequest) -> HttpResponse:
             request.user.is_staff,
         ),
         (
+            "Modèles de PV d'AG",
+            "Les modèles Word du cabinet pour préparer les PV d'assemblée générale (D-120).",
+            "lettre:models",
+            request.user.is_staff,
+        ),
+        (
             "Réglages du cabinet",
             "Gestion hybride des dossiers (comptable « Hybride »).",
             "core:cabinet_settings",
@@ -152,9 +158,11 @@ def settings_page(request: AppRequest) -> HttpResponse:
         ),
     ]
     allowed = [(title, text, url) for title, text, url, ok in tools if ok]
+    extra = {"Modèles de PV d'AG": "?sorte=pv_ag"}
     # Tout le monde a au moins l'affichage (mode sombre, D-119).
     themes = User.Theme.choices
-    return render(request, "core/settings.html", {"tools": allowed, "themes": themes})
+    links = [(title, text, url, extra.get(title, "")) for title, text, url in allowed]
+    return render(request, "core/settings.html", {"tools": links, "themes": themes})
 
 
 @require_POST

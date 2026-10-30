@@ -30,35 +30,54 @@ def _admin(request: AppRequest) -> None:
         raise PermissionDenied
 
 
+def _kind(request: AppRequest) -> str:
+    value = request.GET.get("sorte") or request.POST.get("sorte") or LetterTemplate.Kind.LETTER
+    return value if value in LetterTemplate.Kind.values else LetterTemplate.Kind.LETTER
+
+
+def _list_url(kind: str) -> str:
+    from django.urls import reverse
+
+    url = reverse("lettre:models")
+    return f"{url}?sorte={kind}" if kind != LetterTemplate.Kind.LETTER else url
+
+
 def models_page(request: AppRequest) -> HttpResponse:
-    """Liste des modèles déposés et dépôt d'un nouveau."""
+    """Liste des modèles déposés et dépôt d'un nouveau (lettre de mission ou PV d'AG)."""
     _admin(request)
+    kind = _kind(request)
     if request.method == "POST":
         upload = request.FILES.get("modele")
         if upload is None:
             messages.error(request, "Choisissez le fichier Word du modèle.")
-            return redirect("lettre:models")
+            return redirect(_list_url(kind))
         content = upload.read()
         try:
             letter.check_upload(upload.name or "", content)
         except ValidationError as error:
             messages.error(request, " ".join(error.messages))
-            return redirect("lettre:models")
-        found = letter.holes(content)
+            return redirect(_list_url(kind))
+        found = letter.holes(content, kind)
         template = LetterTemplate.objects.create(
+            kind=kind,
             name=(upload.name or "modele.docx")[:200],
             content=content,
-            holes={h.key: {"field": h.guess, "label": h.question} for h in found if h.guess},
+            holes={
+                h.key: {"field": h.guess, "label": letter.proposed_label(h, kind)}
+                for h in found
+                if h.guess
+            },
             uploaded_by=request.user,
         )
-        log_access(request, AccessLog.Action.IMPORT, template, details={"modèle": "lettre"})
+        log_access(request, AccessLog.Action.IMPORT, template, details={"modèle": kind})
         messages.success(
             request,
             f"Modèle déposé : {len(found)} trou(s) repéré(s). Vérifiez ce que l'outil propose.",
         )
         return redirect("lettre:model", template.pk)
-    templates = LetterTemplate.objects.select_related("uploaded_by")
-    return render(request, "documents/lettre/modeles.html", {"templates": templates})
+    templates = LetterTemplate.objects.filter(kind=kind).select_related("uploaded_by")
+    context = {"templates": templates, "kind": kind, "is_ag": kind == LetterTemplate.Kind.AG}
+    return render(request, "documents/lettre/modeles.html", context)
 
 
 def model_page(request: AppRequest, template_id: int) -> HttpResponse:
@@ -72,7 +91,7 @@ def model_page(request: AppRequest, template_id: int) -> HttpResponse:
             log_access(request, AccessLog.Action.DELETE, template, details={"modèle": "lettre"})
             template.delete()
             messages.success(request, "Modèle supprimé.")
-            return redirect("lettre:models")
+            return redirect(_list_url(template.kind))
         _save(request, template, content)
         if action == "activer":
             missing = letter.problems(template)
@@ -80,10 +99,12 @@ def model_page(request: AppRequest, template_id: int) -> HttpResponse:
                 messages.error(request, "Pas encore utilisable : " + " ; ".join(missing) + ".")
             else:
                 with transaction.atomic():
-                    LetterTemplate.objects.exclude(pk=template.pk).update(active=False)
+                    if template.kind == LetterTemplate.Kind.LETTER:  # PV d'AG : plusieurs
+                        others = LetterTemplate.objects.filter(kind=template.kind)
+                        others.exclude(pk=template.pk).update(active=False)
                     template.active = True
                     template.save(update_fields=["active"])
-                messages.success(request, "Modèle activé : il sert pour les nouvelles lettres.")
+                messages.success(request, "Modèle activé : il sert pour les nouveaux documents.")
         elif action == "desactiver":
             template.active = False
             template.save(update_fields=["active"])
@@ -98,8 +119,9 @@ def model_page(request: AppRequest, template_id: int) -> HttpResponse:
             "field": (template.holes.get(h.key) or {}).get("field", ""),
             "label": (template.holes.get(h.key) or {}).get("label", ""),
         }
-        for h in letter.holes(content)
+        for h in letter.holes(content, template.kind)
     ]
+    is_ag = template.kind == LetterTemplate.Kind.AG
     paragraphs = [
         {
             "index": i,
@@ -113,19 +135,23 @@ def model_page(request: AppRequest, template_id: int) -> HttpResponse:
         "template": template,
         "holes": holes,
         "paragraphs": paragraphs,
-        "checks": letter.checks(content, template.holes),
+        "checks": [] if is_ag else letter.checks(content, template.holes),
         "problems": letter.problems(template),
-        "choices": letter.CHOICES,
-        "conditions": list(letter.CONDITIONS.items()),
+        "choices": letter.choices(template.kind),
+        "conditions": list(letter.conditions(template.kind).items()),
         "ask": letter.ASK,
+        "is_ag": is_ag,
+        "forms": letter.FORMS,
+        "list_url": _list_url(template.kind),
     }
     return render(request, "documents/lettre/modele.html", context)
 
 
 def _save(request: AppRequest, template: LetterTemplate, content: bytes) -> None:
-    allowed = {code for code, _ in letter.CHOICES}
+    allowed = {code for code, _ in letter.choices(template.kind)}
+    conditions = letter.conditions(template.kind)
     holes = {}
-    for hole in letter.holes(content):
+    for hole in letter.holes(content, template.kind):
         field = request.POST.get(f"trou-{hole.key}", "")
         if field in allowed:
             label = request.POST.get(f"libelle-{hole.key}", "").strip()[:120]
@@ -133,14 +159,16 @@ def _save(request: AppRequest, template: LetterTemplate, content: bytes) -> None
     options = {}
     for index, _ in letter.paragraphs(content):
         condition = request.POST.get(f"option-{index}", "")
-        if condition and condition in letter.CONDITIONS:
+        if condition and condition in conditions:
             label = request.POST.get(f"question-{index}", "").strip()[:160]
             options[str(index)] = {"condition": condition, "end": index, "label": label}
     found = {c.code for c in letter.checks(content, holes) if c.excerpt}
     template.holes = holes
     template.options = options
     template.checks = [code for code in request.POST.getlist("verifie") if code in found]
-    template.save(update_fields=["holes", "options", "checks"])
+    if template.kind == LetterTemplate.Kind.AG:
+        template.forms = [f for f in request.POST.getlist("forme") if f in letter.FORMS]
+    template.save(update_fields=["holes", "options", "checks", "forms"])
     if template.active and letter.problems(template):
         template.active = False
         template.save(update_fields=["active"])

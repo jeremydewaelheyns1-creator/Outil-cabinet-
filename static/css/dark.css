@@ -174,6 +174,7 @@ html[data-theme="dark"] .cl-card.cl-finished { background: #1d4029; border-color
 html[data-theme="dark"] .cl-deposit.is-done { color: #ffffff; }
 html[data-theme="dark"] .cl-deposit.is-wip { background: #392916; border: 1.5px solid #60452a; color: #efa58c; }
 html[data-theme="dark"] .theme-choice.is-on { color: #ffffff; }
+html[data-theme="dark"] .ag-num { background: var(--ink-bg); color: #ffffff; }
 html[data-theme="dark"] body { background: var(--bg); }
 
 @media (prefers-color-scheme: dark) {
@@ -351,5 +352,6 @@ html[data-theme="auto"] .cl-card.cl-finished { background: #1d4029; border-color
 html[data-theme="auto"] .cl-deposit.is-done { color: #ffffff; }
 html[data-theme="auto"] .cl-deposit.is-wip { background: #392916; border: 1.5px solid #60452a; color: #efa58c; }
 html[data-theme="auto"] .theme-choice.is-on { color: #ffffff; }
+html[data-theme="auto"] .ag-num { background: var(--ink-bg); color: #ffffff; }
 html[data-theme="auto"] body { background: var(--bg); }
 }

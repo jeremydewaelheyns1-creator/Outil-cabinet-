@@ -362,6 +362,14 @@ class LetterTemplate(models.Model):
     gardés que sous condition, `checks` quels éléments obligatoires de l'ITAA ont été confirmés.
     Un seul modèle actif à la fois ; les anciennes versions restent pour l'historique."""
 
+    class Kind(models.TextChoices):
+        LETTER = "lettre", "Lettre de mission"
+        AG = "pv_ag", "PV d'assemblée générale"  # D-120 : plusieurs modèles actifs possibles
+
+    kind = models.CharField("sorte de modèle", max_length=10, choices=Kind.choices,
+                            default=Kind.LETTER)  # fmt: skip
+    # PV d'AG : formes juridiques pour lesquelles le modèle sert (vide : toutes).
+    forms = models.JSONField("formes juridiques", default=list, blank=True)
     name = models.CharField("nom du fichier", max_length=200)
     content = models.BinaryField("fichier Word")
     holes = models.JSONField("trous et leur contenu", default=dict, blank=True)

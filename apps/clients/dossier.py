@@ -314,6 +314,7 @@ ACTION_SECTIONS = {
     "document_case": "documents",
     "document_viewer_page": "documents",
     "ubo": "closing",  # D-117 : la page UBO s'ouvre depuis la case « UBO » de la Clôture
+    "closing_ag": "closing",  # D-120 : préparer le PV d'AG
     "risk_sheet": "documents",
     "letter_prepare": "documents",
     "spf_mandate_request": "documents",

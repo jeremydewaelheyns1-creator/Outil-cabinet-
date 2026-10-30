@@ -57,6 +57,7 @@ urlpatterns = [
     # Déclaration TVA (D-040)
     path("<int:pk>/cloture/", closing_views.closing_tab, name="closing"),
     path("<int:pk>/cloture/profil/", closing_views.profile, name="closing_profile"),
+    path("<int:pk>/cloture/<int:year_id>/pv-ag/", closing_views.ag_prepare, name="closing_ag"),
     path(
         "<int:pk>/cloture/<int:year_id>/dividende/",
         closing_views.dividend,

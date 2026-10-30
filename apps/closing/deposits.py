@@ -120,6 +120,8 @@ class Box:
     files: list[Document]
     name: str = ""  # nom court affiché dans la case
     waiting: int = 0  # « Pièces reçues » : demandes de documents encore en attente
+    note: str = ""  # état particulier (AG : « à signer », D-120)
+    can_prepare: bool = False  # AG : un modèle de PV est activé pour cette forme
     deadline: date | None = None  # date limite sans échéance (précompte : AG + 15 jours)
     parts: list[Box] = field(default_factory=list)  # « Fiches 281 » : 281.20 et 281.50
 

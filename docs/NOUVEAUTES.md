@@ -3,6 +3,14 @@
 Ce qui a été ajouté à l'outil, du plus récent au plus ancien. Toutes les données de la démo
 sont inventées.
 
+## 30 octobre 2026 — PV d'assemblée générale préparé dans l'outil
+
+- Paramètres › Modèles de PV d'AG : on dépose ses modèles Word (un par forme de société si
+  besoin). L'outil devine ce que contient chaque [CROCHET] ; on vérifie une fois.
+- Onglet Clôture › case AG › « Préparer le PV » : date au calendrier, heures, dividende
+  oui/non, les montants. Le reste vient de la fiche. On relit, puis on envoie au client pour
+  signature en ligne ; signé, le PV est rangé et la case AG se coche.
+
 ## 30 octobre 2026 — Clôture IPP et mode sombre
 
 - Onglet Clôture pour les personnes physiques : une ligne par année (toujours au 31/12, plus

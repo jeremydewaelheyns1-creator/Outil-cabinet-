@@ -1,0 +1,223 @@
+"""PV d'assemblée générale préparé depuis la case AG (D-120). Modèle Word fictif, construit en
+code avec la même structure qu'un PV de cabinet (trous entre crochets)."""
+
+from __future__ import annotations
+
+import io
+from datetime import date
+
+import pytest
+from django.urls import reverse
+
+from apps.closing import ag, deposits, services
+from apps.closing.models import ClosingYear
+from apps.core.testing.factories import ClientFactory, PersonFactory
+
+pytestmark = pytest.mark.django_db
+
+
+def model_docx() -> bytes:
+    from docx import Document as Word
+
+    doc = Word()
+    doc.add_paragraph("[SOCIÉTÉ] S.R.L.")
+    doc.add_paragraph("[ADRESSE]")
+    doc.add_paragraph("[LOCALITÉ]")
+    doc.add_paragraph("R.P.M. : [IDENTIFIANT]")
+    doc.add_paragraph("Procès-verbal de l'assemblée générale ordinaire des associés")
+    doc.add_paragraph("L'an [ANNÉE] le [DATE], s'est tenue au siège social l'assemblée générale.")
+    doc.add_paragraph("La séance est ouverte à [HEURE] sous la présidence de [PERSONNE 1].")
+    doc.add_paragraph("Examen et approbation des comptes annuels arrêtés au [DATE DE CLÔTURE].")
+    doc.add_paragraph("Bénéfice net de l'exercice à affecter : [MONTANT] €")
+    doc.add_paragraph("L'assemblée décide de reporter l'intégralité du bénéfice.")
+    doc.add_paragraph("L'assemblée décide de distribuer un dividende brut de [MONTANT] €.")
+    doc.add_paragraph("L'AGO confirme le mandat donné à [CABINET COMPTABLE].")
+    doc.add_paragraph("La séance est levée à [HEURE].")
+    doc.add_paragraph("Fait à [LOCALITÉ] le [DATE]")
+    out = io.BytesIO()
+    doc.save(out)
+    return out.getvalue()
+
+
+@pytest.fixture
+def admin_web(client, make_user):
+    admin = make_user(is_staff=True, capabilities=["clients.edit"])
+    client.force_login(admin)
+    return client
+
+
+def install(admin_web):
+    from django.core.files.uploadedfile import SimpleUploadedFile
+
+    from apps.documents import letter
+    from apps.documents.models import LetterTemplate
+
+    upload = SimpleUploadedFile("pv-fictif.docx", model_docx())
+    admin_web.post(reverse("lettre:models"), {"sorte": "pv_ag", "modele": upload})
+    template = LetterTemplate.objects.get(kind="pv_ag")
+    fields = {h.key: template.holes.get(h.key, {}).get("field") for h in letter.holes(
+        bytes(template.content), "pv_ag")}  # fmt: skip
+    return template, fields
+
+
+def test_the_tool_guesses_the_holes_of_an_ag_model(admin_web):
+    template, fields = install(admin_web)
+    found = list(fields.values())
+    for code in ("client.denomination", "client.adresse", "client.localite", "client.numero",
+                 "ag.annee", "ag.date", "ag.debut", "ag.fin", "client.representant",
+                 "exercice.cloture", "cabinet.nom", "demander"):  # fmt: skip
+        assert code in found, code
+    assert None not in found  # chaque trou a une proposition
+    labels = [v["label"] for v in template.holes.values() if v["field"] == "demander"]
+    assert any("affecter" in label for label in labels)
+    # Le modèle de PV n'est pas la lettre de mission : pas de contrôle ITAA, plusieurs actifs.
+    page = admin_web.get(reverse("lettre:model", args=[template.pk])).content.decode()
+    assert "éléments obligatoires (ITAA)" not in page
+
+
+def _activate(admin_web, template, dividend_paragraphs=True):
+    from apps.documents import letter
+
+    content = bytes(template.content)
+    data = {"action": "activer", "forme": ["SRL"]}
+    for hole in letter.holes(content, "pv_ag"):
+        value = template.holes[hole.key]
+        data[f"trou-{hole.key}"] = value["field"]
+        data[f"libelle-{hole.key}"] = value["label"]
+    if dividend_paragraphs:
+        for index, text in letter.paragraphs(content):
+            if "reporter" in text:
+                data[f"option-{index}"] = "sans_dividende"
+            if "dividende brut" in text:
+                data[f"option-{index}"] = "dividende"
+    admin_web.post(reverse("lettre:model", args=[template.pk]), data)
+    template.refresh_from_db()
+    assert template.active and template.forms == ["SRL"]
+
+
+def test_prepare_send_and_sign_the_ag_minutes(admin_web, django_capture_on_commit_callbacks):
+    from apps.clients.models import Relation
+    from apps.core import events
+    from apps.documents import letter
+    from apps.documents.models import Document, DocumentRequest
+
+    template, _ = install(admin_web)
+    _activate(admin_web, template)
+    company = ClientFactory(name="Garage Fictif", legal_form="SRL", vat_status="subject",
+                            fiscal_year_end_month=12, fiscal_year_end_day=31,
+                            street="Rue Fictive 1", postal_code="5000", city="Namur")  # fmt: skip
+    from apps.clients.models import ContactPoint
+
+    ContactPoint.objects.create(client=company, kind=ContactPoint.Kind.EMAIL,
+                                value="gerant@exemple.example", is_primary=True)  # fmt: skip
+    manager = PersonFactory(name="Gérant", first_name="Paul")
+    Relation.objects.create(entity=company, person=manager, role=Relation.Role.MANAGER)
+    services.ensure_years(company, date(2026, 10, 30))
+    year = ClosingYear.objects.get(client=company)
+    # La case AG propose de préparer le PV ; une ASBL sans modèle actif ne l'a pas.
+    tab = admin_web.get(reverse("clients:closing", args=[company.pk])).content.decode()
+    url = reverse("clients:closing_ag", args=[company.pk, year.pk])
+    assert url in tab
+    assert letter.ag_templates(ClientFactory(legal_form="ASBL")) == []
+
+    page = admin_web.get(url).content.decode()
+    assert "Déjà rempli" in page and "Rue Fictive 1" in page
+    questions = letter.questions(template)
+    data = {"modele": template.pk, "date": "2026-06-30", "debut": "18:00", "fin": "18:30",
+            "dividende": "non", **{k: "1 234,00" for k, _ in questions}}  # fmt: skip
+    response = admin_web.post(url, data)
+    year.refresh_from_db()
+    draft = year.ag_draft
+    assert response.status_code == 302 and draft is not None and draft.doc_type == "pv_ag"
+    assert draft.state == Document.State.DRAFT and year.dividend is False
+    filled = letter.fill(template, company, {k: "1 234,00" for k, _ in questions},
+                         ag.context(year, date(2026, 6, 30), *_times(), False, ""))  # fmt: skip
+    text = _text(filled)
+    assert "Garage Fictif" in text and "30/06/2026" in text and "18h00" in text
+    assert "18h30" in text and "31/12/2025" in text and "Paul Gérant" in text
+    assert "reporter" in text and "dividende brut" not in text
+    # Pas une archive tant que ce n'est qu'un brouillon.
+    archives = admin_web.get(reverse("clients:archives", args=[company.pk])).content.decode()
+    assert "PV d'AG" not in archives
+
+    # Envoyé pour signature : la case AG est « à signer ».
+    admin_web.post(reverse("clients:document_send", args=[company.pk, draft.pk]))
+    draft.refresh_from_db()
+    assert draft.state == Document.State.AWAITING_SIGNATURE
+    tab = admin_web.get(reverse("clients:closing", args=[company.pk])).content.decode()
+    assert "à signer" in tab
+    # Signé par le client : rangé et la case AG se coche.
+    request = DocumentRequest.objects.get(client=company, doc_type="pv_ag")
+    signed = Document.objects.create(client=company, title="PV d'AG signé", folder="legal",
+                                     doc_type="pv_ag", original_name="pv.pdf", size=10)  # fmt: skip
+    with django_capture_on_commit_callbacks(execute=True):
+        events.emit("document.signed", subject=company, actor=None,
+                    payload={"document": str(signed.pk), "demande": request.reference})  # fmt: skip
+    deposit = year.deposits.get(kind=deposits.Kind.AG)
+    assert deposit.done_on is not None and list(deposit.documents.all()) == [signed]
+
+
+def test_dividend_keeps_the_dividend_paragraph_and_adds_the_withholding_box(admin_web):
+    from apps.documents import letter
+
+    template, _ = install(admin_web)
+    _activate(admin_web, template)
+    company = ClientFactory(legal_form="SRL", fiscal_year_end_month=12, fiscal_year_end_day=31)
+    services.ensure_years(company, date(2026, 10, 30))
+    year = ClosingYear.objects.get(client=company)
+    questions = letter.questions(template)
+    data = {"modele": template.pk, "date": "2026-06-30", "debut": "18:00", "fin": "18:30",
+            "dividende": "oui", **{k: "500,00" for k, _ in questions}}  # fmt: skip
+    admin_web.post(reverse("clients:closing_ag", args=[company.pk, year.pk]), data)
+    year.refresh_from_db()
+    assert year.dividend is True
+    text = _text(letter.fill(template, company, {}, ag.context(
+        year, date(2026, 6, 30), *_times(), True, "")))  # fmt: skip
+    assert "dividende brut" in text and "reporter" not in text
+    kinds = [b.kind for b in deposits.boxes(year, deposits.kinds_for(company))]
+    assert "pm" in kinds
+
+
+def test_missing_answers_are_asked_again(admin_web):
+    template, _ = install(admin_web)
+    _activate(admin_web, template)
+    company = ClientFactory(legal_form="SRL", fiscal_year_end_month=12, fiscal_year_end_day=31)
+    services.ensure_years(company, date(2026, 10, 30))
+    year = ClosingYear.objects.get(client=company)
+    url = reverse("clients:closing_ag", args=[company.pk, year.pk])
+    response = admin_web.post(url, {"modele": template.pk, "date": "", "debut": "", "fin": ""},
+                              follow=True)  # fmt: skip
+    assert "À compléter" in response.content.decode()
+    year.refresh_from_db()
+    assert year.ag_draft is None
+
+
+def _times():
+    from datetime import time
+
+    return time(18), time(18, 30)
+
+
+def _text(word: bytes) -> str:
+    from docx import Document as Word
+
+    return "\n".join(p.text for p in Word(io.BytesIO(word)).paragraphs)
+
+
+def test_dividend_amount_is_not_required_without_dividend(admin_web):
+    from apps.documents import letter
+
+    template, _ = install(admin_web)
+    _activate(admin_web, template)
+    company = ClientFactory(legal_form="SRL", fiscal_year_end_month=12, fiscal_year_end_day=31)
+    services.ensure_years(company, date(2026, 10, 30))
+    year = ClosingYear.objects.get(client=company)
+    url = reverse("clients:closing_ag", args=[company.pk, year.pk])
+    assert 'value="2026-06-30"' in admin_web.get(url).content.decode()  # 6 mois après la clôture
+    answers = {k: "100,00" for k, _ in letter.questions(template)
+               if letter.condition_of(template, k) != "dividende"}  # fmt: skip
+    data = {"modele": template.pk, "date": "2026-06-30", "debut": "18:00", "fin": "18:30",
+            "dividende": "non", **answers}  # fmt: skip
+    assert admin_web.post(url, data).status_code == 302
+    year.refresh_from_db()
+    assert year.ag_draft is not None

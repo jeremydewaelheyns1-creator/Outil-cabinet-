@@ -687,6 +687,7 @@ def client_archives(request: AppRequest, pk: int) -> HttpResponse:
     def build(client: Client) -> dict[str, Any]:
         documents = list(
             Document.objects.filter(client=client, folder__in=dossier.CLASSEUR_FOLDERS)
+            .exclude(state=Document.State.DRAFT)  # brouillon de PV d'AG (D-120) : pas une archive
             .select_related("person", "uploaded_by")
             .order_by("-uploaded_at")
         )

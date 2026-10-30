@@ -150,7 +150,9 @@ def can_generate(doc_type: str) -> bool:
 
 
 def needs_signature(doc_type: str) -> bool:
-    return doc_type == LETTER or (doc_type in MODELS and MODELS[doc_type].signature)
+    if doc_type in (LETTER, "pv_ag"):  # PV d'AG préparé depuis la Clôture (D-120)
+        return True
+    return doc_type in MODELS and MODELS[doc_type].signature
 
 
 def _context(

@@ -12,8 +12,8 @@
   </form>
 </section>
 <div class="grid grid-2">
-  {% for title, text, url in tools %}
-    <a class="card" href="{% url url %}"><h2>{{ title }}</h2><p class="small muted" style="margin:0">{{ text }}</p></a>
+  {% for title, text, url, query in tools %}
+    <a class="card" href="{% url url %}{{ query }}"><h2>{{ title }}</h2><p class="small muted" style="margin:0">{{ text }}</p></a>
   {% endfor %}
 </div>
 {% endblock %}

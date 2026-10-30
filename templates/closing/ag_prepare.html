@@ -1,0 +1,65 @@
+{% extends "clients/sections/_base.html" %}
+{% load app_tags %}
+{% block head_title %}PV d'AG {{ year.label }} · {{ client.display_name }}{% endblock %}
+{% block page_title %}<a href="{% url 'clients:closing' client.pk %}" class="muted">Clôture</a> › PV d'assemblée générale {{ year.label }}{% endblock %}
+{% block content %}
+{% comment %}D-120 : une seule page, quelques questions ; le reste vient de la fiche et de la ligne de l'exercice.{% endcomment %}
+{% if not chosen %}
+  <div class="card"><p class="muted">Aucun modèle de PV d'AG n'est activé pour la forme de cette société.{% if user.is_staff %} <a href="{% url 'lettre:models' %}?sorte=pv_ag">Déposer un modèle</a>.{% endif %}</p></div>
+{% else %}
+<form method="post" class="card ag-form">{% csrf_token %}
+  <p class="small muted ag-steps"><strong>1. Remplir</strong> › 2. Relire › 3. Envoyer pour signature</p>
+  {% if templates|length > 1 %}
+    <div class="ag-sec"><label for="ag-modele">Modèle</label>
+      <select id="ag-modele" name="modele">{% for t in templates %}<option value="{{ t.pk }}"{% if t.pk == chosen.pk %} selected{% endif %}>{{ t.name }}</option>{% endfor %}</select>
+    </div>
+  {% else %}<input type="hidden" name="modele" value="{{ chosen.pk }}">{% endif %}
+
+  <div class="ag-sec"><h2><span class="ag-num">1</span>Quand ?</h2>
+    <div class="ag-row">
+      <label>Date de l'AG<input type="date" name="date" value="{{ values.date }}" required></label>
+      <label>Début<input type="time" name="debut" value="{{ values.debut }}" required></label>
+      <label>Fin<input type="time" name="fin" value="{{ values.fin }}" required></label>
+    </div>
+  </div>
+
+  <div class="ag-sec"><h2><span class="ag-num">2</span>Dividende ?</h2>
+    <div class="ag-radio">
+      <label><input type="radio" name="dividende" value="non"{% if values.dividende != "oui" %} checked{% endif %}> Non</label>
+      <label><input type="radio" name="dividende" value="oui"{% if values.dividende == "oui" %} checked{% endif %}> Oui</label>
+    </div>
+    <p class="small muted">« Oui » garde les passages du modèle prévus pour un dividende et ajoute la case Précompte (15 jours) dans la Clôture.</p>
+  </div>
+
+  {% if questions %}
+  <div class="ag-sec"><h2><span class="ag-num">3</span>Les montants et le reste</h2>
+    <div class="ag-grid">
+      {% for key, label in questions %}
+        {% if key|slice:":7" == "option:" %}
+          <label class="ag-check"><input type="checkbox" name="{{ key }}" value="1"{% if values|get_item:key == "1" %} checked{% endif %}> {{ label }}</label>
+        {% else %}
+          {% with cond=conditional|get_item:key %}
+          <label>{{ label }}{% if cond == "dividende" %} <span class="small">(si dividende)</span>{% elif cond == "sans_dividende" %} <span class="small">(sans dividende)</span>{% endif %}<input name="{{ key }}" value="{{ values|get_item:key|default:"" }}" maxlength="300"{% if not cond %} required{% endif %}></label>
+          {% endwith %}
+        {% endif %}
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  {% if others %}
+  <div class="ag-sec"><h2><span class="ag-num">{% if questions %}4{% else %}3{% endif %}</span>Autre chose ? <span class="small muted">(facultatif)</span></h2>
+    <textarea name="autres" rows="3" maxlength="2000" placeholder="Résolution supplémentaire">{{ values.autres }}</textarea>
+  </div>
+  {% endif %}
+
+  <div class="ag-sec"><h3>Déjà rempli par l'outil</h3>
+    <dl class="ag-known">{% for label, value in known %}<dt>{{ label }}</dt><dd>{{ value }}</dd>{% endfor %}
+      <dt>Exercice</dt><dd>{{ year.start|date:"d/m/Y" }} – {{ year.end|date:"d/m/Y" }}</dd></dl>
+    <p class="small muted">Faux ? Corrigez la <a href="{% url 'clients:identity' client.pk %}">fiche du client</a>, le PV suit.</p>
+  </div>
+
+  <div class="actions"><a class="button button-secondary" href="{% url 'clients:closing' client.pk %}">Annuler</a><button type="submit">Voir le PV →</button></div>
+</form>
+{% endif %}
+{% endblock %}

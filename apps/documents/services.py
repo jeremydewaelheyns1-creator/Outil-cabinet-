@@ -207,6 +207,7 @@ def current_documents(client: Client, case: str) -> list[Document]:
 def archived_documents(client: Client, folder: str) -> list[Document]:
     return list(
         Document.objects.filter(client=client, folder=folder)
+        .exclude(state=Document.State.DRAFT)  # brouillon de PV d'AG (D-120)
         .select_related("person", "uploaded_by")
         .order_by("-uploaded_at")
     )

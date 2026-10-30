@@ -65,6 +65,99 @@ CHOICES: list[tuple[str, str]] = [
     (KEEP, "Pas un trou : laisser tel quel"),
 ]
 
+# --- PV d'assemblée générale (D-120) : ce que l'outil remplit en plus, d'après la ligne de
+# l'exercice et les réponses du formulaire « Préparer le PV » (`context`).
+
+
+def _partners(client: Client) -> str:
+    links = (
+        Relation.objects.current()
+        .filter(entity=client, role=Relation.Role.SHAREHOLDER)
+        .select_related("person")
+        .order_by("-share_percentage", "person__name")
+    )
+    parts = []
+    for link in links:
+        pct = link.share_percentage
+        share = f" ({pct.normalize():f} %)".replace(".", ",") if pct else ""
+        parts.append(f"{link.person.display_name}{share}")
+    return " ; ".join(parts)
+
+
+AG_FIELDS: dict[str, tuple[str, Callable[[Client, dict[str, str]], str]]] = {
+    "ag.date": ("Date de l'AG", lambda c, x: x.get("date", "")),
+    "ag.date_longue": ("Date de l'AG en lettres", lambda c, x: x.get("date_longue", "")),
+    "ag.annee": ("Année de l'AG", lambda c, x: x.get("annee", "")),
+    "ag.debut": ("Heure d'ouverture de la séance", lambda c, x: x.get("debut", "")),
+    "ag.fin": ("Heure de clôture de la séance", lambda c, x: x.get("fin", "")),
+    "exercice.debut": ("Début de l'exercice", lambda c, x: x.get("exercice_debut", "")),
+    "exercice.cloture": ("Date de clôture de l'exercice", lambda c, x: x.get("exercice_fin", "")),
+    "client.adresse": ("Rue et numéro du siège", lambda c, x: c.street or ""),
+    "client.localite": ("Localité du siège", lambda c, x: " ".join(
+        v for v in (c.postal_code, c.city) if v)),
+    "client.associes": ("Associés / actionnaires (avec leur part)", lambda c, x: _partners(c)),
+    "ag.autres": ("Résolutions supplémentaires (texte libre)", lambda c, x: x.get("autres", "")),
+}  # fmt: skip
+
+
+def choices(kind: str) -> list[tuple[str, str]]:
+    """Ce qu'un trou peut contenir, selon la sorte de modèle."""
+    if kind != "pv_ag":
+        return CHOICES
+    return [
+        *[(code, label) for code, (label, _) in FIELDS.items()],
+        *[(code, label) for code, (label, _) in AG_FIELDS.items()],
+        (ASK, "À demander à chaque PV"),
+        (KEEP, "Pas un trou : laisser tel quel"),
+    ]
+
+
+def conditions(kind: str) -> dict[str, str]:
+    if kind != "pv_ag":
+        return CONDITIONS
+    return {**CONDITIONS, "dividende": "Seulement si un dividende est décidé",
+            "sans_dividende": "Seulement s'il n'y a pas de dividende"}  # fmt: skip
+
+
+# Le mot entre crochets dit souvent ce que contient le trou : « [DATE DE CLÔTURE] »,
+# « [SOCIÉTÉ] »… (modèles de PV d'AG, D-120). Testés dans l'ordre.
+BRACKETS: list[tuple[tuple[str, ...], str]] = [
+    (("date de cloture", "cloture"), "exercice.cloture"),
+    (("debut de l exercice", "debut exercice"), "exercice.debut"),
+    (("societe", "denomination", "raison sociale"), "client.denomination"),
+    (("forme",), "client.forme"),
+    (("adresse", "rue"), "client.adresse"),
+    (("localite", "commune", "ville"), "client.localite"),
+    (("identifiant", "bce", "numero d entreprise", "rpm", "r p m", "tva"), "client.numero"),
+    (("cabinet",), "cabinet.nom"),
+    (("associe", "actionnaire"), "client.associes"),
+    (("personne", "administrateur", "gerant", "president"), "client.representant"),
+    (("annee",), "ag.annee"),
+    (("resolution",), "ag.autres"),
+    (("montant", "nombre", "parts"), ASK),
+]
+
+
+def _guess_ag(text: str, before: str, after: str) -> str:
+    inside = normalize_text(text.strip("[]"))
+    b = normalize_text(before)[-40:]
+    if "heure" in inside or inside in ("h", "hh:mm"):
+        return "ag.fin" if any(w in b for w in ("levee", "cloture", "fin")) else "ag.debut"
+    if "date" in inside and not any(w in inside for w in ("cloture",)):
+        return "ag.date"
+    for words, code in BRACKETS:
+        if any(w in inside for w in words):
+            return code
+    return _guess(before, after)
+
+
+def _question_ag(text: str, before: str) -> str:
+    """Libellé proposé pour un trou « à demander » d'un PV d'AG : les derniers mots avant."""
+    words = re.sub(r"[\s\-–•:()€|]+", " ", before).strip().split(" ")
+    label = " ".join(words[-5:]).strip()
+    return label[:1].upper() + label[1:] if label else "Montant"
+
+
 # Paragraphes à options : gardés seulement si…
 CONDITIONS: dict[str, str] = {
     "": "Toujours",
@@ -245,12 +338,12 @@ def _memo(kind: str, content: bytes, compute: Callable[[], Any]) -> Any:
     return _MEMO[key]
 
 
-def holes(content: bytes) -> list[Hole]:
+def holes(content: bytes, kind: str = "lettre") -> list[Hole]:
     """Trous repérés dans le modèle, avec le texte autour et une proposition."""
-    return list(_memo("holes", content, lambda: _holes(content)))
+    return list(_memo(f"holes-{kind}", content, lambda: _holes(content, kind)))
 
 
-def _holes(content: bytes) -> list[Hole]:
+def _holes(content: bytes, kind: str = "lettre") -> list[Hole]:
     result: list[Hole] = []
     running = ""
     for index, paragraph in enumerate(_paragraphs(_open(content))):
@@ -258,10 +351,21 @@ def _holes(content: bytes) -> list[Hole]:
         for number, (start, end) in enumerate(_spans(paragraph)):
             before = (running + " " + text[:start]).strip()[-80:]
             after = text[end:][:60]
-            guess = _guess(before, after)
-            result.append(Hole(f"{index}:{number}", before, text[start:end], after, guess))
+            hole_text = text[start:end]
+            if kind == "pv_ag":
+                guess = _guess_ag(hole_text, before, after)
+            else:
+                guess = _guess(before, after)
+            result.append(Hole(f"{index}:{number}", before, hole_text, after, guess))
         running = (running + " " + text)[-200:]
     return result
+
+
+def proposed_label(hole: Hole, kind: str) -> str:
+    """Question proposée pour un trou « à demander »."""
+    if kind == "pv_ag" and hole.guess == ASK:
+        return _question_ag(hole.text, hole.before)
+    return hole.question
 
 
 def paragraphs(content: bytes) -> list[tuple[int, str]]:
@@ -305,9 +409,13 @@ def problems(template: Any) -> list[str]:
     """Ce qui empêche encore d'utiliser le modèle (vide : prêt)."""
     content = bytes(template.content)
     found = []
-    unknown = [h for h in holes(content) if not (template.holes.get(h.key) or {}).get("field")]
+    kind = getattr(template, "kind", "lettre")
+    found_holes = holes(content, kind)
+    unknown = [h for h in found_holes if not (template.holes.get(h.key) or {}).get("field")]
     if unknown:
         found.append(f"{len(unknown)} trou(s) sans contenu choisi")
+    if kind == "pv_ag":
+        return found  # pas d'éléments obligatoires de l'ITAA pour un PV
     for check in checks(content, template.holes):
         if check.required and not check.excerpt:
             found.append(f"Élément obligatoire absent du modèle : {check.label}")
@@ -328,13 +436,29 @@ def questions(template: Any) -> list[tuple[str, str]]:
     return sorted(asked, key=lambda q: _order(q[0]))
 
 
+def condition_of(template: Any, key: str) -> str:
+    """Condition du passage à options qui contient ce trou (« trou:12:0 » → paragraphe 12)."""
+    head = key.split(":")[1] if key.count(":") >= 2 else ""
+    if not head.isdigit():
+        return ""
+    index = int(head)
+    for start, end, condition in blocks(template.options):
+        if start <= index <= end:
+            return condition
+    return ""
+
+
 def _order(key: str) -> tuple[int, int]:
     kind, _, rest = key.partition(":")
     head = rest.split(":")[0]
     return (int(head) if head.isdigit() else 0, 0 if kind == "trou" else 1)
 
 
-def _keep(condition: str, client: Client, answer: bool) -> bool:
+def _keep(condition: str, client: Client, answer: bool, context: dict[str, str]) -> bool:
+    if condition == "dividende":
+        return context.get("dividende") == "oui"
+    if condition == "sans_dividende":
+        return context.get("dividende") != "oui"
     if condition == "tva":
         return client.vat_status in ("subject", "mixed")
     if condition == "societe":
@@ -380,8 +504,12 @@ def _fill(paragraph: Any, replacements: list[tuple[int, int, str]]) -> None:
             rpr.remove(rpr.highlight)
 
 
-def fill(template: Any, client: Client, answers: dict[str, str]) -> bytes:
-    """Le modèle rempli pour ce client (fichier Word)."""
+def fill(
+    template: Any, client: Client, answers: dict[str, str], context: dict[str, str] | None = None
+) -> bytes:
+    """Le modèle rempli pour ce client (fichier Word). `context` : PV d'AG (date, heures,
+    exercice, dividende…), D-120."""
+    context = context or {}
     document = _open(bytes(template.content))
     items = _paragraphs(document)
     for index, paragraph in enumerate(items):
@@ -389,15 +517,22 @@ def fill(template: Any, client: Client, answers: dict[str, str]) -> bytes:
         for number, (start, end) in enumerate(_spans(paragraph)):
             key = f"{index}:{number}"
             code = (template.holes.get(key) or {}).get("field", "")
-            if not code or code == KEEP or (code != ASK and code not in FIELDS):
+            if not code or code == KEEP:
                 continue
-            value = answers.get(f"trou:{key}", "") if code == ASK else FIELDS[code][1](client)
+            if code == ASK:
+                value = answers.get(f"trou:{key}", "")
+            elif code in FIELDS:
+                value = FIELDS[code][1](client)
+            elif code in AG_FIELDS:
+                value = AG_FIELDS[code][1](client, context)
+            else:
+                continue
             replacements.append((start, end, value))
         if replacements:
             _fill(paragraph, replacements)
     removed: set[int] = set()
     for start, end, condition in blocks(template.options):
-        if not _keep(condition, client, answers.get(f"option:{start}") == "1"):
+        if not _keep(condition, client, answers.get(f"option:{start}") == "1", context):
             removed.update(range(start, end + 1))
     for index in sorted(removed, reverse=True):
         if index < len(items):
@@ -449,7 +584,23 @@ def _local_only(url: str, *args: Any, **kwargs: Any) -> Any:
 def active() -> Any:
     from .models import LetterTemplate
 
-    return LetterTemplate.objects.filter(active=True).first()
+    return LetterTemplate.objects.filter(active=True, kind=LetterTemplate.Kind.LETTER).first()
+
+
+FORMS = ["SRL", "SA", "SC", "SNC", "SComm", "ASBL"]
+
+
+def ag_templates(client: Client) -> list[Any]:
+    """Modèles de PV d'AG activés qui servent pour la forme juridique de ce client (D-120)."""
+    from .models import LetterTemplate
+
+    form = normalize_text(client.legal_form or "").replace(".", "").replace(" ", "")
+    found = []
+    for template in LetterTemplate.objects.filter(active=True, kind=LetterTemplate.Kind.AG):
+        wanted = [normalize_text(f).replace(" ", "") for f in template.forms]
+        if not wanted or form in wanted:
+            found.append(template)
+    return found
 
 
 def check_upload(name: str, content: bytes) -> None:

@@ -7,4 +7,4 @@ class ClosingConfig(AppConfig):
     verbose_name = "Clôture"
 
     def ready(self) -> None:
-        from . import deposits  # noqa: F401  (enregistre les automatismes)
+        from . import ag, deposits  # noqa: F401  (enregistre les automatismes)
