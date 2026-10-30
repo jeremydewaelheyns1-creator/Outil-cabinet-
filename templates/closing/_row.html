@@ -3,7 +3,7 @@
 <section id="cl-{{ y.pk }}" class="cl-card{% if row.finished %} cl-finished{% endif %}" aria-label="Exercice {{ y.label }}">
   <div class="cl-head">
     <span class="cl-year">{{ y.label }}</span>
-    <span class="cl-sub">Exercice {{ y.start|date:"d/m/Y" }} – {{ y.end|date:"d/m/Y" }}</span>
+    <span class="cl-sub">{% if client.is_person %}Revenus {{ y.end.year }}{% else %}Exercice{% endif %} {{ y.start|date:"d/m/Y" }} – {{ y.end|date:"d/m/Y" }}</span>
     <span class="cl-sub" title="Responsable · assistant">{{ y.manager.get_short_name|default:"—" }} · {{ y.assistant.get_short_name|default:"—" }}</span>
     <div class="cl-head-actions">
       {% include "closing/_time.html" %}
@@ -21,6 +21,7 @@
     {% if row_error %}<span class="cl-error">{{ row_error }}</span>{% endif %}
   </div>
   <div class="cl-lines" style="--cl-cols: {{ row.cols }}">
+    {% if row.checklists %}
     <div class="cl-line-label">Clôture</div>
     <div class="cl-boxes">
       {% include "closing/_check_cell.html" with part="comptable" name="Checklist comptable" short="Checklist compta." %}
@@ -28,9 +29,14 @@
       {% with s=row.manager_sheet %}{% include "closing/_check_cell.html" with part="gestionnaire" name="Checklist gestionnaire" short="Checklist gestion." %}{% endwith %}
       {% with s=row.manager_sheet %}{% include "closing/_close_cell.html" with part="gestionnaire" on=y.manager_closed_on by=y.manager_closed_by label="Clôture gestionnaire" short="Clôture gestion." %}{% endwith %}
     </div>
+    {% endif %}
     {% if row.boxes %}
       <div class="cl-line-label">Dépôts</div>
       <div class="cl-boxes">{% for b in row.boxes %}{% include "closing/_deposit_cell.html" %}{% endfor %}</div>
+    {% endif %}
+    {% if row.ipp_boxes %}
+      <div class="cl-line-label">Déclaration IPP</div>
+      <div class="cl-boxes">{% for b in row.ipp_boxes %}{% include "closing/_deposit_cell.html" %}{% endfor %}</div>
     {% endif %}
   </div>
 </section>

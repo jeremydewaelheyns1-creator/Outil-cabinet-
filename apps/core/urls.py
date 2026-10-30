@@ -12,6 +12,7 @@ urlpatterns = [
     path("parametres/cabinet/logo.png", views.signature_logo, name="signature_logo"),
     path("journal/", views.access_log, name="access_log"),
     path("parametres/", views.settings_page, name="settings"),
+    path("parametres/affichage/", views.set_theme, name="theme"),
     path("notifications/", views.notifications, name="notifications"),
     path("ma-journee/agenda/", views.my_agenda, name="agenda"),
     path("ma-journee/agenda/echeance/", views.agenda_deadline, name="agenda_deadline"),

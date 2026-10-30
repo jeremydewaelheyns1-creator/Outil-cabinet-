@@ -1,9 +1,24 @@
 {% extends "clients/sections/_base.html" %}
+{% load app_tags %}
 {% block head_title %}Clôture · {{ client.display_name }}{% endblock %}
 {% block page_title %}Clôture{% endblock %}
 {% block content %}
+{% if client.is_person %}
+  <div class="cl-intro cl-profile small muted">
+    {% if checklists %}Checklist commune « {{ kind }} »{% if customised %} · personnalisée pour ce dossier{% endif %}. {% endif %}Une ligne par année de revenus (01/01 – 31/12).
+    {% if can_edit %}<form method="post" action="{% url 'clients:closing_profile' client.pk %}" class="cl-profile-form">{% csrf_token %}
+      <label for="cl-profil">Profil</label>
+      <select id="cl-profil" name="profil" onchange="this.form.requestSubmit()">
+        <option value="">Automatique ({{ profiles|get_item:auto_profile }})</option>
+        {% for value, label in profiles.items %}<option value="{{ value }}"{% if value == profile_manual %} selected{% endif %}>{{ label }}</option>{% endfor %}
+      </select>
+      <noscript><button type="submit" class="button-small">Enregistrer</button></noscript>
+    </form>{% else %}<span>Profil : {{ profiles|get_item:profile }}</span>{% endif %}
+  </div>
+{% else %}
 <p class="small muted cl-intro">Checklist commune « {{ kind }} »{% if customised %} · personnalisée pour ce dossier{% endif %}. Une ligne par exercice ; le cadre devient vert quand les checklists, les clôtures et les dépôts sont faits.</p>
-{% if not client.fiscal_year_end_month %}
+{% endif %}
+{% if not client.fiscal_year_end_month and not client.is_person %}
   <div class="card"><p class="muted">La date de clôture de l'exercice n'est pas encore renseignée : complétez-la dans <a href="{% url 'clients:identity' client.pk %}">la fiche</a> ; la ligne de l'exercice apparaîtra toute seule.</p></div>
 {% elif rows %}
   <div class="cl-list">{% for row in rows %}{% include "closing/_row.html" %}{% endfor %}</div>

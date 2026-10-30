@@ -3,6 +3,15 @@
 Ce qui a été ajouté à l'outil, du plus récent au plus ancien. Toutes les données de la démo
 sont inventées.
 
+## 30 octobre 2026 — Clôture IPP et mode sombre
+
+- Onglet Clôture pour les personnes physiques : une ligne par année (toujours au 31/12, plus
+  de date à encoder) et la déclaration IPP en 4 cases : pièces reçues, calcul validé,
+  déposée, avertissement-extrait.
+- La ligne s'adapte au profil : particulier, indépendant (avec ses checklists IPP et ses
+  dépôts) ou dirigeant (la fiche 281.20 de sa société s'affiche).
+- Paramètres › Affichage : mode clair, sombre ou comme l'ordinateur, au choix de chacun.
+
 ## 30 octobre 2026 — UBO : un seul endroit, l'onglet Clôture
 
 - La page UBO (bénéficiaires effectifs, extrait du registre) et la déclaration signée par le

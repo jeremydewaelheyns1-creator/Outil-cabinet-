@@ -1502,3 +1502,29 @@ même taille (« Clôture » : checklists et clôtures ; « Dépôts ») ; le no
   « Déposer des documents »), et elles comptent toujours dans le dossier anti-blanchiment.
 - Un extrait du registre UBO rangé coche la case « UBO » du dernier exercice terminé.
 - Le mandat SPF « Registre UBO » (accès du cabinet au registre) reste dans Documents › Mandats.
+
+## D-118 — Clôture IPP (personnes physiques)
+
+- Validé par Jeremy le 30/10/2026 (maquette « Clôture IPP par profil »). Une personne
+  physique clôture toujours au 31/12 : la ligne de l'année se crée seule, plus de message
+  « date de clôture non renseignée ».
+- Profil, déduit de la fiche et corrigible dans l'onglet Clôture : indépendant (numéro
+  d'entreprise), dirigeant (gérant ou administrateur d'une société cliente), sinon particulier.
+- Ligne « Déclaration IPP » pour tous : Pièces reçues (orange tant que des demandes de
+  documents attendent), Calcul validé, Déposée (accusé Tax-on-web → cochée, reliée à
+  l'échéance IPP), Avertissement-extrait (joint à son arrivée, reste « à vérifier »).
+- Indépendant : en plus, checklists IPP (avec TVA : 10 points ; sans TVA : 8, sans clients
+  ouverts ni comptes TVA ; gestionnaire IPP : 6 points de départ) et dépôts Fiches 281.50,
+  Listing clients (si TVA). Particulier et dirigeant : pas de checklist ni de clôture.
+- Dirigeant : la case Pièces montre la fiche 281.20 faite dans la case « Fiches 281 » de sa
+  société (même année), pour ne pas la redemander.
+- Toutes les cases gardent la même largeur (8 colonnes) d'un dossier à l'autre.
+
+## D-119 — Mode sombre
+
+- Demande de Jeremy (30/10/2026). Paramètres › Affichage : Clair, Sombre ou « Comme
+  l'ordinateur » ; choix propre à chaque personne (champ `User.theme`). « Paramètres » est
+  donc visible par tous ; les outils d'administration restent réservés.
+- `static/css/dark.css` est fabriqué par `python manage.py dark_css` depuis app.css (fonds
+  clairs → foncés, textes foncés → clairs, palette sombre pour les variables). Un test vérifie
+  qu'il est à jour : relancer la commande après toute modification de app.css.

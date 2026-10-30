@@ -227,7 +227,7 @@ def test_cabinet_settings_are_for_administrators(web, make_user):
 
 
 def test_settings_link_in_the_top_bar_only_for_those_who_can(web, make_user):
-    assert ">Paramètres<" not in page(web)
+    assert ">Paramètres<" in page(web)  # D-119 : l'affichage (mode sombre) est pour tous
     browser = Browser()
     browser.force_login(make_user(capabilities=["reprise.import"]))
     assert ">Paramètres<" in unescape(browser.get(reverse("core:home")).content.decode())
@@ -312,3 +312,26 @@ def test_calendar_arrows_go_from_month_to_month(web, user):
     # Sans JavaScript : l'Accueil affiche le mois demandé.
     assert "Janvier 2027" in web.get(reverse("core:home"), {"mois": "2027-01"}).content.decode()
     assert web.get(reverse("core:home_calendar"), {"mois": "n'importe"}).status_code == 200
+
+
+def test_dark_mode_is_a_personal_choice(web, user):
+    """Demande de Jeremy (30/10) : un mode sombre dans les paramètres."""
+    assert 'data-theme="light"' in page(web)
+    web.post(reverse("core:theme"), {"theme": "dark"})
+    user.refresh_from_db()
+    assert user.theme == "dark" and 'data-theme="dark"' in page(web)
+    web.post(reverse("core:theme"), {"theme": "violet"})  # valeur inconnue : ignorée
+    user.refresh_from_db()
+    assert user.theme == "dark"
+
+
+def test_dark_css_is_up_to_date():
+    """static/css/dark.css est fabriqué à partir de app.css : relancer `manage.py dark_css`."""
+    from pathlib import Path
+
+    from django.conf import settings
+
+    from apps.core.management.commands.dark_css import build
+
+    folder = Path(settings.BASE_DIR) / "static" / "css"
+    assert (folder / "dark.css").read_text() == build((folder / "app.css").read_text())

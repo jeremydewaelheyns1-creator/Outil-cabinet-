@@ -32,10 +32,71 @@ VAT_STATUSES = {Client.VatStatus.SUBJECT, Client.VatStatus.MIXED}
 
 def kind_for(client: Client, part: str = Part.ACCOUNTING) -> str:
     """Checklist commune du dossier : la checklist gestionnaire (D-112), ou la comptable des
-    dossiers soumis à TVA (assujetti, mixte) ou non."""
+    dossiers soumis à TVA (assujetti, mixte) ou non ; pour une personne physique, les
+    checklists IPP (D-118)."""
+    vat = client.vat_status in VAT_STATUSES
+    if client.is_person:
+        if part == Part.MANAGER:
+            return Kind.IPP_MANAGER
+        return Kind.IPP_VAT if vat else Kind.IPP_NO_VAT
     if part == Part.MANAGER:
         return Kind.MANAGER
-    return Kind.VAT if client.vat_status in VAT_STATUSES else Kind.NO_VAT
+    return Kind.VAT if vat else Kind.NO_VAT
+
+
+# --- Profil IPP d'une personne physique (D-118) -----------------------------------------------
+
+PROFILES = {"particulier": "Particulier", "independant": "Indépendant", "dirigeant": "Dirigeant"}
+
+
+def companies_led(client: Client) -> list[Client]:
+    """Sociétés clientes dont la personne est gérant ou administrateur (mandat en cours)."""
+    from apps.clients.models import Relation
+
+    relations = (
+        Relation.objects.filter(person=client, role__in=Relation.MANAGEMENT_ROLES,
+                                end_date__isnull=True)
+        .select_related("entity")
+        .order_by("entity__name")
+    )  # fmt: skip
+    return [r.entity for r in relations if not r.entity.is_person]
+
+
+def auto_profile(client: Client) -> str:
+    if client.enterprise_number:
+        return "independant"
+    if companies_led(client):
+        return "dirigeant"
+    return "particulier"
+
+
+def manual_profile(client: Client) -> str:
+    setup = DossierSetup.objects.filter(client=client).first()
+    return setup.ipp_profile if setup and setup.ipp_profile in PROFILES else ""
+
+
+def profile(client: Client) -> str:
+    """Particulier, indépendant ou dirigeant (vide pour une société). Choisi à la main dans
+    l'onglet Clôture, sinon déduit de la fiche : numéro d'entreprise → indépendant ; gérant ou
+    administrateur d'une société → dirigeant ; sinon particulier."""
+    if not client.is_person:
+        return ""
+    return manual_profile(client) or auto_profile(client)
+
+
+def set_profile(client: Client, value: str, user: User | None) -> None:
+    setup, _ = DossierSetup.objects.get_or_create(client=client)
+    setup.ipp_profile = value if value in PROFILES else ""
+    setup.save()
+    events.emit(
+        "closing.profile", subject=client, actor=user, payload={"profil": setup.ipp_profile}
+    )
+
+
+def has_checklists(client: Client) -> bool:
+    """Checklists et clôtures : les sociétés, et les indépendants (pas les particuliers ni les
+    dirigeants, D-118)."""
+    return not client.is_person or profile(client) == "independant"
 
 
 # --- La liste des champs d'un dossier ---------------------------------------------------------
@@ -188,8 +249,8 @@ def _start_after(previous_end: date) -> date:
 def ensure_years(client: Client, today: date | None = None) -> None:
     """Une ligne pour le dernier exercice terminé (créée toute seule)."""
     today = today or timezone.localdate()
-    if not client.fiscal_year_end_month:
-        return
+    if not client.fiscal_year_end_month and not client.is_person:
+        return  # une personne physique clôture toujours au 31/12 (D-118)
     end = _year_end(client, today.year)
     if end > today:
         end = _year_end(client, today.year - 1)

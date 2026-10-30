@@ -44,8 +44,9 @@ def _time_defaults(user: User) -> dict[str, str]:
 
 
 def _rows(client: Client, user: User) -> list[dict[str, Any]]:
-    accounting = services.items_for(client, Part.ACCOUNTING)
-    manager = services.items_for(client, Part.MANAGER)
+    checklists = services.has_checklists(client)  # pas pour un particulier ni un dirigeant
+    accounting = services.items_for(client, Part.ACCOUNTING) if checklists else []
+    manager = services.items_for(client, Part.MANAGER) if checklists else []
     years = list(
         client.closing_years.select_related(
             "manager", "assistant", "closed_by", "manager_closed_by"
@@ -53,15 +54,28 @@ def _rows(client: Client, user: User) -> list[dict[str, Any]]:
     )
     services.add_my_time(user, years)
     kinds = deposits.kinds_for(client)
+    ipp_kinds = deposits.ipp_kinds_for(client)
+    waiting = deposits.waiting_requests(client) if ipp_kinds else 0
+    profile = services.profile(client)
     rows = []
     for y in years:
-        sheet = services.sheet(y, Part.ACCOUNTING, accounting)
-        manager_sheet = services.sheet(y, Part.MANAGER, manager)
+        sheet = services.sheet(y, Part.ACCOUNTING, accounting) if checklists else None
+        manager_sheet = services.sheet(y, Part.MANAGER, manager) if checklists else None
         boxes = deposits.boxes(y, kinds)
+        ipp_boxes = deposits.boxes(y, ipp_kinds)
+        for b in ipp_boxes:
+            if b.kind == deposits.Kind.IPP_PIECES and waiting and not b.done_on:
+                b.waiting = waiting
+        closed = sheet is None or (
+            manager_sheet is not None and services.finished(sheet, manager_sheet)
+        )
         rows.append({
             "year": y, "sheet": sheet, "manager_sheet": manager_sheet, "boxes": boxes,
-            "cols": max(4, len(boxes)),  # colonnes communes aux deux lignes (une ligne chacune)
-            "finished": services.finished(sheet, manager_sheet) and deposits.complete(boxes),
+            "ipp_boxes": ipp_boxes, "checklists": checklists,
+            "leader": deposits.leader_fiches(client, y) if profile == "dirigeant" else [],
+            "finished": closed and deposits.complete(boxes) and deposits.complete(ipp_boxes),
+            # colonnes communes aux lignes (une ligne chacune)
+            "cols": max(8, len(boxes), len(ipp_boxes)),  # même taille de case partout
         })  # fmt: skip
     return rows
 
@@ -78,6 +92,11 @@ def closing_tab(request: AppRequest, pk: int) -> HttpResponse:
         return {
             "rows": _rows(client, request.user),
             "kind": Kind(services.kind_for(client)).label,
+            "checklists": services.has_checklists(client),
+            "profile": services.profile(client),
+            "profiles": services.PROFILES,
+            "auto_profile": services.auto_profile(client) if client.is_person else "",
+            "profile_manual": services.manual_profile(client),
             "customised": services.removed_for(client)
             or client.closing_items.filter(active=True).exists()
             or client.closing_changes.exclude(label="", hint="").exists(),
@@ -312,6 +331,19 @@ def deposit(request: AppRequest, pk: int, year_id: int, kind: str) -> HttpRespon
         deposits.hide(year.client, kind, True)
     _changed(request, year, f"dépôt {kind} : {action}")
     return _row_response(request, year)
+
+
+@require_POST
+@require_capability(Capability.CLIENTS_EDIT)
+def profile(request: AppRequest, pk: int) -> HttpResponse:
+    """Profil IPP d'une personne (D-118) : particulier, indépendant, dirigeant ou automatique."""
+    client = _get_client(request, pk)
+    if not client.is_person:
+        raise Http404
+    services.set_profile(client, request.POST.get("profil", ""), request.user)
+    details = {"rubrique": "cloture", "profil": request.POST.get("profil", "") or "auto"}
+    log_access(request, AccessLog.Action.UPDATE, client, details=details)
+    return redirect("clients:closing", pk=client.pk)
 
 
 @require_POST

@@ -205,7 +205,9 @@ def _spf_document(
         end_year = found.year + found.kind.year_offset
         year = deposits.document_found(client, found.kind.deposit, end_year, document, user)
         if year is not None:
-            ticked = f" Case « {deposits.Kind(found.kind.deposit).label} » {year.label} cochée."
+            box = deposits.Kind(found.kind.deposit).label
+            done = "à vérifier" if found.kind.deposit == deposits.Kind.IPP_AER else "cochée"
+            ticked = f" Case « {box} » {year.label} {done}."
             url = reverse("clients:closing", args=[client.pk])
     if found.kind.action:
         document.review_needed = True

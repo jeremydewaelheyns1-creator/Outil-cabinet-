@@ -16,7 +16,7 @@ from apps.clients.models import Client
 from .audit import log_access
 from .capabilities import Capability
 from .http import AppRequest
-from .models import AccessLog, Event, Notification
+from .models import AccessLog, Event, Notification, User
 from .permissions import require_capability
 
 
@@ -139,7 +139,8 @@ def settings_page(request: AppRequest) -> HttpResponse:
         ),
         (
             "Checklists de clôture",
-            "Les checklists communes à tous les dossiers (soumis à TVA ou non).",
+            "Les checklists communes à tous les dossiers : sociétés (TVA ou non), indépendants "
+            "(IPP), gestionnaire.",
             "closing:common",
             request.user.is_staff,
         ),
@@ -151,9 +152,19 @@ def settings_page(request: AppRequest) -> HttpResponse:
         ),
     ]
     allowed = [(title, text, url) for title, text, url, ok in tools if ok]
-    if not allowed:
-        raise PermissionDenied
-    return render(request, "core/settings.html", {"tools": allowed})
+    # Tout le monde a au moins l'affichage (mode sombre, D-119).
+    themes = User.Theme.choices
+    return render(request, "core/settings.html", {"tools": allowed, "themes": themes})
+
+
+@require_POST
+def set_theme(request: AppRequest) -> HttpResponse:
+    """Affichage clair, sombre ou comme l'ordinateur (D-119) : propre à chaque personne."""
+    value = request.POST.get("theme", "")
+    if value in User.Theme.values:
+        request.user.theme = value
+        request.user.save(update_fields=["theme"])
+    return redirect("core:settings")
 
 
 def notifications(request: AppRequest) -> HttpResponse:

@@ -93,6 +93,14 @@ class User(AbstractBaseUser, PermissionsMixin):
     )
     date_joined = models.DateTimeField("créé le", default=timezone.now)
 
+    class Theme(models.TextChoices):
+        LIGHT = "light", "Clair"
+        DARK = "dark", "Sombre"
+        AUTO = "auto", "Comme l'ordinateur"
+
+    # Affichage choisi par la personne dans Paramètres (D-119).
+    theme = models.CharField("affichage", max_length=5, choices=Theme.choices, default=Theme.LIGHT)
+
     objects = UserManager()
 
     USERNAME_FIELD = "email"

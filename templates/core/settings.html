@@ -2,6 +2,15 @@
 {% block head_title %}Paramètres{% endblock %}
 {% block page_title %}Paramètres{% endblock %}
 {% block content %}
+<section class="card theme-card">
+  <h2>Affichage</h2>
+  <p class="small muted">Le mode sombre fatigue moins les yeux. Ce choix ne vaut que pour vous.</p>
+  <form method="post" action="{% url 'core:theme' %}" class="theme-choices">{% csrf_token %}
+    {% for value, label in themes %}
+      <button type="submit" name="theme" value="{{ value }}" class="theme-choice{% if user.theme == value %} is-on{% endif %}"{% if user.theme == value %} aria-pressed="true"{% endif %}>{{ label }}</button>
+    {% endfor %}
+  </form>
+</section>
 <div class="grid grid-2">
   {% for title, text, url in tools %}
     <a class="card" href="{% url url %}"><h2>{{ title }}</h2><p class="small muted" style="margin:0">{{ text }}</p></a>

@@ -439,3 +439,91 @@ def test_ubo_lives_in_the_closing_tab_not_in_documents(
                                    doc_type="extrait_ubo", user=user)  # fmt: skip
     deposit = year.deposits.get(kind="ubo")
     assert deposit.done_on is not None and list(deposit.documents.all()) == [document]
+
+
+# --- Clôture IPP (D-118) ---------------------------------------------------------------------
+
+
+def _person(**kwargs):
+    from apps.core.testing.factories import PersonFactory
+
+    return PersonFactory(**kwargs)
+
+
+def test_a_private_person_closes_on_31_12_with_only_the_ipp_line(web):
+    """Retour de Jeremy (30/10) : une personne physique clôture toujours au 31/12, pas de date
+    à encoder ; un particulier n'a que la ligne « Déclaration IPP »."""
+    from apps.closing import deposits, services
+
+    person = _person(name="Particulier Fictif")
+    html = unescape(web.get(reverse("clients:closing", args=[person.pk])).content.decode())
+    assert "n'est pas encore renseignée" not in html
+    year = ClosingYear.objects.get(client=person)
+    assert year.end == date(TODAY.year - 1, 12, 31) or year.end.month == 12
+    assert "Déclaration IPP" in html and "Checklist compta." not in html
+    assert services.profile(person) == "particulier"
+    assert [b.kind for b in deposits.boxes(year, deposits.ipp_kinds_for(person))] == [
+        "ipp_pie", "ipp_cal", "ipp_dep", "ipp_aer",
+    ]  # fmt: skip
+    assert deposits.kinds_for(person) == []
+
+
+def test_an_independent_has_ipp_checklists_and_deposits(web):
+    from apps.closing import deposits, services
+    from apps.core.testing.numbers import enterprise_number
+
+    vat = _person(enterprise_number=enterprise_number(7101), vat_status="subject")
+    no_vat = _person(enterprise_number=enterprise_number(7102), vat_status="not_subject")
+    assert services.profile(vat) == "independant"
+    assert services.kind_for(vat) == Kind.IPP_VAT and services.kind_for(no_vat) == Kind.IPP_NO_VAT
+    assert services.kind_for(vat, Part.MANAGER) == Kind.IPP_MANAGER
+    labels = [i.label for i in services.items_for(vat, Part.ACCOUNTING)]
+    assert len(labels) == 10 and "Comptes TVA" in labels and "Cut off" not in labels
+    no_vat_labels = [i.label for i in services.items_for(no_vat, Part.ACCOUNTING)]
+    assert len(no_vat_labels) == 8 and "Clients ouverts" not in no_vat_labels
+    assert len(services.items_for(vat, Part.MANAGER)) == 6
+    assert deposits.kinds_for(vat) == ["28150", "listing"]
+    assert deposits.kinds_for(no_vat) == ["28150"]
+    html = unescape(web.get(reverse("clients:closing", args=[vat.pk])).content.decode())
+    assert "Checklist compta." in html and "Déclaration IPP" in html and "Listing clients" in html
+
+
+def test_a_company_leader_sees_the_281_20_of_his_company(web, user):
+    from apps.clients.models import Relation
+    from apps.closing import deposits, services
+
+    leader = _person(name="Dirigeant Fictif")
+    company_ = company(name="Société Fictive SA")
+    Relation.objects.create(entity=company_, person=leader, role=Relation.Role.MANAGER)
+    assert services.profile(leader) == "dirigeant" and not services.has_checklists(leader)
+    deposits.set_done(year_of(company_), "28120", True, user)
+    html = unescape(web.get(reverse("clients:closing", args=[leader.pk])).content.decode())
+    assert "Fiche 281.20 de" in html and "Société Fictive SA" in html and "faite le" in html
+    # Profil choisi à la main.
+    web.post(reverse("clients:closing_profile", args=[leader.pk]), {"profil": "independant"})
+    assert services.profile(leader) == "independant"
+    web.post(reverse("clients:closing_profile", args=[leader.pk]), {"profil": ""})
+    assert services.profile(leader) == "dirigeant"
+
+
+def test_tax_on_web_receipt_ticks_filed_and_the_assessment_waits_to_be_checked(web):
+    from apps.core.testing.numbers import national_number
+    from apps.documents.tests.test_official_files import needs_poppler, pdf
+
+    if needs_poppler.args[0]:
+        pytest.skip("poppler absent")
+    nn = national_number(44, "790203")
+    person = _person(national_number=nn)
+    shown = f"{nn[:2]}.{nn[2:4]}.{nn[4:6]}-{nn[6:9]}.{nn[9:]}"
+    receipt = pdf("accuse.pdf", "Tax-on-web — accusé de réception",
+                  "Déclaration à l'impôt des personnes physiques", f"Numéro national : {shown}",
+                  f"Exercice d'imposition {TODAY.year}")  # fmt: skip
+    web.post(reverse("depot:index"), {"files": [receipt]})
+    year = ClosingYear.objects.get(client=person)
+    assert year.end.year == TODAY.year - 1
+    assert year.deposits.get(kind="ipp_dep").done_on is not None
+    aer = pdf("aer.pdf", "Avertissement-extrait de rôle", "Impôt des personnes physiques",
+              f"Numéro national : {shown}", f"Exercice d'imposition {TODAY.year}")  # fmt: skip
+    web.post(reverse("depot:index"), {"files": [aer]})
+    box = year.deposits.get(kind="ipp_aer")
+    assert box.done_on is None and box.documents.count() == 1  # à vérifier

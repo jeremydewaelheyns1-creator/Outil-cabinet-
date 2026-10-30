@@ -25,6 +25,10 @@ class Kind(models.TextChoices):
     VAT = "tva", "Dossiers soumis à TVA"
     NO_VAT = "sans_tva", "Dossiers non soumis à TVA"
     MANAGER = "gestionnaire", "Checklist gestionnaire"
+    # D-118 : clôture IPP des indépendants (personnes physiques).
+    IPP_VAT = "ipp_tva", "Indépendants (IPP) soumis à TVA"
+    IPP_NO_VAT = "ipp_sans_tva", "Indépendants (IPP) non soumis à TVA"
+    IPP_MANAGER = "ipp_gestion", "Checklist gestionnaire IPP"
 
 
 class Part(models.TextChoices):
@@ -64,6 +68,8 @@ class DossierSetup(models.Model):
     order = models.JSONField("ordre des champs", default=list, blank=True)
     # Cases de dépôt retirées pour ce dossier (ex. pas de fiches 281.50), D-113.
     hidden_deposits = models.JSONField("cases de dépôt retirées", default=list, blank=True)
+    # Profil IPP choisi à la main (D-118) ; vide = déduit de la fiche.
+    ipp_profile = models.CharField("profil IPP", max_length=12, blank=True)
     history = HistoricalRecords()
 
     class Meta:
@@ -246,6 +252,11 @@ class Deposit(models.Model):
         LISTING = "listing", "Listing clients"
         PRECOMPTE = "pm", "Précompte mobilier"
         UBO = "ubo", "Registre UBO"
+        # D-118 : la déclaration IPP en 4 cases (personnes physiques).
+        IPP_PIECES = "ipp_pie", "Pièces reçues"
+        IPP_CALCUL = "ipp_cal", "Calcul validé"
+        IPP_DEPOT = "ipp_dep", "Déposée"
+        IPP_AER = "ipp_aer", "Avertissement-extrait"
 
     year = models.ForeignKey(ClosingYear, on_delete=models.CASCADE, related_name="deposits")
     kind = models.CharField("dépôt", max_length=8, choices=Kind.choices)

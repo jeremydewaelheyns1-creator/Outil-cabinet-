@@ -39,20 +39,35 @@ TASKS: dict[str, str] = {
     Kind.BNB: "comptes_annuels",
     Kind.ISOC: "isoc",
     Kind.LISTING: "listing_clients_tva",  # annuelle : l'année civile où l'exercice se termine
+    Kind.IPP_DEPOT: "ipp",  # annuelle : revenus de l'année
 }
-ANNUAL = {Kind.LISTING}
+ANNUAL = {Kind.LISTING, Kind.IPP_DEPOT}
 FOLDERS: dict[str, str] = {
-    Kind.AG: "legal", Kind.BNB: "comptes", Kind.ISOC: "isoc",
-    Kind.FICHES_281_50: "isoc", Kind.ANNEXES_270: "isoc", Kind.FICHES_281_20: "isoc",
-    Kind.LISTING: "tva", Kind.PRECOMPTE: "isoc", Kind.UBO: "administratif",
-}  # fmt: skip
+    Kind.AG: "legal",
+    Kind.BNB: "comptes",
+    Kind.ISOC: "isoc",
+    Kind.FICHES_281_50: "isoc",
+    Kind.ANNEXES_270: "isoc",
+    Kind.FICHES_281_20: "isoc",
+    Kind.LISTING: "tva",
+    Kind.PRECOMPTE: "isoc",
+    Kind.UBO: "administratif",
+    Kind.IPP_PIECES: "ipp",
+    Kind.IPP_CALCUL: "ipp",
+    Kind.IPP_DEPOT: "ipp",
+    Kind.IPP_AER: "ipp",
+}
+# D-118 : la déclaration IPP en 4 cases, pour toute personne physique.
+IPP = [Kind.IPP_PIECES, Kind.IPP_CALCUL, Kind.IPP_DEPOT, Kind.IPP_AER]  # fmt: skip
 # Ordre des cases sur la ligne ; 281.20 et 281.50 partagent la case « Fiches 281 ».
 ORDER = [Kind.AG, Kind.BNB, Kind.ISOC, Kind.ANNEXES_270, Kind.PRECOMPTE,
          Kind.FICHES_281_20, Kind.FICHES_281_50, Kind.LISTING, Kind.UBO]  # fmt: skip
 FICHES = (Kind.FICHES_281_20, Kind.FICHES_281_50)
 # Nom court dans la case (toutes les cases tiennent sur une ligne) ; le nom complet est dans
 # la fenêtre de la case.
-BOX_LABEL: dict[str, str] = {Kind.PRECOMPTE: "Précompte", Kind.UBO: "UBO"}
+BOX_LABEL: dict[str, str] = {
+    Kind.PRECOMPTE: "Précompte", Kind.UBO: "UBO", Kind.IPP_AER: "Avert.-extrait",
+}  # fmt: skip
 VAT_SUBJECT = {"subject", "mixed", "franchise"}  # comme la règle listing_clients_tva
 HINTS: dict[str, str] = {
     Kind.AG: "Assemblée générale ordinaire : procès-verbal",
@@ -63,6 +78,10 @@ HINTS: dict[str, str] = {
     Kind.ANNEXES_270: "Annexes 270 jointes à la déclaration (270 MLH…)",
     Kind.FICHES_281_20: "Fiches des rémunérations de dirigeants (Belcotax)",
     Kind.LISTING: "Listing annuel des clients assujettis (Intervat), année civile",
+    Kind.IPP_PIECES: "Les documents du client pour la déclaration (fiches, attestations)",
+    Kind.IPP_CALCUL: "Le calcul envoyé au client et accepté (signé)",
+    Kind.IPP_DEPOT: "Déclaration IPP déposée (Tax-on-web) : l'accusé de réception",
+    Kind.IPP_AER: "Avertissement-extrait de rôle reçu et comparé au calcul",
     Kind.UBO: "Confirmation annuelle des bénéficiaires effectifs au registre UBO (MyMinfin)",
     Kind.PRECOMPTE: "Déclaration 273 S et paiement, dans les 15 jours après l'attribution "
     "du dividende",
@@ -70,7 +89,8 @@ HINTS: dict[str, str] = {
 SHORT: dict[str, str] = {
     Kind.AG: "AG", Kind.BNB: "BNB", Kind.ISOC: "ISOC", Kind.FICHES_281_50: "281.50",
     Kind.ANNEXES_270: "270", Kind.FICHES_281_20: "281.20", Kind.LISTING: "Listing",
-    Kind.PRECOMPTE: "PM", Kind.UBO: "UBO",
+    Kind.PRECOMPTE: "PM", Kind.UBO: "UBO", Kind.IPP_PIECES: "Pièces", Kind.IPP_CALCUL: "Calcul",
+    Kind.IPP_DEPOT: "Déposée", Kind.IPP_AER: "Avertissement",
 }  # fmt: skip
 
 
@@ -99,6 +119,7 @@ class Box:
     task: Task | None
     files: list[Document]
     name: str = ""  # nom court affiché dans la case
+    waiting: int = 0  # « Pièces reçues » : demandes de documents encore en attente
     deadline: date | None = None  # date limite sans échéance (précompte : AG + 15 jours)
     parts: list[Box] = field(default_factory=list)  # « Fiches 281 » : 281.20 et 281.50
 
@@ -133,12 +154,48 @@ def hidden_for(client: Client) -> list[str]:
 def kinds_for(client: Client) -> list[str]:
     """Les cases de dépôt du dossier (une société ; sans les cases retirées ; listing clients
     seulement si le dossier est soumis à TVA)."""
-    if client.is_person:
-        return []
     hidden = set(hidden_for(client))
     if client.vat_status not in VAT_SUBJECT:
         hidden.add(Kind.LISTING)
+    if client.is_person:
+        # Indépendant : ses fiches 281.50 et son listing clients (D-118) ; sinon rien.
+        from .services import profile
+
+        if profile(client) != "independant":
+            return []
+        return [k for k in (Kind.FICHES_281_50, Kind.LISTING) if k not in hidden]
     return [k for k in ORDER if k not in hidden]
+
+
+def ipp_kinds_for(client: Client) -> list[str]:
+    """La ligne « Déclaration IPP » d'une personne physique (D-118)."""
+    if not client.is_person:
+        return []
+    hidden = set(hidden_for(client))
+    return [k for k in IPP if k not in hidden]
+
+
+def waiting_requests(client: Client) -> int:
+    """Demandes de documents encore en attente (case « Pièces reçues »)."""
+    from apps.documents.models import DocumentRequest
+
+    return DocumentRequest.objects.filter(
+        client=client, status=DocumentRequest.Status.PENDING
+    ).count()
+
+
+def leader_fiches(client: Client, year: ClosingYear) -> list[tuple[Client, date | None]]:
+    """Dirigeant : la fiche 281.20 de chacune de ses sociétés clientes, pour la même année
+    (case « Fiches 281 » de la société), pour ne pas la redemander (D-118)."""
+    from .services import companies_led
+
+    result = []
+    for company in companies_led(client):
+        deposit = Deposit.objects.filter(
+            year__client=company, year__end__year=year.end.year, kind=Kind.FICHES_281_20
+        ).first()
+        result.append((company, deposit.done_on if deposit else None))
+    return result
 
 
 def boxes(year: ClosingYear, kinds: list[str]) -> list[Box]:
@@ -272,11 +329,20 @@ def document_found(
     """Un document reconnu dans « Déposer des documents » (PV d'AG, comptes annuels, accusé
     Biztax ou Belcotax, annexe 270) : il rejoint la case de l'exercice qui se termine cette
     année-là, et la coche (D-114). Aucun exercice → rien n'est coché (le document reste rangé)."""
-    if kind not in kinds_for(client):  # case retirée, ou pas de TVA → pas de listing
+    from .services import ensure_years
+
+    if client.is_person:
+        ensure_years(client)  # personne physique : la ligne de l'année (31/12) se crée seule
+    if kind not in kinds_for(client) + ipp_kinds_for(client):  # case retirée, pas de TVA…
         return None
     year = ClosingYear.objects.filter(client=client, end__year=end_year).order_by("-end").first()
     if year is None:
         return None
+    if kind == Kind.IPP_AER:
+        # L'avertissement-extrait reste « à vérifier » : joint à la case, pas coché.
+        deposit, _ = Deposit.objects.get_or_create(year=year, kind=kind)
+        deposit.documents.add(document)
+        return year
     attach(year, kind, document, user)
     return year
 

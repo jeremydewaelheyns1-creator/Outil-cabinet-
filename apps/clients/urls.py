@@ -56,6 +56,7 @@ urlpatterns = [
     path("<int:pk>/travail/<slug:slug>/", views.client_work, name="work"),
     # Déclaration TVA (D-040)
     path("<int:pk>/cloture/", closing_views.closing_tab, name="closing"),
+    path("<int:pk>/cloture/profil/", closing_views.profile, name="closing_profile"),
     path(
         "<int:pk>/cloture/<int:year_id>/dividende/",
         closing_views.dividend,
