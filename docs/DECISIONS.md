@@ -1391,3 +1391,29 @@ journée rattachée à la déclaration (`TimeEntry.vat_filing`, activité TVA) ;
 MON temps sur cette déclaration, jamais celui des collègues (D-107). Il suffit de voir le
 dossier (c'est mon temps, pas une modification de la fiche) ; chevauchement refusé avec la
 raison.
+
+## D-111 — Onglet « Clôture » : une ligne par exercice, checklist comptable, clôture comptable
+
+Jeremy (30/10, maquettes « Checklist de clôture ») : l'onglet Clôture remplace la page à
+construire. Une ligne par exercice (créée toute seule pour le dernier exercice terminé, d'après
+la date de clôture de la fiche), dans son propre cadre : Checklist · Clôture comptable · Fiscal
+(réservé pour plus tard) · Resp. · Assis. · Mon temps · Remarque. La ligne devient verte quand
+la checklist est complète ET la clôture comptable cochée ; cocher la clôture avec une checklist
+incomplète demande confirmation.
+
+- **Checklists communes** (Paramètres › Checklists de clôture, administrateurs) : « Dossiers
+  soumis à TVA » (assujetti ou mixte, 16 champs) et « non soumis » (11 champs), listes données
+  par Jeremy le 30/10 ; aides proposées par Claude, modifiables. Elles s'appliquent à **tous**
+  les dossiers (un champ ajouté arrive partout).
+- **Personnalisation par dossier** (Checklist › « Configurer ce dossier ») : renommer, retirer,
+  remettre, ajouter, réordonner — gardé pour les années suivantes, même quand la checklist
+  commune change (`DossierChange`, `DossierItem`, `DossierSetup.order`).
+- **La checklist** s'ouvre dans le cadre du visualiseur : un clic coche (initiales, date),
+  « pas concerné », « + Commentaire » lié à une ligne. Tant qu'un commentaire est ouvert, la
+  ligne est orange et ne peut pas être cochée ; « Réglé » ferme le commentaire et coche la
+  ligne. Remarque générale, onglet Historique, Imprimer.
+- **« + Temps »** : entrée de Ma journée rattachée à l'exercice (`TimeEntry.closing_year`,
+  activité « Clôture et comptes annuels ») ; on ne voit que SON temps (D-107).
+- Modifications journalisées (rubrique « cloture ») ; clôture comptable = événement
+  `closing.accounting_closed` / `closing.accounting_reopened`. Commentaires jamais dans un
+  journal ni un e-mail.

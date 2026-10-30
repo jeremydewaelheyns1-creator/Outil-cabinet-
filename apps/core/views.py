@@ -138,6 +138,12 @@ def settings_page(request: AppRequest) -> HttpResponse:
             request.user.is_staff,
         ),
         (
+            "Checklists de clôture",
+            "Les checklists communes à tous les dossiers (soumis à TVA ou non).",
+            "closing:common",
+            request.user.is_staff,
+        ),
+        (
             "Réglages du cabinet",
             "Gestion hybride des dossiers (comptable « Hybride »).",
             "core:cabinet_settings",

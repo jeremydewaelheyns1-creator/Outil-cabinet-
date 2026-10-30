@@ -1,0 +1,39 @@
+{% extends "layouts/app.html" %}
+{% block head_title %}Checklists de clôture{% endblock %}
+{% block page_title %}Checklists de clôture{% endblock %}
+{% block content %}
+<p class="muted">Les checklists communes s'appliquent à <strong>tous les dossiers</strong> : un champ ajouté, renommé ou supprimé ici change partout. Ce qu'un dossier a personnalisé pour lui-même (onglet Clôture › Checklist › « Configurer ce dossier ») est gardé.</p>
+<nav class="vb-filters" aria-label="Checklist">
+  {% for value, label in kinds %}
+    <a href="?liste={{ value }}" class="vb-filter{% if value == kind %} is-on{% endif %}"{% if value == kind %} aria-current="page"{% endif %}>{{ label }}</a>
+  {% endfor %}
+</nav>
+<section class="card cl-common">
+  <h2>{{ kind_label }} <span class="muted small">· {{ items|length }} champ{{ items|length|pluralize }}</span></h2>
+  {% for item in items %}
+    <div class="cl-edit">
+      <form method="post" class="cl-move">{% csrf_token %}
+        <input type="hidden" name="liste" value="{{ kind }}"><input type="hidden" name="item" value="{{ item.pk }}">
+        <button type="submit" name="action" value="monter" class="link-button" aria-label="Monter {{ item.label }}"{% if forloop.first %} disabled{% endif %}>↑</button>
+        <button type="submit" name="action" value="descendre" class="link-button" aria-label="Descendre {{ item.label }}"{% if forloop.last %} disabled{% endif %}>↓</button>
+      </form>
+      <form method="post" class="cl-edit-form">{% csrf_token %}
+        <input type="hidden" name="liste" value="{{ kind }}"><input type="hidden" name="item" value="{{ item.pk }}">
+        <input name="label" value="{{ item.label }}" maxlength="80" required aria-label="Champ">
+        <input name="hint" value="{{ item.hint }}" maxlength="200" aria-label="Ce qu'il faut vérifier" placeholder="Ce qu'il faut vérifier">
+        <button type="submit" name="action" value="renommer" class="button-small button-secondary">Enregistrer</button>
+        <button type="submit" name="action" value="supprimer" class="link-button small cl-remove">Supprimer</button>
+      </form>
+    </div>
+  {% endfor %}
+  <form method="post" class="cl-edit cl-new">{% csrf_token %}
+    <input type="hidden" name="liste" value="{{ kind }}">
+    <span></span>
+    <div class="cl-edit-form">
+      <input name="label" maxlength="80" required placeholder="Nouveau champ" aria-label="Nouveau champ">
+      <input name="hint" maxlength="200" placeholder="Ce qu'il faut vérifier" aria-label="Ce qu'il faut vérifier">
+      <button type="submit" name="action" value="ajouter" class="button-small">Ajouter</button>
+    </div>
+  </form>
+</section>
+{% endblock %}

@@ -1676,3 +1676,70 @@ button:active, .button:active { transform: scale(.98); }
 .vat-grid thead th { white-space: normal; line-height: 1.2; }
 .vat-grid tbody th { white-space: normal; min-width: 8.5rem; }
 @media (max-width: 1200px) { .vat-wrap { overflow-x: auto; } }
+
+/* ==== Onglet Clôture (D-111) : un cadre par exercice, vert quand tout est fait ============= */
+.cl-intro { margin: 0 0 .4rem; }
+.cl-grid { width: 100%; border-collapse: separate; border-spacing: 0 .75rem; margin-top: -.5rem; }
+.cl-grid thead th { font-size: .74rem; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; color: var(--text-muted); text-align: center; padding: .2rem .4rem 0; line-height: 1.2; }
+.cl-grid thead th:first-child { text-align: left; padding-left: 1rem; }
+.cl-grid tbody > tr > * { background: var(--surface); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); padding: .6rem .4rem; text-align: center; vertical-align: middle; }
+.cl-grid tbody > tr > th { text-align: left; padding-left: 1rem; border-left: 1px solid var(--border); border-radius: 16px 0 0 16px; font-weight: 450; min-width: 12rem; }
+.cl-grid tbody > tr > td:last-child { border-right: 1px solid var(--border); border-radius: 0 16px 16px 0; }
+.cl-grid tr.cl-finished > * { background: #dcfce7; border-color: #86efac; }
+.cl-grid tr.cl-finished > th { box-shadow: inset 5px 0 0 #22c55e; }
+.cl-year { display: block; font-size: 1.3rem; font-weight: 800; letter-spacing: -.01em; }
+.cl-sub { display: block; font-size: .86rem; color: var(--text-muted); }
+.cl-error { display: block; color: var(--danger); font-size: .86rem; font-weight: 600; }
+.cl-box { display: grid; place-items: center; align-content: center; gap: .15rem; min-height: 3.4rem; min-width: 7rem; border-radius: 12px; border: 1.5px dashed var(--border-strong); background: transparent; color: var(--text); padding: .35rem .7rem; font-weight: 600; width: 100%; }
+a.cl-box:hover { color: var(--ink); border-color: var(--primary); }
+.cl-box small { font-size: .78rem; font-weight: 600; }
+.cl-check { min-width: 11rem; }
+.cl-box.is-wip { background: #fff7ed; border: 1.5px solid #fdba74; color: #9a3412; }
+.cl-box.is-done, button.cl-box.is-done { background: #2ea043; border: none; color: #fff; }
+button.cl-box { cursor: pointer; transform: none; }
+button.cl-box:not(.is-done):hover { border-color: #2ea043; color: #166534; background: transparent; }
+.cl-bar { display: block; width: 100%; height: 6px; border-radius: 999px; background: #fde7c7; overflow: hidden; }
+.cl-bar > span { display: block; height: 100%; background: #f59e0b; border-radius: 999px; }
+.cl-soon { display: grid; place-items: center; min-height: 3.4rem; border: 1.5px dashed var(--border); border-radius: 12px; color: #a8a5bd; font-size: .74rem; font-weight: 700; padding: 0 .4rem; }
+.cl-remark { min-width: 5rem; max-width: 12rem; text-align: left !important; }
+/* La checklist, dans le cadre du visualiseur */
+.cl-paper { background: var(--surface); border-radius: 16px; padding: 1.2rem 1.6rem; max-width: 60rem; margin: 0 auto; display: grid; gap: .1rem; }
+.cl-alert { max-width: 60rem; margin: 0 auto .8rem; }
+.cl-progress { display: flex; align-items: center; gap: .8rem; margin-bottom: .5rem; }
+.cl-bar-big { height: 9px; flex: 1; background: #ece9f8; }
+.cl-bar-big > span { background: #22c55e; }
+.cl-line { display: grid; grid-template-columns: 2rem minmax(0, 1fr) auto; gap: .8rem; align-items: center; padding: .45rem .4rem; border-radius: 10px; border-top: 1px solid var(--border); }
+.cl-line.cl-wip { background: #fff7ed; outline: 1.5px solid #fdba74; }
+.cl-tick-form { margin: 0; }
+.cl-tick { width: 1.6rem; height: 1.6rem; border-radius: 7px; border: 2px solid #cfcbe3; background: #fff; display: inline-grid; place-items: center; padding: 0; font-weight: 900; font-size: .9rem; color: #fff; cursor: pointer; transform: none; }
+.cl-tick-ok { background: #22c55e; border-color: #22c55e; }
+.cl-tick-na { background: #d4d6da; border-color: #d4d6da; color: #4b5563; }
+.cl-tick-wip { border-color: #f59e0b; color: #f59e0b; cursor: default; }
+.cl-tick-todo:hover { border-color: #22c55e; background: #f0fdf4; }
+.cl-side { display: flex; align-items: center; gap: .7rem; white-space: nowrap; }
+.cl-side form { margin: 0; }
+.cl-add-comment { position: relative; }
+.cl-add-comment > summary { list-style: none; cursor: pointer; color: var(--primary-hover); }
+.cl-add-comment > summary::-webkit-details-marker { display: none; }
+.cl-add-comment form { position: absolute; right: 0; top: calc(100% + 4px); z-index: 10; width: 22rem; display: grid; gap: .5rem; padding: .8rem; background: var(--surface); border-radius: 14px; box-shadow: var(--shadow-raised); white-space: normal; }
+.cl-thread { margin: .1rem 0 .5rem 2.8rem; border-left: 3px solid #fdba74; background: #fffbeb; border-radius: 0 12px 12px 0; padding: .55rem .8rem; display: grid; gap: .3rem; font-size: .92rem; }
+.cl-thread.is-resolved { border-left-color: #86efac; background: #f0fdf4; }
+.cl-thread form { display: flex; align-items: center; gap: .6rem; flex-wrap: wrap; margin: 0; }
+.cl-resolve { background: #22c55e; color: #fff; }
+.cl-general { margin-top: 1rem; display: grid; gap: .4rem; }
+.cl-general h3, .cl-paper h3 { margin: .6rem 0 .2rem; font-size: 1rem; }
+.cl-general form { display: grid; gap: .5rem; justify-items: start; }
+.cl-general textarea { width: 100%; }
+.cl-edit { display: grid; grid-template-columns: 3.2rem minmax(0, 1fr) auto; gap: .5rem; align-items: center; padding: .35rem 0; border-top: 1px solid var(--border); }
+.cl-move { display: flex; gap: .3rem; margin: 0; }
+.cl-move button { font-size: 1.05rem; padding: 0 .2rem; }
+.cl-move button[disabled] { opacity: .25; }
+.cl-edit-form { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.5fr) auto auto; gap: .5rem; align-items: center; margin: 0; }
+.cl-edit-form input { width: 100%; min-width: 0; }
+.cl-remove { color: var(--danger); }
+.cl-new { border-top: 1px dashed var(--primary); padding-top: .6rem; }
+.cl-removed { display: flex; gap: .8rem; align-items: center; margin: 0; padding: .2rem 0; color: var(--text-muted); }
+.cl-removed span { text-decoration: line-through; }
+.cl-common { display: grid; gap: .1rem; }
+.cl-common .cl-edit { grid-template-columns: 3.2rem minmax(0, 1fr); }
+@media (max-width: 1200px) { .cl-grid { display: block; overflow-x: auto; } }

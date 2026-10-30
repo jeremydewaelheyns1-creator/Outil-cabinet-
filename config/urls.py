@@ -30,6 +30,7 @@ urlpatterns = [
     path("bce/", include("apps.bce.urls")),
     path("reprise/", include("apps.reprise.urls")),
     path("echeances/", include("apps.tasks.urls")),
+    path("parametres/checklists/", include("apps.closing.urls")),
     path("deposer/", include("apps.documents.inbox_urls")),
     path("conformite/", include("apps.documents.compliance_urls")),
     path("parametres/lettre-de-mission/", include("apps.documents.letter_urls")),

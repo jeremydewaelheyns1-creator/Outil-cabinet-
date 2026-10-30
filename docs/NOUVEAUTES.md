@@ -3,6 +3,17 @@
 Ce qui a été ajouté à l'outil, du plus récent au plus ancien. Toutes les données de la démo
 sont inventées.
 
+## 30 octobre 2026 — Onglet Clôture et checklist de clôture
+
+- L'onglet « Clôture » du client montre une ligne par exercice : la checklist, la case
+  « Clôture comptable » à mettre en vert, mon temps et une remarque. La ligne devient verte
+  quand tout est fait.
+- La checklist s'ouvre comme un document : on coche, on note « pas concerné », on ajoute un
+  commentaire sur une ligne (elle reste orange tant que le commentaire n'est pas réglé), et une
+  remarque générale.
+- Deux checklists communes dans Paramètres (dossiers soumis à TVA ou non), modifiables ; chaque
+  dossier peut adapter la sienne (« Configurer ce dossier »), gardée les années suivantes.
+
 ## 30 octobre 2026 — Onglet Déclaration TVA retouché
 
 - La grille tient dans la page ; « Acomptes » vient maintenant avant « Solde ».

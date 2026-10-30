@@ -1,5 +1,6 @@
 from django.urls import path
 
+from apps.closing import views as closing_views
 from apps.documents import letter_views, risk_views
 from apps.documents import views as document_views
 from apps.tasks import views as task_views
@@ -54,6 +55,44 @@ urlpatterns = [
     path("<int:pk>/temps-passe/", timesheet_views.client_time, name="time_spent"),
     path("<int:pk>/travail/<slug:slug>/", views.client_work, name="work"),
     # Déclaration TVA (D-040)
+    path("<int:pk>/cloture/", closing_views.closing_tab, name="closing"),
+    path(
+        "<int:pk>/cloture/<int:year_id>/checklist/",
+        closing_views.checklist,
+        name="closing_checklist",
+    ),
+    path(
+        "<int:pk>/cloture/<int:year_id>/point/<str:key>/", closing_views.tick, name="closing_tick"
+    ),
+    path(
+        "<int:pk>/cloture/<int:year_id>/point/<str:key>/commentaire/",
+        closing_views.comment_add,
+        name="closing_comment",
+    ),
+    path(
+        "<int:pk>/cloture/<int:year_id>/commentaire/<int:comment_id>/regle/",
+        closing_views.comment_resolve,
+        name="closing_resolve",
+    ),
+    path(
+        "<int:pk>/cloture/<int:year_id>/remarque-checklist/",
+        closing_views.checklist_remark,
+        name="closing_checklist_remark",
+    ),
+    path(
+        "<int:pk>/cloture/<int:year_id>/configurer/",
+        closing_views.configure,
+        name="closing_configure",
+    ),
+    path(
+        "<int:pk>/cloture/<int:year_id>/cloture-comptable/",
+        closing_views.accounting_close,
+        name="closing_close",
+    ),
+    path(
+        "<int:pk>/cloture/<int:year_id>/remarque/", closing_views.row_remark, name="closing_remark"
+    ),
+    path("<int:pk>/cloture/<int:year_id>/temps/", closing_views.add_time, name="closing_time"),
     path("<int:pk>/tva/", vat_views.vat_grid, name="vat"),
     path("<int:pk>/tva/<int:filing_id>/case/<slug:column>/", vat_views.vat_cell, name="vat_cell"),
     path("<int:pk>/tva/<int:filing_id>/temps/", vat_views.vat_time, name="vat_time"),

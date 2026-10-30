@@ -25,6 +25,8 @@ EVENT_LABELS = {
     "vat.client_informed": "Client informé de sa déclaration TVA",
     "inbox.filed": "Document déposé et classé automatiquement",
     "ubo.register_confirmed": "Registre UBO confirmé conforme au calcul",
+    "closing.accounting_closed": "Clôture comptable terminée",
+    "closing.accounting_reopened": "Clôture comptable rouverte",
 }
 
 

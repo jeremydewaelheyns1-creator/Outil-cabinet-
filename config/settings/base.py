@@ -53,6 +53,7 @@ INSTALLED_APPS = [
     "apps.tasks",
     "apps.documents",
     "apps.vat",
+    "apps.closing",
     "apps.outlook",
     "apps.timesheet",
     "apps.mailbox",

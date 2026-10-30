@@ -60,6 +60,11 @@ class TimeEntry(models.Model):
         "vat.VatFiling", verbose_name="déclaration TVA", on_delete=models.SET_NULL, null=True,
         blank=True, related_name="time_entries",
     )  # fmt: skip
+    # Ajouté depuis une ligne de l'onglet Clôture (« + Temps », D-111).
+    closing_year = models.ForeignKey(
+        "closing.ClosingYear", verbose_name="exercice (clôture)", on_delete=models.SET_NULL,
+        null=True, blank=True, related_name="time_entries",
+    )  # fmt: skip
     billable = models.BooleanField("facturable", default=True)
     created_at = models.DateTimeField(default=timezone.now, editable=False)
     updated_at = models.DateTimeField(auto_now=True)
