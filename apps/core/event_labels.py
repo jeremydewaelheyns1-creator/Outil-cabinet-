@@ -27,6 +27,8 @@ EVENT_LABELS = {
     "ubo.register_confirmed": "Registre UBO confirmé conforme au calcul",
     "closing.accounting_closed": "Clôture comptable terminée",
     "closing.accounting_reopened": "Clôture comptable rouverte",
+    "closing.manager_closed": "Clôture gestionnaire terminée",
+    "closing.manager_reopened": "Clôture gestionnaire rouverte",
 }
 
 

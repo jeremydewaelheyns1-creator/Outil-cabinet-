@@ -9,7 +9,7 @@ from django.urls import reverse
 
 from apps.clients.models import Assignment
 from apps.closing import services
-from apps.closing.models import ClosingYear, CommonItem, Kind, Tick
+from apps.closing.models import ClosingYear, CommonItem, Kind, Part, Tick
 from apps.core.models import AccessLog
 from apps.core.testing.factories import ClientFactory, PortfolioFactory
 from apps.timesheet.models import TimeEntry
@@ -69,10 +69,15 @@ def test_line_turns_green_when_checklist_complete_and_closed(user):
     year = year_of(client)
     for item in services.items_for(client):
         services.set_tick(year, item.key, "ok", user)
-    sheet = services.sheet(year)
-    assert sheet.complete and not sheet.finished
+    sheet, manager = services.sheet(year), services.sheet(year, Part.MANAGER)
+    assert sheet.complete and not services.finished(sheet, manager)
     services.set_closed(year, True, user)
-    assert services.sheet(year).finished
+    for item in services.items_for(client, Part.MANAGER):
+        services.set_tick(year, item.key, "ok", user)
+    year.refresh_from_db()
+    assert not services.finished(services.sheet(year), services.sheet(year, Part.MANAGER))
+    services.set_closed(year, True, user, Part.MANAGER)
+    assert services.finished(services.sheet(year), services.sheet(year, Part.MANAGER))
 
 
 def test_dossier_customisation_is_kept_and_survives_common_changes(user):
@@ -102,13 +107,13 @@ def test_tab_checklist_and_close_through_the_pages(web, user):
     assert "2025" in html and "Checklist · 0 / 16" in html
     year = ClosingYear.objects.get(client=client)
     key = services.items_for(client)[0].key
-    url = reverse("clients:closing_tick", args=[client.pk, year.pk, key])
+    url = reverse("clients:closing_tick", args=[client.pk, year.pk, "comptable", key])
     panel = unescape(web.post(url, {"status": "ok"}, **HX).content.decode())
     assert "1 / 16" in panel and Tick.objects.filter(year=year).count() == 1
-    url = reverse("clients:closing_comment", args=[client.pk, year.pk, key])
+    url = reverse("clients:closing_comment", args=[client.pk, year.pk, "comptable", key])
     panel = unescape(web.post(url, {"text": "À revoir"}, **HX).content.decode())
     assert "Réglé : cocher la ligne" in panel
-    row = web.post(reverse("clients:closing_close", args=[client.pk, year.pk]), **HX)
+    row = web.post(reverse("clients:closing_close", args=[client.pk, year.pk, "comptable"]), **HX)
     assert "cl-close is-done" in row.content.decode()
     assert AccessLog.objects.filter(action="update", details__rubrique="cloture").exists()
 
@@ -118,7 +123,7 @@ def test_read_only_user_cannot_tick(client, make_user):
     year = year_of(target)
     client.force_login(make_user())  # pas le droit de modifier les fiches
     key = services.items_for(target)[0].key
-    url = reverse("clients:closing_tick", args=[target.pk, year.pk, key])
+    url = reverse("clients:closing_tick", args=[target.pk, year.pk, "comptable", key])
     assert client.post(url, {"status": "ok"}).status_code == 403
 
 
@@ -126,7 +131,7 @@ def test_private_dossier_is_unreachable(web):
     hidden = company(portfolio=PortfolioFactory(is_private=True))
     year = year_of(hidden)
     assert web.get(reverse("clients:closing", args=[hidden.pk])).status_code == 404
-    url = reverse("clients:closing_checklist", args=[hidden.pk, year.pk])
+    url = reverse("clients:closing_checklist", args=[hidden.pk, year.pk, "comptable"])
     assert web.get(url, **HX).status_code == 404
 
 
@@ -154,3 +159,33 @@ def test_common_lists_are_for_administrators(web, client, make_user):
         reverse("closing:common"), {"liste": "sans_tva", "action": "ajouter", "label": "Stock"}
     )
     assert CommonItem.objects.filter(kind=Kind.NO_VAT, label="Stock").exists()
+
+
+def test_manager_checklist_is_common_and_customisable_per_dossier(web, user):
+    client, other = company(), company(vat="not_subject")
+    labels = [i.label for i in services.items_for(client, Part.MANAGER)]
+    assert labels == [
+        "Vérification générale", "Compte courant", "ATN", "Intérêts fictifs",
+        "Dette fiscale estimée", "Affectation du résultat N-1", "Provisions",
+    ]  # fmt: skip
+    assert [i.label for i in services.items_for(other, Part.MANAGER)] == labels  # TVA ou non
+    services.add(client, "Leasing", "", Part.MANAGER)
+    assert "Leasing" in [i.label for i in services.items_for(client, Part.MANAGER)]
+    assert "Leasing" not in [i.label for i in services.items_for(client)]  # pas la comptable
+    year = year_of(client)
+    key = services.items_for(client, Part.MANAGER)[1].key
+    url = reverse("clients:closing_comment", args=[client.pk, year.pk, "gestionnaire", key])
+    panel = unescape(web.post(url, {"text": "Solde débiteur à justifier"}, **HX).content.decode())
+    assert "Checklist gestionnaire" in panel and "Réglé : cocher la ligne" in panel
+    row = web.post(
+        reverse("clients:closing_close", args=[client.pk, year.pk, "gestionnaire"]), **HX
+    )
+    year.refresh_from_db()
+    assert year.manager_closed_on is not None and year.closed_on is None
+    assert "Gestionnaire · 0 / 8" in unescape(row.content.decode())
+    assert (
+        web.get(
+            reverse("clients:closing_checklist", args=[client.pk, year.pk, "x"]), **HX
+        ).status_code
+        == 404
+    )

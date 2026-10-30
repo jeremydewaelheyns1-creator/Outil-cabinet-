@@ -1,0 +1,10 @@
+{# Case « Clôture comptable » / « Clôture gestionnaire » (D-111, D-112) : un clic = vert. #}
+{% if can_edit %}
+  <form method="post" action="{% url 'clients:closing_close' client.pk y.pk part %}" hx-post="{% url 'clients:closing_close' client.pk y.pk part %}" hx-target="closest tr" hx-swap="outerHTML"{% if not on and not s.complete %} hx-confirm="{{ s.missing }} point{{ s.missing|pluralize }} de la checklist {{ s.missing|pluralize:'n’est,ne sont' }} pas fait{{ s.missing|pluralize }}. Clôturer quand même ?"{% endif %}>{% csrf_token %}
+    <button type="submit" class="cl-box cl-close{% if on %} is-done{% endif %}" title="{% if on %}Cliquer pour rouvrir{% else %}Marquer la {{ label|lower }} comme faite{% endif %}">
+      {% if on %}<strong>{{ on|date:"d/m" }}</strong><small>{{ by.get_short_name|default:"" }}</small>{% else %}<span class="visually-hidden">{{ label }} : </span><small>à faire</small>{% endif %}
+    </button>
+  </form>
+{% else %}
+  <span class="cl-box cl-close{% if on %} is-done{% endif %}">{% if on %}<strong>{{ on|date:"d/m" }}</strong>{% else %}<small>à faire</small>{% endif %}</span>
+{% endif %}

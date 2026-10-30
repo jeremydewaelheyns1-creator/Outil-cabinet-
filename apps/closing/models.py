@@ -24,12 +24,20 @@ from apps.core.models import User
 class Kind(models.TextChoices):
     VAT = "tva", "Dossiers soumis à TVA"
     NO_VAT = "sans_tva", "Dossiers non soumis à TVA"
+    MANAGER = "gestionnaire", "Checklist gestionnaire"
+
+
+class Part(models.TextChoices):
+    """Les deux checklists d'un exercice (D-112)."""
+
+    ACCOUNTING = "comptable", "Checklist comptable"
+    MANAGER = "gestionnaire", "Checklist gestionnaire"
 
 
 class CommonItem(models.Model):
     """Un champ d'une checklist commune (réglages généraux)."""
 
-    kind = models.CharField("checklist", max_length=10, choices=Kind.choices)
+    kind = models.CharField("checklist", max_length=12, choices=Kind.choices)
     label = models.CharField("champ", max_length=80)
     hint = models.CharField("ce qu'il faut vérifier", max_length=200, blank=True)
     position = models.PositiveIntegerField("ordre", default=0)
@@ -89,6 +97,9 @@ class DossierItem(models.Model):
     """Un champ ajouté pour ce dossier seulement."""
 
     client = models.ForeignKey(Client, on_delete=models.CASCADE, related_name="closing_items")
+    part = models.CharField(
+        "checklist", max_length=12, choices=Part.choices, default=Part.ACCOUNTING
+    )
     label = models.CharField("champ", max_length=80)
     hint = models.CharField("ce qu'il faut vérifier", max_length=200, blank=True)
     active = models.BooleanField("actif", default=True)
@@ -126,8 +137,14 @@ class ClosingYear(models.Model):
         User, verbose_name="clôturé par", on_delete=models.SET_NULL, null=True, blank=True,
         related_name="+",
     )  # fmt: skip
+    manager_closed_on = models.DateField("clôture gestionnaire le", null=True, blank=True)
+    manager_closed_by = models.ForeignKey(
+        User, verbose_name="clôture gestionnaire par", on_delete=models.SET_NULL, null=True,
+        blank=True, related_name="+",
+    )  # fmt: skip
     remark = models.TextField("remarque (ligne)", blank=True)
     checklist_remark = models.TextField("remarque générale de la checklist", blank=True)
+    manager_remark = models.TextField("remarque générale (gestionnaire)", blank=True)
     created_at = models.DateTimeField(default=timezone.now, editable=False)
     history = HistoricalRecords()
 

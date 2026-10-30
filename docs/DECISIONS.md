@@ -1417,3 +1417,21 @@ incomplète demande confirmation.
 - Modifications journalisées (rubrique « cloture ») ; clôture comptable = événement
   `closing.accounting_closed` / `closing.accounting_reopened`. Commentaires jamais dans un
   journal ni un e-mail.
+
+## D-112 — Checklist gestionnaire et clôture gestionnaire
+
+Jeremy (30/10, maquette « ClotureGestionnaire » validée) : après la clôture comptable, le
+gestionnaire (l'expert) a sa propre checklist, qui reste comptable (le fiscal — DNA, etc. —
+ira dans une case « Déclaration ISOC » plus tard). Ligne de l'exercice : Checklist comptable ·
+Clôture comptable · Checklist gestionnaire · Clôture gestionnaire · Resp. · Assis. · Mon temps
+· Remarque. La ligne devient verte quand les deux checklists sont complètes et les deux
+clôtures cochées.
+
+- Checklist gestionnaire commune (Paramètres › Checklists de clôture), la même pour tous les
+  dossiers, TVA ou non : Vérification générale, Compte courant, ATN, Intérêts fictifs, Dette
+  fiscale estimée, Affectation du résultat N-1, Provisions (liste de Jeremy ; aides proposées).
+- Même fonctionnement que la checklist comptable (cadre du visualiseur, commentaires liés à
+  une ligne, « Configurer ce dossier », historique, remarque générale propre).
+- « Clôture gestionnaire » : n'importe qui ayant le droit de modifier les fiches peut la cocher
+  (à restreindre au responsable si Jeremy le demande) ; événements
+  `closing.manager_closed` / `closing.manager_reopened`.

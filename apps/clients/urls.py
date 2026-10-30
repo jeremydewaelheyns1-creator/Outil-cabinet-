@@ -57,42 +57,44 @@ urlpatterns = [
     # Déclaration TVA (D-040)
     path("<int:pk>/cloture/", closing_views.closing_tab, name="closing"),
     path(
-        "<int:pk>/cloture/<int:year_id>/checklist/",
+        "<int:pk>/cloture/<int:year_id>/remarque/", closing_views.row_remark, name="closing_remark"
+    ),
+    path("<int:pk>/cloture/<int:year_id>/temps/", closing_views.add_time, name="closing_time"),
+    path(
+        "<int:pk>/cloture/<int:year_id>/<slug:part>/",
         closing_views.checklist,
         name="closing_checklist",
     ),
     path(
-        "<int:pk>/cloture/<int:year_id>/point/<str:key>/", closing_views.tick, name="closing_tick"
+        "<int:pk>/cloture/<int:year_id>/<slug:part>/point/<str:key>/",
+        closing_views.tick,
+        name="closing_tick",
     ),
     path(
-        "<int:pk>/cloture/<int:year_id>/point/<str:key>/commentaire/",
+        "<int:pk>/cloture/<int:year_id>/<slug:part>/point/<str:key>/commentaire/",
         closing_views.comment_add,
         name="closing_comment",
     ),
     path(
-        "<int:pk>/cloture/<int:year_id>/commentaire/<int:comment_id>/regle/",
+        "<int:pk>/cloture/<int:year_id>/<slug:part>/commentaire/<int:comment_id>/regle/",
         closing_views.comment_resolve,
         name="closing_resolve",
     ),
     path(
-        "<int:pk>/cloture/<int:year_id>/remarque-checklist/",
+        "<int:pk>/cloture/<int:year_id>/<slug:part>/remarque/",
         closing_views.checklist_remark,
         name="closing_checklist_remark",
     ),
     path(
-        "<int:pk>/cloture/<int:year_id>/configurer/",
+        "<int:pk>/cloture/<int:year_id>/<slug:part>/configurer/",
         closing_views.configure,
         name="closing_configure",
     ),
     path(
-        "<int:pk>/cloture/<int:year_id>/cloture-comptable/",
+        "<int:pk>/cloture/<int:year_id>/<slug:part>/cloture/",
         closing_views.accounting_close,
         name="closing_close",
     ),
-    path(
-        "<int:pk>/cloture/<int:year_id>/remarque/", closing_views.row_remark, name="closing_remark"
-    ),
-    path("<int:pk>/cloture/<int:year_id>/temps/", closing_views.add_time, name="closing_time"),
     path("<int:pk>/tva/", vat_views.vat_grid, name="vat"),
     path("<int:pk>/tva/<int:filing_id>/case/<slug:column>/", vat_views.vat_cell, name="vat_cell"),
     path("<int:pk>/tva/<int:filing_id>/temps/", vat_views.vat_time, name="vat_time"),

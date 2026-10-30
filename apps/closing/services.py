@@ -23,14 +23,18 @@ from .models import (
     DossierItem,
     DossierSetup,
     Kind,
+    Part,
     Tick,
 )
 
 VAT_STATUSES = {Client.VatStatus.SUBJECT, Client.VatStatus.MIXED}
 
 
-def kind_for(client: Client) -> str:
-    """Checklist commune du dossier : soumis à TVA (assujetti, mixte) ou non."""
+def kind_for(client: Client, part: str = Part.ACCOUNTING) -> str:
+    """Checklist commune du dossier : la checklist gestionnaire (D-112), ou la comptable des
+    dossiers soumis à TVA (assujetti, mixte) ou non."""
+    if part == Part.MANAGER:
+        return Kind.MANAGER
     return Kind.VAT if client.vat_status in VAT_STATUSES else Kind.NO_VAT
 
 
@@ -46,12 +50,12 @@ class Item:
     changed: bool = False  # renommé pour ce dossier
 
 
-def items_for(client: Client) -> list[Item]:
+def items_for(client: Client, part: str = Part.ACCOUNTING) -> list[Item]:
     """Les champs de la checklist du dossier : la checklist commune, avec ce que le dossier a
     retiré, renommé ou ajouté, dans l'ordre choisi pour le dossier."""
     changes = {c.item_id: c for c in DossierChange.objects.filter(client=client)}
     found: list[Item] = []
-    for common in CommonItem.objects.filter(kind=kind_for(client), active=True):
+    for common in CommonItem.objects.filter(kind=kind_for(client, part), active=True):
         change = changes.get(common.pk)
         if change is not None and change.removed:
             continue
@@ -59,7 +63,7 @@ def items_for(client: Client) -> list[Item]:
         hint = (change.hint if change else "") or common.hint
         renamed = bool(change and (change.label or change.hint))
         found.append(Item(common.key, label, hint, True, renamed))
-    for own in DossierItem.objects.filter(client=client, active=True):
+    for own in DossierItem.objects.filter(client=client, part=part, active=True):
         found.append(Item(own.key, own.label, own.hint, False))
     setup = DossierSetup.objects.filter(client=client).first()
     if setup is not None and setup.order:
@@ -69,23 +73,26 @@ def items_for(client: Client) -> list[Item]:
     return found
 
 
-def removed_for(client: Client) -> list[CommonItem]:
+def removed_for(client: Client, part: str = Part.ACCOUNTING) -> list[CommonItem]:
     """Champs communs retirés pour ce dossier (pour pouvoir les remettre)."""
     return list(
         CommonItem.objects.filter(
-            kind=kind_for(client), active=True, changes__client=client, changes__removed=True
+            kind=kind_for(client, part), active=True, changes__client=client,
+            changes__removed=True,
         )
-    )
+    )  # fmt: skip
 
 
 def _save_order(client: Client, keys: list[str]) -> None:
+    """Ordre d'une checklist ; l'ordre de l'autre checklist du dossier est gardé."""
     setup, _ = DossierSetup.objects.get_or_create(client=client)
-    setup.order = keys
+    mine = set(keys)
+    setup.order = [k for k in setup.order if k not in mine] + keys
     setup.save()
 
 
-def move(client: Client, key: str, step: int) -> None:
-    keys = [i.key for i in items_for(client)]
+def move(client: Client, key: str, step: int, part: str = Part.ACCOUNTING) -> None:
+    keys = [i.key for i in items_for(client, part)]
     if key not in keys:
         raise ValueError("Champ inconnu.")
     index = keys.index(key)
@@ -95,12 +102,12 @@ def move(client: Client, key: str, step: int) -> None:
         _save_order(client, keys)
 
 
-def rename(client: Client, key: str, label: str, hint: str) -> None:
+def rename(client: Client, key: str, label: str, hint: str, part: str = Part.ACCOUNTING) -> None:
     label, hint = label.strip()[:80], hint.strip()[:200]
     if not label:
         raise ValueError("Le nom du champ est obligatoire.")
     if key.startswith("c"):
-        common = CommonItem.objects.get(pk=int(key[1:]), kind=kind_for(client))
+        common = CommonItem.objects.get(pk=int(key[1:]), kind=kind_for(client, part))
         change, _ = DossierChange.objects.get_or_create(client=client, item=common)
         change.label = "" if label == common.label else label
         change.hint = "" if hint == common.hint else hint
@@ -109,9 +116,9 @@ def rename(client: Client, key: str, label: str, hint: str) -> None:
         DossierItem.objects.filter(client=client, pk=int(key[1:])).update(label=label, hint=hint)
 
 
-def remove(client: Client, key: str) -> None:
+def remove(client: Client, key: str, part: str = Part.ACCOUNTING) -> None:
     if key.startswith("c"):
-        common = CommonItem.objects.get(pk=int(key[1:]), kind=kind_for(client))
+        common = CommonItem.objects.get(pk=int(key[1:]), kind=kind_for(client, part))
         change, _ = DossierChange.objects.get_or_create(client=client, item=common)
         change.removed = True
         change.save()
@@ -123,11 +130,13 @@ def restore(client: Client, common_id: int) -> None:
     DossierChange.objects.filter(client=client, item_id=common_id).update(removed=False)
 
 
-def add(client: Client, label: str, hint: str) -> DossierItem:
+def add(client: Client, label: str, hint: str, part: str = Part.ACCOUNTING) -> DossierItem:
     label = label.strip()[:80]
-    if not label:
+    if not label or part not in Part.values:
         raise ValueError("Le nom du champ est obligatoire.")
-    return DossierItem.objects.create(client=client, label=label, hint=hint.strip()[:200])
+    return DossierItem.objects.create(
+        client=client, part=part, label=label, hint=hint.strip()[:200]
+    )
 
 
 def parse_key(key: str) -> str:
@@ -220,6 +229,7 @@ class Sheet:
 
     year: ClosingYear
     lines: list[Line]
+    part: str = Part.ACCOUNTING
 
     @property
     def total(self) -> int:
@@ -246,22 +256,30 @@ class Sheet:
         return round(100 * self.done / self.total) if self.total else 0
 
     @property
-    def finished(self) -> bool:
-        """La ligne de l'exercice passe au vert."""
-        return self.complete and self.year.closed_on is not None
+    def closed(self) -> bool:
+        """La case « Clôture » qui suit cette checklist est cochée."""
+        if self.part == Part.MANAGER:
+            return self.year.manager_closed_on is not None
+        return self.year.closed_on is not None
 
 
-def sheet(year: ClosingYear, items: list[Item] | None = None) -> Sheet:
-    items = items if items is not None else items_for(year.client)
+def finished(accounting: Sheet, manager: Sheet) -> bool:
+    """La ligne de l'exercice passe au vert : deux checklists complètes, deux clôtures cochées."""
+    return all(s.complete and s.closed for s in (accounting, manager))
+
+
+def sheet(year: ClosingYear, part: str = Part.ACCOUNTING, items: list[Item] | None = None) -> Sheet:
+    items = items if items is not None else items_for(year.client, part)
     ticks = {t.key: t for t in year.ticks.select_related("by")}
     comments: dict[str, list[Comment]] = {}
     for comment in year.comments.select_related("author", "resolved_by"):
         comments.setdefault(comment.key, []).append(comment)
-    return Sheet(year, [Line(i, ticks.get(i.key), comments.get(i.key, [])) for i in items])
+    return Sheet(year, [Line(i, ticks.get(i.key), comments.get(i.key, [])) for i in items], part)
 
 
 def item_label(year: ClosingYear, key: str) -> str:
-    found = next((i for i in items_for(year.client) if i.key == key), None)
+    items = items_for(year.client, Part.ACCOUNTING) + items_for(year.client, Part.MANAGER)
+    found = next((i for i in items if i.key == key), None)
     if found is None:
         raise ValueError("Champ inconnu pour ce dossier.")
     return found.label
@@ -304,12 +322,19 @@ def resolve(comment: Comment, user: User) -> None:
         )  # fmt: skip
 
 
-def set_closed(year: ClosingYear, closed: bool, user: User) -> None:
-    year.closed_on = timezone.localdate() if closed else None
-    year.closed_by = user if closed else None
-    year.save(update_fields=["closed_on", "closed_by"])
+def set_closed(year: ClosingYear, closed: bool, user: User, part: str = Part.ACCOUNTING) -> None:
+    """Coche ou décoche « Clôture comptable » ou « Clôture gestionnaire »."""
+    day, who = (timezone.localdate(), user) if closed else (None, None)
+    if part == Part.MANAGER:
+        year.manager_closed_on, year.manager_closed_by = day, who
+        year.save(update_fields=["manager_closed_on", "manager_closed_by"])
+        name = "closing.manager_closed" if closed else "closing.manager_reopened"
+    else:
+        year.closed_on, year.closed_by = day, who
+        year.save(update_fields=["closed_on", "closed_by"])
+        name = "closing.accounting_closed" if closed else "closing.accounting_reopened"
     events.emit(
-        "closing.accounting_closed" if closed else "closing.accounting_reopened",
+        name,
         subject=year.client,
         actor=user,
         payload={"exercice": year.label},

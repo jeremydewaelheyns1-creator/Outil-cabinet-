@@ -3,6 +3,14 @@
 Ce qui a été ajouté à l'outil, du plus récent au plus ancien. Toutes les données de la démo
 sont inventées.
 
+## 30 octobre 2026 — Checklist gestionnaire
+
+- Dans l'onglet Clôture, chaque exercice a maintenant aussi une « Checklist gestionnaire »
+  (vérification générale, compte courant, ATN, intérêts fictifs, dette fiscale estimée,
+  affectation du résultat N-1, provisions) et une case « Clôture gestionnaire ».
+- La ligne devient verte quand les deux checklists sont complètes et les deux clôtures cochées.
+- Colonne « Fiscal » retirée : la déclaration ISOC aura sa propre case.
+
 ## 30 octobre 2026 — Onglet Clôture et checklist de clôture
 
 - L'onglet « Clôture » du client montre une ligne par exercice : la checklist, la case

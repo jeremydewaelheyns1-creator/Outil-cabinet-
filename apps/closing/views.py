@@ -7,7 +7,7 @@ from typing import Any
 
 from django.contrib import messages
 from django.core.exceptions import PermissionDenied, ValidationError
-from django.http import HttpResponse
+from django.http import Http404, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
@@ -23,7 +23,7 @@ from apps.core.permissions import require_capability
 from apps.timesheet.models import TimeEntry, hours_label
 
 from . import services
-from .models import ClosingYear, Comment, CommonItem, Kind
+from .models import ClosingYear, Comment, CommonItem, Kind, Part
 
 VIEWS = ("checklist", "configurer", "historique")
 
@@ -44,13 +44,29 @@ def _time_defaults(user: User) -> dict[str, str]:
 
 
 def _rows(client: Client, user: User) -> list[dict[str, Any]]:
-    items = services.items_for(client)
-    years = list(client.closing_years.select_related("manager", "assistant", "closed_by"))
+    accounting = services.items_for(client, Part.ACCOUNTING)
+    manager = services.items_for(client, Part.MANAGER)
+    years = list(
+        client.closing_years.select_related(
+            "manager", "assistant", "closed_by", "manager_closed_by"
+        )
+    )
     services.add_my_time(user, years)
-    return [
-        {"year": y, "sheet": services.sheet(y, items), "deposit": services.deposit(y)}
-        for y in years
-    ]
+    rows = []
+    for y in years:
+        sheet = services.sheet(y, Part.ACCOUNTING, accounting)
+        manager_sheet = services.sheet(y, Part.MANAGER, manager)
+        rows.append({
+            "year": y, "sheet": sheet, "manager_sheet": manager_sheet,
+            "finished": services.finished(sheet, manager_sheet), "deposit": services.deposit(y),
+        })  # fmt: skip
+    return rows
+
+
+def _part(part: str) -> str:
+    if part not in Part.values:
+        raise Http404
+    return part
 
 
 def closing_tab(request: AppRequest, pk: int) -> HttpResponse:
@@ -90,25 +106,34 @@ def _row_response(request: AppRequest, year: ClosingYear, error: str = "") -> Ht
 
 
 def _checklist_response(
-    request: AppRequest, year: ClosingYear, view: str = "checklist", error: str = ""
+    request: AppRequest, year: ClosingYear, part: str, view: str = "checklist", error: str = ""
 ) -> HttpResponse:
     client = year.client
     if not request.htmx:
         if error:
             messages.error(request, error)
         return redirect("clients:closing", pk=client.pk)
-    sheet = services.sheet(year)
+    sheet = services.sheet(year, part)
+    keys = {line.item.key for line in sheet.lines}
+    manager = part == Part.MANAGER
     context = {
         "client": client,
         "year": year,
         "sheet": sheet,
+        "part": part,
+        "part_label": "Checklist gestionnaire" if manager else "Checklist",
+        "general_remark": year.manager_remark if manager else year.checklist_remark,
         "view": view if view in VIEWS else "checklist",
-        "removed": services.removed_for(client),
-        "comments": list(year.comments.select_related("author", "resolved_by")),
-        "ticks": list(year.ticks.select_related("by").order_by("-on", "-pk")),
+        "removed": services.removed_for(client, part),
+        "comments": [
+            c for c in year.comments.select_related("author", "resolved_by") if c.key in keys
+        ],
+        "ticks": [
+            t for t in year.ticks.select_related("by").order_by("-on", "-pk") if t.key in keys
+        ],
         "can_edit": request.user.has_capability(Capability.CLIENTS_EDIT),
         "error": error,
-        "kind": Kind(services.kind_for(client)).label,
+        "kind": Kind(services.kind_for(client, part)).label,
     }
     response = render(request, "closing/_checklist.html", context)
     if request.method == "POST":
@@ -116,13 +141,13 @@ def _checklist_response(
     return response
 
 
-def checklist(request: AppRequest, pk: int, year_id: int) -> HttpResponse:
+def checklist(request: AppRequest, pk: int, year_id: int, part: str) -> HttpResponse:
     year = _year(request, pk, year_id)
     log_access(
         request, AccessLog.Action.VIEW, year.client,
-        details={"rubrique": "cloture", "exercice": year.label},
+        details={"rubrique": "cloture", "exercice": year.label, "checklist": _part(part)},
     )  # fmt: skip
-    return _checklist_response(request, year, request.GET.get("vue", "checklist"))
+    return _checklist_response(request, year, part, request.GET.get("vue", "checklist"))
 
 
 def _changed(request: AppRequest, year: ClosingYear, what: str) -> None:
@@ -132,8 +157,9 @@ def _changed(request: AppRequest, year: ClosingYear, what: str) -> None:
 
 @require_POST
 @require_capability(Capability.CLIENTS_EDIT)
-def tick(request: AppRequest, pk: int, year_id: int, key: str) -> HttpResponse:
+def tick(request: AppRequest, pk: int, year_id: int, part: str, key: str) -> HttpResponse:
     year = _year(request, pk, year_id)
+    _part(part)
     error = ""
     try:
         services.set_tick(
@@ -142,13 +168,14 @@ def tick(request: AppRequest, pk: int, year_id: int, key: str) -> HttpResponse:
         _changed(request, year, "coche")
     except ValueError as exc:
         error = str(exc)
-    return _checklist_response(request, year, error=error)
+    return _checklist_response(request, year, part, error=error)
 
 
 @require_POST
 @require_capability(Capability.CLIENTS_EDIT)
-def comment_add(request: AppRequest, pk: int, year_id: int, key: str) -> HttpResponse:
+def comment_add(request: AppRequest, pk: int, year_id: int, part: str, key: str) -> HttpResponse:
     year = _year(request, pk, year_id)
+    _part(part)
     error = ""
     try:
         services.add_comment(
@@ -157,66 +184,74 @@ def comment_add(request: AppRequest, pk: int, year_id: int, key: str) -> HttpRes
         _changed(request, year, "commentaire")
     except ValueError as exc:
         error = str(exc)
-    return _checklist_response(request, year, error=error)
+    return _checklist_response(request, year, part, error=error)
 
 
 @require_POST
 @require_capability(Capability.CLIENTS_EDIT)
-def comment_resolve(request: AppRequest, pk: int, year_id: int, comment_id: int) -> HttpResponse:
+def comment_resolve(
+    request: AppRequest, pk: int, year_id: int, part: str, comment_id: int
+) -> HttpResponse:
     year = _year(request, pk, year_id)
+    _part(part)
     comment = get_object_or_404(Comment, pk=comment_id, year=year, resolved_at__isnull=True)
     services.resolve(comment, request.user)
     _changed(request, year, "commentaire réglé")
-    return _checklist_response(request, year)
+    return _checklist_response(request, year, part)
 
 
 @require_POST
 @require_capability(Capability.CLIENTS_EDIT)
-def checklist_remark(request: AppRequest, pk: int, year_id: int) -> HttpResponse:
+def checklist_remark(request: AppRequest, pk: int, year_id: int, part: str) -> HttpResponse:
     year = _year(request, pk, year_id)
-    year.checklist_remark = request.POST.get("remark", "").strip()[:4000]
-    year.save(update_fields=["checklist_remark"])
+    field = "manager_remark" if _part(part) == Part.MANAGER else "checklist_remark"
+    setattr(year, field, request.POST.get("remark", "").strip()[:4000])
+    year.save(update_fields=[field])
     _changed(request, year, "remarque")
-    return _checklist_response(request, year)
+    return _checklist_response(request, year, part)
 
 
 @require_POST
 @require_capability(Capability.CLIENTS_EDIT)
-def configure(request: AppRequest, pk: int, year_id: int) -> HttpResponse:
+def configure(request: AppRequest, pk: int, year_id: int, part: str) -> HttpResponse:
     """Personnaliser la checklist de CE dossier (gardé pour les années suivantes)."""
     year = _year(request, pk, year_id)
+    _part(part)
     client = year.client
     action = request.POST.get("action", "")
     error = ""
     try:
         if action == "ajouter":
-            services.add(client, request.POST.get("label", ""), request.POST.get("hint", ""))
+            services.add(client, request.POST.get("label", ""), request.POST.get("hint", ""), part)
         elif action == "remettre":
             services.restore(client, int(request.POST.get("item", "0") or 0))
         else:
             key = services.parse_key(request.POST.get("key", ""))
             if action == "renommer":
                 services.rename(
-                    client, key, request.POST.get("label", ""), request.POST.get("hint", "")
+                    client, key, request.POST.get("label", ""), request.POST.get("hint", ""), part
                 )
             elif action == "retirer":
-                services.remove(client, key)
+                services.remove(client, key, part)
             elif action in ("monter", "descendre"):
-                services.move(client, key, -1 if action == "monter" else 1)
+                services.move(client, key, -1 if action == "monter" else 1, part)
             else:
                 raise ValueError("Action inconnue.")
         _changed(request, year, f"checklist du dossier : {action}")
     except (ValueError, CommonItem.DoesNotExist):
         error = "Modification refusée : vérifiez le nom du champ."
-    return _checklist_response(request, year, "configurer", error)
+    return _checklist_response(request, year, part, "configurer", error)
 
 
 @require_POST
 @require_capability(Capability.CLIENTS_EDIT)
-def accounting_close(request: AppRequest, pk: int, year_id: int) -> HttpResponse:
+def accounting_close(request: AppRequest, pk: int, year_id: int, part: str) -> HttpResponse:
+    """Case « Clôture comptable » ou « Clôture gestionnaire » : un clic coche ou décoche."""
     year = _year(request, pk, year_id)
-    services.set_closed(year, year.closed_on is None, request.user)
-    _changed(request, year, "clôture comptable")
+    manager = _part(part) == Part.MANAGER
+    current = year.manager_closed_on if manager else year.closed_on
+    services.set_closed(year, current is None, request.user, part)
+    _changed(request, year, "clôture gestionnaire" if manager else "clôture comptable")
     return _row_response(request, year)
 
 

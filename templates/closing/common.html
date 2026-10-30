@@ -2,7 +2,7 @@
 {% block head_title %}Checklists de clôture{% endblock %}
 {% block page_title %}Checklists de clôture{% endblock %}
 {% block content %}
-<p class="muted">Les checklists communes s'appliquent à <strong>tous les dossiers</strong> : un champ ajouté, renommé ou supprimé ici change partout. Ce qu'un dossier a personnalisé pour lui-même (onglet Clôture › Checklist › « Configurer ce dossier ») est gardé.</p>
+<p class="muted">Trois checklists : la checklist comptable (dossiers soumis à TVA ou non) et la checklist gestionnaire. Elles s'appliquent à <strong>tous les dossiers</strong> : un champ ajouté, renommé ou supprimé ici change partout. Ce qu'un dossier a personnalisé pour lui-même (onglet Clôture › checklist › « Configurer ce dossier ») est gardé.</p>
 <nav class="vb-filters" aria-label="Checklist">
   {% for value, label in kinds %}
     <a href="?liste={{ value }}" class="vb-filter{% if value == kind %} is-on{% endif %}"{% if value == kind %} aria-current="page"{% endif %}>{{ label }}</a>

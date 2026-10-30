@@ -1743,3 +1743,11 @@ button.cl-box:not(.is-done):hover { border-color: #2ea043; color: #166534; backg
 .cl-common { display: grid; gap: .1rem; }
 .cl-common .cl-edit { grid-template-columns: 3.2rem minmax(0, 1fr); }
 @media (max-width: 1200px) { .cl-grid { display: block; overflow-x: auto; } }
+/* D-112 : deux checklists par exercice — cases un peu plus étroites, couleurs gardées au survol */
+.cl-grid tbody > tr > th { min-width: 10rem; }
+.cl-box { min-width: 5.5rem; }
+.cl-check { min-width: 9rem; }
+.cl-tick.cl-tick-ok, .cl-tick.cl-tick-ok:hover { background: #22c55e; border-color: #22c55e; color: #fff; }
+.cl-tick.cl-tick-na, .cl-tick.cl-tick-na:hover { background: #d4d6da; border-color: #d4d6da; color: #4b5563; }
+.cl-tick.cl-tick-todo:hover { background: #f0fdf4; border-color: #22c55e; }
+.cl-tick:focus-visible { box-shadow: 0 0 0 3px #a5b4fc; }

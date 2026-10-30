@@ -3,12 +3,12 @@ ligne, remarque générale ; configurer la liste du dossier ; historique.{% endc
 <div class="viewer cl-viewer">
   <header class="viewer-head">
     <div class="viewer-title">
-      <h2>Checklist {{ client.display_name }} {{ year.label }}</h2>
+      <h2>{{ part_label }} {{ client.display_name }} {{ year.label }}</h2>
       <div class="viewer-meta">
         <span><strong>{{ sheet.done }} / {{ sheet.total }}</strong> faits</span>
         {% if sheet.in_progress %}<span class="badge badge-warning">{{ sheet.in_progress|length }} en cours</span>{% endif %}
         {% if sheet.complete %}<span class="badge badge-success">complète</span>{% endif %}
-        <span class="muted">Checklist commune « {{ kind }} »</span>
+        <span class="muted">{% if part == "gestionnaire" %}Checklist gestionnaire commune{% else %}Checklist commune « {{ kind }} »{% endif %}</span>
       </div>
     </div>
     <div class="viewer-actions">
@@ -31,7 +31,7 @@ ligne, remarque générale ; configurer la liste du dossier ; historique.{% endc
       {% for line in sheet.lines %}
         <div class="cl-line cl-{{ line.state }}">
           {% if can_edit and line.state != "wip" %}
-            <form method="post" action="{% url 'clients:closing_tick' client.pk year.pk line.item.key %}" hx-post="{% url 'clients:closing_tick' client.pk year.pk line.item.key %}" hx-target="#doc-viewer-content" hx-swap="innerHTML" class="cl-tick-form">{% csrf_token %}
+            <form method="post" action="{% url 'clients:closing_tick' client.pk year.pk part line.item.key %}" hx-post="{% url 'clients:closing_tick' client.pk year.pk part line.item.key %}" hx-target="#doc-viewer-content" hx-swap="innerHTML" class="cl-tick-form">{% csrf_token %}
               <button type="submit" name="status" value="{% if line.state == 'todo' %}ok{% else %}{% endif %}" class="cl-tick cl-tick-{{ line.state }}" title="{% if line.state == 'todo' %}Cocher : OK{% else %}Décocher{% endif %}" aria-label="{{ line.item.label }} : {% if line.state == 'todo' %}cocher{% else %}décocher{% endif %}">{% if line.state == "ok" %}✓{% elif line.state == "na" %}–{% endif %}</button>
             </form>
           {% else %}
@@ -41,11 +41,11 @@ ligne, remarque générale ; configurer la liste du dossier ; historique.{% endc
           <div class="cl-side">
             {% if line.tick %}<span class="small muted" title="{{ line.tick.by|default:'' }}">{{ line.tick.by.get_short_name|default:"" }} · {{ line.tick.on|date:"d/m" }}</span>{% endif %}
             {% if can_edit and line.state == "todo" %}
-              <form method="post" action="{% url 'clients:closing_tick' client.pk year.pk line.item.key %}" hx-post="{% url 'clients:closing_tick' client.pk year.pk line.item.key %}" hx-target="#doc-viewer-content" hx-swap="innerHTML">{% csrf_token %}<button type="submit" name="status" value="na" class="link-button small muted">pas concerné</button></form>
+              <form method="post" action="{% url 'clients:closing_tick' client.pk year.pk part line.item.key %}" hx-post="{% url 'clients:closing_tick' client.pk year.pk part line.item.key %}" hx-target="#doc-viewer-content" hx-swap="innerHTML">{% csrf_token %}<button type="submit" name="status" value="na" class="link-button small muted">pas concerné</button></form>
             {% endif %}
             {% if can_edit %}
               <details class="cl-add-comment"><summary class="link-button small">+ Commentaire</summary>
-                <form method="post" action="{% url 'clients:closing_comment' client.pk year.pk line.item.key %}" hx-post="{% url 'clients:closing_comment' client.pk year.pk line.item.key %}" hx-target="#doc-viewer-content" hx-swap="innerHTML">{% csrf_token %}
+                <form method="post" action="{% url 'clients:closing_comment' client.pk year.pk part line.item.key %}" hx-post="{% url 'clients:closing_comment' client.pk year.pk part line.item.key %}" hx-target="#doc-viewer-content" hx-swap="innerHTML">{% csrf_token %}
                   <textarea name="text" rows="3" maxlength="2000" required aria-label="Commentaire sur {{ line.item.label }}" placeholder="Ex. : il reste 1 245 € : paiement sans communication, demandé au client"></textarea>
                   <button type="submit" class="button-small">Ajouter le commentaire</button>
                 </form>
@@ -58,7 +58,7 @@ ligne, remarque générale ; configurer la liste du dossier ; historique.{% endc
             <div><strong>{{ c.author.get_short_name|default:"" }}</strong> <span class="muted small">· {{ c.created_at|date:"d/m/Y à H:i" }}</span>{% if not c.is_open %} <span class="badge badge-success">réglé le {{ c.resolved_at|date:"d/m" }}</span>{% endif %}</div>
             <div>{{ c.text|linebreaksbr }}</div>
             {% if c.is_open and can_edit %}
-              <form method="post" action="{% url 'clients:closing_resolve' client.pk year.pk c.pk %}" hx-post="{% url 'clients:closing_resolve' client.pk year.pk c.pk %}" hx-target="#doc-viewer-content" hx-swap="innerHTML">{% csrf_token %}
+              <form method="post" action="{% url 'clients:closing_resolve' client.pk year.pk part c.pk %}" hx-post="{% url 'clients:closing_resolve' client.pk year.pk part c.pk %}" hx-target="#doc-viewer-content" hx-swap="innerHTML">{% csrf_token %}
                 <button type="submit" class="button-small cl-resolve">Réglé : cocher la ligne</button>
                 <span class="small muted">Tant que le commentaire est ouvert, la ligne reste orange.</span>
               </form>
@@ -71,11 +71,11 @@ ligne, remarque générale ; configurer la liste du dossier ; historique.{% endc
       <div class="cl-general">
         <h3>Remarque générale</h3>
         {% if can_edit %}
-          <form method="post" action="{% url 'clients:closing_checklist_remark' client.pk year.pk %}" hx-post="{% url 'clients:closing_checklist_remark' client.pk year.pk %}" hx-target="#doc-viewer-content" hx-swap="innerHTML">{% csrf_token %}
-            <textarea name="remark" rows="3" maxlength="4000" aria-label="Remarque générale">{{ year.checklist_remark }}</textarea>
+          <form method="post" action="{% url 'clients:closing_checklist_remark' client.pk year.pk part %}" hx-post="{% url 'clients:closing_checklist_remark' client.pk year.pk part %}" hx-target="#doc-viewer-content" hx-swap="innerHTML">{% csrf_token %}
+            <textarea name="remark" rows="3" maxlength="4000" aria-label="Remarque générale">{{ general_remark }}</textarea>
             <button type="submit" class="button-small">Enregistrer la remarque</button>
           </form>
-        {% else %}<p>{{ year.checklist_remark|linebreaksbr|default:"—" }}</p>{% endif %}
+        {% else %}<p>{{ general_remark|linebreaksbr|default:"—" }}</p>{% endif %}
       </div>
     </section>
 
@@ -84,12 +84,12 @@ ligne, remarque générale ; configurer la liste du dossier ; historique.{% endc
       <p class="small muted">Les changements ne valent que pour <strong>{{ client.display_name }}</strong>, pour cet exercice et les suivants. La checklist commune se règle dans Paramètres.</p>
       {% for line in sheet.lines %}
         <div class="cl-edit">
-          <form method="post" action="{% url 'clients:closing_configure' client.pk year.pk %}" hx-post="{% url 'clients:closing_configure' client.pk year.pk %}" hx-target="#doc-viewer-content" hx-swap="innerHTML" class="cl-move">{% csrf_token %}
+          <form method="post" action="{% url 'clients:closing_configure' client.pk year.pk part %}" hx-post="{% url 'clients:closing_configure' client.pk year.pk part %}" hx-target="#doc-viewer-content" hx-swap="innerHTML" class="cl-move">{% csrf_token %}
             <input type="hidden" name="key" value="{{ line.item.key }}">
             <button type="submit" name="action" value="monter" class="link-button" aria-label="Monter {{ line.item.label }}"{% if forloop.first %} disabled{% endif %}>↑</button>
             <button type="submit" name="action" value="descendre" class="link-button" aria-label="Descendre {{ line.item.label }}"{% if forloop.last %} disabled{% endif %}>↓</button>
           </form>
-          <form method="post" action="{% url 'clients:closing_configure' client.pk year.pk %}" hx-post="{% url 'clients:closing_configure' client.pk year.pk %}" hx-target="#doc-viewer-content" hx-swap="innerHTML" class="cl-edit-form">{% csrf_token %}
+          <form method="post" action="{% url 'clients:closing_configure' client.pk year.pk part %}" hx-post="{% url 'clients:closing_configure' client.pk year.pk part %}" hx-target="#doc-viewer-content" hx-swap="innerHTML" class="cl-edit-form">{% csrf_token %}
             <input type="hidden" name="key" value="{{ line.item.key }}">
             <input name="label" value="{{ line.item.label }}" maxlength="80" required aria-label="Champ">
             <input name="hint" value="{{ line.item.hint }}" maxlength="200" aria-label="Ce qu'il faut vérifier" placeholder="Ce qu'il faut vérifier">
@@ -99,7 +99,7 @@ ligne, remarque générale ; configurer la liste du dossier ; historique.{% endc
           <span class="small muted">{% if not line.item.common %}propre au dossier{% elif line.item.changed %}modifié pour ce dossier{% endif %}</span>
         </div>
       {% endfor %}
-      <form method="post" action="{% url 'clients:closing_configure' client.pk year.pk %}" hx-post="{% url 'clients:closing_configure' client.pk year.pk %}" hx-target="#doc-viewer-content" hx-swap="innerHTML" class="cl-edit cl-new">{% csrf_token %}
+      <form method="post" action="{% url 'clients:closing_configure' client.pk year.pk part %}" hx-post="{% url 'clients:closing_configure' client.pk year.pk part %}" hx-target="#doc-viewer-content" hx-swap="innerHTML" class="cl-edit cl-new">{% csrf_token %}
         <span></span>
         <div class="cl-edit-form">
           <input name="label" maxlength="80" required placeholder="Nouveau champ (ex. : Leasing)" aria-label="Nouveau champ">
@@ -110,7 +110,7 @@ ligne, remarque générale ; configurer la liste du dossier ; historique.{% endc
       {% if removed %}
         <h3>Retirés pour ce dossier</h3>
         {% for item in removed %}
-          <form method="post" action="{% url 'clients:closing_configure' client.pk year.pk %}" hx-post="{% url 'clients:closing_configure' client.pk year.pk %}" hx-target="#doc-viewer-content" hx-swap="innerHTML" class="cl-removed">{% csrf_token %}
+          <form method="post" action="{% url 'clients:closing_configure' client.pk year.pk part %}" hx-post="{% url 'clients:closing_configure' client.pk year.pk part %}" hx-target="#doc-viewer-content" hx-swap="innerHTML" class="cl-removed">{% csrf_token %}
             <input type="hidden" name="item" value="{{ item.pk }}">
             <span>{{ item.label }}</span>
             <button type="submit" name="action" value="remettre" class="link-button small">Remettre</button>
@@ -129,7 +129,8 @@ ligne, remarque générale ; configurer la liste du dossier ; historique.{% endc
       {% for c in comments %}
         <p class="small">{{ c.created_at|date:"d/m/Y" }} · <strong>{{ c.label }}</strong> — {{ c.author|default:"" }} : {{ c.text|truncatechars:160 }}{% if c.resolved_at %} <span class="badge badge-success">réglé le {{ c.resolved_at|date:"d/m/Y" }}{% if c.resolved_by %} par {{ c.resolved_by.get_short_name }}{% endif %}</span>{% else %} <span class="badge badge-warning">ouvert</span>{% endif %}</p>
       {% empty %}<p class="small muted">Aucun commentaire.</p>{% endfor %}
-      {% if year.closed_on %}<h3>Clôture comptable</h3><p class="small">Faite le {{ year.closed_on|date:"d/m/Y" }}{% if year.closed_by %} par {{ year.closed_by }}{% endif %}.</p>{% endif %}
+      {% if part == "gestionnaire" %}{% if year.manager_closed_on %}<h3>Clôture gestionnaire</h3><p class="small">Faite le {{ year.manager_closed_on|date:"d/m/Y" }}{% if year.manager_closed_by %} par {{ year.manager_closed_by }}{% endif %}.</p>{% endif %}
+      {% elif year.closed_on %}<h3>Clôture comptable</h3><p class="small">Faite le {{ year.closed_on|date:"d/m/Y" }}{% if year.closed_by %} par {{ year.closed_by }}{% endif %}.</p>{% endif %}
     </section>
   </div>
 
