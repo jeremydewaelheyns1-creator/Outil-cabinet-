@@ -3,6 +3,12 @@
 Ce qui a été ajouté à l'outil, du plus récent au plus ancien. Toutes les données de la démo
 sont inventées.
 
+## 30 octobre 2026 — Mandataires et actionnaires depuis Documents
+
+- Plus d'entrées « Mandataires » et « Actionnaires » à gauche : on les encode depuis l'onglet
+  Documents (Identification des mandataires : « Ajouter / modifier les mandataires » ; UBO :
+  « Encoder les actionnaires »).
+
 ## 29 octobre 2026 — Fiche client allégée
 
 - **Archives** : une seule entrée, en classeur. Les années, puis les sujets (TVA, ISOC,

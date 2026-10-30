@@ -74,8 +74,9 @@ SIDE: tuple[Group, ...] = (
     Group(
         "Organisation",
         (
-            Section("mandates", "Mandataires", count="mandates"),
-            Section("shareholders", "Actionnaires", count="shareholders"),
+            # D-106 : encodés depuis Documents (Identification des mandataires, UBO).
+            Section("mandates", "Mandataires", count="mandates", hidden=True),
+            Section("shareholders", "Actionnaires", count="shareholders", hidden=True),
         ),
     ),
     # D-031, D-105 — Une seule entrée « Archives » : un classeur par année puis par sujet.

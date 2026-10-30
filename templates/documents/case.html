@@ -1,6 +1,12 @@
 {% extends "clients/sections/_base.html" %}
 {% block head_title %}{{ case.label }} · {{ client.display_name }}{% endblock %}
 {% block page_title %}<a href="{% url 'clients:documents' client.pk %}" class="muted">Documents</a> › {{ case.label }}{% endblock %}
+{% block page_actions %}
+  {# D-106 : l'encodage des dirigeants et des actionnaires se fait d'ici (plus d'entrée à gauche). #}
+  {% if case.slug == "identification-mandataires" or case.slug == "pieces-identite" %}
+    <a class="button button-secondary" href="{% url 'clients:mandates' client.pk %}">{% if can_edit %}Ajouter / modifier les mandataires{% else %}Voir les mandataires{% endif %}</a>
+  {% endif %}
+{% endblock %}
 {% block content %}
 <section class="card">
   <div class="card-header"><h2>{{ case.label }}</h2>{% include "clients/_case_badge.html" %}</div>

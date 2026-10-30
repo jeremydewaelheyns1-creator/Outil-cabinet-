@@ -42,9 +42,8 @@ def test_inside_a_dossier_only_the_dossier_is_shown(web):
     positions = [tabs.index(u) for u in urls]
     assert positions == sorted(positions)  # ordre voulu par Jeremy
     assert "time-sheet" not in html
-    # À gauche : la paperasse, chaque page à un clic.
-    for name in ("identity", "mandates", "shareholders", "documents",
-                 "tasks", "history"):  # fmt: skip
+    # Chaque page à un clic depuis la fiche (D-105, D-106 : panneau allégé, liens en bas).
+    for name in ("identity", "archives", "documents", "tasks", "history"):
         assert reverse(f"clients:{name}", args=[client.pk]) in html
 
 
@@ -174,7 +173,6 @@ def test_relations_are_split_by_kind_with_counts(web):
     assert "Gérante" in mandates and owner.name not in mandates.split("dossier-content")[1]
     shareholders = web.get(reverse("clients:shareholders", args=[company.pk])).content.decode()
     assert "60 %" in shareholders
-    assert 'class="side-count">1<' in mandates
     # Une personne voit les sociétés où elle a un mandat.
     html = web.get(reverse("clients:mandates", args=[manager.pk])).content.decode()
     assert company.name in html.split("dossier-content")[1]
@@ -253,7 +251,7 @@ def test_one_archives_entry_on_the_left(web):
     assert reverse("clients:archives", args=[company.pk]) in html
     for slug in ("legal", "isoc", "tva", "administratif", "courriels"):
         assert reverse("clients:archive", args=[company.pk, slug]) not in html
-    for hidden in ("Honoraires", ">Historique<", ">Échéances<"):
+    for hidden in ("Honoraires", ">Historique<", ">Échéances<", ">Mandataires<", ">Actionnaires<"):
         assert hidden not in html.split('class="dossier-side"')[1].split("</aside>")[0]
     assert (
         "Heures prestées" in html
@@ -341,3 +339,14 @@ def test_documents_tab_gives_direct_access_to_documents(web):
     html = web.get(reverse("clients:documents", args=[company.pk])).content.decode()
     assert "doc-open" in html
     assert reverse("clients:document_viewer", args=[company.pk, doc.pk]) in html
+
+
+def test_managers_and_shareholders_are_encoded_from_documents(web):
+    """D-106 : plus d'entrée « Organisation » ; on encode depuis l'onglet Documents."""
+    company = ClientFactory()
+    case = reverse("clients:document_case", args=[company.pk, "identification-mandataires"])
+    assert reverse("clients:mandates", args=[company.pk]) in web.get(case).content.decode()
+    ubo = web.get(reverse("clients:ubo", args=[company.pk])).content.decode()
+    assert reverse("clients:shareholders", args=[company.pk]) in ubo
+    page = web.get(reverse("clients:mandates", args=[company.pk])).content.decode()
+    assert reverse("clients:documents", args=[company.pk]) in page  # retour à Documents

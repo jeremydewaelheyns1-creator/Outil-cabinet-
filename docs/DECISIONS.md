@@ -1341,3 +1341,12 @@ Jeremy : « le but c'est pas de copier-coller FID-Manager ».
   des documents, dans les e-mails, et pour reconnaître les factures. Sans nom ni numéro encodés,
   aucune facture n'est reconnue (jamais le nom par défaut « Cabinet »).
 - Les pages cachées existent toujours (`Section.hidden`) : rien n'est perdu.
+
+## D-106 — Mandataires et actionnaires encodés depuis Documents
+
+Jeremy : « il y a déjà ça dans Documents ». Le groupe « Organisation » quitte le panneau de
+gauche : on encode les dirigeants depuis Documents › Identification des mandataires (et Cartes
+d'identité) — bouton « Ajouter / modifier les mandataires » — et les actionnaires depuis
+Documents › UBO — bouton « Encoder les actionnaires ». Les deux pages existent toujours (fil
+d'Ariane « Documents › … ») ; les noms de l'en-tête restent cliquables. Panneau : Fiche,
+Archives, Facturation.
