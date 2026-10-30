@@ -1787,3 +1787,9 @@ button.cl-box:not(.is-done):hover { border-color: #2ea043; color: #166534; backg
 .cl-restore { display: flex; gap: .8rem; align-items: center; flex-wrap: wrap; margin-top: .6rem; }
 @media (max-width: 900px) { .cl-card { grid-template-columns: minmax(0, 1fr); } }
 .cl-box-label { text-transform: none; letter-spacing: 0; font-size: .74rem; font-weight: 700; }
+
+/* Agenda : le créneau s'ouvre en modification, seul le nom du dossier mène à la fiche client. */
+.ag-block .ag-block-edit { position: absolute; inset: 0; z-index: 1; border-radius: inherit; }
+.ag-block strong, .ag-block span { pointer-events: none; }
+.ag-block .ag-client-link { position: relative; z-index: 2; pointer-events: auto; color: inherit; text-decoration: none; }
+.ag-block .ag-client-link:hover, .ag-block .ag-client-link:focus-visible { text-decoration: underline; }

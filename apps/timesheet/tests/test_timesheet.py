@@ -132,3 +132,17 @@ def test_short_slot_is_shown_on_one_line_and_confirmation_only_once(web):
 def test_missing_hours_are_refused_without_crashing(web):
     response = add(web, start="", end="")
     assert response.status_code == 302 and not TimeEntry.objects.exists()
+
+
+def test_dossier_name_in_the_agenda_opens_the_client_file_the_rest_opens_the_slot(web, user):
+    """Demande de Jeremy (30/10) : seul le nom du dossier (souligné au survol) mène à la fiche."""
+    client = ClientFactory(name="Boulangerie Fictive")
+    TimeEntry.objects.create(user=user, day=MONDAY, start=time(9), end=time(10), client=client,
+                             activity="tva", description="Encodage")  # fmt: skip
+    internal = TimeEntry.objects.create(user=user, day=MONDAY, start=time(11), end=time(12),
+                                        activity="interne")  # fmt: skip
+    html = web.get(reverse("core:agenda") + "?jour=2026-10-19").content.decode()
+    detail = reverse("clients:detail", args=[client.pk])
+    assert f'class="ag-client-link" href="{detail}"' in html
+    assert html.count('class="ag-client-link"') == 1  # pas de lien pour le temps interne
+    assert f"modifier={internal.pk}#ts-form" in html

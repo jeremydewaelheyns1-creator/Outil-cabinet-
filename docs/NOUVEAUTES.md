@@ -3,6 +3,11 @@
 Ce qui a été ajouté à l'outil, du plus récent au plus ancien. Toutes les données de la démo
 sont inventées.
 
+## 30 octobre 2026 — Agenda : le nom du dossier mène à la fiche client
+
+- Dans l'agenda, le nom du dossier se souligne au survol : un clic ouvre la fiche client.
+- Cliquer ailleurs sur le créneau l'ouvre toujours en modification, comme avant.
+
 ## 30 octobre 2026 — Les documents de clôture se rangent tout seuls
 
 - Dans « Déposer des documents », l'outil lit maintenant aussi le PV d'assemblée générale,

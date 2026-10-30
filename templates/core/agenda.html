@@ -42,10 +42,11 @@
       </div>
       <div class="ts-day ag-day{% if is_today %} is-today{% endif %}" style="height: {{ grid_height }}px" data-ts-day="{{ day|date:'Y-m-d' }}" title="Cliquer pour ajouter">
         {% for b in current.blocks %}
-          <a class="ts-block ts-{{ b.entry.activity }}{% if not b.entry.billable %} is-internal{% endif %}{% if editing and editing.pk == b.entry.pk %} is-editing{% endif %}{% if b.is_short %} is-short{% endif %}" style="top: {{ b.top }}px; height: {{ b.height }}px" href="?jour={{ day|date:'Y-m-d' }}&amp;modifier={{ b.entry.pk }}#ts-form">
-            <strong>{{ b.label }} · {{ b.entry.start|time:"H:i" }}–{{ b.entry.end|time:"H:i" }}</strong>
+          <div class="ts-block ag-block ts-{{ b.entry.activity }}{% if not b.entry.billable %} is-internal{% endif %}{% if editing and editing.pk == b.entry.pk %} is-editing{% endif %}{% if b.is_short %} is-short{% endif %}" style="top: {{ b.top }}px; height: {{ b.height }}px">
+            <a class="ag-block-edit" href="?jour={{ day|date:'Y-m-d' }}&amp;modifier={{ b.entry.pk }}#ts-form" aria-label="Modifier ce créneau"></a>
+            <strong>{% if b.entry.client_id %}<a class="ag-client-link" href="{% url 'clients:detail' b.entry.client_id %}">{{ b.label }}</a>{% else %}{{ b.label }}{% endif %} · {{ b.entry.start|time:"H:i" }}–{{ b.entry.end|time:"H:i" }}</strong>
             <span>{{ b.entry.get_activity_display }}{% if b.entry.description %} — {{ b.entry.description }}{% endif %}</span>
-          </a>
+          </div>
         {% endfor %}
         {% for d in timed_deadlines %}
           <a class="ag-deadline{% if d.short %} is-short{% endif %}" style="top: {{ d.top }}px; height: {{ d.height }}px" href="{% url 'clients:tasks' d.task.client_id %}">
