@@ -1,0 +1,71 @@
+# Banc d'essai de la lecture des modèles par l'assistant IA (D-132) : documents ENTIÈREMENT
+# FICTIFS, lus par la vraie IA (Mistral, en Europe). Le rapport (score, erreurs, coût) est
+# rangé sur la branche « banc-ia-resultats », où Claude le lit pour améliorer l'assistant.
+name: Banc d'essai IA
+
+on:
+  push:
+    branches: [ia-banc]
+  workflow_dispatch:
+
+permissions:
+  contents: write  # ranger le rapport sur la branche banc-ia-resultats
+  id-token: write  # lire la clé Mistral dans Google, sans clé stockée chez GitHub
+
+concurrency:
+  group: banc-ia
+  cancel-in-progress: true
+
+jobs:
+  banc:
+    if: vars.GCP_WIF_PROVIDER != ''
+    runs-on: ubuntu-24.04
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: outil
+          POSTGRES_PASSWORD: outil
+          POSTGRES_DB: outil
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U outil" --health-interval 5s --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgres://outil:outil@localhost:5432/outil
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.11.32"
+      - run: uv sync --frozen
+      - uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ vars.GCP_WIF_PROVIDER }}
+          service_account: ${{ vars.GCP_DEPLOY_SA }}
+      - uses: google-github-actions/setup-gcloud@v2
+      - name: Clé de l'assistant (masquée dans les journaux)
+        run: |
+          KEY="$(gcloud secrets versions access latest --secret=MISTRAL_API_KEY --project=${{ vars.GCP_PROJECT }})"
+          echo "::add-mask::$KEY"
+          echo "MISTRAL_API_KEY=$KEY" >> "$GITHUB_ENV"
+      - name: Base de test
+        run: uv run python manage.py migrate --settings=config.settings.test -v0
+      - name: Banc d'essai (règles seules, puis avec l'IA)
+        run: |
+          uv run python manage.py banc_ia --sans-ia --settings=config.settings.test --rapport regles.md > /dev/null
+          uv run python manage.py banc_ia --settings=config.settings.test --rapport ia.md > /dev/null
+          { cat ia.md; echo; echo "---"; echo; cat regles.md; } > rapport.md
+          cat rapport.md >> "$GITHUB_STEP_SUMMARY"
+      - name: Ranger le rapport
+        run: |
+          SHA="${GITHUB_SHA::8}"
+          git config user.name "banc-ia" && git config user.email "banc-ia@users.noreply.github.com"
+          git fetch origin banc-ia-resultats || true
+          if git rev-parse --verify origin/banc-ia-resultats >/dev/null 2>&1; then
+            git checkout -B banc-ia-resultats origin/banc-ia-resultats
+          else
+            git checkout --orphan banc-ia-resultats && git rm -rfq . && git clean -fdq -e rapport.md
+          fi
+          mkdir -p resultats && cp rapport.md "resultats/${SHA}.md" && cp rapport.md resultats/dernier.md
+          git add resultats && git commit -qm "Banc d'essai IA ${SHA}" && git push -q origin banc-ia-resultats

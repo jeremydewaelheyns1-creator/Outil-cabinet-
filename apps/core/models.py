@@ -332,6 +332,9 @@ class CabinetSettings(models.Model):
     )
     # Assistant IA (D-121) : les documents des clients ne partent vers l'assistant que si le
     # fournisseur a confirmé par écrit qu'il ne garde rien (« zéro conservation »).
+    # Corrections faites par le cabinet sur des modèles lus par l'assistant (D-132) : elles lui
+    # servent d'exemples. Texte des modèles seulement (aucune donnée de client), 40 au plus.
+    ai_examples = models.JSONField("exemples pour l'assistant IA", default=list, blank=True)
     ai_personal_data = models.BooleanField(
         "l'assistant IA peut lire les documents des clients",
         default=True,

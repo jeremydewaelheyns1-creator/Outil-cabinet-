@@ -1843,3 +1843,9 @@ button.cl-box:not(.is-done):hover { border-color: #2ea043; color: #166534; backg
 .model-summary h3 { font-size: .95rem; margin: 0 0 .3rem; }
 .model-summary ul { margin: 0; padding-left: 1.1rem; }
 .site-essai { background: #b45309; color: #fff; text-align: center; font-size: .85rem; font-weight: 600; padding: .3rem .8rem; position: sticky; top: 0; z-index: 1000; }
+.model-doc { font-family: Georgia, "Times New Roman", serif; font-size: .92rem; line-height: 1.55; max-height: 70vh; overflow: auto; padding: .8rem 1rem; border: 1px solid var(--border, #d8dce3); border-radius: 8px; background: var(--surface, #fff); }
+.model-line { margin: 0 0 .45rem; }
+.model-row { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: .8rem; }
+.model-doc a, .model-legend mark { border-radius: 4px; padding: 0 .2rem; text-decoration: none; color: inherit; }
+.hole-auto { background: #d1fae5; } .hole-ask { background: #fde68a; } .hole-calc { background: #bfdbfe; } .hole-todo { background: #fecaca; }
+.letter-holes tr:target { outline: 2px solid #6366f1; }

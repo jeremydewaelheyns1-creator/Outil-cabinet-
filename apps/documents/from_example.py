@@ -486,17 +486,22 @@ def _row_labels(content: bytes) -> dict[int, str]:
 
 
 def row_texts(content: bytes) -> list[str]:
-    """Le texte des cases de libellé des tableaux (première case remplie de chaque ligne)."""
+    """Les libellés des lignes « libellé | montant » des tableaux (« ATN Auto ») : la première
+    case de texte d'une ligne dont une autre case contient un chiffre ou un repère. Un tableau
+    de mise en page (en-tête, signatures) n'en a pas."""
     from docx.oxml.ns import qn
 
     found = []
     for table in letter._open(content).element.body.iter(qn("w:tbl")):
         for row in table.iter(qn("w:tr")):
-            for cell in row.findall(qn("w:tc")):
-                text = "".join(t.text or "" for t in cell.iter(qn("w:t"))).strip()
-                if text and not re.fullmatch(r"[\s€()+\-–\d.,]*", text):
-                    found.append(text)
-                    break
+            cells = [
+                "".join(t.text or "" for t in cell.iter(qn("w:t"))).strip()
+                for cell in row.findall(qn("w:tc"))
+            ]
+            label = next((c for c in cells if c and not re.fullmatch(r"[\s€()+\-–\d.,]*", c)), "")
+            others = [c for c in cells if c and c != label]
+            if label and any(re.search(r"\d|\[|X{3,}|\.{4,}", c) for c in others):
+                found.append(label)
     return found
 
 
@@ -550,3 +555,40 @@ def _before_words(before: str) -> str:
     if re.fullmatch(CIVIL + r"|M|Mr|Mme", label):
         return "Nom"
     return label[:1].upper() + label[1:]
+
+
+@dataclass
+class Built:
+    """Le modèle obtenu à partir d'un document déposé (D-132)."""
+
+    content: bytes
+    holes: dict[str, dict[str, Any]]
+    options: dict[str, dict[str, Any]]
+    filled: bool  # c'était un document rempli pour un client
+    report: list[tuple[str, int]]
+    read_by_ai: bool
+
+
+def build(content: bytes, kind: str, client: Client | None, user: Any,
+          use_ai: bool = True) -> Built:  # fmt: skip
+    """Du document déposé au modèle : l'assistant IA lit le document entier et pose les
+    repères ; les règles de l'outil passent derrière en garde-fou (et font tout si
+    l'assistant ne répond pas)."""
+    from apps.ai import client as ai
+    from apps.ai import model_reader
+
+    reading = None
+    if use_ai and ai.enabled() and ai.personal_data_allowed():
+        try:
+            reading = model_reader.read(content, kind, user)
+        except ai.Unavailable:
+            reading = None
+    result = convert(reading.content if reading else content, client)
+    holes = holes_for(result.content, kind)
+    options = options_for(result.content, kind)
+    if reading is not None:
+        holes = model_reader.overlay(holes, result.content, kind, reading)
+        options = {**options, **reading.options}
+    # Une année écrite dans un modèle vide ne fait pas un document « rempli pour un client ».
+    filled = bool(set(result.counts) - {"année"}) or bool(reading and reading.replaced)
+    return Built(result.content, holes, options, filled, result.report(), reading is not None)

@@ -42,6 +42,14 @@
     {% endif %}
   </section>
 
+  <section class="card model-preview" style="margin-top: 1rem">
+    <h2>Ce que l'outil a compris</h2>
+    <p class="small model-legend"><mark class="hole-auto">rempli tout seul</mark> <mark class="hole-ask">demandé à chaque fois</mark> <mark class="hole-calc">calculé</mark> <mark class="hole-todo">à régler</mark> · le reste est le texte du cabinet, inchangé. Cliquez sur un élément pour le corriger.</p>
+    <div class="model-doc">
+      {% for line in preview %}<div class="model-line{% if line|length > 1 %} model-row{% endif %}">{% for cell in line %}<span class="model-cell">{% for part in cell %}{% if part.kind %}<a href="#trou-{{ part.key }}" class="hole-{{ part.kind }}" title="{{ part.title }}">{{ part.text }}</a>{% else %}{{ part.text }}{% endif %}{% endfor %}</span>{% endfor %}</div>{% endfor %}
+    </div>
+  </section>
+
   <details class="card" style="margin-top: 1rem"{% if problems %} open{% endif %}>
     <summary><strong>Corriger un champ</strong> <span class="small muted">({{ holes|length }} dans le modèle)</span></summary>
     <p class="small muted">« À demander » : la question posée à chaque {% if is_ag %}PV{% else %}lettre{% endif %}. Deux champs avec la même question reçoivent la même réponse.</p>
@@ -49,7 +57,7 @@
       <thead><tr><th>Dans le texte</th><th>Contenu</th></tr></thead>
       <tbody>
       {% for item in holes %}
-        <tr>
+        <tr id="trou-{{ item.hole.key }}">
           <td class="small">…{{ item.hole.before|slice:"-60:" }} <mark>{{ item.hole.text }}</mark> {{ item.hole.after|truncatechars:40 }}</td>
           <td>
             <select name="trou-{{ item.hole.key }}" aria-label="Contenu du trou">

@@ -80,34 +80,6 @@ def test_identifiers_are_masked():
         assert secret not in masked
 
 
-def test_assistant_sets_holes_of_a_model_and_stays_invisible(settings, monkeypatch, client,
-                                                             make_user):  # fmt: skip
-    from apps.ai import templates_assist
-    from apps.closing.tests.test_pv_ag import install
-    from apps.documents import letter
-
-    admin = make_user(is_staff=True, capabilities=["clients.edit"])
-    client.force_login(admin)
-    template, _ = install(client)
-    holes = letter.holes(bytes(template.content), "pv_ag")
-    settings.MISTRAL_API_KEY = "fictive"
-    first = next(i for i, t in letter.paragraphs(bytes(template.content)) if "reporter" in t)
-    fake_reply(monkeypatch, {
-        "trous": {holes[0].key: {"code": "client.denomination", "question": ""},
-                  holes[1].key: {"code": "code-inventé", "question": ""}},
-        "paragraphes": {str(first): "sans_dividende", "999": "dividende"},
-    })  # fmt: skip
-    templates_assist.suggest(template, admin)
-    template.refresh_from_db()
-    assert template.holes[holes[0].key]["source"] == "assistant"
-    assert template.holes[holes[1].key].get("source") != "assistant"  # code inconnu : ignoré
-    assert template.options[str(first)]["condition"] == "sans_dividende"
-    assert "999" not in template.options and not template.active
-    page = client.get(reverse("lettre:model", args=[template.pk])).content.decode()
-    assert "assistant" not in page.lower()  # en coulisse : rien à l'écran
-    assert AiCall.objects.get().feature == "reglage_modele"
-
-
 def _unknown_pdf(web, text):
     from apps.documents.models import InboxItem
     from apps.documents.tests.test_official_files import pdf
@@ -165,69 +137,6 @@ def test_numbers_are_masked_before_the_document_leaves(web, settings, monkeypatc
     assert "5390" not in sent and "x@y.be" not in sent and "[IBAN]" in sent
 
 
-def test_assistant_finds_what_the_rules_left_in_a_filled_document(client, make_user, settings,
-                                                                  monkeypatch):  # fmt: skip
-    from django.core.files.uploadedfile import SimpleUploadedFile
-
-    from apps.core.models import CabinetSettings
-    from apps.core.testing.factories import ClientFactory
-    from apps.documents import from_example
-    from apps.documents.models import LetterTemplate
-    from apps.documents.tests.test_from_example import filled_pv
-
-    ClientFactory(name="Menuiserie Fictive", legal_form="SRL")
-    admin = make_user(is_staff=True, capabilities=["clients.edit"])
-    client.force_login(admin)
-    settings.MISTRAL_API_KEY = "fictive"
-    current = CabinetSettings.current()
-    current.ai_personal_data = True
-    current.save()
-    # La fiche ne connaît ni le gérant ni les associés : l'assistant les retrouve.
-    fake_reply(monkeypatch, {"elements": [
-        {"texte": "Paul Testeur", "repere": "[GÉRANT]"},
-        {"texte": "Marie Essai", "repere": "[ASSOCIÉ]"},
-        {"texte": "texte inventé absent", "repere": "[MONTANT]"},
-        {"texte": "Namur", "repere": "[INCONNU]"},
-    ]})  # fmt: skip
-    upload = SimpleUploadedFile("pv.docx", filled_pv())
-    client.post(reverse("lettre:models"), {"sorte": "pv_ag", "modele": upload})
-    template = LetterTemplate.objects.get()
-    text = from_example.text_of(bytes(template.content))
-    assert "Paul Testeur" not in text and "Marie Essai" not in text
-    assert template.origin["assistant"] >= 1  # le reste, les règles l'ont déjà trouvé
-    assert AiCall.objects.filter(feature="modele_depuis_exemple").exists()
-
-
-def test_the_assistant_sets_the_unknown_holes_at_upload(client, make_user, settings, monkeypatch):
-    from django.core.files.uploadedfile import SimpleUploadedFile
-
-    from apps.documents import letter
-    from apps.documents.models import LetterTemplate
-    from apps.documents.tests.test_from_example import placeholder_model
-
-    admin = make_user(is_staff=True, capabilities=["clients.edit"])
-    client.force_login(admin)
-    settings.MISTRAL_API_KEY = "fictive"
-    holes = letter.holes(placeholder_model(), "pv_ag")
-    lieu = next(h.key for h in holes if "LIEU" in h.text)
-    nom = next(h.key for h in holes if "DENOMINATION" in h.text)
-    signe = holes[-1].key  # « M. XXX » : rien ne dit ce que c'est
-    fake_reply(monkeypatch, {"trous": {
-        lieu: {"code": "demander", "question": "ne doit pas changer"},  # repère clair : gardé
-        nom: {"code": "demander", "question": "ne doit pas changer"},  # lu par l'outil
-        signe: {"code": "demander", "question": "Nom du président de séance ?"},
-    }, "paragraphes": {"0": "question"}})  # fmt: skip
-    upload = SimpleUploadedFile("pv.docx", placeholder_model())
-    client.post(reverse("lettre:models"), {"sorte": "pv_ag", "modele": upload})
-    template = LetterTemplate.objects.get()
-    assert template.holes[signe] == {"field": "demander", "label": "Nom du président de séance",
-                                     "source": "assistant"}  # fmt: skip
-    assert template.holes[lieu]["label"] == "Lieu de reunion"
-    assert template.holes[nom]["field"] == "client.denomination"
-    assert "0" not in template.options  # pas de case à cocher proposée par l'assistant
-    assert template.origin["reglage_ia"] == 1
-
-
 def test_no_assistant_setting_to_manage(client, make_user, settings):
     from apps.core.models import CabinetSettings
 
@@ -260,28 +169,3 @@ def test_the_settings_say_why_the_assistant_does_not_answer(client, make_user, s
     fake_reply(monkeypatch, {"ok": True})
     ai.ask_json("test", "s", "p")
     assert "actif · 1 réponse(s)" in client.get(reverse("core:cabinet_settings")).content.decode()
-
-
-def test_the_assistant_never_turns_the_cabinet_text_into_holes(client, make_user, settings,
-                                                                monkeypatch):  # fmt: skip
-    from django.core.files.uploadedfile import SimpleUploadedFile
-
-    from apps.documents import from_example
-    from apps.documents.models import LetterTemplate
-    from apps.documents.tests.test_from_example import realistic_pv
-
-    client.force_login(make_user(is_staff=True, capabilities=["clients.edit"]))
-    settings.MISTRAL_API_KEY = "fictive"
-    fake_reply(monkeypatch, {"elements": [
-        {"texte": "ATN Auto", "repere": "[MONTANT]"},  # libellé de ligne : refusé
-        {"texte": "- ATN Auto", "repere": "[À COMPLÉTER]"},  # idem
-        {"texte": "Administrateur", "repere": "[À COMPLÉTER]"},  # pas une référence
-        {"texte": "assemblée générale", "repere": "[DATE]"},  # pas une date
-    ], "trous": {}})  # fmt: skip
-    upload = SimpleUploadedFile("pv.docx", realistic_pv())
-    client.post(reverse("lettre:models"), {"sorte": "pv_ag", "modele": upload})
-    template = LetterTemplate.objects.get()
-    text = from_example.text_of(bytes(template.content))
-    assert "ATN Auto" in text and "assemblée générale" in text
-    labels = [v["label"] for v in template.holes.values() if v["field"] == "demander"]
-    assert "ATN Auto" in labels

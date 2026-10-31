@@ -1762,3 +1762,29 @@ même taille (« Clôture » : checklists et clôtures ; « Dépôts ») ; le no
   contenir des chiffres ; « [À COMPLÉTER] » seulement pour une référence (chiffres, @) ; un
   nom commence par une majuscule. « Reporter l'intégralité » est reconnu au texte du
   paragraphe, plus à l'intitulé de la question.
+
+## D-132 — L'assistant IA lit le modèle entier ; banc d'essai avec la vraie IA
+
+- Demande de Jeremy : « l'IA est la clé de tout, il faut qu'elle soit compétente ». Il
+  autorise, une fois pour toutes, Claude à entraîner et tester l'assistant (coût raisonnable
+  par tâche, quelques euros au plus).
+- Au dépôt d'un modèle, l'assistant (Mistral Large) reçoit le document ENTIER en blocs
+  numérotés (une ligne de tableau = un bloc, ses cases séparées par « | »), des consignes de
+  collaborateur, un exemple fictif complet et les corrections passées du cabinet ; il rend la
+  carte des éléments qui changent (bloc, texte exact, code, intitulé) et les passages
+  conditionnels. `apps/ai/model_reader.py`.
+- Garde-fous de l'outil : le texte doit exister dans le bloc ; jamais un libellé de ligne de
+  tableau « libellé | montant » ni le nom du cabinet ; une date / heure / un numéro contient
+  des chiffres ; un nom de la fiche trouvé une fois est remplacé partout (mots entiers) ;
+  ensuite les règles (D-124…) passent derrière pour rattraper un oubli (identifiants, dates,
+  montants). Sans réponse de l'assistant, les règles font tout.
+- Page du modèle : aperçu du document, chaque élément coloré (rempli / demandé / calculé / à
+  régler), un clic ouvre son réglage. Une proposition de l'assistant corrigée devient un
+  exemple (`CabinetSettings.ai_examples`, 40 au plus, texte masqué).
+- Banc d'essai : `apps/ai/banc.py` (8 documents fictifs de styles différents, avec les bonnes
+  réponses ; chaque modèle obtenu est rempli pour un client « témoin » et vérifié ligne par
+  ligne), `manage.py banc_ia`, et `.github/workflows/banc-ia.yml` : sur la branche `ia-banc`,
+  la vraie IA passe le banc ; le rapport (score, erreurs, coût) est rangé sur la branche
+  `banc-ia-resultats`. Le compte de mise à jour peut lire la seule clé Mistral (accord de
+  Jeremy) ; documents fictifs uniquement.
+- L'ancien branchement (passe « ce qui reste » et réglage trou par trou) est retiré.

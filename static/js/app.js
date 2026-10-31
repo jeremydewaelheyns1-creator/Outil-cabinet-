@@ -508,3 +508,13 @@ document.addEventListener("change", function (event) {
   url.searchParams.set(select.getAttribute("data-reload-param"), select.value);
   window.location.assign(url.toString());
 });
+
+// Aperçu d'un modèle : un clic sur un élément coloré ouvre son réglage (« Corriger un champ »).
+document.addEventListener("click", function (event) {
+  var link = event.target.closest && event.target.closest('a[href^="#trou-"]');
+  if (!link) return;
+  var row = document.getElementById(link.getAttribute("href").slice(1));
+  if (!row) return;
+  var box = row.closest("details");
+  if (box) box.open = true;
+});

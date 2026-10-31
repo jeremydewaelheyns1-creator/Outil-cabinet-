@@ -176,6 +176,10 @@ html[data-theme="dark"] .cl-deposit.is-wip { background: #392916; border: 1.5px 
 html[data-theme="dark"] .theme-choice.is-on { color: #ffffff; }
 html[data-theme="dark"] .ag-num { background: var(--ink-bg); color: #ffffff; }
 html[data-theme="dark"] .site-essai { color: #ffffff; }
+html[data-theme="dark"] .model-doc { border: 1px solid var(--border, #404449); background: var(--surface, #212121); }
+html[data-theme="dark"] .hole-auto { background: #214533; }
+html[data-theme="dark"] .hole-calc { background: #203550; }
+html[data-theme="dark"] .hole-todo { background: #4b1d1d; }
 html[data-theme="dark"] body { background: var(--bg); }
 
 @media (prefers-color-scheme: dark) {
@@ -355,5 +359,9 @@ html[data-theme="auto"] .cl-deposit.is-wip { background: #392916; border: 1.5px 
 html[data-theme="auto"] .theme-choice.is-on { color: #ffffff; }
 html[data-theme="auto"] .ag-num { background: var(--ink-bg); color: #ffffff; }
 html[data-theme="auto"] .site-essai { color: #ffffff; }
+html[data-theme="auto"] .model-doc { border: 1px solid var(--border, #404449); background: var(--surface, #212121); }
+html[data-theme="auto"] .hole-auto { background: #214533; }
+html[data-theme="auto"] .hole-calc { background: #203550; }
+html[data-theme="auto"] .hole-todo { background: #4b1d1d; }
 html[data-theme="auto"] body { background: var(--bg); }
 }

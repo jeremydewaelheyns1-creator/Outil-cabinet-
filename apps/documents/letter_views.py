@@ -8,6 +8,8 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 from django.contrib import messages
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.db import transaction
@@ -49,16 +51,15 @@ def models_page(request: AppRequest) -> HttpResponse:
     if request.method == "POST":
         return _upload(request, kind)
     templates = LetterTemplate.objects.filter(kind=kind).select_related("uploaded_by")
-    context = {"templates": templates, "kind": kind, "is_ag": kind == LetterTemplate.Kind.AG,
-               "assistant_reads": _assistant_reads()}  # fmt: skip
+    context = {"templates": templates, "kind": kind, "is_ag": kind == LetterTemplate.Kind.AG}
     return render(request, "documents/lettre/modeles.html", context)
 
 
 def _upload(request: AppRequest, kind: str) -> HttpResponse:
-    """Un modèle Word déposé, vide ou déjà rempli pour un client (D-124) : ce qui change d'un
-    client à l'autre devient un trou. Le client est retrouvé tout seul (numéro d'entreprise
-    imprimé) ; l'assistant IA cherche ce qui reste. Le document déposé n'est pas gardé tel quel :
-    seul le modèle obtenu l'est, à relire avant activation."""
+    """Un modèle Word déposé, vide ou déjà rempli pour un client (D-124, D-132) : l'assistant IA
+    lit le document entier et repère ce qui change d'un client à l'autre ; les règles de l'outil
+    passent derrière en garde-fou (et font tout le travail si l'assistant ne répond pas). Le
+    document déposé n'est gardé nulle part : seul le modèle obtenu l'est, à relire."""
     from apps.clients.views import _visible_clients
 
     from . import from_example
@@ -71,85 +72,27 @@ def _upload(request: AppRequest, kind: str) -> HttpResponse:
     try:
         letter.check_upload(upload.name or "", content)
         client = from_example.client_in(content, _visible_clients(request))
-        result = from_example.convert(content, client)
     except ValidationError as error:
         messages.error(request, " ".join(error.messages))
         return redirect(_list_url(kind))
+    built = from_example.build(content, kind, client, request.user)
     del content  # le document d'origine n'est gardé nulle part
-    assisted = 0
-    from apps.ai import client as ai
-
-    if ai.enabled() and ai.personal_data_allowed():
-        from apps.ai import templates_assist
-
-        try:
-            extra = templates_assist.residuals(
-                from_example.text_of(result.content), list(from_example.MARKERS), request.user
-            )
-        except ai.Unavailable:
-            extra = []
-        # Jamais le libellé d'une ligne de tableau (« ATN Télécom. ») : c'est le texte du
-        # cabinet, et l'intitulé de la question qui s'y rapporte.
-        labels = from_example.row_texts(result.content)
-        extra = [(v, m) for v, m in extra if not any(v in label for label in labels)]
-        if extra:
-            again = from_example.convert(result.content, client, extra)
-            assisted = sum(again.counts.values())
-            result = from_example.Conversion(again.content, result.counts)
-    # Une année écrite dans un modèle vide ne fait pas un document « rempli pour un client ».
-    filled = bool(set(result.counts) - {"année"}) or bool(assisted)
     template = LetterTemplate.objects.create(
         kind=kind,
         name=(upload.name or "modele.docx")[:200],
-        content=result.content,
-        holes=from_example.holes_for(result.content, kind),
-        options=from_example.options_for(result.content, kind),
-        origin={"exemple": filled, "remplace": result.report(), "assistant": assisted},
+        content=built.content,
+        holes=built.holes,
+        options=built.options,
+        origin={"exemple": built.filled, "remplace": built.report, "lu": built.read_by_ai},
         uploaded_by=request.user,
     )
-    _assistant_setup(request, template)
-    details = {"modèle": kind, "rempli": filled, "client": client.pk if client else None}
+    details = {"modèle": kind, "rempli": built.filled, "client": client.pk if client else None,
+               "lu par l'assistant": built.read_by_ai}  # fmt: skip
     log_access(request, AccessLog.Action.IMPORT, template, details=details)
-    holes = len(letter.holes(bytes(template.content), kind))
-    if filled:
-        messages.success(
-            request,
-            f"Modèle créé : {holes} trou(s), dont ce qui était propre au client. Relisez-le : "
-            "tout ce qui resterait d'un client serait recopié chez les autres.",
-        )
-    else:
-        messages.success(
-            request, f"Modèle déposé : {holes} trou(s) repéré(s). Vérifiez ce que l'outil propose."
-        )
+    count = len(letter.holes(bytes(template.content), kind))
+    messages.success(request, f"Modèle lu : {count} élément(s) qui changent d'un client à "
+                              "l'autre. Vérifiez l'aperçu, puis activez.")  # fmt: skip
     return redirect("lettre:model", template.pk)
-
-
-def _assistant_setup(request: AppRequest, template: LetterTemplate) -> None:
-    """L'assistant IA règle tout de suite les trous que les règles de l'outil n'ont pas su lire
-    (les questions « à demander » : « [LIEU DE REUNION] », « XXX »…) : il dit ce qu'ils
-    contiennent (peut-être un champ de la fiche) et pose une question claire. Proposé
-    seulement : l'administrateur relit avant d'activer. Le modèle ne contient plus de données
-    du client d'origine."""
-    from apps.ai import client as ai
-
-    if not ai.enabled():
-        return
-    keys = {
-        h.key
-        for h in letter.holes(bytes(template.content), template.kind)
-        if (template.holes.get(h.key) or {}).get("field") in (None, "", letter.ASK)
-        and not (template.holes.get(h.key) or {}).get("sure")
-    }
-    if not keys:
-        return
-    from apps.ai import templates_assist
-
-    try:
-        count, _ = templates_assist.suggest(template, request.user, only=keys)
-    except ai.Unavailable:
-        count = -1
-    template.origin = {**template.origin, "reglage_ia": count}
-    template.save(update_fields=["origin"])
 
 
 def model_download(request: AppRequest, template_id: int) -> HttpResponse:
@@ -177,26 +120,6 @@ def model_page(request: AppRequest, template_id: int) -> HttpResponse:
             template.delete()
             messages.success(request, "Modèle supprimé.")
             return redirect(_list_url(template.kind))
-        if action == "assistant":
-            from apps.ai import client as ai
-            from apps.ai import templates_assist
-
-            try:
-                found_holes, found_options = templates_assist.suggest(template, request.user)
-            except ai.Unavailable as error:
-                messages.error(request, str(error))
-            else:
-                if template.active:
-                    template.active = False  # à revoir avant de resservir
-                    template.save(update_fields=["active"])
-                messages.success(
-                    request,
-                    f"L'assistant propose {found_holes} trou(s) et {found_options} passage(s) à "
-                    "options : "
-                    "vérifiez, puis enregistrez et activez.",
-                )
-            log_access(request, AccessLog.Action.UPDATE, template, details={"modèle": "assistant"})
-            return redirect("lettre:model", template.pk)
         _save(request, template, content)
         if action == "activer" and template.origin.get("exemple") and not request.POST.get("relu"):
             messages.error(
@@ -256,11 +179,62 @@ def model_page(request: AppRequest, template_id: int) -> HttpResponse:
         "is_ag": is_ag,
         "forms": letter.FORMS,
         "list_url": _list_url(template.kind),
-        "assistant": _assistant_on(),
         "missing_fonts": letter.missing_fonts(content),
         "summary": _summary(template),
+        "preview": _preview(template),
     }
     return render(request, "documents/lettre/modele.html", context)
+
+
+def _preview(template: LetterTemplate) -> list[list[list[dict[str, str]]]]:
+    """Le modèle tel quel, chaque élément qui change coloré selon ce que l'outil y met (D-132) :
+    lignes → cases → morceaux de texte. Un morceau coloré renvoie à son réglage."""
+    from docx.oxml.ns import qn
+
+    content = bytes(template.content)
+    names = dict(letter.choices(template.kind))
+    computed: set[str] = set()
+    if template.kind == LetterTemplate.Kind.AG:
+        from apps.closing import ag
+
+        computed = {key.removeprefix("trou:") for key in ag.computed(template)}
+    lines: list[list[list[dict[str, str]]]] = []
+    last_row = None
+    for index, paragraph in enumerate(letter._paragraphs(letter._open(content))):
+        text = paragraph.text
+        if not text.strip():
+            continue
+        parts: list[dict[str, str]] = []
+        position = 0
+        for number, (start, end) in enumerate(letter._spans(paragraph)):
+            key = f"{index}:{number}"
+            value = template.holes.get(key) or {}
+            code = value.get("field", "")
+            if code == letter.KEEP:
+                continue
+            if start > position:
+                parts.append({"text": text[position:start]})
+            if key in computed:
+                kind, title = "calc", f"Calculé : {value.get('label', '')}"
+            elif code == letter.ASK:
+                kind, title = "ask", f"Demandé : {value.get('label', '')}"
+            elif code:
+                kind, title = "auto", f"Rempli tout seul : {names.get(code, code)}"
+            else:
+                kind, title = "todo", "À régler"
+            parts.append({"text": text[start:end], "kind": kind, "key": key, "title": title})
+            position = end
+        if position < len(text):
+            parts.append({"text": text[position:]})
+        row = paragraph._p
+        while row is not None and row.tag != qn("w:tr"):
+            row = row.getparent()
+        if row is not None and row is last_row:
+            lines[-1].append(parts)  # case suivante de la même ligne de tableau
+        else:
+            lines.append([parts])
+        last_row = row
+    return lines
 
 
 def _summary(template: LetterTemplate) -> dict[str, list[str]]:
@@ -278,16 +252,27 @@ def _summary(template: LetterTemplate) -> dict[str, list[str]]:
     return {"auto": auto, "asked": asked}
 
 
-def _assistant_reads() -> bool:
-    from apps.ai import client as ai
+def _remember(template: LetterTemplate, content: bytes, new: dict[str, Any]) -> None:
+    """Une proposition de l'assistant corrigée par le cabinet devient un exemple pour les
+    prochains modèles (D-132) : le texte autour du trou (masqué), et la bonne réponse."""
+    from apps.ai import privacy
+    from apps.core.models import CabinetSettings
 
-    return ai.enabled() and ai.personal_data_allowed()
-
-
-def _assistant_on() -> bool:
-    from apps.ai import client as ai
-
-    return ai.enabled()
+    examples = []
+    for hole in letter.holes(content, template.kind):
+        old = template.holes.get(hole.key) or {}
+        now = new.get(hole.key) or {}
+        if old.get("source") != "assistant" or not now:
+            continue
+        if (old.get("field"), old.get("label")) == (now.get("field"), now.get("label")):
+            continue
+        context = f"{hole.before[-50:]} ⟨{hole.text}⟩ {hole.after[:30]}".strip()
+        examples.append({"contexte": privacy.mask(context), "code": now.get("field", ""),
+                         "intitule": now.get("label", "")})  # fmt: skip
+    if examples:
+        settings = CabinetSettings.current()
+        settings.ai_examples = [*(settings.ai_examples or []), *examples][-40:]
+        settings.save(update_fields=["ai_examples"])
 
 
 def _save(request: AppRequest, template: LetterTemplate, content: bytes) -> None:
@@ -309,6 +294,7 @@ def _save(request: AppRequest, template: LetterTemplate, content: bytes) -> None
             label = request.POST.get(f"question-{index}", "").strip()[:160]
             options[str(index)] = {"condition": condition, "end": index, "label": label}
     found = {c.code for c in letter.checks(content, holes) if c.excerpt}
+    _remember(template, content, holes)
     template.holes = holes
     template.options = options
     template.checks = [code for code in request.POST.getlist("verifie") if code in found]
