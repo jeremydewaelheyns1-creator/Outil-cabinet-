@@ -1584,3 +1584,7 @@ même taille (« Clôture » : checklists et clôtures ; « Dépôts ») ; le no
   endroit ; le dossier est retrouvé par l'outil (numéros imprimés, sinon nom proposé, parmi
   les dossiers visibles) ; « Ranger ainsi » d'un clic. Seulement si le cabinet a coché, dans
   Réglages du cabinet, que Mistral a confirmé le zéro conservation.
+- 31/10/2026 : zéro conservation accordé par Mistral pour l'organisation ; l'outil appelle le
+  point d'accès européen `api.eu.mistral.ai` (inférence dans l'UE), uniquement l'API sans
+  mémoire `/v1/chat/completions` (couverte par le zéro conservation) — ni agents, ni batch,
+  ni modèles « Labs ».

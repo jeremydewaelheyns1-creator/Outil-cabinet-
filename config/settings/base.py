@@ -241,7 +241,8 @@ MAILBOX_TOKEN_KEY = env("MAILBOX_TOKEN_KEY", default="")
 # Assistant IA (D-121) : Mistral, en Europe. Éteint sans clé (rangée dans Secret Manager par
 # le script d'installation, jamais dans le code). Plafond de dépense par mois.
 MISTRAL_API_KEY = env("MISTRAL_API_KEY", default="").strip()
-AI_ENDPOINT = env("AI_ENDPOINT", default="https://api.mistral.ai/v1/chat/completions")
+# Point d'accès régional européen : l'inférence reste dans l'UE (confirmé par Mistral, D-123).
+AI_ENDPOINT = env("AI_ENDPOINT", default="https://api.eu.mistral.ai/v1/chat/completions")
 AI_MODEL = env("AI_MODEL", default="mistral-medium-latest")
 AI_MONTHLY_CAP_EUR = env.float("AI_MONTHLY_CAP_EUR", default=30.0)
 
