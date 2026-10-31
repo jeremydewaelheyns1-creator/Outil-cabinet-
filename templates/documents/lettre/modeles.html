@@ -4,7 +4,7 @@
 {% block content %}
 <section class="card" style="max-width: 860px">
   <h2>Déposer un modèle — vide ou déjà rempli</h2>
-  <p class="muted">Déposez votre {% if is_ag %}PV d'AG{% else %}lettre de mission{% endif %} Word (.docx) tel quel : un modèle avec des trous (« [DATE] », « XXX », « …… », texte surligné) <strong>ou un document déjà rempli pour un client</strong>. L'outil repère ce qui change d'un client à l'autre — nom, numéro, adresse, gérant, associés, dates, heures, montants{% if assistant_reads %} ; l'assistant IA cherche le reste{% endif %} — et en fait un modèle pour tous vos clients. Vous vérifiez, puis vous activez.</p>
+  <p class="muted">Déposez votre {% if is_ag %}PV d'AG{% else %}lettre de mission{% endif %} Word (.docx) tel quel : un modèle avec des trous (« [DATE] », « XXX », « …… », texte surligné) <strong>ou un document déjà rempli pour un client</strong>. L'outil repère ce qui change d'un client à l'autre — nom, numéro, adresse, gérant, associés, dates, heures, montants — et en fait un modèle pour tous vos clients. Vous relisez, puis vous activez.</p>
   <form method="post" enctype="multipart/form-data">{% csrf_token %}
     <input type="hidden" name="sorte" value="{{ kind }}">
     <label for="modele-file">Fichier Word (5 Mo au plus)</label>

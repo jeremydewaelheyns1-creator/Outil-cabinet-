@@ -81,7 +81,7 @@
         <div class="small muted">Déposé le {{ item.uploaded_at|date:"d/m/Y H:i" }}{% if item.reason %} · {{ item.reason }}{% endif %}</div>
         {% with p=item.suggestion %}{% if p %}
           <div class="depot-suggestion small">
-            <span class="badge">proposé par l'assistant</span>
+            <span class="badge">proposition</span>
             « {{ p.title }} »{% if p.client_name %} → <strong>{{ p.client_name }}</strong>{% if p.place_label %} · {{ p.place_label }}{% endif %}{% else %} — dossier non trouvé : choisissez-le{% endif %}
             {% if p.client and p.place %}
               <form method="post" action="{% url 'depot:classify' item.pk %}" class="inline">{% csrf_token %}
@@ -92,11 +92,6 @@
           </div>
         {% endif %}{% endwith %}
       </div>
-      {% if assistant and not item.suggestion %}
-        <form method="post" action="{% url 'depot:assist' item.pk %}" class="inline">{% csrf_token %}
-          <button type="submit" class="button-small button-secondary" title="L'assistant lit le document et propose ; rien n'est rangé sans votre clic.">Demander à l'assistant</button>
-        </form>
-      {% endif %}
       <form method="post" action="{% url 'depot:classify' item.pk %}" class="depot-classify">{% csrf_token %}
         <input type="search" autocomplete="off" placeholder="Dossier : nom, n° d'entreprise…" aria-label="Dossier"
                name="q" hx-get="{% url 'clients:picker' %}?champ=client" hx-trigger="input changed delay:300ms"

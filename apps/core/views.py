@@ -254,35 +254,6 @@ def agenda_deadline(request: AppRequest) -> HttpResponse:
     return redirect(back)
 
 
-def _ai_test(request: AppRequest) -> None:
-    """Un appel d'essai à l'assistant, sans aucune donnée : répond-il ?"""
-    from apps.ai import client as ai
-
-    try:
-        answer = ai.ask_json(
-            "essai", 'Réponds uniquement en JSON : {"ok": true}.', "Test de connexion.",
-            user=request.user,
-        )  # fmt: skip
-    except ai.Unavailable as error:
-        messages.error(request, f"L'assistant IA ne répond pas : {error}")
-        return
-    if answer.data.get("ok") is True:
-        messages.success(request, "L'assistant IA répond : il est bien branché.")
-    else:
-        messages.error(request, "L'assistant IA a répondu, mais pas comme prévu.")
-
-
-def _ai_status() -> dict[str, Any]:
-    """Ce mois-ci : nombre d'appels, coût, dernier appel (réussi ou non)."""
-    from apps.ai import client as ai
-    from apps.ai.models import AiCall
-
-    today = timezone.localdate()
-    month = AiCall.objects.filter(created_at__date__gte=today.replace(day=1))
-    return {"calls": month.count(), "failed": month.filter(ok=False).count(),
-            "spent": ai.spent_this_month(), "last": AiCall.objects.first()}  # fmt: skip
-
-
 def cabinet_settings(request: AppRequest) -> HttpResponse:
     """Réglages du cabinet (administrateurs) : la gestion hybride des dossiers (D-063)."""
     from django import forms
@@ -308,9 +279,6 @@ def cabinet_settings(request: AppRequest) -> HttpResponse:
             fields = ("ai_personal_data",)
 
     settings = CabinetSettings.current()
-    if request.method == "POST" and request.POST.get("action") == "ia_test":
-        _ai_test(request)
-        return redirect("core:cabinet_settings")
     if request.method == "POST" and request.POST.get("action") == "ia":
         ai_form = AiForm(request.POST, instance=settings)
         if ai_form.is_valid():
@@ -335,8 +303,7 @@ def cabinet_settings(request: AppRequest) -> HttpResponse:
             return redirect("core:cabinet_settings")
         form = SettingsForm(instance=settings)
         context = {"form": form, "mandates_form": mandates_form, "settings": settings,
-                   "ai_form": AiForm(instance=settings), "ai_on": _ai_on(),
-                   "ai_status": _ai_status()}  # fmt: skip
+                   "ai_form": AiForm(instance=settings), "ai_on": _ai_on()}  # fmt: skip
         return render(request, "core/cabinet_settings.html", context)
     form = SettingsForm(request.POST or None, instance=settings)
     if request.method == "POST" and form.is_valid():
@@ -347,8 +314,7 @@ def cabinet_settings(request: AppRequest) -> HttpResponse:
         messages.success(request, "Réglages enregistrés.")
         return redirect("core:cabinet_settings")
     context = {"form": form, "mandates_form": MandatesForm(instance=settings), "settings": settings,
-               "ai_form": AiForm(instance=settings), "ai_on": _ai_on(),
-                   "ai_status": _ai_status()}  # fmt: skip
+               "ai_form": AiForm(instance=settings), "ai_on": _ai_on()}  # fmt: skip
     return render(request, "core/cabinet_settings.html", context)
 
 

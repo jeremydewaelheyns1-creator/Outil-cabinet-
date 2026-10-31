@@ -74,8 +74,9 @@ def test_identifiers_are_masked():
         assert secret not in masked
 
 
-def test_assistant_proposes_holes_of_a_model_admin_validates(settings, monkeypatch, client,
+def test_assistant_sets_holes_of_a_model_and_stays_invisible(settings, monkeypatch, client,
                                                              make_user):  # fmt: skip
+    from apps.ai import templates_assist
     from apps.closing.tests.test_pv_ag import install
     from apps.documents import letter
 
@@ -83,26 +84,21 @@ def test_assistant_proposes_holes_of_a_model_admin_validates(settings, monkeypat
     client.force_login(admin)
     template, _ = install(client)
     holes = letter.holes(bytes(template.content), "pv_ag")
-    page = client.get(reverse("lettre:model", args=[template.pk])).content.decode()
-    assert "Proposer avec l'assistant IA" not in page  # éteint sans clé
     settings.MISTRAL_API_KEY = "fictive"
-    seen = []
     first = next(i for i, t in letter.paragraphs(bytes(template.content)) if "reporter" in t)
     fake_reply(monkeypatch, {
         "trous": {holes[0].key: {"code": "client.denomination", "question": ""},
                   holes[1].key: {"code": "code-inventé", "question": ""}},
         "paragraphes": {str(first): "sans_dividende", "999": "dividende"},
-    }, seen)  # fmt: skip
-    page = client.get(reverse("lettre:model", args=[template.pk])).content.decode()
-    assert "Proposer avec l'assistant IA" in page
-    client.post(reverse("lettre:model", args=[template.pk]), {"action": "assistant"})
+    })  # fmt: skip
+    templates_assist.suggest(template, admin)
     template.refresh_from_db()
     assert template.holes[holes[0].key]["source"] == "assistant"
     assert template.holes[holes[1].key].get("source") != "assistant"  # code inconnu : ignoré
     assert template.options[str(first)]["condition"] == "sans_dividende"
     assert "999" not in template.options and not template.active
-    assert "proposé par l'assistant" in client.get(
-        reverse("lettre:model", args=[template.pk])).content.decode()  # fmt: skip
+    page = client.get(reverse("lettre:model", args=[template.pk])).content.decode()
+    assert "assistant" not in page.lower()  # en coulisse : rien à l'écran
     assert AiCall.objects.get().feature == "reglage_modele"
 
 
@@ -114,36 +110,30 @@ def _unknown_pdf(web, text):
     return InboxItem.objects.get()
 
 
-def test_unknown_document_waits_for_zero_retention_then_is_proposed(web, user, settings,
-                                                                    monkeypatch):  # fmt: skip
+def test_unknown_document_is_read_in_the_background(web, user, settings, monkeypatch):
     from apps.core.models import CabinetSettings
     from apps.core.testing.factories import ClientFactory
+    from apps.documents.models import Document, InboxItem
 
     client = ClientFactory(name="Menuiserie Fictive")
-    item = _unknown_pdf(web, "Courrier de la commune pour Menuiserie Fictive : taxe 2025.")
     settings.MISTRAL_API_KEY = "fictive"
     seen = []
     fake_reply(monkeypatch, {"titre": "Taxe communale 2025", "dossier": "administratif",
                              "nom": "Menuiserie Fictive"}, seen)  # fmt: skip
-    page = web.get(reverse("depot:index")).content.decode()
-    assert "Demander à l'assistant" not in page  # zéro conservation pas confirmé
-    web.post(reverse("depot:assist", args=[item.pk]))
-    item.refresh_from_db()
+    # Le cabinet a coupé la lecture des documents : rien ne part.
+    CabinetSettings.objects.update_or_create(pk=1, defaults={"ai_personal_data": False})
+    item = _unknown_pdf(web, "Courrier de la commune pour Menuiserie Fictive : taxe 2025.")
     assert item.suggestion == {} and not seen
-    current = CabinetSettings.current()
-    current.ai_personal_data = True
-    current.save()
-    assert "Demander à l'assistant" in web.get(reverse("depot:index")).content.decode()
-    web.post(reverse("depot:assist", args=[item.pk]))
-    item.refresh_from_db()
+    item.delete()
+    CabinetSettings.objects.filter(pk=1).update(ai_personal_data=True)
+    # Déposé : l'assistant le lit tout seul, la proposition est là, sans bouton à cliquer.
+    item = _unknown_pdf(web, "Courrier de la commune pour Menuiserie Fictive : taxe 2025.")
     assert item.suggestion["client"] == client.pk
     assert item.suggestion["place"] == "folder:administratif"
     assert "Menuiserie Fictive" in seen[0]["messages"][1]["content"]
     page = web.get(reverse("depot:index")).content.decode()
-    assert "Ranger ainsi" in page and "proposé par l'assistant" in page
+    assert "Ranger ainsi" in page and "assistant" not in page.lower()
     # Rien n'est rangé avant le clic ; le clic range.
-    from apps.documents.models import Document
-
     assert not Document.objects.filter(client=client).exists()
     web.post(
         reverse("depot:classify", args=[item.pk]),
@@ -151,6 +141,7 @@ def test_unknown_document_waits_for_zero_retention_then_is_proposed(web, user, s
     )
     assert Document.objects.get(client=client).title == "Taxe communale 2025"
     assert AiCall.objects.get(feature="classement_document").client == client
+    assert InboxItem.objects.count() == 0
 
 
 def test_numbers_are_masked_before_the_document_leaves(web, settings, monkeypatch):
@@ -227,12 +218,11 @@ def test_the_assistant_sets_the_unknown_holes_at_upload(client, make_user, setti
     assert template.origin["reglage_ia"] == 1
 
 
-def test_the_assistant_can_be_tested_from_the_settings(client, make_user, settings, monkeypatch):
-    admin = make_user(is_staff=True)
-    client.force_login(admin)
+def test_no_assistant_setting_to_manage(client, make_user, settings):
+    from apps.core.models import CabinetSettings
+
+    client.force_login(make_user(is_staff=True))
     settings.MISTRAL_API_KEY = "fictive"
-    fake_reply(monkeypatch, {"ok": True})
-    response = client.post(reverse("core:cabinet_settings"), {"action": "ia_test"}, follow=True)
-    assert "il est bien branché" in response.content.decode()
     page = client.get(reverse("core:cabinet_settings")).content.decode()
-    assert "1 appel(s)" in page and "réussi" in page
+    assert "Assistant IA" not in page
+    assert CabinetSettings.current().ai_personal_data  # actif d'office (D-127)

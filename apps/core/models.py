@@ -334,9 +334,9 @@ class CabinetSettings(models.Model):
     # fournisseur a confirmé par écrit qu'il ne garde rien (« zéro conservation »).
     ai_personal_data = models.BooleanField(
         "l'assistant IA peut lire les documents des clients",
-        default=False,
-        help_text="À cocher seulement quand Mistral a confirmé par écrit le « zéro "
-        "conservation » (Zero Data Retention) pour votre compte.",
+        default=True,
+        help_text="Actif : Mistral a confirmé le « zéro conservation » (Zero Data Retention) "
+        "le 31/10/2026 pour le compte de l'éditeur (D-127).",
     )
     hybrid_release_days = models.PositiveSmallIntegerField(
         "dossier hybride rendu libre après (jours sans temps encodé)", default=14

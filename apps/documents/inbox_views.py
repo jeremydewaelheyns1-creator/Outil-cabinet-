@@ -9,6 +9,7 @@ from django.contrib import messages
 from django.core.exceptions import PermissionDenied
 from django.http import FileResponse, Http404, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.utils import timezone
 from django.views.decorators.http import require_GET, require_POST
 
 from apps.clients.views import _visible_clients
@@ -81,13 +82,38 @@ def _receive(request: AppRequest) -> HttpResponse:
     if len(uploads) > MAX_FILES:
         messages.error(request, f"{MAX_FILES} fichiers au maximum à la fois.")
         return redirect("depot:index")
+    started = timezone.now()
     results = inbox.receive(uploads, clients=_visible_clients(request), user=request.user)
     _log_results(request, results)
+    _assistant_reads_new(request, started)
     if request.GET.get("panneau"):
         # Panneau de dépôt (D-093) : une ligne par fichier, sans recharger la page.
         return render(request, "documents/_depot_lines.html", {"results": results})
     _announce(request, results)
     return redirect("depot:index")
+
+
+def _assistant_reads_new(request: AppRequest, since: Any) -> None:
+    """En coulisse (D-127) : chaque fichier que l'outil n'a pas su ranger est lu par
+    l'assistant IA, qui propose dossier, endroit et titre. Rien n'est rangé sans un clic ;
+    s'il ne répond pas, le fichier attend simplement dans « À classer »."""
+    from apps.ai import client as ai
+    from apps.ai import documents_assist
+
+    if not (ai.enabled() and ai.personal_data_allowed()):
+        return
+    waiting = InboxItem.objects.filter(
+        uploaded_by=request.user, uploaded_at__gte=since, duplicate_of__isnull=True
+    )
+    for item in waiting[:MAX_FILES]:
+        if item.suggestion:
+            continue
+        try:
+            proposal = documents_assist.suggest(item, _visible_clients(request), request.user)
+        except ai.Unavailable:
+            return  # l'assistant ne répond pas : inutile d'insister pour les suivants
+        details = {"assistant IA": "proposition", "dossier": proposal.get("client")}
+        log_access(request, AccessLog.Action.VIEW, item, details=details)
 
 
 def _log_results(request: AppRequest, results: list[inbox.Result]) -> None:

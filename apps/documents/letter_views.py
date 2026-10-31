@@ -92,7 +92,8 @@ def _upload(request: AppRequest, kind: str) -> HttpResponse:
             again = from_example.convert(result.content, client, extra)
             assisted = sum(again.counts.values())
             result = from_example.Conversion(again.content, result.counts)
-    filled = bool(result.counts) or bool(assisted)
+    # Une année écrite dans un modèle vide ne fait pas un document « rempli pour un client ».
+    filled = bool(set(result.counts) - {"année"}) or bool(assisted)
     template = LetterTemplate.objects.create(
         kind=kind,
         name=(upload.name or "modele.docx")[:200],
@@ -251,8 +252,24 @@ def model_page(request: AppRequest, template_id: int) -> HttpResponse:
         "list_url": _list_url(template.kind),
         "assistant": _assistant_on(),
         "missing_fonts": letter.missing_fonts(content),
+        "summary": _summary(template),
     }
     return render(request, "documents/lettre/modele.html", context)
+
+
+def _summary(template: LetterTemplate) -> dict[str, list[str]]:
+    """Ce que l'outil a compris du modèle, en clair : ce qu'il remplit tout seul depuis la
+    fiche, ce qu'il demandera à chaque fois."""
+    names = dict(letter.choices(template.kind))
+    auto: list[str] = []
+    for value in template.holes.values():
+        code = (value or {}).get("field", "")
+        if code and code not in (letter.ASK, letter.KEEP) and not code.startswith("ag."):
+            label = names.get(code, code)
+            if label not in auto:
+                auto.append(label)
+    asked = [label for key, label in letter.questions(template) if key.startswith("trou:")]
+    return {"auto": auto, "asked": asked}
 
 
 def _assistant_reads() -> bool:

@@ -3,6 +3,15 @@
 Ce qui a été ajouté à l'outil, du plus récent au plus ancien. Toutes les données de la démo
 sont inventées.
 
+## 31 octobre 2026 — L'assistant IA travaille en coulisse
+
+- Plus de case ni de bouton « IA » : l'assistant agit tout seul.
+- En déposant un modèle de PV ou de lettre de mission, vous voyez en clair ce qui sera rempli
+  tout seul depuis la fiche du client et ce qui sera demandé à chaque fois. Un clic pour
+  activer.
+- « À classer » : un document non reconnu arrive avec une proposition de rangement ; un clic
+  sur « Ranger ainsi ».
+
 ## 31 octobre 2026 — PV d'AG : montants vérifiés et ajouts libres
 
 - Si les montants tapés ne collent pas (le total d'un tableau, le bénéfice reporté), l'outil

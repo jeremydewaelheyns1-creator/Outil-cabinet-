@@ -14,15 +14,9 @@
     {% if template.origin.exemple %}
       <div class="alert alert-warning small" style="margin:.6rem 0">
         <strong>Modèle tiré d'un document rempli : relisez-le avant de l'activer.</strong>
-        Remplacé automatiquement : {% for kind, count in template.origin.remplace %}{{ kind }} ({{ count }}){% if not forloop.last %}, {% endif %}{% empty %}rien{% endfor %}{% if template.origin.assistant %} ; l'assistant IA a trouvé {{ template.origin.assistant }} autre(s) élément(s){% endif %}.
+        Remplacé automatiquement : {% for kind, count in template.origin.remplace %}{{ kind }} ({{ count }}){% if not forloop.last %}, {% endif %}{% empty %}rien{% endfor %}.
         Tout ce qui resterait du client d'origine (un nom, une année écrite en lettres…) serait recopié chez les autres : <a href="{% url 'lettre:download' template.pk %}">ouvrir le modèle dans Word</a> pour vérifier, et redéposez-le corrigé si besoin.
-        {% if not template.active %}<label class="small" style="display:block;margin-top:.5rem"><input type="checkbox" name="relu" value="1"> J'ai relu ce modèle : il ne contient plus rien du client d'origine.</label>{% endif %}
       </div>
-    {% endif %}
-    {% if template.origin.reglage_ia == -1 %}
-      <p class="alert alert-warning small">L'assistant IA n'a pas répondu au dépôt : les propositions ci-dessous viennent seulement des règles de l'outil.</p>
-    {% elif template.origin.reglage_ia %}
-      <p class="small muted">L'assistant IA a réglé {{ template.origin.reglage_ia }} trou(s) que l'outil ne savait pas lire (marqués « proposé par l'assistant ») : vérifiez-les.</p>
     {% endif %}
     {% if missing_fonts %}
       <div class="alert alert-warning small" style="margin:.6rem 0">
@@ -30,23 +24,33 @@
         Pour un PDF identique à votre Word : dans Word, <em>Fichier › Options › Enregistrement</em>, cochez « Incorporer les polices dans le fichier », enregistrez, puis redéposez le modèle. Le PV en Word, lui, est toujours identique.
       </div>
     {% endif %}
+    <div class="model-summary">
+      <div><h3>Rempli tout seul (fiche du client)</h3>
+        <ul class="small">{% for label in summary.auto %}<li>{{ label }}</li>{% empty %}<li class="muted">rien</li>{% endfor %}</ul></div>
+      <div><h3>Demandé à chaque {% if is_ag %}PV{% else %}lettre{% endif %}</h3>
+        <ul class="small">{% if is_ag %}<li>Date et heures de l'AG</li>{% endif %}{% for label in summary.asked %}<li>{{ label }}</li>{% empty %}{% if not is_ag %}<li class="muted">rien</li>{% endif %}{% endfor %}</ul></div>
+    </div>
     {% if problems %}
       <p><strong>Avant de pouvoir l'utiliser :</strong></p>
       <ul class="small">{% for p in problems %}<li>{{ p }}</li>{% endfor %}</ul>
-    {% else %}
-      <p class="small">Tout est en ordre{% if not template.active %} : vous pouvez l'activer{% endif %}.</p>
+    {% endif %}
+    {% if not template.active %}
+      <div class="actions" style="margin-top:.6rem">
+        {% if template.origin.exemple %}<input type="hidden" name="relu" value="1">{% endif %}
+        <button type="submit" name="action" value="activer">{% if template.origin.exemple %}J'ai relu, activer{% else %}C'est bon, activer{% endif %}</button>
+      </div>
     {% endif %}
   </section>
 
-  <section class="card" style="margin-top: 1rem">
-    <h2>1. Les trous à compléter ({{ holes|length }})</h2>
-    <p class="small muted" style="margin-top:0">L'outil propose ce qu'il faut mettre d'après le texte qui précède. Corrigez si besoin. « À demander » : le comptable le donne à chaque lettre (donnez alors la question à afficher).</p>
+  <details class="card" style="margin-top: 1rem"{% if problems %} open{% endif %}>
+    <summary><strong>Corriger un champ</strong> <span class="small muted">({{ holes|length }} dans le modèle)</span></summary>
+    <p class="small muted">« À demander » : la question posée à chaque {% if is_ag %}PV{% else %}lettre{% endif %}. Deux champs avec la même question reçoivent la même réponse.</p>
     <table class="table letter-holes">
       <thead><tr><th>Dans le texte</th><th>Contenu</th></tr></thead>
       <tbody>
       {% for item in holes %}
         <tr>
-          <td class="small">…{{ item.hole.before|slice:"-60:" }} <mark>{{ item.hole.text }}</mark> {{ item.hole.after|truncatechars:40 }}{% if item.proposed %} <span class="badge">proposé par l'assistant</span>{% endif %}</td>
+          <td class="small">…{{ item.hole.before|slice:"-60:" }} <mark>{{ item.hole.text }}</mark> {{ item.hole.after|truncatechars:40 }}</td>
           <td>
             <select name="trou-{{ item.hole.key }}" aria-label="Contenu du trou">
               <option value="">— à choisir —</option>
@@ -60,7 +64,7 @@
       {% endfor %}
       </tbody>
     </table>
-  </section>
+  </details>
 
   {% if not is_ag %}
   <section class="card" style="margin-top: 1rem">
@@ -103,11 +107,11 @@
   </section>
 
   <div class="actions" style="margin-top: 1rem">
-    {% if assistant %}<button type="submit" name="action" value="assistant" class="secondary" title="L'assistant IA lit le modèle et propose ; vous vérifiez avant d'activer. Enregistrez d'abord vos changements.">Proposer avec l'assistant IA</button>{% endif %}
     <button type="submit" name="action" value="enregistrer" class="secondary">Enregistrer</button>
     {% if template.active %}
       <button type="submit" name="action" value="desactiver" class="secondary">Désactiver</button>
     {% else %}
+      {% if template.origin.exemple %}<input type="hidden" name="relu" value="1">{% endif %}
       <button type="submit" name="action" value="activer">Enregistrer et activer</button>
     {% endif %}
     <button type="submit" name="action" value="supprimer" class="danger">Supprimer ce modèle</button>

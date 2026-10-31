@@ -1660,3 +1660,21 @@ même taille (« Clôture » : checklists et clôtures ; « Dépôts ») ; le no
   cabinet : bouton « Tester l'assistant » et compteur du mois (appels, coût, dernier appel).
 - PV : un mot tapé là où un montant est attendu est refusé ; lien « Modifier les champs du
   modèle » en haut de la page du PV (administrateurs).
+
+## D-127 — L'assistant IA travaille en coulisse
+
+- Demande de Jeremy : aucune case, aucun bouton « IA ». L'assistant agit tout seul, on ne
+  voit que le résultat.
+- Modèles (lettre de mission, PV d'AG) : au dépôt, les règles de l'outil puis l'assistant
+  identifient les champs ; la page du modèle montre en clair « Rempli tout seul (fiche du
+  client) » et « Demandé à chaque PV », puis un bouton « C'est bon, activer » (« J'ai relu,
+  activer » pour un document rempli). Le détail champ par champ est replié (« Corriger un
+  champ »). Plus de bouton « Proposer avec l'assistant », plus de mention de l'assistant.
+- « À classer » : un fichier non reconnu est lu par l'assistant dès le dépôt ; la
+  proposition s'affiche avec « Ranger ainsi ». Rien n'est rangé sans clic (l'humain décide).
+- Réglages : plus de section « Assistant IA ». La lecture des documents des clients est
+  active d'office (Mistral a confirmé le « zéro conservation » le 31/10/2026, compte de
+  l'éditeur) ; le réglage reste en base (coupure possible par l'éditeur), chaque appel reste
+  tracé (AiCall, sans contenu). Sans réponse de l'assistant, l'outil continue avec ses règles.
+- Typographie : l'outil ne réécrit pas le document, il remplace le texte des champs dans le
+  Word du cabinet ; police, taille, gras, couleurs et mise en page restent ceux du modèle.
