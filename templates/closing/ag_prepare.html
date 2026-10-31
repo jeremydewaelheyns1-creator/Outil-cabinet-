@@ -31,7 +31,11 @@
       <label><input type="radio" name="dividende" value="non"{% if values.dividende != "oui" %} checked{% endif %}> Non</label>
       <label><input type="radio" name="dividende" value="oui"{% if values.dividende == "oui" %} checked{% endif %}> Oui</label>
     </div>
-    <p class="small muted">« Oui » garde les passages du modèle prévus pour un dividende et ajoute la case Précompte (15 jours) dans la Clôture.</p>
+    {% if asks_dividend %}
+      <label class="ag-dividend" data-show-if="dividende=oui">Dividende brut<input name="dividende_montant" value="{{ values.dividende_montant|default:"" }}" maxlength="30" placeholder="ex. 50000"></label>
+      <p class="small muted" data-show-if="dividende=oui">Le PV écrit la décision à la place du report du bénéfice : dividende, puis report du solde.</p>
+    {% endif %}
+    <p class="small muted">« Oui » ajoute aussi la case Précompte (15 jours) dans la Clôture.</p>
   </div>
 
   {% if questions %}

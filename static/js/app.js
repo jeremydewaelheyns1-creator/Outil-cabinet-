@@ -211,7 +211,14 @@ document.addEventListener("change", function (event) {
   function sync() {
     document.querySelectorAll("[data-show-if]").forEach(function (field) {
       var parts = field.getAttribute("data-show-if").split("=");
-      var select = document.querySelector('[name="' + parts[0] + '"]');
+      var name = '[name="' + parts[0] + '"]';
+      var radios = document.querySelectorAll('input[type="radio"]' + name);
+      if (radios.length) {  // boutons radio : la valeur cochée
+        var checked = document.querySelector('input[type="radio"]' + name + ":checked");
+        field.hidden = !checked || checked.value !== parts[1];
+        return;
+      }
+      var select = document.querySelector(name);
       if (select) field.hidden = select.value !== parts[1];
     });
   }

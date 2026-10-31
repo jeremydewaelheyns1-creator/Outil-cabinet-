@@ -254,6 +254,12 @@ def agenda_deadline(request: AppRequest) -> HttpResponse:
     return redirect(back)
 
 
+def _ai_state() -> dict[str, Any]:
+    from apps.ai import client as ai
+
+    return ai.state()
+
+
 def cabinet_settings(request: AppRequest) -> HttpResponse:
     """Réglages du cabinet (administrateurs) : la gestion hybride des dossiers (D-063)."""
     from django import forms
@@ -303,7 +309,8 @@ def cabinet_settings(request: AppRequest) -> HttpResponse:
             return redirect("core:cabinet_settings")
         form = SettingsForm(instance=settings)
         context = {"form": form, "mandates_form": mandates_form, "settings": settings,
-                   "ai_form": AiForm(instance=settings), "ai_on": _ai_on()}  # fmt: skip
+                   "ai_form": AiForm(instance=settings), "ai_on": _ai_on(),
+                   "ai_state": _ai_state()}  # fmt: skip
         return render(request, "core/cabinet_settings.html", context)
     form = SettingsForm(request.POST or None, instance=settings)
     if request.method == "POST" and form.is_valid():
@@ -314,7 +321,8 @@ def cabinet_settings(request: AppRequest) -> HttpResponse:
         messages.success(request, "Réglages enregistrés.")
         return redirect("core:cabinet_settings")
     context = {"form": form, "mandates_form": MandatesForm(instance=settings), "settings": settings,
-               "ai_form": AiForm(instance=settings), "ai_on": _ai_on()}  # fmt: skip
+               "ai_form": AiForm(instance=settings), "ai_on": _ai_on(),
+                   "ai_state": _ai_state()}  # fmt: skip
     return render(request, "core/cabinet_settings.html", context)
 
 

@@ -41,7 +41,7 @@ def long_date(day: date) -> str:
 
 
 def context(year: ClosingYear, day: date, start: time, end: time, dividend: bool,
-            others: str) -> dict[str, str]:  # fmt: skip
+            others: str, amount: str = "") -> dict[str, str]:  # fmt: skip
     """Ce que le modèle peut reprendre en plus de la fiche (codes `ag.*`, `exercice.*`)."""
     return {
         "date": f"{day:%d/%m/%Y}",
@@ -52,6 +52,7 @@ def context(year: ClosingYear, day: date, start: time, end: time, dividend: bool
         "exercice_debut": f"{year.start:%d/%m/%Y}",
         "exercice_fin": f"{year.end:%d/%m/%Y}",
         "dividende": "oui" if dividend else "non",
+        "dividende_montant": amount if dividend else "",
         "autres": others,
     }
 
@@ -245,11 +246,58 @@ def apply_edits(word: bytes, edits: list[dict[str, Any]]) -> bytes:
     return out.getvalue()
 
 
+def net_profit(template: Any, answers: dict[str, str]) -> Decimal | None:
+    """Le bénéfice à affecter tapé dans le PV (total du tableau « bénéfice net… à affecter »)."""
+    for block in sums(template):
+        low = block.label.lower()
+        if "net" in low or "affecter" in low:
+            return _number(answers.get(block.total, ""))
+    return None
+
+
+def has_dividend_passage(template: Any) -> bool:
+    return any((v or {}).get("condition") == "dividende" for v in template.options.values())
+
+
+def dividend_sentence(dividend: Decimal, net: Decimal | None) -> str:
+    """La décision d'affectation quand le modèle n'a pas de passage « dividende »."""
+    if net is None:
+        return f"L'assemblée décide de distribuer un dividende brut de {_money(dividend)} €."
+    rest = net - dividend
+    if rest <= 0:
+        return (f"L'assemblée décide de distribuer l'intégralité du bénéfice de l'exercice, "
+                f"soit {_money(dividend)} €, à titre de dividende brut.")  # fmt: skip
+    return (f"L'assemblée décide de distribuer un dividende brut de {_money(dividend)} € et de "
+            f"reporter le solde du bénéfice de l'exercice, soit {_money(rest)} €.")  # fmt: skip
+
+
+def base(template: Any, client: Client, answers: dict[str, str], ctx: dict[str, str]) -> bytes:
+    """Le PV rempli. Dividende décidé mais modèle sans passage « dividende » (seulement
+    « reporter l'intégralité du bénéfice ») : la phrase de report devient la décision de
+    distribution, à la même place et dans la même mise en forme (D-129)."""
+    dividend = _number(ctx.get("dividende_montant", ""))
+    if ctx.get("dividende") != "oui" or not dividend or has_dividend_passage(template):
+        return letter.fill(template, client, answers, ctx)
+    kept = copy.copy(template)
+    kept.options = {k: v for k, v in template.options.items()
+                    if (v or {}).get("condition") != "sans_dividende"}  # fmt: skip
+    content = letter.fill(kept, client, answers, ctx)
+    target = next(
+        (i for i, text in letter.paragraphs(content)
+         if "intégralité" in text.lower() and "report" in text.lower()),
+        None,
+    )  # fmt: skip
+    if target is None:
+        return letter.fill(template, client, answers, ctx)
+    sentence = dividend_sentence(dividend, net_profit(template, answers))
+    return apply_edits(content, [{"paragraphe": target, "action": "remplacer", "texte": sentence}])
+
+
 def build(template: Any, client: Client, answers: dict[str, str], ctx: dict[str, str],
           edits: list[dict[str, Any]] | None = None) -> bytes:  # fmt: skip
     """Le PV rempli (Word) : le modèle, puis « Quelque chose de particulier ? » — intégré par
     l'assistant (`edits`), sinon ajouté comme une résolution de plus."""
-    content = letter.fill(template, client, answers, ctx)
+    content = base(template, client, answers, ctx)
     if edits:
         return apply_edits(content, edits)
     if ctx.get("autres") and not uses_others(template):
@@ -267,7 +315,7 @@ def understand(template: Any, client: Client, answers: dict[str, str], ctx: dict
     if not ctx.get("autres") or uses_others(template):
         return [], []
     try:
-        return minutes_assist.plan(letter.fill(template, client, answers, ctx), ctx["autres"],
+        return minutes_assist.plan(base(template, client, answers, ctx), ctx["autres"],
                                    client, user)  # fmt: skip
     except ai.Unavailable:
         return [], []

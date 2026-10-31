@@ -80,6 +80,36 @@ def _post(payload: dict[str, Any]) -> dict[str, Any]:
     return result
 
 
+def _reason(exc: Exception) -> str:
+    """La cause d'un échec, lisible et sans contenu (« clé refusée (401) »)."""
+    import httpx
+
+    if isinstance(exc, httpx.HTTPStatusError):
+        code = exc.response.status_code
+        known = {401: "clé refusée", 403: "accès refusé", 404: "modèle inconnu",
+                 422: "demande refusée", 429: "trop de demandes ou crédit épuisé"}  # fmt: skip
+        return f"{known.get(code, 'erreur du fournisseur')} ({code})"
+    if isinstance(exc, httpx.TimeoutException):
+        return "délai dépassé"
+    if isinstance(exc, httpx.TransportError):
+        return "connexion impossible"
+    return type(exc).__name__
+
+
+def state() -> dict[str, Any]:
+    """Pour l'administrateur (Réglages du cabinet) : l'assistant marche-t-il ? Une ligne, pas
+    un réglage : il travaille en coulisse (D-127)."""
+    start = timezone.localdate().replace(day=1)
+    month = AiCall.objects.filter(created_at__date__gte=start)
+    last = AiCall.objects.order_by("-created_at").first()
+    return {
+        "key": enabled(),
+        "calls": month.filter(ok=True).count(),
+        "last": last,
+        "broken": last is not None and not last.ok,
+    }
+
+
 def ask_json(feature: str, system: str, prompt: str, *, client: Client | None = None,
              user: User | None = None, personal: bool = False,
              model: str | None = None) -> Answer:  # fmt: skip
@@ -113,7 +143,7 @@ def ask_json(feature: str, system: str, prompt: str, *, client: Client | None = 
         call.ok = True
         return Answer(data, call)
     except Exception as exc:  # fournisseur injoignable, réponse illisible…
-        call.error = type(exc).__name__[:200]  # le type seulement : jamais le contenu
+        call.error = _reason(exc)[:200]  # la cause seulement : jamais le contenu
         log.warning("Assistant IA indisponible (%s, %s)", feature, call.error)
         raise Unavailable("L'assistant IA n'a pas pu répondre.") from exc
     finally:

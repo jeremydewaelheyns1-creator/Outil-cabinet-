@@ -230,5 +230,29 @@ def test_no_assistant_setting_to_manage(client, make_user, settings):
     client.force_login(make_user(is_staff=True))
     settings.MISTRAL_API_KEY = "fictive"
     page = client.get(reverse("core:cabinet_settings")).content.decode()
-    assert "Assistant IA" not in page
+    assert "<h2>Assistant IA</h2>" not in page and 'name="ai_personal_data"' not in page
     assert CabinetSettings.current().ai_personal_data  # actif d'office (D-127)
+
+
+def test_the_settings_say_why_the_assistant_does_not_answer(client, make_user, settings,
+                                                            monkeypatch):  # fmt: skip
+    import httpx
+
+    client.force_login(make_user(is_staff=True))
+    settings.MISTRAL_API_KEY = ""
+    assert "pas branché" in client.get(reverse("core:cabinet_settings")).content.decode()
+    settings.MISTRAL_API_KEY = "fictive"
+
+    def refused(payload):
+        request = httpx.Request("POST", "https://api.eu.mistral.ai/v1/chat/completions")
+        raise httpx.HTTPStatusError("401", request=request,
+                                    response=httpx.Response(401, request=request))  # fmt: skip
+
+    monkeypatch.setattr(ai, "_post", refused)
+    with pytest.raises(ai.Unavailable):
+        ai.ask_json("test", "s", "p")
+    page = client.get(reverse("core:cabinet_settings")).content.decode()
+    assert "ne répond pas" in page and "clé refusée (401)" in page
+    fake_reply(monkeypatch, {"ok": True})
+    ai.ask_json("test", "s", "p")
+    assert "actif · 1 réponse(s)" in client.get(reverse("core:cabinet_settings")).content.decode()

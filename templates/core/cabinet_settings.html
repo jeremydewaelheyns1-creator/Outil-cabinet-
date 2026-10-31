@@ -52,4 +52,10 @@
   <p class="muted">Déposez la lettre de mission Word du cabinet : l'outil repère les endroits à compléter, vérifie les mentions obligatoires de l'ITAA, puis la remplit pour chaque client.</p>
   <a class="button" href="{% url 'lettre:models' %}">Gérer le modèle</a>
 </section>
+<p class="small {% if ai_state.broken or not ai_state.key %}alert alert-warning{% else %}muted{% endif %}" style="max-width: 760px; margin-top: 1rem">
+  {% if not ai_state.key %}Assistant IA : pas branché (la clé Mistral n'arrive pas jusqu'à l'outil).
+  {% elif ai_state.broken %}Assistant IA : ne répond pas — {{ ai_state.last.error|default:"cause inconnue" }} (le {{ ai_state.last.created_at|date:"d/m/Y H:i" }}).
+  {% elif ai_state.last %}Assistant IA : actif · {{ ai_state.calls }} réponse(s) ce mois-ci.
+  {% else %}Assistant IA : branché, pas encore utilisé.{% endif %}
+</p>
 {% endblock %}

@@ -1697,3 +1697,18 @@ même taille (« Clôture » : checklists et clôtures ; « Dépôts ») ; le no
 - Pourquoi pas un « entraînement » de l'IA chez Mistral : les consignes sont dans le code
   (versionnées, les mêmes pour tous les cabinets) ; un entraînement demanderait d'envoyer de
   vrais PV. Les règles du métier se donnent à Claude, qui les ajoute aux consignes.
+
+## D-129 — Dividende écrit par l'outil ; état de l'assistant visible
+
+- Constat (essai de Jeremy) : dividende « Oui » sur un modèle qui n'a que « reporter
+  l'intégralité du bénéfice » → la Résolution 3 restait vide, et la demande libre était
+  ajoutée en Résolution 7.
+- Désormais, sans passage « dividende » dans le modèle, la page du PV demande le dividende
+  brut ; l'outil remplace la phrase de report, à sa place et dans sa mise en forme, par :
+  « L'assemblée décide de distribuer un dividende brut de X € et de reporter le solde du
+  bénéfice de l'exercice, soit Y € » (Y = bénéfice à affecter − X ; tout distribué : phrase
+  dédiée). Dividende > bénéfice à affecter : signalé. Sans IA, sans erreur possible.
+- Mistral montrait 0 requête : l'assistant n'a jamais répondu en production. Réglages du
+  cabinet : une ligne d'état (pas un réglage) dit s'il est actif, pas branché (clé absente)
+  ou en panne, avec la cause sans contenu (« clé refusée (401) », « connexion impossible »…).
+- Page d'un modèle : « Passages gardés selon le cas » replié (réglé tout seul).

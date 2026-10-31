@@ -3,6 +3,12 @@
 Ce qui a été ajouté à l'outil, du plus récent au plus ancien. Toutes les données de la démo
 sont inventées.
 
+## 31 octobre 2026 — Le dividende s'écrit tout seul dans le PV
+
+- Dividende « Oui » : tapez le montant brut ; le PV remplace « reporter l'intégralité du
+  bénéfice » par la distribution et le report du solde, à la même place (Résolution 3).
+- Réglages du cabinet : une ligne dit si l'assistant IA fonctionne, et sinon pourquoi.
+
 ## 31 octobre 2026 — PV d'AG : votre demande est comprise
 
 - « Quelque chose de particulier ? » : écrivez simplement la décision (« distribuer 50 000 de

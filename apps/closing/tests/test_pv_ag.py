@@ -398,7 +398,8 @@ def test_the_assistant_understands_a_particular_request(admin_web, settings, mon
                "Bénéfice net à affecter": "75000", "Rémunération ordinaire": "20000",
                "ATN Auto": "500", "Emoluments de l'exercice": "20500"}  # fmt: skip
     data = {"modele": template.pk, "date": "2026-06-30", "debut": "18:00", "fin": "18:30",
-            "dividende": "oui", "autres": "distribuer 50 000 de dividende, reporter le reste",
+            "dividende": "oui", "dividende_montant": "50000",
+            "autres": "distribuer 50 000 de dividende, reporter le reste",
             **{keys[label]: value for label, value in amounts.items()}}  # fmt: skip
     url = reverse("clients:closing_ag", args=[company.pk, year.pk])
     response = admin_web.post(url, data, follow=True)
@@ -417,3 +418,29 @@ def test_without_the_assistant_the_request_becomes_a_resolution(admin_web, setti
     template, company, _year, _keys = _tables_setup(admin_web)
     edits, remarks = ag.understand(template, company, {}, {"autres": "Une décision."}, None)
     assert edits == [] and remarks == []
+
+
+def test_a_dividend_replaces_the_carry_forward_sentence(admin_web):
+    template, company, year, keys = _tables_setup(admin_web)
+    report = next(label for label in keys if "intégralité" in label)
+    amounts = {"Bénéfice d'exploitation": "100000", "Charges financières": "25000",
+               "Bénéfice net à affecter": "75000", "Rémunération ordinaire": "20000",
+               "ATN Auto": "500", "Emoluments de l'exercice": "20500"}  # fmt: skip
+    typed = {keys[label]: value for label, value in amounts.items()}
+    data = {"modele": template.pk, "date": "2026-06-30", "debut": "18:00", "fin": "18:30",
+            "dividende": "oui", **typed}  # fmt: skip
+    url = reverse("clients:closing_ag", args=[company.pk, year.pk])
+    page = admin_web.post(url, data).content.decode()
+    assert "le montant du dividende brut" in page  # demandé ; le report, lui, ne l'est plus
+    assert report not in page.split("À compléter")[1][:300]
+    page = admin_web.post(url, {**data, "dividende_montant": "90000"}).content.decode()
+    assert "dépasse le" in page  # plus que le bénéfice à affecter
+    response = admin_web.post(url, {**data, "dividende_montant": "50000"})
+    assert response.status_code == 302
+    year.refresh_from_db()
+    text = _text(ag.word(year))
+    assert ("L'assemblée décide de distribuer un dividende brut de 50.000,00 € et de reporter "
+            "le solde du bénéfice de l'exercice, soit 25.000,00 €.") in text  # fmt: skip
+    assert "intégralité" not in text
+    lines = [line for line in text.splitlines() if line.strip()]
+    assert lines[lines.index("Résolution 2 :") + 1].startswith("L'assemblée décide de distribuer")

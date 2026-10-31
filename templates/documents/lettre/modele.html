@@ -83,11 +83,9 @@
   </section>
   {% endif %}
 
-  <section class="card" style="margin-top: 1rem">
-    <h2>{% if is_ag %}2{% else %}3{% endif %}. Les passages à options (facultatif)</h2>
-    <p class="small muted" style="margin-top:0">Par défaut tout le texte est gardé. Pour un passage qui ne vaut pas pour tous les clients ({% if is_ag %}dividende ou report du bénéfice, rapport de gestion…{% else %}mission TVA, IPP du dirigeant, frais d'ouverture…{% endif %}), choisissez quand le garder.</p>
-    <details>
-      <summary>Voir les {{ paragraphs|length }} paragraphes</summary>
+  <details class="card" style="margin-top: 1rem">
+    <summary><strong>Passages gardés selon le cas</strong> <span class="small muted">(réglé tout seul ; à toucher seulement si un passage ne vaut pas pour tous)</span></summary>
+    <p class="small muted">Par défaut tout le texte est gardé. {% if is_ag %}Le report du bénéfice (sans dividende) et la distribution d'un dividende sont repérés au dépôt.{% else %}Pour un passage qui ne vaut pas pour tous les clients (mission TVA, IPP du dirigeant…), choisissez quand le garder.{% endif %}</p>
       <table class="table letter-holes">
         <tbody>
         {% for p in paragraphs %}
@@ -103,8 +101,7 @@
         {% endfor %}
         </tbody>
       </table>
-    </details>
-  </section>
+  </details>
 
   <div class="actions" style="margin-top: 1rem">
     <button type="submit" name="action" value="enregistrer" class="secondary">Enregistrer</button>

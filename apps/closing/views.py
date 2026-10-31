@@ -407,7 +407,16 @@ def ag_prepare(request: AppRequest, pk: int, year_id: int) -> HttpResponse:
             and not (dividend and "intégralité" in label.lower())
         ]
         errors += _not_amounts(chosen, answers)
+        amount = request.POST.get("dividende_montant", "").strip()[:30]
+        dividend_value = ag._number(amount) if amount else None
+        needs_amount = dividend and not ag.has_dividend_passage(chosen)
+        if needs_amount and (not amount or dividend_value is None or dividend_value <= 0):
+            errors.append("le montant du dividende brut")
         amounts_wrong = [] if errors else ag.check_amounts(chosen, answers)
+        net = ag.net_profit(chosen, answers)
+        if needs_amount and dividend_value and net is not None and dividend_value > net:
+            amounts_wrong.append(f"le dividende ({ag._money(dividend_value)}) dépasse le "
+                                 f"bénéfice à affecter ({ag._money(net)})")  # fmt: skip
         if amounts_wrong and request.POST.get("montants_ok"):
             amounts_wrong = []  # le comptable a confirmé
         if errors:
@@ -416,8 +425,9 @@ def ag_prepare(request: AppRequest, pk: int, year_id: int) -> HttpResponse:
             messages.error(request, "Les montants ne collent pas : " + " ; ".join(amounts_wrong)
                            + ". Corrigez-les, ou cochez « Les montants sont justes ».")  # fmt: skip
         else:
-            ctx = ag.context(year, day, start, end, request.POST.get("dividende") == "oui",
-                             request.POST.get("autres", "").strip()[:2000])  # fmt: skip
+            ctx = ag.context(year, day, start, end, dividend,
+                             request.POST.get("autres", "").strip()[:2000],
+                             ag._money(dividend_value) if dividend_value else "")  # fmt: skip
             document = ag.prepare(year, chosen, answers, ctx, request.user)
             log_access(request, AccessLog.Action.CREATE, document, details={"généré": "pv_ag"})
             for remark in (year.ag_answers or {}).get("remarques") or []:
@@ -432,6 +442,7 @@ def ag_prepare(request: AppRequest, pk: int, year_id: int) -> HttpResponse:
         "fin": saved.get("ctx:fin", "18h30").replace("h", ":"),
         "dividende": saved.get("ctx:dividende", "oui" if year.dividend else "non"),
         "autres": saved.get("ctx:autres", ""),
+        "dividende_montant": saved.get("ctx:dividende_montant", ""),
     }  # fmt: skip
 
     def build(c: Client) -> dict[str, Any]:
@@ -439,6 +450,7 @@ def ag_prepare(request: AppRequest, pk: int, year_id: int) -> HttpResponse:
             "year": year, "templates": templates, "chosen": chosen, "questions": questions,
             "values": values, "known": ag.known(c),
             "amounts_wrong": amounts_wrong,
+            "asks_dividend": chosen is not None and not ag.has_dividend_passage(chosen),
             "conditional": {
                 key: letter.condition_of(chosen, key) for key, _ in questions
             } if chosen is not None else {},
