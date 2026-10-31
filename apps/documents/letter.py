@@ -566,7 +566,40 @@ PDF_STYLE = (
 
 
 def to_pdf(word: bytes, title: str) -> bytes:
-    """PDF de la lettre remplie (mise en page simple, fidèle au texte du cabinet)."""
+    """PDF du document rempli, fidèle au Word du cabinet (polices, tableaux, alignements) :
+    converti par LibreOffice sur le serveur (D-125). Sans LibreOffice : mise en page simple."""
+    converted = _libreoffice_pdf(word)
+    if converted is not None:
+        return converted
+    return _simple_pdf(word, title)
+
+
+def _libreoffice_pdf(word: bytes) -> bytes | None:
+    import shutil
+    import subprocess
+    import tempfile
+    from pathlib import Path
+
+    office = shutil.which("soffice") or shutil.which("libreoffice")
+    if office is None:
+        return None
+    with tempfile.TemporaryDirectory() as folder:
+        source = Path(folder) / "document.docx"
+        source.write_bytes(word)
+        try:
+            subprocess.run(  # noqa: S603  (programme fixe, fichier temporaire de l'outil)
+                [office, "--headless", "--norestore", "--convert-to", "pdf", "--outdir", folder,
+                 str(source)],
+                check=True, capture_output=True, timeout=90,
+                env={"HOME": folder, "PATH": "/usr/bin:/bin"},
+            )  # fmt: skip
+        except (subprocess.SubprocessError, OSError):
+            return None
+        result = Path(folder) / "document.pdf"
+        return result.read_bytes() if result.exists() else None
+
+
+def _simple_pdf(word: bytes, title: str) -> bytes:
     import mammoth
     from weasyprint import HTML
 

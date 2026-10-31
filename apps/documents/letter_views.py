@@ -163,6 +163,13 @@ def model_page(request: AppRequest, template_id: int) -> HttpResponse:
             log_access(request, AccessLog.Action.UPDATE, template, details={"modèle": "assistant"})
             return redirect("lettre:model", template.pk)
         _save(request, template, content)
+        if action == "activer" and template.origin.get("exemple") and not request.POST.get("relu"):
+            messages.error(
+                request,
+                "Cochez d'abord « J'ai relu ce modèle » : il vient d'un document rempli pour un "
+                "client, rien de ce client ne doit y rester.",
+            )
+            return redirect("lettre:model", template.pk)
         if action == "activer":
             missing = letter.problems(template)
             if missing:

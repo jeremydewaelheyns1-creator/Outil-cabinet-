@@ -365,6 +365,7 @@ def ag_prepare(request: AppRequest, pk: int, year_id: int) -> HttpResponse:
     errors: list[str] = []
     if request.method == "POST" and chosen is not None:
         answers = {key: request.POST.get(key, "").strip()[:300] for key, _ in questions}
+        answers = _amounts(chosen, answers)
         try:
             day = _date.fromisoformat(request.POST.get("date", ""))
             start = _time.fromisoformat(request.POST.get("debut", ""))
@@ -409,6 +410,26 @@ def ag_prepare(request: AppRequest, pk: int, year_id: int) -> HttpResponse:
         }  # fmt: skip
 
     return render_section(request, pk, "closing", "closing/ag_prepare.html", build)
+
+
+def _amounts(template: Any, answers: dict[str, str]) -> dict[str, str]:
+    """Un montant tapé « 100000 » ou « 1234,5 » s'écrit comme dans un PV : « 100.000,00 »."""
+    import re
+
+    from apps.documents import letter
+
+    money = {
+        f"trou:{h.key}" for h in letter.holes(bytes(template.content), template.kind)
+        if h.text.strip().upper() == "[MONTANT]"
+    }  # fmt: skip
+    result = dict(answers)
+    for key, value in answers.items():
+        plain = value.replace(" ", "").replace("€", "")
+        if key in money and re.fullmatch(r"-?\d+(?:[.,]\d{1,2})?", plain):
+            number = float(plain.replace(",", "."))
+            text = f"{number:,.2f}".replace(",", " ").replace(".", ",").replace(" ", ".")
+            result[key] = text
+    return result
 
 
 def _deadline(year: ClosingYear) -> date:

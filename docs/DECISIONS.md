@@ -1608,3 +1608,18 @@ même taille (« Clôture » : checklists et clôtures ; « Dépôts ») ; le no
   associés et adresse ; sinon la forme suffit (société + forme juridique, numéro, code postal
   + ville, dates, heures, montants, e-mails, IBAN), « arrêtés au » → date de clôture ;
   l'assistant IA trouve le reste (noms de personnes…).
+
+## D-125 — Modèle depuis un document rempli : détection renforcée, mise en page gardée
+
+- Constat (essai de Jeremy) : noms et adresses restaient dans le modèle, libellés des questions
+  incompréhensibles, PDF qui perdait la mise en page (tableaux, polices).
+- Détection sans connaître le client : en-tête « nom » + ligne de forme seule (« S.R.L. »),
+  rue avec « boîte », localité avec tiret, « Fait à … », « Monsieur / Mr … » et ses parts,
+  année en lettres, date « 23 septembre », heures, montants. Les espaces réservés (« XXX »)
+  ne sont pas touchés.
+- Libellé d'un montant demandé : le texte de sa ligne de tableau (« ATN Auto »), sinon les
+  derniers mots utiles avant le trou. Montants affichés au format belge (100.000,00).
+- PDF : LibreOffice sans interface dans l'image (fidèle au Word, polices équivalentes à
+  Calibri/Arial/Times), avec repli sur l'ancienne conversion s'il échoue.
+- Sécurité : un modèle venu d'un document rempli ne s'active qu'après la case « J'ai relu ce
+  modèle » (rien d'un autre client ne doit rester).

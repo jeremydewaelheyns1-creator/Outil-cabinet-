@@ -12,9 +12,12 @@ COPY --from=ghcr.io/astral-sh/uv:0.11.32 /uv /usr/local/bin/uv
 WORKDIR /app
 
 # Lecture des cartes d'identité (D-035, OCR local) et fabrication des PDF (D-039, WeasyPrint).
+# LibreOffice (sans interface) : PDF fidèle des modèles Word du cabinet (D-125), avec les polices
+# équivalentes à Calibri, Cambria, Arial et Times.
 RUN apt-get update \
     && apt-get install -y --no-install-recommends tesseract-ocr tesseract-ocr-fra poppler-utils \
        libpango-1.0-0 libpangoft2-1.0-0 fonts-dejavu-core \
+       libreoffice-writer-nogui fonts-liberation fonts-crosextra-carlito fonts-crosextra-caladea \
     && rm -rf /var/lib/apt/lists/*
 
 # Dépendances d'abord : cette couche n'est reconstruite que si elles changent.

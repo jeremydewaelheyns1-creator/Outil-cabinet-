@@ -16,6 +16,7 @@
         <strong>Modèle tiré d'un document rempli : relisez-le avant de l'activer.</strong>
         Remplacé automatiquement : {% for kind, count in template.origin.remplace %}{{ kind }} ({{ count }}){% if not forloop.last %}, {% endif %}{% empty %}rien{% endfor %}{% if template.origin.assistant %} ; l'assistant IA a trouvé {{ template.origin.assistant }} autre(s) élément(s){% endif %}.
         Tout ce qui resterait du client d'origine (un nom, une année écrite en lettres…) serait recopié chez les autres : <a href="{% url 'lettre:download' template.pk %}">ouvrir le modèle dans Word</a> pour vérifier, et redéposez-le corrigé si besoin.
+        {% if not template.active %}<label class="small" style="display:block;margin-top:.5rem"><input type="checkbox" name="relu" value="1"> J'ai relu ce modèle : il ne contient plus rien du client d'origine.</label>{% endif %}
       </div>
     {% endif %}
     {% if problems %}

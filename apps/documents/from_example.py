@@ -38,6 +38,8 @@ MARKERS: dict[str, dict[str, str]] = {
     "[ASSOCIÉ]": {"lettre": letter.ASK, "pv_ag": letter.ASK},
     "[DATE DE CLÔTURE]": {"lettre": letter.ASK, "pv_ag": "exercice.cloture"},
     "[DATE]": {"lettre": "date.jour", "pv_ag": "ag.date"},
+    "[ANNÉE]": {"lettre": letter.ASK, "pv_ag": "ag.annee"},
+    "[NOMBRE]": {"lettre": letter.ASK, "pv_ag": letter.ASK},
     "[HEURE]": {"lettre": letter.ASK, "pv_ag": "ag.debut"},
     "[MONTANT]": {"lettre": letter.ASK, "pv_ag": letter.ASK},
     "[CABINET]": {"lettre": "cabinet.nom", "pv_ag": "cabinet.nom"},
@@ -50,12 +52,19 @@ KINDS = {
     "[NUMÉRO D'ENTREPRISE]": "numéro d'entreprise", "[GÉRANT]": "gérant ou administrateur",
     "[ASSOCIÉ]": "associé", "[DATE DE CLÔTURE]": "date de clôture", "[DATE]": "date",
     "[HEURE]": "heure", "[MONTANT]": "montant", "[CABINET]": "nom du cabinet",
+    "[ANNÉE]": "année", "[NOMBRE]": "nombre de parts",
     "[À COMPLÉTER]": "e-mail, IBAN ou autre",
 }  # fmt: skip
 
 DATE = re.compile(
     r"\b\d{1,2}\s*[/.-]\s*\d{1,2}\s*[/.-]\s*(?:19|20)\d{2}\b"
     r"|\b(?:1er|\d{1,2})\s+(?:" + "|".join(MONTHS) + r")\s+(?:19|20)\d{2}\b",
+    re.I,
+)
+# « le 23 septembre » (année ailleurs, souvent en lettres) et « deux mille vingt-six ».
+DAY_MONTH = re.compile(r"\b(?:1er|\d{1,2})\s+(?:" + "|".join(MONTHS) + r")\b(?!\s+\d)", re.I)
+YEAR_WORDS = re.compile(
+    r"\bdeux\s+mille(?:[\s-]+(?:et[\s-]+)?(?:un|deux|trois|quatre|cinq|six|sept|huit|neuf|dix|onze|douze|treize|quatorze|quinze|seize|vingt|trente))*\b",
     re.I,
 )
 TIME = re.compile(r"\b(?:[01]?\d|2[0-3])\s?(?:h|H|:)\s?[0-5]\d\b|\b(?:[01]?\d|2[0-3])\s?heures?\b")
@@ -106,11 +115,31 @@ def _literal(values: list[str]) -> re.Pattern[str] | None:
 
 # Sans fiche : ce qui se reconnaît à sa forme dans un document belge.
 ANY_NUMBER = re.compile(r"(?:BE\s?)?[01]\d{3}[.\s]\d{3}[.\s]\d{3}(?!\d)|BE\s?[01]\d{9}(?!\d)")
-FORMS = r"(?:SRL|SPRL|SA|SC|SCRL|SNC|SComm|ASBL|BV|NV|VZW)"
-COMPANY = re.compile(
-    r"(?<![\w&])(?:[A-ZÀ-Ý][\w&'’.-]*\s+){0,5}[A-ZÀ-Ý][\w&'’.-]*\s+" + FORMS + r"(?![\w])"
+FORMS = (
+    r"(?:S\.?R\.?L\.?|S\.?P\.?R\.?L\.?|S\.?C\.?R\.?L\.?|S\.?A\.?|S\.?C\.?|S\.?N\.?C\.?"
+    r"|SComm|A\.?S\.?B\.?L\.?|BV|NV|VZW|Srl|Sa)"
 )
-PLACE = re.compile(r"(?<![\d\w])[1-9]\d{3}\s+[A-ZÀ-Ý][\w'’-]+(?:[- ][A-ZÀ-Ý][\w'’-]+)?")
+FORM_ONLY = re.compile(r"^\s*" + FORMS + r"\s*$")
+NAME = r"[A-ZÀ-Ý0-9][\w&'’.-]*"
+COMPANY = re.compile(r"(?<![\w&])(?:" + NAME + r"\s+){0,5}" + NAME + r"\s+" + FORMS + r"(?![\w])")
+STREET = re.compile(
+    r"\b(?:Rue|Avenue|Av\.|Chaussée|Place|Boulevard|Bd|Chemin|Route|Square|Allée|Quai|Drève"
+    r"|Clos|Impasse|Sentier|Galerie|Rempart|Parvis|Ruelle|Venelle|Straat|Laan)\b[^,\n]{1,60}?"
+    r"\d+[A-Za-z]?(?:\s*(?:,\s*)?(?:bo[iî]te|bte|bus)\s*\w+)?",
+    re.I,
+)
+PLACE = re.compile(r"(?<![\d\w])[1-9]\d{3}\s*[–—-]?\s*[A-ZÀ-Ý][\w'’]+(?:[- ][A-ZÀ-Ý]?[\w'’]+){0,3}")
+TOWN = re.compile(r"(?<=[Ff]ait à )(?!X{2,}\b)[A-ZÀ-Ý][\w'’]+(?:-[A-ZÀ-Ý]?[\w'’]+){0,3}")
+# « Monsieur Untel », « Mr Prénom Nom », « Mme … » : seul le nom devient un trou ; un nombre
+# juste après (« Mr Untel 100 ») = ses parts.
+PERSON = re.compile(
+    r"\b(?:Monsieur|Madame|Mademoiselle|Mr\.?|Mme\.?|Mlle\.?|M\.)\s+"
+    r"(?P<v>(?:[A-ZÀ-Ý][\w'’-]+)(?:\s+[A-ZÀ-Ý][\w'’-]+){0,2})"
+)
+PARTS = re.compile(
+    r"\b(?:Monsieur|Madame|Mr\.?|Mme\.?|M\.)\s+(?:[A-ZÀ-Ý][\w'’-]+\s+){1,3}[–—:-]?\s*"
+    r"(?P<v>\d{1,7})(?=\s*(?:parts?|actions?)?\s*$)"
+)
 
 
 def _rules(client: Client | None, closing: list[str]) -> list[tuple[re.Pattern[str], str]]:
@@ -140,8 +169,14 @@ def _rules(client: Client | None, closing: list[str]) -> list[tuple[re.Pattern[s
         rules.append((_literal(closing), "[DATE DE CLÔTURE]"))
     rules.append((ANY_NUMBER, "[NUMÉRO D'ENTREPRISE]"))
     rules.append((COMPANY, "[SOCIÉTÉ]"))
+    rules.append((STREET, "[ADRESSE]"))
     rules.append((PLACE, "[LOCALITÉ]"))
+    rules.append((TOWN, "[VILLE]"))
+    rules.append((PARTS, "[NOMBRE]"))
+    rules.append((PERSON, "[GÉRANT]"))
     rules.append((DATE, "[DATE]"))
+    rules.append((DAY_MONTH, "[DATE]"))
+    rules.append((YEAR_WORDS, "[ANNÉE]"))
     rules.append((TIME, "[HEURE]"))
     rules.append((AMOUNT, "[MONTANT]"))
     return [(p, m) for p, m in rules if p is not None]
@@ -183,8 +218,10 @@ def _spans(text: str, rules: list[tuple[re.Pattern[str], str]],
                 taken.append((match.start(), match.end(), marker))
     for pattern, marker in rules:
         for match in pattern.finditer(text):
-            if match.group(0).strip() and free(match.start(), match.end()):
-                taken.append((match.start(), match.end(), marker))
+            group = "v" if "v" in pattern.groupindex else 0  # seulement la partie utile
+            start, end = match.start(group), match.end(group)
+            if match.group(group).strip() and free(start, end):
+                taken.append((start, end, marker))
     return sorted(taken)
 
 
@@ -196,9 +233,16 @@ def convert(
     document = letter._open(content)
     rules = _rules(client, _closing_dates(client) if client is not None else [])
     counts: dict[str, int] = {}
-    for paragraph in letter._paragraphs(document):
+    paragraphs = letter._paragraphs(document)
+    names = _name_lines(paragraphs)
+    for index, paragraph in enumerate(paragraphs):
         text = paragraph.text
         if not text.strip():
+            continue
+        if index in names and "[" not in text:
+            whole = [(len(text) - len(text.lstrip()), len(text.rstrip()), "[SOCIÉTÉ]")]
+            letter._fill(paragraph, whole)
+            counts["nom du client"] = counts.get("nom du client", 0) + 1
             continue
         spans = _spans(text, rules, extra or [])
         if spans:
@@ -211,6 +255,23 @@ def convert(
     return Conversion(out.getvalue(), counts)
 
 
+def _name_lines(paragraphs: list[Any]) -> set[int]:
+    """En-tête « NOM » puis « S.R.L. » sur la ligne suivante : la ligne du nom est le nom du
+    client."""
+    found: set[int] = set()
+    previous = None
+    for index, paragraph in enumerate(paragraphs):
+        text = paragraph.text.strip()
+        if not text:
+            continue
+        if FORM_ONLY.match(text) and previous is not None:
+            prev_text = paragraphs[previous].text.strip()
+            if 0 < len(prev_text) <= 60 and not FORM_ONLY.match(prev_text):
+                found.add(previous)
+        previous = index
+    return found
+
+
 def text_of(content: bytes) -> str:
     return "\n".join(p.text for p in letter._paragraphs(letter._open(content)) if p.text.strip())
 
@@ -219,6 +280,7 @@ def holes_for(content: bytes, kind: str) -> dict[str, dict[str, Any]]:
     """Contenu de chaque trou du modèle obtenu : d'après le repère posé ; sinon la proposition
     habituelle (pour les trous qui existaient déjà dans le document)."""
     result: dict[str, dict[str, Any]] = {}
+    rows = _row_labels(content)
     for hole in letter.holes(content, kind):
         marker = hole.text.strip().upper()
         field_code = (MARKERS.get(marker) or {}).get(kind, "")
@@ -239,8 +301,54 @@ def holes_for(content: bytes, kind: str) -> dict[str, dict[str, Any]]:
             continue
         label = ""
         if field_code == letter.ASK:
-            label = (
-                letter._question_ag(hole.text, hole.before) or KINDS.get(marker, "").capitalize()
-            )
+            index = int(hole.key.split(":")[0])
+            label = rows.get(index) or _label(hole.before) or KINDS.get(marker, "").capitalize()
+            if marker == "[NOMBRE]":
+                label = "Nombre de parts"
         result[hole.key] = {"field": field_code, "label": label[:120]}
     return result
+
+
+def _row_labels(content: bytes) -> dict[int, str]:
+    """Trou dans un tableau : la question est le libellé de sa ligne (« ATN Auto »)."""
+    from docx.oxml.ns import qn
+
+    labels: dict[int, str] = {}
+    for index, paragraph in enumerate(letter._paragraphs(letter._open(content))):
+        row = paragraph._p
+        while row is not None and row.tag != qn("w:tr"):
+            row = row.getparent()
+        if row is None:
+            continue
+        for cell in row.findall(qn("w:tc")):
+            text = "".join(t.text or "" for t in cell.iter(qn("w:t")))
+            clean = _clean(text)
+            if clean and "[" not in text:
+                labels[index] = clean
+                break
+    return labels
+
+
+def _clean(text: str) -> str:
+    text = re.sub(r"\[[^\]]*\]|\([+-]\)|[€•\-–+:]", " ", text)
+    words = text.split()
+    return " ".join(words)[:1].upper() + " ".join(words)[1:] if words else ""
+
+
+STOP = {"soit", "de", "du", "des", "à", "a", "au", "aux", "la", "le", "les", "un", "une", "par",
+        "est", "sont", "pour", "et", "en", "qui", "que"}  # fmt: skip
+
+
+def _label(before: str) -> str:
+    """Hors tableau : les derniers mots utiles avant le trou (« bénéfice de l'exercice »)."""
+    text = re.sub(r"\[[^\]]*\]", " ", before)
+    parts = [p for p in re.split(r"[.;:!?\n]", text) if p.strip()]
+    text = parts[-1] if parts else ""
+    words = [w for w in re.sub(r"[(),€+–-]", " ", text).split()]
+    while words and words[-1].lower() in STOP:
+        words.pop()
+    words = words[-6:]
+    while words and words[0].lower() in STOP:
+        words.pop(0)
+    label = " ".join(words)
+    return label[:1].upper() + label[1:]

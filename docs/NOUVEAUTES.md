@@ -3,6 +3,15 @@
 Ce qui a été ajouté à l'outil, du plus récent au plus ancien. Toutes les données de la démo
 sont inventées.
 
+## 31 octobre 2026 — Modèle depuis un document rempli : bien meilleur
+
+- L'outil retrouve beaucoup mieux ce qu'il faut remplacer (nom en en-tête, adresse avec
+  boîte, gérant et ses parts, année en lettres, dates, heures, montants, « Fait à … »).
+- Les questions des montants reprennent le libellé de la ligne (« ATN Auto ») et les montants
+  s'écrivent 100.000,00.
+- Le PDF garde la mise en page du Word (tableaux, polices).
+- Avant d'activer un tel modèle, cochez « J'ai relu ce modèle ».
+
 ## 31 octobre 2026 — Un modèle à partir d'un document déjà rempli
 
 - Dans les modèles de lettre de mission et de PV d'AG : déposez votre Word tel quel, vide ou

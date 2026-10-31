@@ -111,3 +111,61 @@ def test_without_knowing_the_client_the_shape_is_enough():
         assert leftover not in text, leftover
     holes = from_example.holes_for(result.content, "pv_ag")
     assert "exercice.cloture" in [v["field"] for v in holes.values()]  # « arrêtés au … »
+
+
+def realistic_pv() -> bytes:
+    """Mise en page d'un vrai PV de cabinet (valeurs inventées) : nom puis forme sur deux
+    lignes, « boîte », année en lettres, « Monsieur … », tableaux de montants."""
+    d = Word()
+    for line in ("TESTFICT", "S.R.L.", "Rue des Essais 11 boîte 2", "1150 – Woluwé-Saint-Pierre",
+                 "R.P.M. 0987.654.394"):  # fmt: skip
+        d.add_paragraph(line)
+    d.add_paragraph("L’an deux mille vingt-six le 23 septembre, s’est tenue l’assemblée générale.")
+    d.add_paragraph("La séance est ouverte à 18h00 sous la présidence de Monsieur Fictif.")
+    d.add_paragraph("Mr Jean Fictif 100")
+    d.add_paragraph("L’assemblée approuve les comptes annuels arrêtés au 31/12/2025.")
+    t = d.add_table(rows=0, cols=4)
+    for label, value in (("- Bénéfice d’exploitation", "42.310,00"), ("- ATN Auto", "2.140,00")):
+        c = t.add_row().cells
+        c[0].text, c[1].text, c[2].text, c[3].text = label, "(+)", "€", value
+    d.add_paragraph("La séance est levée à 18h30.")
+    d.add_paragraph("Monsieur Jean Fictif")
+    d.add_paragraph("Fait à Woluwé-Saint-Pierre")
+    out = io.BytesIO()
+    d.save(out)
+    return out.getvalue()
+
+
+def test_a_real_layout_without_known_client():
+    result = from_example.convert(realistic_pv(), None)
+    text = from_example.text_of(result.content)
+    for leftover in ("TESTFICT", "Essais", "Woluwé", "0987", "deux mille", "23 septembre",
+                     "Fictif", " 100", "31/12/2025", "42.310", "2.140", "18h"):  # fmt: skip
+        assert leftover not in text, leftover
+    assert "S.R.L." in text and "Monsieur [GÉRANT]" in text  # le texte du cabinet reste
+    holes = from_example.holes_for(result.content, "pv_ag")
+    labels = {v["label"] for v in holes.values() if v["field"] == "demander"}
+    assert {"Bénéfice d’exploitation", "ATN Auto", "Nombre de parts"} <= labels
+    fields = [v["field"] for v in holes.values()]
+    assert {"ag.annee", "ag.date", "ag.debut", "ag.fin", "client.ville", "exercice.cloture",
+            "client.adresse", "client.localite", "client.representant"} <= set(fields)  # fmt: skip
+
+
+def test_a_template_from_a_filled_document_needs_a_reread_before_activation(client, make_user):
+    from django.core.files.uploadedfile import SimpleUploadedFile
+
+    admin = make_user(is_staff=True, capabilities=["clients.edit"])
+    client.force_login(admin)
+    client.post(reverse("lettre:models"), {"sorte": "pv_ag",
+                "modele": SimpleUploadedFile("pv.docx", realistic_pv())})  # fmt: skip
+    template = LetterTemplate.objects.get()
+    data = {"action": "activer"}
+    for key, value in template.holes.items():
+        data[f"trou-{key}"], data[f"libelle-{key}"] = value["field"], value["label"]
+    url = reverse("lettre:model", args=[template.pk])
+    client.post(url, data)
+    template.refresh_from_db()
+    assert not template.active  # pas relu
+    client.post(url, {**data, "relu": "1"})
+    template.refresh_from_db()
+    assert template.active
