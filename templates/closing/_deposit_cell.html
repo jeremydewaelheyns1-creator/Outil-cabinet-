@@ -26,7 +26,7 @@
           </ul>
         {% endif %}
         {% if p.kind == "ag" and can_edit and not p.done_on %}
-          {% if b.can_prepare %}<a class="button button-small" href="{% url 'clients:closing_ag' client.pk y.pk %}">{% if y.ag_draft_id %}Reprendre le PV{% else %}Préparer le PV{% endif %}</a>
+          {% if b.can_prepare %}<a class="button button-small" href="{% url 'clients:closing_ag' client.pk y.pk %}">{% if y.ag_draft_id %}Reprendre le PV{% else %}Préparer le PV{% endif %}</a>{% if y.ag_draft_id %} <a class="small" href="{% url 'clients:closing_ag_word' client.pk y.pk %}">PV en Word</a>{% endif %}
           {% if b.note %}<p class="small muted">PV envoyé au client pour signature : la case se coche quand il a signé.</p>{% endif %}
           {% elif user.is_staff %}<p class="small muted">Pour préparer le PV ici : déposez un modèle dans <a href="{% url 'lettre:models' %}?sorte=pv_ag">Paramètres › Modèles de PV d'AG</a>.</p>{% endif %}
         {% endif %}

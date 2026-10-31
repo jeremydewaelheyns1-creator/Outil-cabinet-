@@ -344,6 +344,24 @@ def deposit(request: AppRequest, pk: int, year_id: int, kind: str) -> HttpRespon
 
 
 @require_capability(Capability.CLIENTS_EDIT)
+def ag_word(request: AppRequest, pk: int, year_id: int) -> HttpResponse:
+    """Le PV d'AG préparé, en Word : exactement la typographie du modèle du cabinet."""
+    from . import ag
+
+    year = _year(request, pk, year_id)
+    content = ag.word(year)
+    if content is None:
+        raise Http404
+    response = HttpResponse(
+        content,
+        content_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    )
+    response["Content-Disposition"] = f'attachment; filename="pv-ag-{year.label}.docx"'
+    log_access(request, AccessLog.Action.EXPORT, year.client, details={"pv_ag": "word"})
+    return response
+
+
+@require_capability(Capability.CLIENTS_EDIT)
 def ag_prepare(request: AppRequest, pk: int, year_id: int) -> HttpResponse:
     """Préparer le PV d'AG de l'exercice sur un modèle du cabinet (D-120)."""
     from datetime import date as _date

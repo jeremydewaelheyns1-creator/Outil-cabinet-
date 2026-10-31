@@ -221,3 +221,25 @@ def test_dividend_amount_is_not_required_without_dividend(admin_web):
     assert admin_web.post(url, data).status_code == 302
     year.refresh_from_db()
     assert year.ag_draft is not None
+
+
+def test_the_prepared_minutes_can_be_downloaded_in_word(admin_web):
+    from apps.documents import letter
+
+    template, _ = install(admin_web)
+    _activate(admin_web, template)
+    company = ClientFactory(name="Garage Fictif", legal_form="SRL", fiscal_year_end_month=12,
+                            fiscal_year_end_day=31)  # fmt: skip
+    services.ensure_years(company, date(2026, 10, 30))
+    year = ClosingYear.objects.get(client=company)
+    word = reverse("clients:closing_ag_word", args=[company.pk, year.pk])
+    assert admin_web.get(word).status_code == 404  # rien de préparé
+    asked = {k: "1 234,00" for k, _ in letter.questions(template)}
+    data = {"modele": template.pk, "date": "2026-06-30", "debut": "18:00", "fin": "18:30",
+            "dividende": "non", **asked}  # fmt: skip
+    admin_web.post(reverse("clients:closing_ag", args=[company.pk, year.pk]), data)
+    tab = admin_web.get(reverse("clients:closing", args=[company.pk])).content.decode()
+    assert word in tab
+    response = admin_web.get(word)
+    assert response.status_code == 200 and "Garage Fictif" in _text(response.content)
+    assert "30/06/2026" in _text(response.content)

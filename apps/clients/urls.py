@@ -59,6 +59,9 @@ urlpatterns = [
     path("<int:pk>/cloture/profil/", closing_views.profile, name="closing_profile"),
     path("<int:pk>/cloture/<int:year_id>/pv-ag/", closing_views.ag_prepare, name="closing_ag"),
     path(
+        "<int:pk>/cloture/<int:year_id>/pv-ag/word/", closing_views.ag_word, name="closing_ag_word"
+    ),
+    path(
         "<int:pk>/cloture/<int:year_id>/dividende/",
         closing_views.dividend,
         name="closing_dividend",

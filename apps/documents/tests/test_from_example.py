@@ -230,3 +230,32 @@ def test_the_server_has_lookalikes_of_the_usual_word_fonts():
     for font in ("Garamond", "Century Gothic", "Aptos", "Book Antiqua"):
         assert f"<family>{font}</family>" in rules
     assert "60-polices-cabinet.conf" in (root / "Dockerfile").read_text()
+
+
+def test_fonts_the_pdf_cannot_copy_are_reported(monkeypatch):
+    from docx.oxml import parse_xml
+
+    d = Word()
+    for font in ("Garamond", "Calibri", "Police Maison"):
+        d.add_paragraph().add_run(f"Texte en {font}").font.name = font
+    out = io.BytesIO()
+    d.save(out)
+    monkeypatch.setattr(letter, "_installed_fonts", lambda: {"police maison"})
+    # Word écrit chaque police utilisée dans word/fontTable.xml ; on l'imite.
+    import zipfile
+
+    source = zipfile.ZipFile(io.BytesIO(out.getvalue()))
+    rebuilt = io.BytesIO()
+    with zipfile.ZipFile(rebuilt, "w") as target:
+        for item in source.infolist():
+            data = source.read(item.filename)
+            if item.filename == "word/fontTable.xml":
+                ns = "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
+                fonts = "".join(f'<w:font w:name="{f}"/>' for f in ("Garamond", "Calibri",
+                                                                  "Police Maison"))  # fmt: skip
+                fonts += '<w:font w:name="Lato"><w:embedRegular r:id="x"/></w:font>'
+                rel = "http://schemas.openxmlformats.org/officeDocument/2006/relationships"
+                data = f'<w:fonts xmlns:w="{ns}" xmlns:r="{rel}">{fonts}</w:fonts>'.encode()
+                parse_xml(data)
+            target.writestr(item, data)
+    assert letter.missing_fonts(rebuilt.getvalue()) == ["Garamond"]

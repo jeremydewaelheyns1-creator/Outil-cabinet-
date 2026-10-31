@@ -222,6 +222,7 @@ def model_page(request: AppRequest, template_id: int) -> HttpResponse:
         "forms": letter.FORMS,
         "list_url": _list_url(template.kind),
         "assistant": _assistant_on(),
+        "missing_fonts": letter.missing_fonts(content),
     }
     return render(request, "documents/lettre/modele.html", context)
 

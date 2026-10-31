@@ -1633,3 +1633,8 @@ même taille (« Clôture » : checklists et clôtures ; « Dépôts ») ; le no
   déposé (seul le texte remplacé change). Pour le PDF, le serveur n'a pas les polices
   Microsoft : il prend un sosie libre (Calibri → Carlito, Arial → Liberation Sans, Garamond →
   EB Garamond, Century Gothic → URW Gothic, Aptos → Open Sans…, `deploy/fonts`).
+- Pour que rien ne change par rapport aux PV habituels : (1) le PV préparé se télécharge aussi
+  en Word (« PV en Word », refait depuis les réponses gardées : typographie exacte) ; (2) une
+  police incorporée dans le Word (Word › Options › Enregistrement) est reprise telle quelle par
+  le PDF (testé : police absente du serveur, PDF identique) ; (3) la page du modèle signale
+  les polices ni présentes ni incorporées, et comment les incorporer.

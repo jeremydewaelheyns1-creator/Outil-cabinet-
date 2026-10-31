@@ -19,6 +19,12 @@
         {% if not template.active %}<label class="small" style="display:block;margin-top:.5rem"><input type="checkbox" name="relu" value="1"> J'ai relu ce modèle : il ne contient plus rien du client d'origine.</label>{% endif %}
       </div>
     {% endif %}
+    {% if missing_fonts %}
+      <div class="alert alert-warning small" style="margin:.6rem 0">
+        <strong>Police{{ missing_fonts|length|pluralize }} {{ missing_fonts|join:", " }} : le PDF utilisera une police très proche, pas exactement la même.</strong>
+        Pour un PDF identique à votre Word : dans Word, <em>Fichier › Options › Enregistrement</em>, cochez « Incorporer les polices dans le fichier », enregistrez, puis redéposez le modèle. Le PV en Word, lui, est toujours identique.
+      </div>
+    {% endif %}
     {% if problems %}
       <p><strong>Avant de pouvoir l'utiliser :</strong></p>
       <ul class="small">{% for p in problems %}<li>{{ p }}</li>{% endfor %}</ul>

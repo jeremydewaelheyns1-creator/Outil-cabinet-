@@ -15,6 +15,9 @@ sont inventées.
   associés reprend celle de la fiche du client. Nouveau champ « Tous les dirigeants ».
 - Le PDF reprend la typographie de votre Word (police, taille, gras, couleur), y compris
   pour Garamond, Century Gothic, Aptos ou Book Antiqua.
+- Case AG : lien « PV en Word » (le PV préparé, à l'identique de votre modèle).
+- Police incorporée dans votre Word : le PDF la reprend exactement. La page du modèle vous
+  prévient si une police n'est pas incorporée.
 
 ## 31 octobre 2026 — Un modèle à partir d'un document déjà rempli
 

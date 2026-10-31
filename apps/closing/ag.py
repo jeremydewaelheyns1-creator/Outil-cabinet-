@@ -95,7 +95,8 @@ def prepare(year: ClosingYear, template: Any, answers: dict[str, str], ctx: dict
         document.file.save("document", ContentFile(content), save=False)
         document.save()
         year.ag_draft = document
-        year.ag_answers = {**answers, **{f"ctx:{k}": v for k, v in ctx.items()}}
+        year.ag_answers = {**answers, **{f"ctx:{k}": v for k, v in ctx.items()},
+                           "modele": template.pk}  # fmt: skip
         year.save(update_fields=["ag_draft", "ag_answers"])
     deposits.set_dividend(year, ctx["dividende"] == "oui", user)
     events.emit(
@@ -103,6 +104,19 @@ def prepare(year: ClosingYear, template: Any, answers: dict[str, str], ctx: dict
         payload={"document": str(document.pk), "type": DOC_TYPE},
     )  # fmt: skip
     return document
+
+
+def word(year: ClosingYear) -> bytes | None:
+    """Le PV rempli en Word (typographie exacte du modèle), refait depuis les réponses gardées."""
+    from apps.documents.models import LetterTemplate
+
+    saved = year.ag_answers or {}
+    template = LetterTemplate.objects.filter(pk=saved.get("modele") or 0).first()
+    if template is None or year.ag_draft_id is None:
+        return None
+    answers = {k: v for k, v in saved.items() if k.startswith(("trou:", "option:"))}
+    ctx = {k[4:]: v for k, v in saved.items() if k.startswith("ctx:")}
+    return letter.fill(template, year.client, answers, ctx)
 
 
 def waiting_signature(year: ClosingYear) -> bool:

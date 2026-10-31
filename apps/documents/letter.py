@@ -595,6 +595,58 @@ def to_pdf(word: bytes, title: str) -> bytes:
     return _simple_pdf(word, title)
 
 
+# Polices rendues à l'identique sans le fichier Microsoft (sosies aux mêmes largeurs).
+SAME_WIDTHS = {"calibri", "cambria", "arial", "times new roman", "courier new", "helvetica",
+               "courier", "symbol", "wingdings"}  # fmt: skip
+
+
+def _installed_fonts() -> set[str]:
+    import shutil
+    import subprocess
+
+    tool = shutil.which("fc-list")
+    if tool is None:
+        return set()
+    try:
+        out = subprocess.run(  # noqa: S603  (programme fixe, sans donnée du document)
+            [tool, ":", "family"], check=True, capture_output=True, text=True, timeout=20
+        ).stdout
+    except (subprocess.SubprocessError, OSError):
+        return set()
+    return {name.strip().lower() for line in out.splitlines() for name in line.split(",")}
+
+
+def missing_fonts(word: bytes) -> list[str]:
+    """Polices du document que le PDF ne peut pas reproduire à l'identique : ni sur le serveur,
+    ni incorporées dans le fichier Word (Word › Options › Enregistrement › « Incorporer les
+    polices dans le fichier »)."""
+    import zipfile
+
+    from docx.oxml import parse_xml
+    from docx.oxml.ns import qn
+
+    try:
+        with zipfile.ZipFile(io.BytesIO(word)) as archive:
+            table = parse_xml(archive.read("word/fontTable.xml"))
+            body = archive.read("word/document.xml").decode("utf-8", "ignore")
+            styles = archive.read("word/styles.xml").decode("utf-8", "ignore")
+    except (KeyError, zipfile.BadZipFile, ValueError):
+        return []
+    installed = _installed_fonts()
+    missing = []
+    for font in table.iter(qn("w:font")):
+        name = font.get(qn("w:name")) or ""
+        embedded = any(
+            font.find(qn(f"w:{tag}")) is not None
+            for tag in ("embedRegular", "embedBold", "embedItalic", "embedBoldItalic")
+        )
+        used = f'"{name}"' in body or f'"{name}"' in styles
+        low = name.lower()
+        if used and not embedded and low not in installed and low not in SAME_WIDTHS:
+            missing.append(name)
+    return missing
+
+
 def _libreoffice_pdf(word: bytes) -> bytes | None:
     import shutil
     import subprocess
