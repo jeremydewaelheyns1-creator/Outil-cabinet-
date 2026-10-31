@@ -381,13 +381,15 @@ def ag_prepare(request: AppRequest, pk: int, year_id: int) -> HttpResponse:
         (t for t in templates if str(t.pk) == wanted),
         templates[0] if templates else None,
     )
-    questions = letter.questions(chosen) if chosen is not None else []
+    # Les totaux (émoluments, bénéfice à affecter…) ne sont pas demandés : l'outil les calcule.
+    auto = ag.computed(chosen) if chosen is not None else {}
+    questions = [q for q in letter.questions(chosen) if q[0] not in auto] if chosen else []
     saved = year.ag_answers or {}
     errors: list[str] = []
     amounts_wrong: list[str] = []
     if request.method == "POST" and chosen is not None:
         answers = {key: request.POST.get(key, "").strip()[:300] for key, _ in questions}
-        answers = _amounts(chosen, answers)
+        answers = ag.complete(chosen, _amounts(chosen, answers))
         try:
             day = _date.fromisoformat(request.POST.get("date", ""))
             start = _time.fromisoformat(request.POST.get("debut", ""))
@@ -448,7 +450,7 @@ def ag_prepare(request: AppRequest, pk: int, year_id: int) -> HttpResponse:
     def build(c: Client) -> dict[str, Any]:
         return {
             "year": year, "templates": templates, "chosen": chosen, "questions": questions,
-            "values": values, "known": ag.known(c),
+            "values": values, "known": ag.known(c), "auto": list(auto.values()),
             "amounts_wrong": amounts_wrong,
             "asks_dividend": chosen is not None and not ag.has_dividend_passage(chosen),
             "conditional": {

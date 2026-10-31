@@ -3,6 +3,11 @@
 Ce qui a été ajouté à l'outil, du plus récent au plus ancien. Toutes les données de la démo
 sont inventées.
 
+## 31 octobre 2026 — PV d'AG : les totaux se calculent tout seuls
+
+- Bénéfice net à affecter, émoluments de l'exercice, bénéfice reporté : l'outil fait
+  l'addition, vous ne tapez que les lignes.
+
 ## 31 octobre 2026 — Site d'essai et mises à jour sans attente
 
 - Un site d'essai, avec des dossiers fictifs, reçoit chaque nouveauté tout seul : plus de

@@ -295,25 +295,47 @@ def _tables_setup(admin_web):
     return template, company, year, keys
 
 
-def test_amounts_that_do_not_add_up_are_flagged(admin_web):
+def test_totals_are_computed_not_asked(admin_web):
     template, company, year, keys = _tables_setup(admin_web)
     assert len(ag.sums(template)) == 2
-    amounts = {"Bénéfice d'exploitation": "100000", "Charges financières": "25000",
-               "Bénéfice net à affecter": "75000", "Rémunération ordinaire": "20000",
-               "ATN Auto": "500", "Emoluments de l'exercice": "5000"}  # fmt: skip
-    report = next(label for label in keys if "intégralité" in label)
-    data = {"modele": template.pk, "date": "2026-06-30", "debut": "18:00", "fin": "18:30",
-            "dividende": "non", keys[report]: "70000",
-            **{keys[label]: value for label, value in amounts.items()}}  # fmt: skip
     url = reverse("clients:closing_ag", args=[company.pk, year.pk])
-    page = admin_web.post(url, data).content.decode()
+    page = admin_web.get(url).content.decode()
+    asked = page.split("Calculé par l'outil")[0]
+    for total in ("Bénéfice net à affecter", "Emoluments de l&#x27;exercice"):
+        assert f"{total}<input" not in asked.replace("\n", "")
+    assert "Calculé par l'outil" in page and "Emoluments de l&#x27;exercice" in page
+    parts = {"Bénéfice d'exploitation": "100000", "Charges financières": "25000",
+             "Rémunération ordinaire": "20000", "ATN Auto": "500"}  # fmt: skip
+    typed = {keys[label]: value for label, value in parts.items()}
+    data = {"modele": template.pk, "date": "2026-06-30", "debut": "18:00", "fin": "18:30",
+            "dividende": "non", **typed}  # fmt: skip
+    response = admin_web.post(url, data)
+    assert response.status_code == 302
     year.refresh_from_db()
-    assert year.ag_draft is None  # rien de préparé
-    assert "20.500,00" in page and "5.000,00" in page and "75.000,00" in page
-    assert "montants_ok" in page
-    response = admin_web.post(url, {**data, "montants_ok": "1"})  # confirmé : préparé
-    year.refresh_from_db()
-    assert response.status_code == 302 and year.ag_draft is not None
+    from apps.documents import from_example
+
+    text = from_example.text_of(ag.word(year))  # tableaux compris
+    assert "75.000,00" in text and "20.500,00" in text  # bénéfice net et émoluments
+    assert "reporter l'intégralité du bénéfice, soit 75.000,00." in text
+
+
+def test_a_table_without_a_visible_total_is_left_alone():
+    from types import SimpleNamespace
+
+    from docx import Document as Word
+
+    doc = Word()
+    table = doc.add_table(rows=0, cols=2)
+    for label in ("Loyer", "Électricité", "Assurance"):
+        cells = table.add_row().cells
+        cells[0].text, cells[1].text = label, "[MONTANT]"
+    out = io.BytesIO()
+    doc.save(out)
+    from apps.documents import from_example
+
+    holes = from_example.holes_for(out.getvalue(), "pv_ag")
+    template = SimpleNamespace(content=out.getvalue(), holes=holes, options={})
+    assert ag.sums(template) == []  # « Assurance » n'est pas un total
 
 
 def test_correct_amounts_pass(admin_web):

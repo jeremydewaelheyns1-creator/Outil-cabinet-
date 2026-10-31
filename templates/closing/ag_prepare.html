@@ -51,6 +51,7 @@
         {% endif %}
       {% endfor %}
     </div>
+    {% if auto %}<p class="small muted">Calculé par l'outil : {{ auto|join:", " }}.</p>{% endif %}
     {% if amounts_wrong %}
       <div class="alert alert-warning small" style="margin-top:.6rem">
         <strong>Les montants ne collent pas :</strong>

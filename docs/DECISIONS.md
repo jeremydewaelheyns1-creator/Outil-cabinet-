@@ -1743,3 +1743,15 @@ même taille (« Clôture » : checklists et clôtures ; « Dépôts ») ; le no
   dépôt est accepté ; le compte « outil-deploiement » ne peut que mettre les sites à jour.
 - Mise en place une seule fois : `bash deploy/automatisation.sh` dans Cloud Shell.
   `deploy/installer.sh` reste la voie de secours et d'installation d'un nouveau cabinet.
+
+## D-131 — PV d'AG : les totaux sont calculés, pas demandés
+
+- Dans un tableau de montants dont la dernière ligne est visiblement un total (les autres
+  lignes ont un signe « (+) / (-) » et elle non, ou son libellé dit « net », « total »,
+  « à affecter », « émoluments », « solde »), l'outil calcule cette ligne au lieu de la
+  demander ; une ligne laissée vide compte 0. « Reporter l'intégralité du bénéfice, soit … »
+  reprend le bénéfice à affecter calculé. La page du PV dit « Calculé par l'outil : … ».
+- Un tableau sans total visible n'est ni calculé ni contrôlé (aucune supposition).
+- L'outil ne fait aucun contrôle qui demanderait la comptabilité (réserves, test de
+  liquidité…) : il n'y est pas relié (logiciel de gestion). L'assistant IA ne travaille
+  qu'avec le PV et ce que le comptable tape.

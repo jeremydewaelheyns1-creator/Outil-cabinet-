@@ -93,7 +93,7 @@ def sums(template: Any) -> list[Sum]:
         for key, value in template.holes.items()
         if (value or {}).get("field") == letter.ASK
     }
-    tables: dict[Any, list[tuple[str, str, int]]] = {}
+    tables: dict[Any, list[tuple[str, str, int, bool]]] = {}
     for index, paragraph in enumerate(letter._paragraphs(letter._open(bytes(template.content)))):
         found = asked.get(str(index))
         if found is None:
@@ -104,15 +104,51 @@ def sums(template: Any) -> list[Sum]:
         if row is None:
             continue
         text = "".join(t.text or "" for t in row.iter(qn("w:t")))
-        sign = -1 if re.search(r"\(\s*-\s*\)", text) else 1
+        minus = bool(re.search(r"\(\s*-\s*\)", text))
+        signed = minus or bool(re.search(r"\(\s*\+\s*\)", text))
         rows = tables.setdefault(row.getparent(), [])
         if all(r[0] != f"trou:{found[0]}" for r in rows):
-            rows.append((f"trou:{found[0]}", found[1], sign))
+            rows.append((f"trou:{found[0]}", found[1], -1 if minus else 1, signed))
     result = []
     for rows in tables.values():
-        if len(rows) >= 3:
-            *parts, (total, label, _) = rows
-            result.append(Sum(total, label, tuple((k, sign) for k, _, sign in parts)))
+        if len(rows) < 3:
+            continue
+        *parts, (total, label, _, total_signed) = rows
+        # La dernière ligne n'est un total que si ça se voit : les autres lignes ont un signe
+        # « (+) / (-) » et elle non, ou son libellé le dit (« net », « total », « émoluments »…).
+        signs = any(signed for *_, signed in parts) and not total_signed
+        if signs or TOTAL_WORDS.search(label):
+            result.append(Sum(total, label, tuple((k, sign) for k, _, sign, _ in parts)))
+    return result
+
+
+TOTAL_WORDS = re.compile(r"total|net\b|à affecter|a affecter|émolument|emolument|solde", re.I)
+
+
+def computed(template: Any) -> dict[str, str]:
+    """Les questions que l'outil calcule lui-même (clé → libellé) : le total de chaque tableau,
+    et « reporter l'intégralité du bénéfice, soit … » (= le bénéfice à affecter)."""
+    found = {block.total: block.label for block in sums(template)}
+    if any("net" in b.label.lower() or "affecter" in b.label.lower() for b in sums(template)):
+        for key, label in letter.questions(template):
+            if "intégralité" in label.lower() and key not in found:
+                found[key] = label
+    return found
+
+
+def complete(template: Any, answers: dict[str, str]) -> dict[str, str]:
+    """Les réponses, avec les totaux calculés (format 1.234,56). Une ligne vide compte 0."""
+    result = dict(answers)
+    for block in sums(template):
+        total = Decimal(0)
+        for key, sign in block.parts:
+            total += (_number(result.get(key, "")) or Decimal(0)) * sign
+        result[block.total] = _money(total)
+    net = net_profit(template, result)
+    if net is not None:
+        for key, label in computed(template).items():
+            if "intégralité" in label.lower():
+                result[key] = _money(net)
     return result
 
 
