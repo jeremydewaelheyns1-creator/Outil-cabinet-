@@ -35,6 +35,17 @@ ok() { printf '  \033[32m✓ %s\033[0m\n' "$*"; }
 fail() { printf '\n\033[1;31m✗ %s\033[0m\n' "$*" >&2; exit 1; }
 random_secret() { openssl rand -base64 96 | tr -d '\n/+=' | cut -c1-"${1:-50}"; }
 secret_exists() { gcloud secrets describe "$1" >/dev/null 2>&1; }
+# Un compte technique tout juste créé met parfois une minute à être connu partout chez Google :
+# on réessaie au lieu d'échouer.
+retry() {
+  local i
+  for i in 1 2 3 4 5 6 7 8 9 10 11 12; do
+    "$@" 2>/dev/null && return 0
+    [[ $i -eq 1 ]] && echo "  (Google enregistre le compte, on patiente…)"
+    sleep 10
+  done
+  "$@"
+}
 new_secret() { printf '%s' "$2" | gcloud secrets create "$1" --replication-policy=user-managed \
   --locations="$REGION" --data-file=- --quiet >/dev/null; }
 
@@ -61,7 +72,7 @@ ok "Activés"
 say "2/7 Compte technique du site d'essai (aucun accès au vrai site)"
 gcloud iam service-accounts describe "$ESSAI_SA" >/dev/null 2>&1 \
   || gcloud iam service-accounts create "$ESSAI_SA_NAME" --display-name="Outil cabinet (site d'essai)" --quiet
-gcloud projects add-iam-policy-binding "$PROJECT" --member="serviceAccount:${ESSAI_SA}" \
+retry gcloud projects add-iam-policy-binding "$PROJECT" --member="serviceAccount:${ESSAI_SA}" \
   --role=roles/cloudsql.client --condition=None --quiet >/dev/null
 ok "${ESSAI_SA}"
 
@@ -84,14 +95,14 @@ secret_exists MAILBOX_TOKEN_KEY_ESSAI || new_secret MAILBOX_TOKEN_KEY_ESSAI \
 ESSAI_SECRETS_LIST=(DATABASE_URL_ESSAI DJANGO_SECRET_KEY_ESSAI MAILBOX_TOKEN_KEY_ESSAI)
 secret_exists MISTRAL_API_KEY && ESSAI_SECRETS_LIST+=(MISTRAL_API_KEY)
 for secret in "${ESSAI_SECRETS_LIST[@]}"; do  # seulement ses propres secrets (et la clé IA)
-  gcloud secrets add-iam-policy-binding "$secret" --member="serviceAccount:${ESSAI_SA}" \
+  retry gcloud secrets add-iam-policy-binding "$secret" --member="serviceAccount:${ESSAI_SA}" \
     --role=roles/secretmanager.secretAccessor --quiet >/dev/null
 done
 if ! gcloud storage buckets describe "gs://${ESSAI_BUCKET}" >/dev/null 2>&1; then
   gcloud storage buckets create "gs://${ESSAI_BUCKET}" --location="$REGION" \
     --uniform-bucket-level-access --public-access-prevention --quiet
 fi
-gcloud storage buckets add-iam-policy-binding "gs://${ESSAI_BUCKET}" \
+retry gcloud storage buckets add-iam-policy-binding "gs://${ESSAI_BUCKET}" \
   --member="serviceAccount:${ESSAI_SA}" --role=roles/storage.objectAdmin --quiet >/dev/null
 ok "Base ${ESSAI_DB}, documents gs://${ESSAI_BUCKET}"
 
@@ -132,7 +143,10 @@ job outil-essai-migrations migrate --noinput
 ok "En ligne : ${URLS%%,*}"
 
 say "5/7 Votre compte sur le site d'essai, puis les dossiers fictifs"
-if [[ "${COMPTE_ESSAI:-oui}" == "oui" ]]; then
+if [[ -z "${COMPTE_ESSAI:-}" ]]; then
+  read -r -p "  Créer votre compte sur le site d'essai ? (oui / non si c'est déjà fait) : " COMPTE_ESSAI
+fi
+if [[ "${COMPTE_ESSAI}" == "oui" ]]; then
   read -r -p "  Votre adresse e-mail (pour vous connecter au site d'essai) : " ADMIN_EMAIL
   read -r -p "  Votre prénom : " ADMIN_FIRST
   read -r -p "  Votre nom : " ADMIN_LAST
@@ -174,12 +188,12 @@ gcloud run jobs delete outil-essai-demo --region="$REGION" --quiet >/dev/null
 say "6/7 Autorisation de GitHub (dépôt ${GITHUB_REPO} uniquement, aucune clé stockée)"
 gcloud iam service-accounts describe "$DEPLOY_SA" >/dev/null 2>&1 \
   || gcloud iam service-accounts create "$DEPLOY_SA_NAME" --display-name="Outil cabinet (mises à jour depuis GitHub)" --quiet
-gcloud projects add-iam-policy-binding "$PROJECT" --member="serviceAccount:${DEPLOY_SA}" \
+retry gcloud projects add-iam-policy-binding "$PROJECT" --member="serviceAccount:${DEPLOY_SA}" \
   --role=roles/run.admin --condition=None --quiet >/dev/null
-gcloud artifacts repositories add-iam-policy-binding "$REPOSITORY" --location="$REGION" \
+retry gcloud artifacts repositories add-iam-policy-binding "$REPOSITORY" --location="$REGION" \
   --member="serviceAccount:${DEPLOY_SA}" --role=roles/artifactregistry.writer --quiet >/dev/null
 for runtime in "$APP_SA" "$ESSAI_SA"; do  # pour lancer les deux sites avec leur propre compte
-  gcloud iam service-accounts add-iam-policy-binding "$runtime" \
+  retry gcloud iam service-accounts add-iam-policy-binding "$runtime" \
     --member="serviceAccount:${DEPLOY_SA}" --role=roles/iam.serviceAccountUser --quiet >/dev/null
 done
 gcloud iam workload-identity-pools describe "$POOL" --location=global >/dev/null 2>&1 \
@@ -193,7 +207,7 @@ if ! gcloud iam workload-identity-pools providers describe "$PROVIDER" --locatio
     --attribute-mapping="google.subject=assertion.sub,attribute.repository=assertion.repository,attribute.ref=assertion.ref" \
     --attribute-condition="assertion.repository=='${GITHUB_REPO}'" --quiet
 fi
-gcloud iam service-accounts add-iam-policy-binding "$DEPLOY_SA" --role=roles/iam.workloadIdentityUser \
+retry gcloud iam service-accounts add-iam-policy-binding "$DEPLOY_SA" --role=roles/iam.workloadIdentityUser \
   --member="principalSet://iam.googleapis.com/projects/${NUMBER}/locations/global/workloadIdentityPools/${POOL}/attribute.repository/${GITHUB_REPO}" \
   --quiet >/dev/null
 PROVIDER_NAME="projects/${NUMBER}/locations/global/workloadIdentityPools/${POOL}/providers/${PROVIDER}"
