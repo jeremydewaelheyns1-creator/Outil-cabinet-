@@ -49,6 +49,23 @@ def _representative(client: Client) -> str:
     return f"{person.first_name} {person.name}".strip() if person.is_person else person.display_name
 
 
+def _leaders(client: Client) -> str:
+    """Tous les dirigeants : « Paul Untel et Marie Unetelle »."""
+    links = (
+        Relation.objects.current()
+        .filter(entity=client, role__in=Relation.MANAGEMENT_ROLES)
+        .select_related("person")
+        .order_by("role", "person__name")
+    )
+    names = []
+    for link in links:
+        p = link.person
+        name = f"{p.first_name} {p.name}".strip() if p.is_person else p.display_name
+        if name not in names:
+            names.append(name)
+    return ", ".join(names[:-1]) + " et " + names[-1] if len(names) > 1 else "".join(names)
+
+
 # Ce que l'outil sait remplir tout seul : code → (libellé, valeur pour un client).
 FIELDS: dict[str, tuple[str, Callable[[Client], str]]] = {
     "client.denomination": ("Dénomination / nom du client", lambda c: c.display_name),
@@ -56,6 +73,7 @@ FIELDS: dict[str, tuple[str, Callable[[Client], str]]] = {
     "client.numero": ("Numéro d'entreprise", lambda c: c.enterprise_number_display or ""),
     "client.siege": ("Adresse (siège social)", lambda c: ", ".join(c.address_lines)),
     "client.representant": ("Représentant du client (gérant, administrateur)", _representative),
+    "client.dirigeants": ("Tous les dirigeants (gérants, administrateurs)", _leaders),
     "cabinet.nom": ("Nom du cabinet", lambda c: cabinet_name()),
     "date.jour": ("Date du jour", lambda c: f"{timezone.localdate():%d/%m/%Y}"),
 }
@@ -80,7 +98,9 @@ def _partners(client: Client) -> str:
     for link in links:
         pct = link.share_percentage
         share = f" ({pct.normalize():f} %)".replace(".", ",") if pct else ""
-        parts.append(f"{link.person.display_name}{share}")
+        p = link.person
+        name = f"{p.first_name} {p.name}".strip() if p.is_person else p.display_name
+        parts.append(f"{name}{share}")
     return " ; ".join(parts)
 
 
@@ -137,6 +157,7 @@ BRACKETS: list[tuple[tuple[str, ...], str]] = [
     (("identifiant", "bce", "numero d entreprise", "rpm", "r p m", "tva"), "client.numero"),
     (("cabinet",), "cabinet.nom"),
     (("associe", "actionnaire"), "client.associes"),
+    (("gerants", "administrateurs", "dirigeants"), "client.dirigeants"),
     (("personne", "administrateur", "gerant", "president"), "client.representant"),
     (("annee",), "ag.annee"),
     (("resolution",), "ag.autres"),

@@ -142,13 +142,15 @@ def test_a_real_layout_without_known_client():
     for leftover in ("TESTFICT", "Essais", "Woluwé", "0987", "deux mille", "23 septembre",
                      "Fictif", " 100", "31/12/2025", "42.310", "2.140", "18h"):  # fmt: skip
         assert leftover not in text, leftover
-    assert "S.R.L." in text and "Monsieur [GÉRANT]" in text  # le texte du cabinet reste
+    assert "présidence de [GÉRANT]" in text and "[ASSOCIÉS]" in text
+    assert "S.R.L." not in text  # déjà dans le nom de la société
     holes = from_example.holes_for(result.content, "pv_ag")
     labels = {v["label"] for v in holes.values() if v["field"] == "demander"}
-    assert {"Bénéfice d’exploitation", "ATN Auto", "Nombre de parts"} <= labels
+    assert {"Bénéfice d’exploitation", "ATN Auto"} <= labels
     fields = [v["field"] for v in holes.values()]
     assert {"ag.annee", "ag.date", "ag.debut", "ag.fin", "client.ville", "exercice.cloture",
-            "client.adresse", "client.localite", "client.representant"} <= set(fields)  # fmt: skip
+            "client.adresse", "client.localite", "client.representant",
+            "client.associes"} <= set(fields)  # fmt: skip
 
 
 def test_a_template_from_a_filled_document_needs_a_reread_before_activation(client, make_user):
@@ -169,3 +171,34 @@ def test_a_template_from_a_filled_document_needs_a_reread_before_activation(clie
     client.post(url, {**data, "relu": "1"})
     template.refresh_from_db()
     assert template.active
+
+
+def test_names_without_civility_partners_list_and_court():
+    d = Word()
+    for line in ("Société Essai SRL", "R.P.M. Liège, division Namur — BE 0987.654.394",
+                 "La séance est ouverte sous la présidence de Paul Essaiun.",
+                 "Sont présents : 1. Paul Essaiun — 120 parts ; 2. Julie Essaideux — 80 parts.",
+                 "Décharge est donnée à Paul Essaiun, gérant.",
+                 "Paul Essaiun, gérant      Julie Essaideux, associée"):  # fmt: skip
+        d.add_paragraph(line)
+    out = io.BytesIO()
+    d.save(out)
+    result = from_example.convert(out.getvalue(), None)
+    text = from_example.text_of(result.content)
+    assert "Essai" not in text and "Liège" not in text and "120" not in text
+    assert "R.P.M. [TRIBUNAL]" in text and "Sont présents : [ASSOCIÉS]." in text
+    assert "donnée à [GÉRANT], gérant" in text and "[GÉRANT], gérant      [ASSOCIÉ]" in text
+    holes = from_example.holes_for(result.content, "pv_ag")
+    assert {"client.associes", "client.representant"} <= {v["field"] for v in holes.values()}
+
+
+def test_all_leaders_are_written():
+    from apps.clients.models import Relation
+    from apps.core.testing.factories import ClientFactory, PersonFactory
+    from apps.documents import letter
+
+    company = ClientFactory(name="Essai", legal_form="SRL")
+    for first, last in (("Paul", "Essaiun"), ("Marie", "Essaideux")):
+        Relation.objects.create(entity=company, role=Relation.Role.MANAGER,
+                                person=PersonFactory(name=last, first_name=first))  # fmt: skip
+    assert letter.FIELDS["client.dirigeants"][1](company) == "Marie Essaideux et Paul Essaiun"

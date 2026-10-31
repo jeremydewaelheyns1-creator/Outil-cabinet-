@@ -1623,3 +1623,9 @@ même taille (« Clôture » : checklists et clôtures ; « Dépôts ») ; le no
   Calibri/Arial/Times), avec repli sur l'ancienne conversion s'il échoue.
 - Sécurité : un modèle venu d'un document rempli ne s'active qu'après la case « J'ai relu ce
   modèle » (rien d'un autre client ne doit rester).
+- Complément (essai complet avant mise à jour) : les noms sans « Monsieur » sont reconnus par
+  leur contexte (« présidence de … », « donnée à … », « …, gérant ») puis remplacés partout ;
+  la liste des associés (« 1. Nom — 120 parts ; … », ou une ligne par associé) devient la
+  liste de la fiche du client ; « R.P.M. Liège, division … » devient une question (tribunal) ;
+  la ligne « S.R.L. » sous le nom disparaît (la forme est dans le nom). Nouveau champ « Tous
+  les dirigeants » (« Paul X et Marie Y »).

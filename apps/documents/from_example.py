@@ -35,6 +35,9 @@ MARKERS: dict[str, dict[str, str]] = {
     "[VILLE]": {"lettre": "client.ville", "pv_ag": "client.ville"},
     "[NUMÉRO D'ENTREPRISE]": {"lettre": "client.numero", "pv_ag": "client.numero"},
     "[GÉRANT]": {"lettre": "client.representant", "pv_ag": "client.representant"},
+    "[GÉRANTS]": {"lettre": "client.dirigeants", "pv_ag": "client.dirigeants"},
+    "[ASSOCIÉS]": {"lettre": letter.ASK, "pv_ag": "client.associes"},
+    "[TRIBUNAL]": {"lettre": letter.ASK, "pv_ag": letter.ASK},
     "[ASSOCIÉ]": {"lettre": letter.ASK, "pv_ag": letter.ASK},
     "[DATE DE CLÔTURE]": {"lettre": letter.ASK, "pv_ag": "exercice.cloture"},
     "[DATE]": {"lettre": "date.jour", "pv_ag": "ag.date"},
@@ -50,7 +53,8 @@ KINDS = {
     "[SOCIÉTÉ]": "nom du client", "[ADRESSE]": "adresse", "[LOCALITÉ]": "localité",
     "[VILLE]": "ville",
     "[NUMÉRO D'ENTREPRISE]": "numéro d'entreprise", "[GÉRANT]": "gérant ou administrateur",
-    "[ASSOCIÉ]": "associé", "[DATE DE CLÔTURE]": "date de clôture", "[DATE]": "date",
+    "[ASSOCIÉ]": "associé", "[GÉRANTS]": "gérants", "[ASSOCIÉS]": "liste des associés",
+    "[TRIBUNAL]": "tribunal (R.P.M.)", "[DATE DE CLÔTURE]": "date de clôture", "[DATE]": "date",
     "[HEURE]": "heure", "[MONTANT]": "montant", "[CABINET]": "nom du cabinet",
     "[ANNÉE]": "année", "[NOMBRE]": "nombre de parts",
     "[À COMPLÉTER]": "e-mail, IBAN ou autre",
@@ -130,19 +134,66 @@ STREET = re.compile(
 )
 PLACE = re.compile(r"(?<![\d\w])[1-9]\d{3}\s*[–—-]?\s*[A-ZÀ-Ý][\w'’]+(?:[- ][A-ZÀ-Ý]?[\w'’]+){0,3}")
 TOWN = re.compile(r"(?<=[Ff]ait à )(?!X{2,}\b)[A-ZÀ-Ý][\w'’]+(?:-[A-ZÀ-Ý]?[\w'’]+){0,3}")
-# « Monsieur Untel », « Mr Prénom Nom », « Mme … » : seul le nom devient un trou ; un nombre
-# juste après (« Mr Untel 100 ») = ses parts.
-PERSON = re.compile(
-    r"\b(?:Monsieur|Madame|Mademoiselle|Mr\.?|Mme\.?|Mlle\.?|M\.)\s+"
-    r"(?P<v>(?:[A-ZÀ-Ý][\w'’-]+)(?:\s+[A-ZÀ-Ý][\w'’-]+){0,2})"
+CIVIL = r"(?:Monsieur|Madame|Mademoiselle|Mr\.?|Mme\.?|Mlle\.?|M\.)"
+WORD = r"[A-ZÀ-Ý][\w'’-]+"
+# « Monsieur Untel », « Mr Prénom Nom » : civilité comprise (le dirigeant d'un autre client
+# n'est peut-être pas un monsieur). Pas « R.P.M. Liège » (le « M. » d'un sigle).
+PERSON = re.compile(r"(?<![\w.])" + CIVIL + r"\s+" + WORD + r"(?:\s+" + WORD + r"){0,2}")
+# Sans civilité, le contexte dit que c'est une personne : « sous la présidence de Prénom Nom »,
+# « donnée à Prénom Nom », « Prénom Nom, gérant ».
+NAMED = r"(?P<v>" + WORD + r"(?:\s+" + WORD + r"){1,2})"
+LEADER_CONTEXT = [
+    re.compile(r"(?:présidence\s+de|donnée?\s+à|représentée?\s+par|nomme|nommé)\s+" + NAMED),
+    re.compile(NAMED + r"(?=\s*,\s*(?:gérante?|administrat|président|liquidat))"),
+]
+# Liste des associés : « 1. Prénom Nom — 120 parts ; 2. … », ou « Mr Prénom Nom 100 » (une par
+# ligne). Elle devient la liste de la fiche du client (avec leur part).
+_ENTRY = (
+    r"(?:\d{1,2}[.)]\s*)?(?:"
+    + CIVIL
+    + r"\s+"
+    + WORD
+    + r"(?:\s+"
+    + WORD
+    + r"){0,2}\s*[–—:-]?\s*\d{1,7}(?![\d.,])"
+    + r"(?:\s*(?:parts?|actions?)\b)?"
+    + r"|"
+    + WORD
+    + r"(?:\s+"
+    + WORD
+    + r"){1,2}\s*[–—:-]?\s*\d{1,7}\s*(?:parts?|actions?)\b)"
 )
-PARTS = re.compile(
-    r"\b(?:Monsieur|Madame|Mr\.?|Mme\.?|M\.)\s+(?:[A-ZÀ-Ý][\w'’-]+\s+){1,3}[–—:-]?\s*"
-    r"(?P<v>\d{1,7})(?=\s*(?:parts?|actions?)?\s*$)"
-)
+PARTNERS = re.compile(_ENTRY + r"(?:\s*[;,]\s*(?:et\s+)?" + _ENTRY + r")*")
+PARTNER_NAME = re.compile(r"(?:" + CIVIL + r"\s+)?(" + WORD + r"(?:\s+" + WORD + r"){0,2})"
+                          r"\s*[–—:-]?\s*\d")  # fmt: skip
+# « R.P.M. Liège, division Namur » : le tribunal du client (à demander).
+COURT = re.compile(r"R\.?P\.?M\.?\s*:?\s*(?:de\s+)?(?P<v>(?!BE\b)" + WORD
+                   + r"(?:\s*,\s*division\s+" + WORD + r")?)")  # fmt: skip
 
 
-def _rules(client: Client | None, closing: list[str]) -> list[tuple[re.Pattern[str], str]]:
+def people(texts: list[str]) -> tuple[list[str], list[str]]:
+    """Les noms de personnes du document : (dirigeants, associés). Une fois trouvés à un
+    endroit sûr, ils sont remplacés partout ailleurs aussi (signature, décharge…)."""
+    leaders: list[str] = []
+    partners: list[str] = []
+    for text in texts:
+        for match in PERSON.finditer(text):
+            name = re.sub(r"^" + CIVIL + r"\s+", "", match.group(0))
+            if not PARTNERS.fullmatch(text.strip()):
+                leaders.append(name)
+        for pattern in LEADER_CONTEXT:
+            leaders += [m.group("v") for m in pattern.finditer(text)]
+        for match in PARTNERS.finditer(text):
+            partners += [m.group(1) for m in PARTNER_NAME.finditer(match.group(0))]
+    known = {n.lower() for n in leaders}
+    return leaders, [n for n in partners if n.lower() not in known]
+
+
+Rules = list[tuple[re.Pattern[str], str]]
+
+
+def _rules(client: Client | None, closing: list[str],
+           found: tuple[list[str], list[str]] = ([], [])) -> Rules:  # fmt: skip
     """Ce qui se remplace, dans l'ordre : le plus précis d'abord. Avec la fiche du client
     (retrouvé par son numéro dans le document), on remplace aussi son adresse, ses gérants et
     associés ; sans elle, ce qui se reconnaît à sa forme — l'assistant IA fait le reste."""
@@ -168,12 +219,16 @@ def _rules(client: Client | None, closing: list[str]) -> list[tuple[re.Pattern[s
         rules.append((_literal([n for p in others for n in _names(p)]), "[ASSOCIÉ]"))
         rules.append((_literal(closing), "[DATE DE CLÔTURE]"))
     rules.append((ANY_NUMBER, "[NUMÉRO D'ENTREPRISE]"))
+    rules.append((COURT, "[TRIBUNAL]"))
+    rules.append((PARTNERS, "[ASSOCIÉS]"))
+    rules.append((PERSON, "[GÉRANT]"))
+    rules.append((_literal(found[0]), "[GÉRANT]"))
+    rules.extend((p, "[GÉRANT]") for p in LEADER_CONTEXT)
+    rules.append((_literal(found[1]), "[ASSOCIÉ]"))
     rules.append((COMPANY, "[SOCIÉTÉ]"))
     rules.append((STREET, "[ADRESSE]"))
     rules.append((PLACE, "[LOCALITÉ]"))
     rules.append((TOWN, "[VILLE]"))
-    rules.append((PARTS, "[NOMBRE]"))
-    rules.append((PERSON, "[GÉRANT]"))
     rules.append((DATE, "[DATE]"))
     rules.append((DAY_MONTH, "[DATE]"))
     rules.append((YEAR_WORDS, "[ANNÉE]"))
@@ -231,10 +286,12 @@ def convert(
     """Le document rempli devient un modèle (fichier Word) : les valeurs du client deviennent
     des repères entre crochets, que l'outil sait remplir."""
     document = letter._open(content)
-    rules = _rules(client, _closing_dates(client) if client is not None else [])
-    counts: dict[str, int] = {}
     paragraphs = letter._paragraphs(document)
+    found = people([p.text for p in paragraphs])
+    rules = _rules(client, _closing_dates(client) if client is not None else [], found)
+    counts: dict[str, int] = {}
     names = _name_lines(paragraphs)
+    partners_line = False  # le paragraphe précédent était la liste des associés
     for index, paragraph in enumerate(paragraphs):
         text = paragraph.text
         if not text.strip():
@@ -244,6 +301,14 @@ def convert(
             letter._fill(paragraph, whole)
             counts["nom du client"] = counts.get("nom du client", 0) + 1
             continue
+        if index - 1 in names and FORM_ONLY.match(text):  # « S.R.L. » : déjà dans le nom
+            letter._fill(paragraph, [(0, len(text), "")])
+            continue
+        whole_list = bool(PARTNERS.fullmatch(text.strip()))
+        if whole_list and partners_line:  # un associé par ligne : la liste est déjà posée
+            letter._fill(paragraph, [(0, len(text), "")])
+            continue
+        partners_line = whole_list
         spans = _spans(text, rules, extra or [])
         if spans:
             letter._fill(paragraph, spans)
@@ -305,6 +370,10 @@ def holes_for(content: bytes, kind: str) -> dict[str, dict[str, Any]]:
             label = rows.get(index) or _label(hole.before) or KINDS.get(marker, "").capitalize()
             if marker == "[NOMBRE]":
                 label = "Nombre de parts"
+            if marker == "[TRIBUNAL]":
+                label = "Tribunal de l'entreprise (R.P.M.)"
+            if marker == "[ASSOCIÉ]":
+                label = "Nom de l'associé"
         result[hole.key] = {"field": field_code, "label": label[:120]}
     return result
 

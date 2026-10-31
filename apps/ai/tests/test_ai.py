@@ -197,5 +197,5 @@ def test_assistant_finds_what_the_rules_left_in_a_filled_document(client, make_u
     template = LetterTemplate.objects.get()
     text = from_example.text_of(bytes(template.content))
     assert "Paul Testeur" not in text and "Marie Essai" not in text
-    assert template.origin["assistant"] >= 2
+    assert template.origin["assistant"] >= 1  # le reste, les règles l'ont déjà trouvé
     assert AiCall.objects.get().feature == "modele_depuis_exemple"

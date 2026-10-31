@@ -11,6 +11,8 @@ sont inventées.
   s'écrivent 100.000,00.
 - Le PDF garde la mise en page du Word (tableaux, polices).
 - Avant d'activer un tel modèle, cochez « J'ai relu ce modèle ».
+- Les noms des dirigeants et associés sont retrouvés même sans « Monsieur » ; la liste des
+  associés reprend celle de la fiche du client. Nouveau champ « Tous les dirigeants ».
 
 ## 31 octobre 2026 — Un modèle à partir d'un document déjà rempli
 
