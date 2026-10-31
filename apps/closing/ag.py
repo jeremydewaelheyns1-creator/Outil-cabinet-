@@ -128,10 +128,13 @@ TOTAL_WORDS = re.compile(r"total|net\b|à affecter|a affecter|émolument|emolume
 def computed(template: Any) -> dict[str, str]:
     """Les questions que l'outil calcule lui-même (clé → libellé) : le total de chaque tableau,
     et « reporter l'intégralité du bénéfice, soit … » (= le bénéfice à affecter)."""
-    found = {block.total: block.label for block in sums(template)}
-    if any("net" in b.label.lower() or "affecter" in b.label.lower() for b in sums(template)):
+    blocks = sums(template)
+    found = {block.total: block.label for block in blocks}
+    if any("net" in b.label.lower() or "affecter" in b.label.lower() for b in blocks):
+        texts = dict(letter.paragraphs(bytes(template.content)))
         for key, label in letter.questions(template):
-            if "intégralité" in label.lower() and key not in found:
+            paragraph = texts.get(int(key.split(":")[1]), "").lower() if key.count(":") == 2 else ""
+            if key not in found and "intégralité" in paragraph and "report" in paragraph:
                 found[key] = label
     return found
 
@@ -146,8 +149,9 @@ def complete(template: Any, answers: dict[str, str]) -> dict[str, str]:
         result[block.total] = _money(total)
     net = net_profit(template, result)
     if net is not None:
-        for key, label in computed(template).items():
-            if "intégralité" in label.lower():
+        totals = {block.total for block in sums(template)}
+        for key in computed(template):
+            if key not in totals:  # « reporter l'intégralité du bénéfice, soit … »
                 result[key] = _money(net)
     return result
 

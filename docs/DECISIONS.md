@@ -1755,3 +1755,10 @@ même taille (« Clôture » : checklists et clôtures ; « Dépôts ») ; le no
 - L'outil ne fait aucun contrôle qui demanderait la comptabilité (réserves, test de
   liquidité…) : il n'y est pas relié (logiciel de gestion). L'assistant IA ne travaille
   qu'avec le PV et ce que le comptable tape.
+- Premier essai sur le site d'essai : l'assistant (passe « ce qui reste du client ») avait pris
+  les libellés de lignes (« ATN Télécom. ») pour des données du client et les avait changés en
+  trous ; les questions devenaient « Rémunération complémentaire 1, 2, 3 ». Garde-fous : un
+  libellé de ligne de tableau n'est jamais remplacé ; un montant, une date, une heure doit
+  contenir des chiffres ; « [À COMPLÉTER] » seulement pour une référence (chiffres, @) ; un
+  nom commence par une majuscule. « Reporter l'intégralité » est reconnu au texte du
+  paragraphe, plus à l'intitulé de la question.

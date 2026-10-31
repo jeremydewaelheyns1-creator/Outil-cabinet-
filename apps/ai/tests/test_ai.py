@@ -260,3 +260,28 @@ def test_the_settings_say_why_the_assistant_does_not_answer(client, make_user, s
     fake_reply(monkeypatch, {"ok": True})
     ai.ask_json("test", "s", "p")
     assert "actif · 1 réponse(s)" in client.get(reverse("core:cabinet_settings")).content.decode()
+
+
+def test_the_assistant_never_turns_the_cabinet_text_into_holes(client, make_user, settings,
+                                                                monkeypatch):  # fmt: skip
+    from django.core.files.uploadedfile import SimpleUploadedFile
+
+    from apps.documents import from_example
+    from apps.documents.models import LetterTemplate
+    from apps.documents.tests.test_from_example import realistic_pv
+
+    client.force_login(make_user(is_staff=True, capabilities=["clients.edit"]))
+    settings.MISTRAL_API_KEY = "fictive"
+    fake_reply(monkeypatch, {"elements": [
+        {"texte": "ATN Auto", "repere": "[MONTANT]"},  # libellé de ligne : refusé
+        {"texte": "- ATN Auto", "repere": "[À COMPLÉTER]"},  # idem
+        {"texte": "Administrateur", "repere": "[À COMPLÉTER]"},  # pas une référence
+        {"texte": "assemblée générale", "repere": "[DATE]"},  # pas une date
+    ], "trous": {}})  # fmt: skip
+    upload = SimpleUploadedFile("pv.docx", realistic_pv())
+    client.post(reverse("lettre:models"), {"sorte": "pv_ag", "modele": upload})
+    template = LetterTemplate.objects.get()
+    text = from_example.text_of(bytes(template.content))
+    assert "ATN Auto" in text and "assemblée générale" in text
+    labels = [v["label"] for v in template.holes.values() if v["field"] == "demander"]
+    assert "ATN Auto" in labels

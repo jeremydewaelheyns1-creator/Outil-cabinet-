@@ -485,6 +485,21 @@ def _row_labels(content: bytes) -> dict[int, str]:
     return labels
 
 
+def row_texts(content: bytes) -> list[str]:
+    """Le texte des cases de libellé des tableaux (première case remplie de chaque ligne)."""
+    from docx.oxml.ns import qn
+
+    found = []
+    for table in letter._open(content).element.body.iter(qn("w:tbl")):
+        for row in table.iter(qn("w:tr")):
+            for cell in row.findall(qn("w:tc")):
+                text = "".join(t.text or "" for t in cell.iter(qn("w:t"))).strip()
+                if text and not re.fullmatch(r"[\s€()+\-–\d.,]*", text):
+                    found.append(text)
+                    break
+    return found
+
+
 def _clean(text: str) -> str:
     text = re.sub(r"\[[^\]]*\]|\([+-]\)|[€•\-–+:]", " ", text)
     words = text.split()

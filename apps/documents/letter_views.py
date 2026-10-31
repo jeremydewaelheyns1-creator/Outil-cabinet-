@@ -88,6 +88,10 @@ def _upload(request: AppRequest, kind: str) -> HttpResponse:
             )
         except ai.Unavailable:
             extra = []
+        # Jamais le libellé d'une ligne de tableau (« ATN Télécom. ») : c'est le texte du
+        # cabinet, et l'intitulé de la question qui s'y rapporte.
+        labels = from_example.row_texts(result.content)
+        extra = [(v, m) for v, m in extra if not any(v in label for label in labels)]
         if extra:
             again = from_example.convert(result.content, client, extra)
             assisted = sum(again.counts.values())

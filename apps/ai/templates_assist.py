@@ -114,6 +114,26 @@ def residuals(text: str, markers: list[str], user: User | None) -> list[tuple[st
         if not isinstance(item, dict):
             continue
         value, marker = str(item.get("texte") or "").strip(), str(item.get("repere") or "")
-        if len(value) > 2 and marker in markers and value in text and "[" not in value:
+        known = len(value) > 2 and marker in markers and value in text and "[" not in value
+        if known and _plausible(value, marker):
             found.append((value, marker))
     return found
+
+
+FIGURES = {"[MONTANT]", "[NOMBRE]", "[DATE]", "[HEURE]", "[DATE DE CLÔTURE]",
+           "[NUMÉRO D'ENTREPRISE]"}  # fmt: skip
+
+
+def _plausible(value: str, marker: str) -> bool:
+    """Garde-fou : l'assistant ne transforme pas le texte du cabinet en trou. Un montant, une
+    date, une heure… contient des chiffres ; un nom commence par une majuscule et reste court ;
+    « [À COMPLÉTER] » ne vaut que pour une référence (chiffres, @)."""
+    import re
+
+    if marker in FIGURES:
+        return bool(re.search(r"\d", value))
+    if marker == "[ANNÉE]":
+        return bool(re.search(r"\d|mille", value, re.I))
+    if marker == "[À COMPLÉTER]":
+        return bool(re.search(r"\d|@", value))
+    return value[:1].isupper() and len(value.split()) <= 6

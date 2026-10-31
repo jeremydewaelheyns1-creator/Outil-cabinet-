@@ -466,3 +466,14 @@ def test_a_dividend_replaces_the_carry_forward_sentence(admin_web):
     assert "intégralité" not in text
     lines = [line for line in text.splitlines() if line.strip()]
     assert lines[lines.index("Résolution 2 :") + 1].startswith("L'assemblée décide de distribuer")
+
+
+def test_the_carry_forward_is_computed_whatever_its_question_says(admin_web):
+    template, *_ = _tables_setup(admin_web)
+    report = next(k for k, v in template.holes.items() if "intégralité" in v["label"])
+    template.holes[report]["label"] = "Montant du report"
+    template.save()
+    assert f"trou:{report}" in ag.computed(template)
+    filled = ag.complete(template, {})
+    assert filled[f"trou:{report}"] == filled[next(b.total for b in ag.sums(template)
+                                                  if "net" in b.label.lower())]  # fmt: skip
