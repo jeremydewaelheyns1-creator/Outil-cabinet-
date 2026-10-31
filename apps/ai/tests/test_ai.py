@@ -211,16 +211,20 @@ def test_the_assistant_sets_the_unknown_holes_at_upload(client, make_user, setti
     holes = letter.holes(placeholder_model(), "pv_ag")
     lieu = next(h.key for h in holes if "LIEU" in h.text)
     nom = next(h.key for h in holes if "DENOMINATION" in h.text)
+    signe = holes[-1].key  # « M. XXX » : rien ne dit ce que c'est
     fake_reply(monkeypatch, {"trous": {
-        lieu: {"code": "demander", "question": "Où se tient l'assemblée ?"},
-        nom: {"code": "demander", "question": "ne doit pas changer"},  # déjà lu par l'outil
-    }})  # fmt: skip
+        lieu: {"code": "demander", "question": "ne doit pas changer"},  # repère clair : gardé
+        nom: {"code": "demander", "question": "ne doit pas changer"},  # lu par l'outil
+        signe: {"code": "demander", "question": "Nom du président de séance ?"},
+    }, "paragraphes": {"0": "question"}})  # fmt: skip
     upload = SimpleUploadedFile("pv.docx", placeholder_model())
     client.post(reverse("lettre:models"), {"sorte": "pv_ag", "modele": upload})
     template = LetterTemplate.objects.get()
-    assert template.holes[lieu] == {"field": "demander", "label": "Où se tient l'assemblée ?",
-                                    "source": "assistant"}  # fmt: skip
+    assert template.holes[signe] == {"field": "demander", "label": "Nom du président de séance",
+                                     "source": "assistant"}  # fmt: skip
+    assert template.holes[lieu]["label"] == "Lieu de reunion"
     assert template.holes[nom]["field"] == "client.denomination"
+    assert "0" not in template.options  # pas de case à cocher proposée par l'assistant
     assert template.origin["reglage_ia"] == 1
 
 

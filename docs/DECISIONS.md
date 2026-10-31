@@ -1712,3 +1712,11 @@ même taille (« Clôture » : checklists et clôtures ; « Dépôts ») ; le no
   cabinet : une ligne d'état (pas un réglage) dit s'il est actif, pas branché (clé absente)
   ou en panne, avec la cause sans contenu (« clé refusée (401) », « connexion impossible »…).
 - Page d'un modèle : « Passages gardés selon le cas » replié (réglé tout seul).
+- Premier essai avec l'IA réellement branchée (clé corrigée) : l'assistant proposait des
+  passages « à cocher » (dizaines de « Inclure ce passage ? ») et donnait le même intitulé à
+  plusieurs lignes (« Autre composante de rémunération »), fusionnées en une question. Désormais :
+  pas de condition « à cocher » venant de l'assistant ni de remplacement d'un réglage déjà
+  fait ; un intitulé tiré du document (repère, ligne de tableau) n'est pas réécrit ;
+  intitulés distincts, courts, sans « ? » ; une seule question pour deux trous seulement quand
+  c'est le même repère (lien explicite « same »), jamais parce que deux intitulés se
+  ressemblent.

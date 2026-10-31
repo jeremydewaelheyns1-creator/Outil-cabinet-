@@ -461,14 +461,11 @@ def problems(template: Any) -> list[str]:
 def questions(template: Any) -> list[tuple[str, str]]:
     """Ce que le comptable doit donner à chaque lettre : (clé, libellé)."""
     asked = []
-    labels: set[str] = set()
-    for key, value in sorted(template.holes.items(), key=lambda kv: _order(f"trou:{kv[0]}")):
+    for key, value in template.holes.items():
         if isinstance(value, dict) and value.get("field") == ASK:
-            label = value.get("label") or "Information à compléter"
-            if value.get("label") and label in labels:
-                continue  # même question qu'un trou plus haut : une seule réponse pour les deux
-            labels.add(label)
-            asked.append((f"trou:{key}", label))
+            if value.get("same") in template.holes:
+                continue  # même repère qu'un trou plus haut : une seule réponse pour les deux
+            asked.append((f"trou:{key}", value.get("label") or "Information à compléter"))
     for start, value in sorted(template.options.items(), key=lambda kv: int(kv[0])):
         if value.get("condition") == "question":
             asked.append((f"option:{start}", value.get("label") or "Inclure ce passage ?"))
@@ -549,12 +546,6 @@ def fill(
     """Le modèle rempli pour ce client (fichier Word). `context` : PV d'AG (date, heures,
     exercice, dividende…), D-120."""
     context = context or {}
-    # Trous qui posent la même question : la réponse donnée une fois vaut pour tous.
-    same = {
-        label: answers[f"trou:{k}"]
-        for k, v in template.holes.items()
-        if isinstance(v, dict) and (label := v.get("label")) and answers.get(f"trou:{k}")
-    }
     document = _open(bytes(template.content))
     items = _paragraphs(document)
     for index, paragraph in enumerate(items):
@@ -565,9 +556,8 @@ def fill(
             if not code or code == KEEP:
                 continue
             if code == ASK:
-                value = answers.get(f"trou:{key}", "") or same.get(
-                    (template.holes.get(key) or {}).get("label") or "", ""
-                )
+                linked = (template.holes.get(key) or {}).get("same") or ""
+                value = answers.get(f"trou:{key}", "") or answers.get(f"trou:{linked}", "")
             elif code in FIELDS:
                 value = FIELDS[code][1](client)
             elif code in AG_FIELDS:

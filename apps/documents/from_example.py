@@ -378,6 +378,7 @@ def holes_for(content: bytes, kind: str) -> dict[str, dict[str, Any]]:
     rows = _row_labels(content)
     local = _local_context(content)
     seen: dict[str, int] = {}
+    firsts: dict[str, str] = {}
     for hole in letter.holes(content, kind):
         marker = hole.text.strip().upper()
         field_code = (MARKERS.get(marker) or {}).get(kind, "")
@@ -398,27 +399,34 @@ def holes_for(content: bytes, kind: str) -> dict[str, dict[str, Any]]:
         if (unknown and kind == "pv_ag") or not field_code:
             field_code = letter.ASK  # PV : « XXX » ne dit pas ce que c'est, on le demande
         label = ""
+        extra: dict[str, Any] = {}
         if field_code == letter.ASK:
             index = int(hole.key.split(":")[0])
+            sure = placeholder_label(hole.text) or rows.get(index, "")
             label = (
-                placeholder_label(hole.text)
-                or rows.get(index)
+                sure
                 or _label(*local.get(hole.key, (hole.before, hole.after)))
                 or KINDS.get(marker, "").capitalize()
                 or "Information à compléter"
             )
-            seen[label] = seen.get(label, 0) + 1
-            # Le même repère deux fois (« [OBJET DE LA MODIFICATION] ») : une seule question,
-            # la réponse va aux deux. Sinon, deux questions distinctes.
-            if seen[label] > 1 and not placeholder_label(hole.text):
-                label = f"{label} ({seen[label]})"
+            if sure:  # intitulé tiré du document (repère, ligne de tableau) : l'IA n'y touche pas
+                extra["sure"] = True
+            first = firsts.setdefault(label, hole.key)
+            if first != hole.key:
+                if placeholder_label(hole.text):
+                    # Le même repère deux fois (« [OBJET DE LA MODIFICATION] ») : une seule
+                    # question, la réponse va aux deux.
+                    extra["same"] = first
+                else:
+                    seen[label] = seen.get(label, 1) + 1
+                    label = f"{label} ({seen[label]})"
             if marker == "[NOMBRE]":
                 label = "Nombre de parts"
             if marker == "[TRIBUNAL]":
                 label = "Tribunal de l'entreprise (R.P.M.)"
             if marker == "[ASSOCIÉ]":
                 label = "Nom de l'associé"
-        result[hole.key] = {"field": field_code, "label": label[:120]}
+        result[hole.key] = {"field": field_code, "label": label[:120], **extra}
     return result
 
 

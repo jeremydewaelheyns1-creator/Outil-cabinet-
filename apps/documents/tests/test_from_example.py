@@ -318,3 +318,15 @@ def test_the_same_placeholder_is_asked_once(client, make_user):
     filled = letter.fill(template, company, {key: "transférer le siège"}, {})
     text = "\n".join(p.text for p in Word(io.BytesIO(filled)).paragraphs)
     assert text.count("transférer le siège") == 2
+
+
+def test_rows_with_the_same_kind_of_label_stay_separate_questions():
+    from apps.ai.templates_assist import _unique_labels
+
+    holes = {"3:0": {"field": "demander", "label": "Autre composante"},
+             "4:0": {"field": "demander", "label": "Autre composante"},
+             "9:0": {"field": "demander", "label": "Objet", "same": "2:0"}}  # fmt: skip
+    _unique_labels(holes)
+    assert holes["3:0"]["label"] == "Autre composante"
+    assert holes["4:0"]["label"] == "Autre composante (2)"
+    assert holes["9:0"]["label"] == "Objet"

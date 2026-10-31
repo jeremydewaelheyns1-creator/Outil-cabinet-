@@ -17,8 +17,10 @@ SYSTEM = (
     "Tu aides un cabinet comptable belge à régler un modèle Word. Pour chaque trou à compléter, "
     "choisis UN code parmi la liste fournie (ce que l'outil doit y mettre). Utilise "
     "« demander » quand c'est une information à taper à chaque document (montant, lieu…) et "
-    "donne alors une question courte en français. Indique aussi les paragraphes qui ne "
-    "valent que dans certains cas, avec un code de condition de la liste. Réponds uniquement "
+    "donne alors son intitulé : court, avec les mots du document (ex. « ATN Auto », « Lieu de "
+    "la réunion », « Objet de la modification »), sans point d'interrogation ni unité, et "
+    "différent pour chaque trou. Indique aussi les paragraphes qui ne valent que dans "
+    "certains cas, avec un code de condition de la liste ; dans le doute, rien. Réponds uniquement "
     'en JSON : {"trous": {"clé": {"code": "...", "question": "..."}}, '
     '"paragraphes": {"numéro": "condition"}}.'
 )
@@ -49,7 +51,8 @@ def suggest(template: Any, user: User | None, only: set[str] | None = None) -> t
     savent pas lire). Lève `client.Unavailable` si l'assistant ne répond pas."""
     answer = client.ask_json("reglage_modele", SYSTEM, _prompt(template), user=user)
     allowed = {code for code, _ in letter.choices(template.kind)}
-    conditions = set(letter.conditions(template.kind)) - {""}
+    # « question » (case à cocher) : jamais proposé par l'assistant, trop de cases inutiles.
+    conditions = set(letter.conditions(template.kind)) - {"", "question"}
     keys = {h.key for h in letter.holes(bytes(template.content), template.kind)}
     holes = dict(template.holes)
     count_holes = 0
@@ -58,7 +61,7 @@ def suggest(template: Any, user: User | None, only: set[str] | None = None) -> t
             continue
         if only is not None and key not in only:
             continue
-        label = str(value.get("question") or "")[:120]
+        label = str(value.get("question") or "").strip().rstrip("?").strip()[:120]
         if not label and value["code"] == letter.ASK:
             label = (holes.get(key) or {}).get("label", "")
         holes[key] = {"field": value["code"], "label": label, "source": "assistant"}
@@ -67,12 +70,27 @@ def suggest(template: Any, user: User | None, only: set[str] | None = None) -> t
     options = dict(template.options)
     count_options = 0
     for index, condition in (answer.data.get("paragraphes") or {}).items():
-        if str(index) in indexes and condition in conditions:
+        if str(index) in indexes and condition in conditions and str(index) not in options:
             options[str(index)] = {"condition": condition, "end": int(index), "label": ""}
             count_options += 1
+    _unique_labels(holes)
     template.holes, template.options = holes, options
     template.save(update_fields=["holes", "options"])
     return count_holes, count_options
+
+
+def _unique_labels(holes: dict[str, Any]) -> None:
+    """Deux questions au même intitulé recevraient la même réponse : on les distingue (sauf
+    le même repère répété, lié par « same »)."""
+    seen: dict[str, int] = {}
+    for key in sorted(holes, key=lambda k: tuple(int(p) for p in k.split(":"))):
+        value = holes[key]
+        if not isinstance(value, dict) or value.get("field") != letter.ASK or value.get("same"):
+            continue
+        label = value.get("label") or ""
+        seen[label] = seen.get(label, 0) + 1
+        if label and seen[label] > 1:
+            value["label"] = f"{label} ({seen[label]})"
 
 
 RESIDUALS = (

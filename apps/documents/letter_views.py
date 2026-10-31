@@ -134,6 +134,7 @@ def _assistant_setup(request: AppRequest, template: LetterTemplate) -> None:
         h.key
         for h in letter.holes(bytes(template.content), template.kind)
         if (template.holes.get(h.key) or {}).get("field") in (None, "", letter.ASK)
+        and not (template.holes.get(h.key) or {}).get("sure")
     }
     if not keys:
         return
@@ -294,6 +295,9 @@ def _save(request: AppRequest, template: LetterTemplate, content: bytes) -> None
         if field in allowed:
             label = request.POST.get(f"libelle-{hole.key}", "").strip()[:120]
             holes[hole.key] = {"field": field, "label": label}
+            linked = (template.holes.get(hole.key) or {}).get("same")
+            if linked and field == letter.ASK:  # même repère qu'un trou plus haut : lien gardé
+                holes[hole.key]["same"] = linked
     options = {}
     for index, _ in letter.paragraphs(content):
         condition = request.POST.get(f"option-{index}", "")
