@@ -46,65 +46,36 @@ def models_page(request: AppRequest) -> HttpResponse:
     """Liste des modèles déposés et dépôt d'un nouveau (lettre de mission ou PV d'AG)."""
     _admin(request)
     kind = _kind(request)
-    if request.method == "POST" and request.POST.get("exemple") == "1":
-        return _from_example(request, kind)
     if request.method == "POST":
-        upload = request.FILES.get("modele")
-        if upload is None:
-            messages.error(request, "Choisissez le fichier Word du modèle.")
-            return redirect(_list_url(kind))
-        content = upload.read()
-        try:
-            letter.check_upload(upload.name or "", content)
-        except ValidationError as error:
-            messages.error(request, " ".join(error.messages))
-            return redirect(_list_url(kind))
-        found = letter.holes(content, kind)
-        template = LetterTemplate.objects.create(
-            kind=kind,
-            name=(upload.name or "modele.docx")[:200],
-            content=content,
-            holes={
-                h.key: {"field": h.guess, "label": letter.proposed_label(h, kind)}
-                for h in found
-                if h.guess
-            },
-            uploaded_by=request.user,
-        )
-        log_access(request, AccessLog.Action.IMPORT, template, details={"modèle": kind})
-        messages.success(
-            request,
-            f"Modèle déposé : {len(found)} trou(s) repéré(s). Vérifiez ce que l'outil propose.",
-        )
-        return redirect("lettre:model", template.pk)
+        return _upload(request, kind)
     templates = LetterTemplate.objects.filter(kind=kind).select_related("uploaded_by")
     context = {"templates": templates, "kind": kind, "is_ag": kind == LetterTemplate.Kind.AG,
                "assistant_reads": _assistant_reads()}  # fmt: skip
     return render(request, "documents/lettre/modeles.html", context)
 
 
-def _from_example(request: AppRequest, kind: str) -> HttpResponse:
-    """Un document déjà rempli pour un client devient un modèle (D-124). Le document d'origine
-    n'est pas gardé ; le modèle obtenu est à relire avant d'être activé."""
+def _upload(request: AppRequest, kind: str) -> HttpResponse:
+    """Un modèle Word déposé, vide ou déjà rempli pour un client (D-124) : ce qui change d'un
+    client à l'autre devient un trou. Le client est retrouvé tout seul (numéro d'entreprise
+    imprimé) ; l'assistant IA cherche ce qui reste. Le document déposé n'est pas gardé tel quel :
+    seul le modèle obtenu l'est, à relire avant activation."""
     from apps.clients.views import _visible_clients
 
     from . import from_example
 
     upload = request.FILES.get("modele")
-    client = _visible_clients(request).filter(pk=request.POST.get("client") or 0).first()
-    if upload is None or client is None:
-        messages.error(
-            request, "Choisissez le document Word rempli et le client pour qui il a été fait."
-        )
+    if upload is None:
+        messages.error(request, "Choisissez le fichier Word du modèle.")
         return redirect(_list_url(kind))
     content = upload.read()
     try:
         letter.check_upload(upload.name or "", content)
+        client = from_example.client_in(content, _visible_clients(request))
         result = from_example.convert(content, client)
     except ValidationError as error:
         messages.error(request, " ".join(error.messages))
         return redirect(_list_url(kind))
-    del content  # le document rempli n'est gardé nulle part
+    del content  # le document d'origine n'est gardé nulle part
     assisted = 0
     from apps.ai import client as ai
 
@@ -121,21 +92,28 @@ def _from_example(request: AppRequest, kind: str) -> HttpResponse:
             again = from_example.convert(result.content, client, extra)
             assisted = sum(again.counts.values())
             result = from_example.Conversion(again.content, result.counts)
+    filled = bool(result.counts) or bool(assisted)
     template = LetterTemplate.objects.create(
         kind=kind,
-        name=f"Modèle tiré de « {(upload.name or 'document.docx')[:150]} »",
+        name=(upload.name or "modele.docx")[:200],
         content=result.content,
         holes=from_example.holes_for(result.content, kind),
-        origin={"exemple": True, "remplace": result.report(), "assistant": assisted},
+        origin={"exemple": filled, "remplace": result.report(), "assistant": assisted},
         uploaded_by=request.user,
     )
-    details = {"modèle": kind, "depuis": "document rempli", "client": client.pk}
+    details = {"modèle": kind, "rempli": filled, "client": client.pk if client else None}
     log_access(request, AccessLog.Action.IMPORT, template, details=details)
-    messages.success(
-        request,
-        "Modèle créé à partir du document rempli. Relisez-le : tout ce qui resterait du client "
-        "d'origine serait recopié chez les autres.",
-    )
+    holes = len(letter.holes(bytes(template.content), kind))
+    if filled:
+        messages.success(
+            request,
+            f"Modèle créé : {holes} trou(s), dont ce qui était propre au client. Relisez-le : "
+            "tout ce qui resterait d'un client serait recopié chez les autres.",
+        )
+    else:
+        messages.success(
+            request, f"Modèle déposé : {holes} trou(s) repéré(s). Vérifiez ce que l'outil propose."
+        )
     return redirect("lettre:model", template.pk)
 
 

@@ -1602,3 +1602,9 @@ même taille (« Clôture » : checklists et clôtures ; « Dépôts ») ; le no
 - Sécurité : le document rempli n'est jamais enregistré ; le rapport ne garde que des sortes et
   des nombres (« montant (2) »), jamais une valeur. Le modèle n'est pas actif : bandeau
   « relisez-le », téléchargement du Word pour vérifier, puis activation par l'administrateur.
+- 31/10/2026 (Jeremy) : plus de client à choisir ni de « vide / rempli » à cocher. Tout
+  modèle déposé passe par la même conversion : le client est retrouvé tout seul par le numéro
+  d'entreprise imprimé (parmi les dossiers visibles) pour remplacer aussi ses gérants,
+  associés et adresse ; sinon la forme suffit (société + forme juridique, numéro, code postal
+  + ville, dates, heures, montants, e-mails, IBAN), « arrêtés au » → date de clôture ;
+  l'assistant IA trouve le reste (noms de personnes…).

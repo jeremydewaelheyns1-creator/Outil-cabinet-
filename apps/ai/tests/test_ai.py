@@ -178,7 +178,7 @@ def test_assistant_finds_what_the_rules_left_in_a_filled_document(client, make_u
     from apps.documents.models import LetterTemplate
     from apps.documents.tests.test_from_example import filled_pv
 
-    company = ClientFactory(name="Menuiserie Fictive", legal_form="SRL")
+    ClientFactory(name="Menuiserie Fictive", legal_form="SRL")
     admin = make_user(is_staff=True, capabilities=["clients.edit"])
     client.force_login(admin)
     settings.MISTRAL_API_KEY = "fictive"
@@ -193,8 +193,7 @@ def test_assistant_finds_what_the_rules_left_in_a_filled_document(client, make_u
         {"texte": "Namur", "repere": "[INCONNU]"},
     ]})  # fmt: skip
     upload = SimpleUploadedFile("pv.docx", filled_pv())
-    client.post(reverse("lettre:models"), {"sorte": "pv_ag", "exemple": "1",
-                "client": company.pk, "modele": upload})  # fmt: skip
+    client.post(reverse("lettre:models"), {"sorte": "pv_ag", "modele": upload})
     template = LetterTemplate.objects.get()
     text = from_example.text_of(bytes(template.content))
     assert "Paul Testeur" not in text and "Marie Essai" not in text

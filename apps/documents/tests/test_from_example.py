@@ -80,15 +80,15 @@ def test_upload_a_filled_document_and_reuse_it_for_another_client(client, make_u
     admin = make_user(is_staff=True, capabilities=["clients.edit"])
     client.force_login(admin)
     upload = SimpleUploadedFile("pv-menuiserie.docx", filled_pv())
-    response = client.post(reverse("lettre:models"), {"sorte": "pv_ag", "exemple": "1",
-                           "client": example_client.pk, "modele": upload})  # fmt: skip
+    # Aucun client à choisir : retrouvé par le numéro d'entreprise imprimé.
+    response = client.post(reverse("lettre:models"), {"sorte": "pv_ag", "modele": upload})
     template = LetterTemplate.objects.get()
     assert response.status_code == 302 and template.kind == "pv_ag" and not template.active
     assert template.origin["exemple"] and "Menuiserie" not in str(template.origin)
     page = client.get(reverse("lettre:model", args=[template.pk])).content.decode()
     assert "Modèle tiré d'un document rempli" in page
     listing = client.get(reverse("lettre:models") + "?sorte=pv_ag").content.decode()
-    assert "vide ou déjà rempli" in listing and "déjà rempli pour un client" in listing
+    assert "vide ou déjà rempli" in listing and "Fait pour le client" not in listing
     assert client.get(reverse("lettre:download", args=[template.pk])).status_code == 200
     # Réutilisé pour un autre client : son nom apparaît, plus rien de la Menuiserie.
     other = ClientFactory(name="Garage Autre", legal_form="SRL", street="Avenue B 3",
@@ -101,11 +101,13 @@ def test_upload_a_filled_document_and_reuse_it_for_another_client(client, make_u
     assert "Menuiserie" not in text and "Namur" not in text and "Testeur" not in text
 
 
-def test_without_the_client_nothing_is_created(client, make_user):
-    from django.core.files.uploadedfile import SimpleUploadedFile
-
-    admin = make_user(is_staff=True, capabilities=["clients.edit"])
-    client.force_login(admin)
-    upload = SimpleUploadedFile("pv.docx", filled_pv())
-    client.post(reverse("lettre:models"), {"sorte": "pv_ag", "exemple": "1", "modele": upload})
-    assert not LetterTemplate.objects.exists()
+def test_without_knowing_the_client_the_shape_is_enough():
+    """Client inconnu de l'outil : la forme suffit (société, numéro, localité, dates, heures,
+    montants) ; l'assistant IA trouve les noms de personnes."""
+    result = from_example.convert(filled_pv(), None)
+    text = from_example.text_of(result.content)
+    for leftover in ("Menuiserie Fictive SRL", "0987", "5000 Namur", "30/06/2026", "18h00",
+                     "32.174,60", "paul@"):  # fmt: skip
+        assert leftover not in text, leftover
+    holes = from_example.holes_for(result.content, "pv_ag")
+    assert "exercice.cloture" in [v["field"] for v in holes.values()]  # « arrêtés au … »

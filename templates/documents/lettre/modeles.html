@@ -4,27 +4,11 @@
 {% block content %}
 <section class="card" style="max-width: 860px">
   <h2>Déposer un modèle — vide ou déjà rempli</h2>
-  <p class="muted">Déposez votre {% if is_ag %}PV d'AG{% else %}lettre de mission{% endif %} Word (.docx), comme vous l'avez :</p>
-  <ul class="muted small">
-    <li><strong>Vide</strong>, avec des endroits à compléter (« [DATE] », « XXX », « …… » ou du texte surligné) : l'outil devine ce qu'il faut y mettre.</li>
-    <li><strong>Déjà rempli pour un client</strong> : dites lequel ; l'outil remplace son nom, son numéro, son adresse, le gérant, les associés, les dates, les heures et les montants par des trous{% if assistant_reads %}, et l'assistant IA cherche ce qui reste{% endif %}. Le document d'origine n'est pas gardé.</li>
-  </ul>
-  <p class="muted small">Dans les deux cas, vous vérifiez, puis vous activez.</p>
+  <p class="muted">Déposez votre {% if is_ag %}PV d'AG{% else %}lettre de mission{% endif %} Word (.docx) tel quel : un modèle avec des trous (« [DATE] », « XXX », « …… », texte surligné) <strong>ou un document déjà rempli pour un client</strong>. L'outil repère ce qui change d'un client à l'autre — nom, numéro, adresse, gérant, associés, dates, heures, montants{% if assistant_reads %} ; l'assistant IA cherche le reste{% endif %} — et en fait un modèle pour tous vos clients. Vous vérifiez, puis vous activez.</p>
   <form method="post" enctype="multipart/form-data">{% csrf_token %}
     <input type="hidden" name="sorte" value="{{ kind }}">
     <label for="modele-file">Fichier Word (5 Mo au plus)</label>
     <input id="modele-file" type="file" name="modele" accept=".docx" required>
-    <label for="modele-etat" style="margin-top:.6rem">Ce document est</label>
-    <select id="modele-etat" name="exemple">
-      <option value="">vide : avec des trous à compléter</option>
-      <option value="1">déjà rempli pour un client</option>
-    </select>
-    <div data-show-if="exemple=1" style="margin-top:.6rem">
-      <label for="exemple-client">Rempli pour le client</label>
-      <input id="exemple-client" type="search" autocomplete="off" placeholder="Nom, n° d'entreprise…" name="q"
-             hx-get="{% url 'clients:picker' %}?champ=client" hx-trigger="input changed delay:300ms" hx-target="#exemple-picker">
-      <div id="exemple-picker"></div>
-    </div>
     <div class="actions" style="margin-top: .6rem"><button type="submit">Déposer</button></div>
   </form>
 </section>

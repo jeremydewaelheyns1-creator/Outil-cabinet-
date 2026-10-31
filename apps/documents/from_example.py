@@ -104,31 +104,58 @@ def _literal(values: list[str]) -> re.Pattern[str] | None:
     return re.compile(r"(?<!\w)(?:" + "|".join(re.escape(v) for v in values) + r")(?!\w)", re.I)
 
 
-def _rules(client: Client, closing: list[str]) -> list[tuple[re.Pattern[str], str]]:
-    """Ce qui se remplace, dans l'ordre : le plus précis d'abord."""
+# Sans fiche : ce qui se reconnaît à sa forme dans un document belge.
+ANY_NUMBER = re.compile(r"(?:BE\s?)?[01]\d{3}[.\s]\d{3}[.\s]\d{3}(?!\d)|BE\s?[01]\d{9}(?!\d)")
+FORMS = r"(?:SRL|SPRL|SA|SC|SCRL|SNC|SComm|ASBL|BV|NV|VZW)"
+COMPANY = re.compile(
+    r"(?<![\w&])(?:[A-ZÀ-Ý][\w&'’.-]*\s+){0,5}[A-ZÀ-Ý][\w&'’.-]*\s+" + FORMS + r"(?![\w])"
+)
+PLACE = re.compile(r"(?<![\d\w])[1-9]\d{3}\s+[A-ZÀ-Ý][\w'’-]+(?:[- ][A-ZÀ-Ý][\w'’-]+)?")
+
+
+def _rules(client: Client | None, closing: list[str]) -> list[tuple[re.Pattern[str], str]]:
+    """Ce qui se remplace, dans l'ordre : le plus précis d'abord. Avec la fiche du client
+    (retrouvé par son numéro dans le document), on remplace aussi son adresse, ses gérants et
+    associés ; sans elle, ce qui se reconnaît à sa forme — l'assistant IA fait le reste."""
     rules: list[tuple[re.Pattern[str] | None, str]] = []
-    current = Relation.objects.current().select_related("person")
-    leaders = [r.person for r in current.filter(entity=client, role__in=Relation.MANAGEMENT_ROLES)]
-    partners = [r.person for r in current.filter(entity=client, role=Relation.Role.SHAREHOLDER)]
     rules.append((IBAN, "[À COMPLÉTER]"))
     rules.append((EMAIL, "[À COMPLÉTER]"))
-    rules.append((_number_pattern(client.enterprise_number or ""), "[NUMÉRO D'ENTREPRISE]"))
     own = cabinet_name().strip()
     if len(own) > 5 and own.lower() not in GENERIC:  # « le cabinet » reste du texte
         rules.append((re.compile(re.escape(own)), "[CABINET]"))
-    rules.append((_literal([client.display_name, client.name]), "[SOCIÉTÉ]"))
-    rules.append((_literal([client.street]), "[ADRESSE]"))
-    place = " ".join(v for v in (client.postal_code, client.city) if v)
-    rules.append((_literal([place]), "[LOCALITÉ]"))
-    rules.append((_literal([client.city]), "[VILLE]"))
-    rules.append((_literal([n for p in leaders for n in _names(p)]), "[GÉRANT]"))
-    others = [p for p in partners if p not in leaders]
-    rules.append((_literal([n for p in others for n in _names(p)]), "[ASSOCIÉ]"))
-    rules.append((_literal(closing), "[DATE DE CLÔTURE]"))
+    if client is not None:
+        current = Relation.objects.current().select_related("person")
+        mine = current.filter(entity=client)
+        leaders = [r.person for r in mine.filter(role__in=Relation.MANAGEMENT_ROLES)]
+        partners = [r.person for r in mine.filter(role=Relation.Role.SHAREHOLDER)]
+        rules.append((_number_pattern(client.enterprise_number or ""), "[NUMÉRO D'ENTREPRISE]"))
+        rules.append((_literal([client.display_name, client.name]), "[SOCIÉTÉ]"))
+        rules.append((_literal([client.street]), "[ADRESSE]"))
+        place = " ".join(v for v in (client.postal_code, client.city) if v)
+        rules.append((_literal([place]), "[LOCALITÉ]"))
+        rules.append((_literal([client.city]), "[VILLE]"))
+        rules.append((_literal([n for p in leaders for n in _names(p)]), "[GÉRANT]"))
+        others = [p for p in partners if p not in leaders]
+        rules.append((_literal([n for p in others for n in _names(p)]), "[ASSOCIÉ]"))
+        rules.append((_literal(closing), "[DATE DE CLÔTURE]"))
+    rules.append((ANY_NUMBER, "[NUMÉRO D'ENTREPRISE]"))
+    rules.append((COMPANY, "[SOCIÉTÉ]"))
+    rules.append((PLACE, "[LOCALITÉ]"))
     rules.append((DATE, "[DATE]"))
     rules.append((TIME, "[HEURE]"))
     rules.append((AMOUNT, "[MONTANT]"))
     return [(p, m) for p, m in rules if p is not None]
+
+
+def client_in(content: bytes, clients: Any) -> Client | None:
+    """Le client du document, retrouvé par le numéro d'entreprise imprimé (parmi les dossiers
+    visibles de la personne) ; aucun ou plusieurs : aucun."""
+    from apps.vat import intervat
+
+    text = text_of(content)
+    numbers = {intervat.normalize_number(m) for m in ANY_NUMBER.findall(text)} - {""}
+    found = list(clients.filter(enterprise_number__in=numbers)[:2]) if numbers else []
+    return found[0] if len(found) == 1 else None
 
 
 def _closing_dates(client: Client) -> list[str]:
@@ -162,12 +189,12 @@ def _spans(text: str, rules: list[tuple[re.Pattern[str], str]],
 
 
 def convert(
-    content: bytes, client: Client, extra: list[tuple[str, str]] | None = None
+    content: bytes, client: Client | None = None, extra: list[tuple[str, str]] | None = None
 ) -> Conversion:
     """Le document rempli devient un modèle (fichier Word) : les valeurs du client deviennent
     des repères entre crochets, que l'outil sait remplir."""
     document = letter._open(content)
-    rules = _rules(client, _closing_dates(client))
+    rules = _rules(client, _closing_dates(client) if client is not None else [])
     counts: dict[str, int] = {}
     for paragraph in letter._paragraphs(document):
         text = paragraph.text
@@ -202,6 +229,10 @@ def holes_for(content: bytes, kind: str) -> dict[str, dict[str, Any]]:
                 if any(w in low for w in ("levée", "levee", "clôtur", "fin"))
                 else "ag.debut"
             )
+        if marker == "[DATE]" and kind == "pv_ag":
+            low = hole.before.lower()[-30:]
+            if any(w in low for w in ("arrêté", "arrete", "clôtur", "clotur", "exercice")):
+                field_code = "exercice.cloture"
         if not field_code:
             field_code = hole.guess
         if not field_code:
