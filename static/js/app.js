@@ -491,3 +491,13 @@ document.addEventListener("change", function (event) {
     if (target) target.scrollIntoView({ block: "center" });
   }
 })();
+
+// Liste qui recharge la page sur le choix fait (ex. le modèle du PV : ses questions changent).
+// data-reload-param="modele" : la page est rouverte avec ?modele=<choix>.
+document.addEventListener("change", function (event) {
+  var select = event.target.closest && event.target.closest("[data-reload-param]");
+  if (!select) return;
+  var url = new URL(window.location.href);
+  url.searchParams.set(select.getAttribute("data-reload-param"), select.value);
+  window.location.assign(url.toString());
+});

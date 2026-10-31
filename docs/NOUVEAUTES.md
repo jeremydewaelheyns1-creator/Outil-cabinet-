@@ -3,6 +3,14 @@
 Ce qui a été ajouté à l'outil, du plus récent au plus ancien. Toutes les données de la démo
 sont inventées.
 
+## 31 octobre 2026 — PV d'AG : votre demande est comprise
+
+- « Quelque chose de particulier ? » : écrivez simplement la décision (« distribuer 50 000 de
+  dividende, reporter le reste ») ; elle est intégrée au bon endroit du PV, en style de PV,
+  et ce qui ne colle pas avec les montants vous est signalé.
+- Changer de modèle sur la page du PV change bien les questions.
+- Avec un dividende, la phrase « reporter l'intégralité du bénéfice » n'est plus exigée.
+
 ## 31 octobre 2026 — L'assistant IA travaille en coulisse
 
 - Plus de case ni de bouton « IA » : l'assistant agit tout seul.

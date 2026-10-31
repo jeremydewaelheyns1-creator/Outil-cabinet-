@@ -99,6 +99,7 @@ def _upload(request: AppRequest, kind: str) -> HttpResponse:
         name=(upload.name or "modele.docx")[:200],
         content=result.content,
         holes=from_example.holes_for(result.content, kind),
+        options=from_example.options_for(result.content, kind),
         origin={"exemple": filled, "remplace": result.report(), "assistant": assisted},
         uploaded_by=request.user,
     )

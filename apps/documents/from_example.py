@@ -422,6 +422,24 @@ def holes_for(content: bytes, kind: str) -> dict[str, dict[str, Any]]:
     return result
 
 
+def options_for(content: bytes, kind: str) -> dict[str, dict[str, Any]]:
+    """PV d'AG : les passages qui dépendent du dividende, repérés au dépôt (l'assistant peut en
+    trouver d'autres) : « reporter l'intégralité du bénéfice » seulement sans dividende ;
+    « distribuer un dividende de [MONTANT] » seulement avec."""
+    if kind != "pv_ag":
+        return {}
+    found: dict[str, dict[str, Any]] = {}
+    for index, text in letter.paragraphs(content):
+        low = normalize_text(text)
+        if "[" not in text and "XXX" not in text:
+            continue  # un passage sans montant à remplir : l'ordre du jour, par exemple
+        if "integralite" in low and ("report" in low or "benefice" in low):
+            found[str(index)] = {"condition": "sans_dividende", "end": index, "label": ""}
+        elif "dividende" in low and ("distribu" in low or "attribu" in low):
+            found[str(index)] = {"condition": "dividende", "end": index, "label": ""}
+    return found
+
+
 def _local_context(content: bytes) -> dict[str, tuple[str, str]]:
     """Pour chaque trou : le texte avant et après dans SON paragraphe (le paragraphe d'avant
     s'il commence la ligne : « Sont présents : » puis « XXX, titulaire de… »)."""

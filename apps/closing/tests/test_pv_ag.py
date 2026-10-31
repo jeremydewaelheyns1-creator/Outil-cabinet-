@@ -347,3 +347,73 @@ def test_a_word_where_an_amount_is_expected_is_refused(admin_web):
     assert year.ag_draft is None
     assert "« Dividende » n&#x27;est pas un montant" in page.content.decode()
     assert reverse("lettre:model", args=[template.pk]) in page.content.decode()
+
+
+def test_changing_the_model_changes_the_questions(admin_web):
+    from django.core.files.uploadedfile import SimpleUploadedFile
+
+    from apps.documents.models import LetterTemplate
+
+    template, company, year, _keys = _tables_setup(admin_web)
+    other = SimpleUploadedFile("autre.docx", model_docx())
+    admin_web.post(reverse("lettre:models"), {"sorte": "pv_ag", "modele": other})
+    second = LetterTemplate.objects.exclude(pk=template.pk).get()
+    _activate(admin_web, second)
+    url = reverse("clients:closing_ag", args=[company.pk, year.pk])
+    assert "ATN Auto" in admin_web.get(f"{url}?modele={template.pk}").content.decode()
+    page = admin_web.get(f"{url}?modele={second.pk}").content.decode()
+    assert "ATN Auto" not in page and "data-reload-param" in page
+
+
+def test_dividend_passages_are_found_at_upload(admin_web):
+    from django.core.files.uploadedfile import SimpleUploadedFile
+
+    from apps.documents.models import LetterTemplate
+
+    upload = SimpleUploadedFile("pv.docx", model_with_tables())
+    admin_web.post(reverse("lettre:models"), {"sorte": "pv_ag", "modele": upload})
+    template = LetterTemplate.objects.get()
+    conditions = {v["condition"] for v in template.options.values()}
+    assert conditions == {"sans_dividende"}
+    page = admin_web.get(reverse("lettre:model", args=[template.pk])).content.decode()
+    assert 'value="sans_dividende" selected' in page  # gardé si on enregistre la page
+
+
+def test_the_assistant_understands_a_particular_request(admin_web, settings, monkeypatch):
+    from apps.ai.models import AiCall
+    from apps.ai.tests.test_ai import fake_reply
+    from apps.documents import letter
+
+    template, company, year, keys = _tables_setup(admin_web)
+    report = next(i for i, t in letter.paragraphs(bytes(template.content)) if "intégralité" in t)
+    settings.MISTRAL_API_KEY = "fictive"
+    seen = []
+    fake_reply(monkeypatch, {
+        "modifications": [{"paragraphe": report, "action": "remplacer",
+                           "texte": "L'assemblée décide de distribuer un dividende brut de "
+                                    "50.000,00 € et de reporter le solde, soit 25.000,00 €."}],
+        "remarques": ["Le report annoncé (80.000 €) dépasse le bénéfice à affecter."],
+    }, seen)  # fmt: skip
+    amounts = {"Bénéfice d'exploitation": "100000", "Charges financières": "25000",
+               "Bénéfice net à affecter": "75000", "Rémunération ordinaire": "20000",
+               "ATN Auto": "500", "Emoluments de l'exercice": "20500"}  # fmt: skip
+    data = {"modele": template.pk, "date": "2026-06-30", "debut": "18:00", "fin": "18:30",
+            "dividende": "oui", "autres": "distribuer 50 000 de dividende, reporter le reste",
+            **{keys[label]: value for label, value in amounts.items()}}  # fmt: skip
+    url = reverse("clients:closing_ag", args=[company.pk, year.pk])
+    response = admin_web.post(url, data, follow=True)
+    assert "dépasse le bénéfice" in response.content.decode()  # remarque montrée
+    year.refresh_from_db()
+    text = _text(ag.word(year))
+    assert "distribuer un dividende brut de 50.000,00 €" in text
+    assert "intégralité" not in text and "distribuer 50 000 de dividende" not in text
+    call = AiCall.objects.get(feature="pv_particulier")
+    assert call.model == "mistral-large-latest"
+    assert "Garage Fictif" in seen[0]["messages"][1]["content"]  # le PV rempli est lu
+
+
+def test_without_the_assistant_the_request_becomes_a_resolution(admin_web, settings):
+    settings.MISTRAL_API_KEY = ""
+    template, company, _year, _keys = _tables_setup(admin_web)
+    edits, remarks = ag.understand(template, company, {}, {"autres": "Une décision."}, None)
+    assert edits == [] and remarks == []

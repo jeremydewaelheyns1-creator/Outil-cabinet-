@@ -51,8 +51,7 @@ def personal_data_allowed() -> bool:
     du fournisseur (Réglages du cabinet)."""
     from apps.core.models import CabinetSettings
 
-    current = CabinetSettings.objects.first()
-    return bool(current and getattr(current, "ai_personal_data", False))
+    return bool(CabinetSettings.current().ai_personal_data)
 
 
 def spent_this_month() -> Decimal:

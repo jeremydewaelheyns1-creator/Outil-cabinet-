@@ -47,9 +47,15 @@ def test_call_is_logged_without_content_and_capped(settings, monkeypatch):
         ai.ask_json("test", "s", "p")
 
 
-def test_personal_data_waits_for_zero_retention(settings, monkeypatch):
+def test_personal_data_can_be_cut_off(settings, monkeypatch):
+    from apps.core.models import CabinetSettings
+
     settings.MISTRAL_API_KEY = "fictive"
     fake_reply(monkeypatch, {})
+    current = CabinetSettings.current()
+    assert current.ai_personal_data  # actif d'office (D-127)
+    current.ai_personal_data = False
+    current.save()
     with pytest.raises(ai.Unavailable):
         ai.ask_json("documents", "s", "p", personal=True)
 

@@ -218,20 +218,68 @@ def _copy_paragraph(model: Any, text: str) -> Any:
     return clone
 
 
-def build(template: Any, client: Client, answers: dict[str, str], ctx: dict[str, str]) -> bytes:
-    """Le PV rempli (Word) : le modèle, et « Autre chose ? » en résolution de plus quand le
-    modèle n'a pas de trou prévu pour ça."""
+def apply_edits(word: bytes, edits: list[dict[str, Any]]) -> bytes:
+    """Les modifications décidées pour « Quelque chose de particulier ? » (D-128), chacune dans
+    la mise en forme du paragraphe qu'elle touche."""
+    document = letter._open(word)
+    items = letter._paragraphs(document)
+    last_added: dict[int, Any] = {}
+    for edit in edits:
+        index = int(edit["paragraphe"])
+        if not 0 <= index < len(items):
+            continue
+        target = items[index]._p
+        if edit["action"] == "remplacer":
+            new = _copy_paragraph(target, edit["texte"])
+            target.addprevious(new)
+            target.getparent().remove(target)
+            items[index]._p = new
+        elif edit["action"] == "ajouter_apres":
+            new = _copy_paragraph(target, edit["texte"])
+            (last_added.get(index) or target).addnext(new)
+            last_added[index] = new
+        elif edit["action"] == "supprimer" and target.getparent() is not None:
+            target.getparent().remove(target)
+    out = io.BytesIO()
+    document.save(out)
+    return out.getvalue()
+
+
+def build(template: Any, client: Client, answers: dict[str, str], ctx: dict[str, str],
+          edits: list[dict[str, Any]] | None = None) -> bytes:  # fmt: skip
+    """Le PV rempli (Word) : le modèle, puis « Quelque chose de particulier ? » — intégré par
+    l'assistant (`edits`), sinon ajouté comme une résolution de plus."""
     content = letter.fill(template, client, answers, ctx)
+    if edits:
+        return apply_edits(content, edits)
     if ctx.get("autres") and not uses_others(template):
         content = add_resolution(content, ctx["autres"])
     return content
+
+
+def understand(template: Any, client: Client, answers: dict[str, str], ctx: dict[str, str],
+               user: User | None) -> tuple[list[dict[str, Any]], list[str]]:  # fmt: skip
+    """L'assistant lit la demande particulière et dit comment modifier le PV (D-128). Sans
+    assistant : aucune modification (la demande devient une résolution de plus)."""
+    from apps.ai import client as ai
+    from apps.ai import minutes_assist
+
+    if not ctx.get("autres") or uses_others(template):
+        return [], []
+    try:
+        return minutes_assist.plan(letter.fill(template, client, answers, ctx), ctx["autres"],
+                                   client, user)  # fmt: skip
+    except ai.Unavailable:
+        return [], []
 
 
 def prepare(year: ClosingYear, template: Any, answers: dict[str, str], ctx: dict[str, str],
             user: User | None) -> Document:  # fmt: skip
     """Le brouillon du PV (PDF), à relire puis à envoyer pour signature."""
     client = year.client
-    content = letter.to_pdf(build(template, client, answers, ctx), "PV d'assemblée générale")
+    edits, remarks = understand(template, client, answers, ctx, user)
+    content = letter.to_pdf(build(template, client, answers, ctx, edits),
+                            "PV d'assemblée générale")  # fmt: skip
     with transaction.atomic():
         old = year.ag_draft
         if old is not None and old.state == Document.State.DRAFT:
@@ -255,7 +303,8 @@ def prepare(year: ClosingYear, template: Any, answers: dict[str, str], ctx: dict
         document.save()
         year.ag_draft = document
         year.ag_answers = {**answers, **{f"ctx:{k}": v for k, v in ctx.items()},
-                           "modele": template.pk}  # fmt: skip
+                           "modele": template.pk, "modifications": edits,
+                           "remarques": remarks}  # fmt: skip
         year.save(update_fields=["ag_draft", "ag_answers"])
     deposits.set_dividend(year, ctx["dividende"] == "oui", user)
     events.emit(
@@ -275,7 +324,7 @@ def word(year: ClosingYear) -> bytes | None:
         return None
     answers = {k: v for k, v in saved.items() if k.startswith(("trou:", "option:"))}
     ctx = {k[4:]: v for k, v in saved.items() if k.startswith("ctx:")}
-    return build(template, year.client, answers, ctx)
+    return build(template, year.client, answers, ctx, saved.get("modifications") or [])
 
 
 def waiting_signature(year: ClosingYear) -> bool:

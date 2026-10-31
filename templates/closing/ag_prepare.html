@@ -14,7 +14,7 @@
   </div>
   {% if templates|length > 1 %}
     <div class="ag-sec"><label for="ag-modele">Modèle</label>
-      <select id="ag-modele" name="modele">{% for t in templates %}<option value="{{ t.pk }}"{% if t.pk == chosen.pk %} selected{% endif %}>{{ t.name }}</option>{% endfor %}</select>
+      <select id="ag-modele" name="modele" data-reload-param="modele">{% for t in templates %}<option value="{{ t.pk }}"{% if t.pk == chosen.pk %} selected{% endif %}>{{ t.name }}</option>{% endfor %}</select>
     </div>
   {% else %}<input type="hidden" name="modele" value="{{ chosen.pk }}">{% endif %}
 

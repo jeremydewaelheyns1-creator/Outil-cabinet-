@@ -1678,3 +1678,22 @@ même taille (« Clôture » : checklists et clôtures ; « Dépôts ») ; le no
   tracé (AiCall, sans contenu). Sans réponse de l'assistant, l'outil continue avec ses règles.
 - Typographie : l'outil ne réécrit pas le document, il remplace le texte des champs dans le
   Word du cabinet ; police, taille, gras, couleurs et mise en page restent ceux du modèle.
+
+## D-128 — PV d'AG : l'assistant comprend « Quelque chose de particulier ? »
+
+- La demande du comptable n'est plus recopiée : l'assistant (Mistral Large, rédaction) lit le
+  PV rempli, comprend la décision, trouve où elle se place et modifie les paragraphes
+  concernés (ex. un dividende remplace « reporter l'intégralité du bénéfice » par la
+  répartition), en style de PV, montants au format 50.000,00 €. Il ne touche à rien d'autre,
+  n'invente ni montant ni nom, et signale ce qui ne colle pas (« À vérifier dans le PV : … »).
+- Les modifications sont gardées avec le PV : le Word et le PDF sont identiques, sans
+  nouvel appel. Sans assistant, la demande devient une résolution de plus (D-126).
+- Chaque modification reprend la mise en forme du paragraphe qu'elle touche.
+- Au dépôt d'un modèle de PV, les passages « reporter l'intégralité » (sans dividende) et
+  « distribuer un dividende » (avec) sont repérés tout seuls ; avec un dividende, la
+  question « reporter l'intégralité » n'est plus obligatoire.
+- Page du PV : changer de modèle recharge ses questions ; les réponses gardées ne valent que
+  pour le modèle qui les a reçues.
+- Pourquoi pas un « entraînement » de l'IA chez Mistral : les consignes sont dans le code
+  (versionnées, les mêmes pour tous les cabinets) ; un entraînement demanderait d'envoyer de
+  vrais PV. Les règles du métier se donnent à Claude, qui les ajoute aux consignes.

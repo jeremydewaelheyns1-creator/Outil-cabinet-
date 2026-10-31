@@ -374,8 +374,11 @@ def ag_prepare(request: AppRequest, pk: int, year_id: int) -> HttpResponse:
     year = _year(request, pk, year_id)
     client = year.client
     templates = letter.ag_templates(client)
+    wanted = request.POST.get("modele") or request.GET.get("modele") or ""
+    if not wanted and (year.ag_answers or {}).get("modele"):
+        wanted = str(year.ag_answers["modele"])  # le modèle du dernier PV préparé
     chosen = next(
-        (t for t in templates if str(t.pk) == request.POST.get("modele", "")),
+        (t for t in templates if str(t.pk) == wanted),
         templates[0] if templates else None,
     )
     questions = letter.questions(chosen) if chosen is not None else []
@@ -400,6 +403,8 @@ def ag_prepare(request: AppRequest, pk: int, year_id: int) -> HttpResponse:
             if key.startswith("trou:")
             and not answers[key]
             and letter.condition_of(chosen, key) not in skipped
+            # Avec un dividende, « reporter l'intégralité du bénéfice » n'a plus lieu d'être.
+            and not (dividend and "intégralité" in label.lower())
         ]
         errors += _not_amounts(chosen, answers)
         amounts_wrong = [] if errors else ag.check_amounts(chosen, answers)
@@ -415,9 +420,13 @@ def ag_prepare(request: AppRequest, pk: int, year_id: int) -> HttpResponse:
                              request.POST.get("autres", "").strip()[:2000])  # fmt: skip
             document = ag.prepare(year, chosen, answers, ctx, request.user)
             log_access(request, AccessLog.Action.CREATE, document, details={"généré": "pv_ag"})
+            for remark in (year.ag_answers or {}).get("remarques") or []:
+                messages.warning(request, f"À vérifier dans le PV : {remark}")
             return redirect("clients:document_viewer_page", pk=client.pk, document_id=document.pk)
     values = request.POST if request.method == "POST" else {
-        **{k: v for k, v in saved.items() if not k.startswith("ctx:")},
+        # Les réponses gardées ne valent que pour le modèle qui les a reçues.
+        **({k: v for k, v in saved.items() if not k.startswith("ctx:")}
+           if chosen is not None and saved.get("modele") == chosen.pk else {}),
         "date": _iso(saved.get("ctx:date", "")) or _deadline(year).isoformat(),
         "debut": saved.get("ctx:debut", "18h00").replace("h", ":"),
         "fin": saved.get("ctx:fin", "18h30").replace("h", ":"),
