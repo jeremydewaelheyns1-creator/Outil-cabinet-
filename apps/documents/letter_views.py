@@ -101,6 +101,7 @@ def _upload(request: AppRequest, kind: str) -> HttpResponse:
         origin={"exemple": filled, "remplace": result.report(), "assistant": assisted},
         uploaded_by=request.user,
     )
+    _assistant_setup(request, template)
     details = {"modèle": kind, "rempli": filled, "client": client.pk if client else None}
     log_access(request, AccessLog.Action.IMPORT, template, details=details)
     holes = len(letter.holes(bytes(template.content), kind))
@@ -115,6 +116,33 @@ def _upload(request: AppRequest, kind: str) -> HttpResponse:
             request, f"Modèle déposé : {holes} trou(s) repéré(s). Vérifiez ce que l'outil propose."
         )
     return redirect("lettre:model", template.pk)
+
+
+def _assistant_setup(request: AppRequest, template: LetterTemplate) -> None:
+    """L'assistant IA règle tout de suite les trous que les règles de l'outil n'ont pas su lire
+    (les questions « à demander » : « [LIEU DE REUNION] », « XXX »…) : il dit ce qu'ils
+    contiennent (peut-être un champ de la fiche) et pose une question claire. Proposé
+    seulement : l'administrateur relit avant d'activer. Le modèle ne contient plus de données
+    du client d'origine."""
+    from apps.ai import client as ai
+
+    if not ai.enabled():
+        return
+    keys = {
+        h.key
+        for h in letter.holes(bytes(template.content), template.kind)
+        if (template.holes.get(h.key) or {}).get("field") in (None, "", letter.ASK)
+    }
+    if not keys:
+        return
+    from apps.ai import templates_assist
+
+    try:
+        count, _ = templates_assist.suggest(template, request.user, only=keys)
+    except ai.Unavailable:
+        count = -1
+    template.origin = {**template.origin, "reglage_ia": count}
+    template.save(update_fields=["origin"])
 
 
 def model_download(request: AppRequest, template_id: int) -> HttpResponse:

@@ -8,7 +8,10 @@
   <div class="card"><p class="muted">Aucun modèle de PV d'AG n'est activé pour la forme de cette société.{% if user.is_staff %} <a href="{% url 'lettre:models' %}?sorte=pv_ag">Déposer un modèle</a>.{% endif %}</p></div>
 {% else %}
 <form method="post" class="card ag-form">{% csrf_token %}
-  <p class="small muted ag-steps"><strong>1. Remplir</strong> › 2. Relire › 3. Envoyer pour signature</p>
+  <div class="ag-top">
+    <p class="small muted ag-steps"><strong>1. Remplir</strong> › 2. Relire › 3. Envoyer pour signature</p>
+    {% if user.is_staff %}<a class="button button-small button-secondary" href="{% url 'lettre:model' chosen.pk %}">Modifier les champs du modèle</a>{% endif %}
+  </div>
   {% if templates|length > 1 %}
     <div class="ag-sec"><label for="ag-modele">Modèle</label>
       <select id="ag-modele" name="modele">{% for t in templates %}<option value="{{ t.pk }}"{% if t.pk == chosen.pk %} selected{% endif %}>{{ t.name }}</option>{% endfor %}</select>

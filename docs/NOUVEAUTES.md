@@ -9,6 +9,12 @@ sont inventées.
   le dit avant de faire le PV. Vous corrigez, ou vous confirmez qu'ils sont justes.
 - Nouvelle case « Quelque chose de particulier ? » : votre texte est ajouté au PV comme une
   résolution de plus, avec la même mise en page.
+- Les modèles d'autres cabinets (« [LIEU DE REUNION] », « XXX ») sont mieux lus : questions
+  claires, une seule question quand le même repère revient, et l'assistant IA règle le reste
+  dès le dépôt.
+- Réglages du cabinet : bouton « Tester l'assistant » pour vérifier que l'IA répond.
+- Page du PV : bouton « Modifier les champs du modèle » ; un mot tapé à la place d'un
+  montant est refusé.
 
 ## 31 octobre 2026 — Modèle depuis un document rempli : bien meilleur
 

@@ -21,6 +21,7 @@ from typing import Any
 
 from apps.clients.models import Client, Relation
 from apps.core.cabinet import cabinet_name
+from apps.core.text import normalize_text
 
 from . import letter
 
@@ -68,7 +69,7 @@ DATE = re.compile(
 # « le 23 septembre » (année ailleurs, souvent en lettres) et « deux mille vingt-six ».
 DAY_MONTH = re.compile(r"\b(?:1er|\d{1,2})\s+(?:" + "|".join(MONTHS) + r")\b(?!\s+\d)", re.I)
 YEAR_WORDS = re.compile(
-    r"\bdeux\s+mille(?:[\s-]+(?:et[\s-]+)?(?:un|deux|trois|quatre|cinq|six|sept|huit|neuf|dix|onze|douze|treize|quatorze|quinze|seize|vingt|trente))*\b",
+    r"\bdeux[\s-]+mille(?:[\s-]+(?:et[\s-]+)?(?:un|deux|trois|quatre|cinq|six|sept|huit|neuf|dix|onze|douze|treize|quatorze|quinze|seize|vingt|trente))*\b",
     re.I,
 )
 TIME = re.compile(r"\b(?:[01]?\d|2[0-3])\s?(?:h|H|:)\s?[0-5]\d\b|\b(?:[01]?\d|2[0-3])\s?heures?\b")
@@ -171,12 +172,23 @@ COURT = re.compile(r"R\.?P\.?M\.?\s*:?\s*(?:de\s+)?(?P<v>(?!BE\b)" + WORD
                    + r"(?:\s*,\s*division\s+" + WORD + r")?)")  # fmt: skip
 
 
+# Repères déjà présents dans un modèle vide : « [LIEU DE REUNION] », « XXX », « ….. ». On n'y
+# touche jamais (ni nom, ni date dedans) : ce sont déjà des trous.
+PLACEHOLDER = re.compile(r"\[[^\]\n]*\]|\bX{2,}\b|_{3,}|\.{4,}|…{2,}")
+
+
+def _masked(text: str) -> str:
+    """Le texte avec ses repères existants remplacés par des espaces (positions gardées)."""
+    return PLACEHOLDER.sub(lambda m: " " * len(m.group(0)), text)
+
+
 def people(texts: list[str]) -> tuple[list[str], list[str]]:
     """Les noms de personnes du document : (dirigeants, associés). Une fois trouvés à un
     endroit sûr, ils sont remplacés partout ailleurs aussi (signature, décharge…)."""
     leaders: list[str] = []
     partners: list[str] = []
-    for text in texts:
+    for raw in texts:
+        text = _masked(raw)
         for match in PERSON.finditer(text):
             name = re.sub(r"^" + CIVIL + r"\s+", "", match.group(0))
             if not PARTNERS.fullmatch(text.strip()):
@@ -266,6 +278,7 @@ def _spans(text: str, rules: list[tuple[re.Pattern[str], str]],
            extra: list[tuple[str, str]]) -> list[tuple[int, int, str]]:  # fmt: skip
     """Endroits à remplacer, sans chevauchement (le premier qui couvre gagne)."""
     taken: list[tuple[int, int, str]] = []
+    text = _masked(text)
 
     def free(start: int, end: int) -> bool:
         return all(end <= s or start >= e for s, e, _ in taken)
@@ -363,6 +376,8 @@ def holes_for(content: bytes, kind: str) -> dict[str, dict[str, Any]]:
     habituelle (pour les trous qui existaient déjà dans le document)."""
     result: dict[str, dict[str, Any]] = {}
     rows = _row_labels(content)
+    local = _local_context(content)
+    seen: dict[str, int] = {}
     for hole in letter.holes(content, kind):
         marker = hole.text.strip().upper()
         field_code = (MARKERS.get(marker) or {}).get(kind, "")
@@ -379,12 +394,24 @@ def holes_for(content: bytes, kind: str) -> dict[str, dict[str, Any]]:
                 field_code = "exercice.cloture"
         if not field_code:
             field_code = hole.guess
-        if not field_code:
-            continue
+        unknown = re.fullmatch(r"\[?\s*X{2,}\s*\]?", hole.text.strip(), re.I)
+        if (unknown and kind == "pv_ag") or not field_code:
+            field_code = letter.ASK  # PV : « XXX » ne dit pas ce que c'est, on le demande
         label = ""
         if field_code == letter.ASK:
             index = int(hole.key.split(":")[0])
-            label = rows.get(index) or _label(hole.before) or KINDS.get(marker, "").capitalize()
+            label = (
+                placeholder_label(hole.text)
+                or rows.get(index)
+                or _label(*local.get(hole.key, (hole.before, hole.after)))
+                or KINDS.get(marker, "").capitalize()
+                or "Information à compléter"
+            )
+            seen[label] = seen.get(label, 0) + 1
+            # Le même repère deux fois (« [OBJET DE LA MODIFICATION] ») : une seule question,
+            # la réponse va aux deux. Sinon, deux questions distinctes.
+            if seen[label] > 1 and not placeholder_label(hole.text):
+                label = f"{label} ({seen[label]})"
             if marker == "[NOMBRE]":
                 label = "Nombre de parts"
             if marker == "[TRIBUNAL]":
@@ -393,6 +420,23 @@ def holes_for(content: bytes, kind: str) -> dict[str, dict[str, Any]]:
                 label = "Nom de l'associé"
         result[hole.key] = {"field": field_code, "label": label[:120]}
     return result
+
+
+def _local_context(content: bytes) -> dict[str, tuple[str, str]]:
+    """Pour chaque trou : le texte avant et après dans SON paragraphe (le paragraphe d'avant
+    s'il commence la ligne : « Sont présents : » puis « XXX, titulaire de… »)."""
+    found: dict[str, tuple[str, str]] = {}
+    previous = ""
+    for index, paragraph in enumerate(letter._paragraphs(letter._open(content))):
+        text = paragraph.text
+        for number, (start, end) in enumerate(letter._spans(paragraph)):
+            before = text[:start]
+            if not re.search(r"[A-Za-zÀ-ÿ]{3,}", re.sub(r"\bX{2,}\b|\[[^\]]*\]", "", before)):
+                before = previous + " " + before
+            found[f"{index}:{number}"] = (before, text[end:])
+        if text.strip():
+            previous = text
+    return found
 
 
 def _row_labels(content: bytes) -> dict[int, str]:
@@ -425,9 +469,34 @@ STOP = {"soit", "de", "du", "des", "à", "a", "au", "aux", "la", "le", "les", "u
         "est", "sont", "pour", "et", "en", "qui", "que"}  # fmt: skip
 
 
-def _label(before: str) -> str:
-    """Hors tableau : les derniers mots utiles avant le trou (« bénéfice de l'exercice »)."""
-    text = re.sub(r"\[[^\]]*\]", " ", before)
+def placeholder_label(text: str) -> str:
+    """Repère d'un modèle vide qui dit ce qu'il contient : « [MONTANT DU CAPITAL SOCIAL] » →
+    « Montant du capital social ». Pas pour nos propres repères ni pour « XXX »."""
+    inside = text.strip().strip("[]").strip()
+    if text.strip().upper() in MARKERS or not re.search(r"[A-Za-zÀ-ÿ]{3,}", inside):
+        return ""
+    if re.fullmatch(r"X+", inside, re.I):
+        return ""
+    low = normalize_text(inside)
+    if any(w in low.split() for w in ("gtc", "rcs", "greffe", "tribunal")):
+        return "Greffe / tribunal compétent"
+    words = re.sub(r"\s+", " ", inside.replace("+", " et ")).strip().lower()
+    return words[:1].upper() + words[1:]
+
+
+def _label(before: str, after: str = "") -> str:
+    """Les derniers mots utiles avant le trou (« bénéfice de l'exercice ») ; si l'après éclaire
+    (« titulaire de … droits sociaux »), il est ajouté."""
+    head = _before_words(before)
+    tail = re.split(r"[.;:!?,\n\[]", re.sub(r"\bX{2,}\b", " ", after))[0].split()[:3]
+    tail_text = " ".join(tail)
+    if tail and tail[0][:1].islower() and tail[0].lower() not in STOP | {"euros", "eur"}:
+        return f"{head} … {tail_text}" if head else tail_text[:1].upper() + tail_text[1:]
+    return head
+
+
+def _before_words(before: str) -> str:
+    text = re.sub(r"\[[^\]]*\]|\bX{2,}\b", " ", before)
     parts = [p for p in re.split(r"[.;:!?\n]", text) if p.strip()]
     text = parts[-1] if parts else ""
     words = [w for w in re.sub(r"[(),€+–-]", " ", text).split()]
@@ -436,5 +505,7 @@ def _label(before: str) -> str:
     words = words[-6:]
     while words and words[0].lower() in STOP:
         words.pop(0)
-    label = " ".join(words)
+    label = " ".join(words).strip("«»\"' ")
+    if re.fullmatch(CIVIL + r"|M|Mr|Mme", label):
+        return "Nom"
     return label[:1].upper() + label[1:]

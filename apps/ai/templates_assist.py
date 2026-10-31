@@ -43,9 +43,10 @@ def _prompt(template: Any) -> str:
     )  # fmt: skip
 
 
-def suggest(template: Any, user: User | None) -> tuple[int, int]:
+def suggest(template: Any, user: User | None, only: set[str] | None = None) -> tuple[int, int]:
     """Applique les propositions au modèle (marquées « assistant ») ; renvoie (trous,
-    paragraphes) proposés. Lève `client.Unavailable` si l'assistant ne répond pas."""
+    paragraphes) proposés. `only` : seulement ces trous (ceux que les règles de l'outil ne
+    savent pas lire). Lève `client.Unavailable` si l'assistant ne répond pas."""
     answer = client.ask_json("reglage_modele", SYSTEM, _prompt(template), user=user)
     allowed = {code for code, _ in letter.choices(template.kind)}
     conditions = set(letter.conditions(template.kind)) - {""}
@@ -55,7 +56,11 @@ def suggest(template: Any, user: User | None) -> tuple[int, int]:
     for key, value in (answer.data.get("trous") or {}).items():
         if key not in keys or not isinstance(value, dict) or value.get("code") not in allowed:
             continue
+        if only is not None and key not in only:
+            continue
         label = str(value.get("question") or "")[:120]
+        if not label and value["code"] == letter.ASK:
+            label = (holes.get(key) or {}).get("label", "")
         holes[key] = {"field": value["code"], "label": label, "source": "assistant"}
         count_holes += 1
     indexes = {str(i) for i, _ in letter.paragraphs(bytes(template.content))}

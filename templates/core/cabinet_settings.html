@@ -60,6 +60,8 @@
     <p class="muted">L'assistant (Mistral, en Europe) aide à régler les modèles Word. Pour qu'il lise aussi les documents des clients que l'outil ne reconnaît pas, Mistral doit d'abord avoir confirmé par écrit qu'il ne garde rien (« zéro conservation »). Les numéros (national, d'entreprise, IBAN) et les e-mails sont toujours remplacés par des repères avant l'envoi ; chaque appel est noté dans le journal, sans le contenu.</p>
     <div class="form-grid">{% for field in ai_form %}{{ field.as_field_group }}{% endfor %}</div>
     <div class="actions"><button type="submit">Enregistrer</button></div>
+    <p class="small" style="margin-top:.8rem"><strong>Ce mois-ci :</strong> {{ ai_status.calls }} appel(s){% if ai_status.failed %}, dont {{ ai_status.failed }} sans réponse{% endif %} · {{ ai_status.spent|floatformat:2 }} €{% if ai_status.last %} · dernier appel le {{ ai_status.last.created_at|date:"d/m/Y H:i" }} : {% if ai_status.last.ok %}réussi{% else %}échoué{% endif %}{% endif %}.</p>
+    <div class="actions"><button type="submit" name="action" value="ia_test" class="button-secondary" formnovalidate>Tester l'assistant</button></div>
   {% else %}
     <p class="muted">Pas encore branché : la clé de l'assistant est demandée par le script de mise à jour. Tout l'outil fonctionne sans lui.</p>
   {% endif %}

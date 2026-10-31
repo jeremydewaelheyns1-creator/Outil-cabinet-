@@ -19,6 +19,11 @@
         {% if not template.active %}<label class="small" style="display:block;margin-top:.5rem"><input type="checkbox" name="relu" value="1"> J'ai relu ce modèle : il ne contient plus rien du client d'origine.</label>{% endif %}
       </div>
     {% endif %}
+    {% if template.origin.reglage_ia == -1 %}
+      <p class="alert alert-warning small">L'assistant IA n'a pas répondu au dépôt : les propositions ci-dessous viennent seulement des règles de l'outil.</p>
+    {% elif template.origin.reglage_ia %}
+      <p class="small muted">L'assistant IA a réglé {{ template.origin.reglage_ia }} trou(s) que l'outil ne savait pas lire (marqués « proposé par l'assistant ») : vérifiez-les.</p>
+    {% endif %}
     {% if missing_fonts %}
       <div class="alert alert-warning small" style="margin:.6rem 0">
         <strong>Police{{ missing_fonts|length|pluralize }} {{ missing_fonts|join:", " }} : le PDF utilisera une police très proche, pas exactement la même.</strong>

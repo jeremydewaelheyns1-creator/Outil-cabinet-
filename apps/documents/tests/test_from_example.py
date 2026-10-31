@@ -271,3 +271,50 @@ def test_another_company_such_as_the_cabinet_is_not_the_client():
     text = from_example.text_of(from_example.convert(out.getvalue(), None).content)
     assert text.startswith("[SOCIÉTÉ]") and "La séance de [SOCIÉTÉ] est" in text
     assert "Fiduciaire Exemple & Partenaire Essai SRL" in text
+
+
+def placeholder_model() -> bytes:
+    """Un modèle vide d'un autre cabinet : ses propres repères entre crochets et des « XXX »."""
+    d = Word()
+    for line in ("[DENOMINATION SOCIALE]", "au capital de [MONTANT DU CAPITAL SOCIAL] euros",
+                 "R.C.S. [GTC COMPETENT]", "L'an deux-mille-vingt-trois,",
+                 "réunis [LIEU DE REUNION], convocation par le [NOM ET PRENOM DU DIRIGEANT]",
+                 "Sont présents :", "XXX, titulaire de XXX droits sociaux",
+                 "présidée par Monsieur [NOM DU DIRIGEANT], en sa qualité de [GERANT / PRESIDENT]",
+                 "possèdent [XXX] droits sociaux", "décide de [OBJET DE LA MODIFICATION]",
+                 "Ordre du jour : [OBJET DE LA MODIFICATION]", "M. XXX"):  # fmt: skip
+        d.add_paragraph(line)
+    out = io.BytesIO()
+    d.save(out)
+    return out.getvalue()
+
+
+def test_the_placeholders_of_another_model_are_left_alone_and_well_named():
+    result = from_example.convert(placeholder_model(), None)
+    text = from_example.text_of(result.content)
+    assert "[GÉRANT]" not in text and "[[" not in text  # rien remplacé dans les repères
+    assert "XXX, titulaire de XXX" in text and "M. XXX" in text and "[ANNÉE]" in text
+    holes = from_example.holes_for(result.content, "pv_ag")
+    asked = {v["label"] for v in holes.values() if v["field"] == letter.ASK}
+    assert {"Montant du capital social", "Greffe / tribunal compétent", "Lieu de reunion",
+            "Gerant / president", "Objet de la modification", "Nom"} <= asked  # fmt: skip
+    fields = [v["field"] for v in holes.values()]
+    assert "client.siege" not in fields  # le greffe n'est pas une adresse
+    assert fields.count("client.representant") == 2  # les deux « dirigeant »
+
+
+def test_the_same_placeholder_is_asked_once(client, make_user):
+    from django.core.files.uploadedfile import SimpleUploadedFile
+
+    admin = make_user(is_staff=True, capabilities=["clients.edit"])
+    client.force_login(admin)
+    upload = SimpleUploadedFile("pv.docx", placeholder_model())
+    client.post(reverse("lettre:models"), {"sorte": "pv_ag", "modele": upload})
+    template = LetterTemplate.objects.get()
+    labels = [label for _, label in letter.questions(template)]
+    assert labels.count("Objet de la modification") == 1
+    key = next(k for k, label in letter.questions(template) if label == "Objet de la modification")
+    company = ClientFactory(name="Essai", legal_form="SRL")
+    filled = letter.fill(template, company, {key: "transférer le siège"}, {})
+    text = "\n".join(p.text for p in Word(io.BytesIO(filled)).paragraphs)
+    assert text.count("transférer le siège") == 2

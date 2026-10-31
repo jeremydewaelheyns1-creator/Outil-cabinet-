@@ -401,6 +401,7 @@ def ag_prepare(request: AppRequest, pk: int, year_id: int) -> HttpResponse:
             and not answers[key]
             and letter.condition_of(chosen, key) not in skipped
         ]
+        errors += _not_amounts(chosen, answers)
         amounts_wrong = [] if errors else ag.check_amounts(chosen, answers)
         if amounts_wrong and request.POST.get("montants_ok"):
             amounts_wrong = []  # le comptable a confirmé
@@ -441,12 +442,7 @@ def _amounts(template: Any, answers: dict[str, str]) -> dict[str, str]:
     """Un montant tapé « 100000 » ou « 1234,5 » s'écrit comme dans un PV : « 100.000,00 »."""
     import re
 
-    from apps.documents import letter
-
-    money = {
-        f"trou:{h.key}" for h in letter.holes(bytes(template.content), template.kind)
-        if h.text.strip().upper() == "[MONTANT]"
-    }  # fmt: skip
+    money = _money_keys(template)
     result = dict(answers)
     for key, value in answers.items():
         plain = value.replace(" ", "").replace("€", "")
@@ -455,6 +451,31 @@ def _amounts(template: Any, answers: dict[str, str]) -> dict[str, str]:
             text = f"{number:,.2f}".replace(",", " ").replace(".", ",").replace(" ", ".")
             result[key] = text
     return result
+
+
+def _money_keys(template: Any) -> set[str]:
+    """Les questions qui attendent un montant (« [MONTANT] », « [MONTANT DU CAPITAL] »…)."""
+    from apps.documents import letter
+
+    return {
+        f"trou:{h.key}" for h in letter.holes(bytes(template.content), template.kind)
+        if "MONTANT" in h.text.upper()
+    }  # fmt: skip
+
+
+def _not_amounts(template: Any, answers: dict[str, str]) -> list[str]:
+    """« Dividende » tapé là où un montant est attendu : à corriger."""
+    import re
+
+    from apps.documents import letter
+
+    labels = dict(letter.questions(template))
+    wrong = []
+    for key in sorted(_money_keys(template)):
+        value = answers.get(key, "").strip()
+        if value and not re.fullmatch(r"-?[\d .  ]+(?:,\d{1,2})?\s*(?:€|EUR|euros?)?", value):
+            wrong.append(f"{labels.get(key, 'Montant')} (« {value[:30]} » n'est pas un montant)")
+    return wrong
 
 
 def _deadline(year: ClosingYear) -> date:

@@ -1650,3 +1650,13 @@ même taille (« Clôture » : checklists et clôtures ; « Dépôts ») ; le no
   résolutions… » / la levée de séance ; dans le PDF et dans le Word. Aucune IA.
 - Modèle depuis un document rempli : seul le nom du client (en-tête) devient [SOCIÉTÉ] ; une
   autre société citée (le cabinet « Fiduciaire X & Y SRL ») reste telle quelle.
+- Modèles d'autres cabinets (repères propres « [LIEU DE REUNION] », « XXX ») : l'outil ne
+  touche jamais à l'intérieur d'un repère existant ; la question reprend les mots du repère
+  (« Montant du capital social ») ; un « XXX » de PV est toujours demandé (jamais deviné) ;
+  le même repère à deux endroits = une seule question (deux trous au même libellé reçoivent
+  la même réponse).
+- L'assistant IA règle tout seul, au dépôt, les trous « à demander » (champ de la fiche s'il
+  y en a un, question claire) ; c'est une proposition, relue avant activation. Réglages du
+  cabinet : bouton « Tester l'assistant » et compteur du mois (appels, coût, dernier appel).
+- PV : un mot tapé là où un montant est attendu est refusé ; lien « Modifier les champs du
+  modèle » en haut de la page du PV (administrateurs).

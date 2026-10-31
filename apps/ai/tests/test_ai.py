@@ -198,4 +198,41 @@ def test_assistant_finds_what_the_rules_left_in_a_filled_document(client, make_u
     text = from_example.text_of(bytes(template.content))
     assert "Paul Testeur" not in text and "Marie Essai" not in text
     assert template.origin["assistant"] >= 1  # le reste, les règles l'ont déjà trouvé
-    assert AiCall.objects.get().feature == "modele_depuis_exemple"
+    assert AiCall.objects.filter(feature="modele_depuis_exemple").exists()
+
+
+def test_the_assistant_sets_the_unknown_holes_at_upload(client, make_user, settings, monkeypatch):
+    from django.core.files.uploadedfile import SimpleUploadedFile
+
+    from apps.documents import letter
+    from apps.documents.models import LetterTemplate
+    from apps.documents.tests.test_from_example import placeholder_model
+
+    admin = make_user(is_staff=True, capabilities=["clients.edit"])
+    client.force_login(admin)
+    settings.MISTRAL_API_KEY = "fictive"
+    holes = letter.holes(placeholder_model(), "pv_ag")
+    lieu = next(h.key for h in holes if "LIEU" in h.text)
+    nom = next(h.key for h in holes if "DENOMINATION" in h.text)
+    fake_reply(monkeypatch, {"trous": {
+        lieu: {"code": "demander", "question": "Où se tient l'assemblée ?"},
+        nom: {"code": "demander", "question": "ne doit pas changer"},  # déjà lu par l'outil
+    }})  # fmt: skip
+    upload = SimpleUploadedFile("pv.docx", placeholder_model())
+    client.post(reverse("lettre:models"), {"sorte": "pv_ag", "modele": upload})
+    template = LetterTemplate.objects.get()
+    assert template.holes[lieu] == {"field": "demander", "label": "Où se tient l'assemblée ?",
+                                    "source": "assistant"}  # fmt: skip
+    assert template.holes[nom]["field"] == "client.denomination"
+    assert template.origin["reglage_ia"] == 1
+
+
+def test_the_assistant_can_be_tested_from_the_settings(client, make_user, settings, monkeypatch):
+    admin = make_user(is_staff=True)
+    client.force_login(admin)
+    settings.MISTRAL_API_KEY = "fictive"
+    fake_reply(monkeypatch, {"ok": True})
+    response = client.post(reverse("core:cabinet_settings"), {"action": "ia_test"}, follow=True)
+    assert "il est bien branché" in response.content.decode()
+    page = client.get(reverse("core:cabinet_settings")).content.decode()
+    assert "1 appel(s)" in page and "réussi" in page

@@ -335,3 +335,15 @@ def test_something_particular_becomes_one_more_resolution(admin_web):
     added = lines.index("Résolution 3 :")
     assert lines[added + 1] == "L'assemblée décide d'augmenter la rémunération du gérant."
     assert lines[added + 2].startswith("Toutes ces résolutions")
+
+
+def test_a_word_where_an_amount_is_expected_is_refused(admin_web):
+    template, company, year, keys = _tables_setup(admin_web)
+    data = {"modele": template.pk, "date": "2026-06-30", "debut": "18:00", "fin": "18:30",
+            "dividende": "non", **dict.fromkeys(keys.values(), "100"),
+            keys["Rémunération ordinaire"]: "Dividende"}  # fmt: skip
+    page = admin_web.post(reverse("clients:closing_ag", args=[company.pk, year.pk]), data)
+    year.refresh_from_db()
+    assert year.ag_draft is None
+    assert "« Dividende » n&#x27;est pas un montant" in page.content.decode()
+    assert reverse("lettre:model", args=[template.pk]) in page.content.decode()
