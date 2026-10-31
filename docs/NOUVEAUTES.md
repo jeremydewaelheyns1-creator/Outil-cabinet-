@@ -3,6 +3,13 @@
 Ce qui a été ajouté à l'outil, du plus récent au plus ancien. Toutes les données de la démo
 sont inventées.
 
+## 31 octobre 2026 — Site d'essai et mises à jour sans attente
+
+- Un site d'essai, avec des dossiers fictifs, reçoit chaque nouveauté tout seul : plus de
+  script à lancer.
+- Le vrai site n'est mis à jour qu'après votre « c'est bon », avec exactement la version
+  testée.
+
 ## 31 octobre 2026 — Le dividende s'écrit tout seul dans le PV
 
 - Dividende « Oui » : tapez le montant brut ; le PV remplace « reporter l'intégralité du

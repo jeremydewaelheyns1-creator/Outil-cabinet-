@@ -67,4 +67,4 @@ jobs:
           tail -n 15 sortie.txt | sed 's/^/::error::/'
           exit $code
       - name: Script d'installation (shellcheck)
-        run: shellcheck -S warning deploy/installer.sh
+        run: shellcheck -S warning deploy/installer.sh deploy/automatisation.sh

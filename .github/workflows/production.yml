@@ -1,0 +1,53 @@
+# Vrai site (D-130) : mis à jour seulement quand Jeremy a dit « c'est bon ». Exactement la
+# version testée sur le site d'essai (même image), pas une nouvelle construction.
+# Déclenché par un marqueur « production-… » posé sur la version validée, ou à la main
+# (Actions › Mettre le vrai site à jour › Run workflow).
+name: Mettre le vrai site à jour
+
+on:
+  push:
+    tags: ["production-*"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: vrai-site
+  cancel-in-progress: false
+
+env:
+  REGION: europe-west1
+
+jobs:
+  production:
+    if: vars.GCP_WIF_PROVIDER != ''
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ vars.GCP_WIF_PROVIDER }}
+          service_account: ${{ vars.GCP_DEPLOY_SA }}
+      - uses: google-github-actions/setup-gcloud@v2
+      - name: La version testée sur le site d'essai
+        id: version
+        run: |
+          IMG="$(gcloud run services describe outil-essai --region="$REGION" \
+            --format='value(spec.template.spec.containers[0].image)')"
+          if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
+            WANTED="europe-west1-docker.pkg.dev/${{ vars.GCP_PROJECT }}/outil/application:${GITHUB_SHA}"
+            [[ "$IMG" == "$WANTED" ]] || { echo "::error::Cette version n'est pas celle du site d'essai : rien n'est fait."; exit 1; }
+          fi
+          echo "image=$IMG" >> "$GITHUB_OUTPUT"
+      - name: Base du vrai site (sauvegardée chaque nuit, retour possible sur 7 jours)
+        run: |
+          IMG="${{ steps.version.outputs.image }}"
+          for job in $(gcloud run jobs list --region="$REGION" --format='value(metadata.name)' | grep -E '^outil-' | grep -v '^outil-essai'); do
+            gcloud run jobs update "$job" --region="$REGION" --image="$IMG" --quiet
+          done
+          gcloud run jobs execute outil-migrations --region="$REGION" --wait --quiet
+      - name: Mise en ligne du vrai site
+        run: |
+          gcloud run services update outil --region="$REGION" --image="${{ steps.version.outputs.image }}" --quiet
+          echo "### Vrai site à jour" >> "$GITHUB_STEP_SUMMARY"

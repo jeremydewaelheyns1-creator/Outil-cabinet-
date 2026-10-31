@@ -1720,3 +1720,26 @@ même taille (« Clôture » : checklists et clôtures ; « Dépôts ») ; le no
   intitulés distincts, courts, sans « ? » ; une seule question pour deux trous seulement quand
   c'est le même repère (lien explicite « same »), jamais parce que deux intitulés se
   ressemblent.
+
+## D-130 — Site d'essai et mises à jour automatiques
+
+- Constat : chaque mise à jour demandait à Jeremy de relancer le script (≈ 10 minutes, tout
+  reconstruit) et testait directement sur le vrai site.
+- Site d'essai « outil-essai » : même code, données fictives uniquement (commande `demo`),
+  bandeau « Site d'essai » sur chaque page, e-mails jamais envoyés (affichés dans les
+  journaux). Sa propre base (`outil_essai`, sur le même serveur de base, pour ne pas payer un
+  deuxième serveur), son propre espace de documents, ses propres secrets et son propre compte
+  technique : il n'a accès ni à la base, ni aux documents, ni aux secrets du vrai site (seule
+  la clé Mistral est partagée). Le compte « démo » reçoit un mot de passe tiré au hasard
+  (inutilisable) ; Jeremy a son propre compte, créé par le script.
+- Chaque modification qui passe les vérifications GitHub arrive toute seule sur le site
+  d'essai (`.github/workflows/essai.yml`) ; la construction réutilise les parties inchangées
+  (LibreOffice, polices, dépendances) : quelques minutes, sans rien lancer.
+- Le vrai site n'est mis à jour que quand Jeremy dit « c'est bon » : Claude pose un marqueur
+  `production-AAAAMMJJ-HHMM` sur la version validée (ou Jeremy clique « Run workflow »), et
+  `.github/workflows/production.yml` met en ligne exactement l'image testée (refus si ce n'est
+  pas celle du site d'essai), migrations comprises.
+- Autorisation de GitHub par fédération d'identité : aucune clé stockée chez GitHub ; seul ce
+  dépôt est accepté ; le compte « outil-deploiement » ne peut que mettre les sites à jour.
+- Mise en place une seule fois : `bash deploy/automatisation.sh` dans Cloud Shell.
+  `deploy/installer.sh` reste la voie de secours et d'installation d'un nouveau cabinet.

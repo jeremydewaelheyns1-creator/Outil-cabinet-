@@ -244,6 +244,9 @@ MISTRAL_API_KEY = env("MISTRAL_API_KEY", default="").strip()
 # Point d'accès régional européen : l'inférence reste dans l'UE (confirmé par Mistral, D-123).
 AI_ENDPOINT = env("AI_ENDPOINT", default="https://api.eu.mistral.ai/v1/chat/completions")
 AI_MODEL = env("AI_MODEL", default="mistral-medium-latest")
+
+# Site d'essai (D-130) : même code, données fictives ; un bandeau le dit sur chaque page.
+SITE_ESSAI = env.bool("SITE_ESSAI", default=False)
 AI_MONTHLY_CAP_EUR = env.float("AI_MONTHLY_CAP_EUR", default=30.0)
 
 # Politique de sécurité du contenu : le navigateur n'exécute que les scripts de l'outil lui-même

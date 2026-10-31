@@ -12,6 +12,7 @@
   {% block extra_head %}{% endblock %}
 </head>
 <body hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
+  {% if SITE_ESSAI %}<div class="site-essai" role="note">Site d'essai — données fictives uniquement. N'y mettez aucun vrai dossier.</div>{% endif %}
   {% block body %}{% endblock %}
   {% block extra_body %}{% endblock %}
 </body>
