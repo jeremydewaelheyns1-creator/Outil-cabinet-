@@ -52,4 +52,16 @@
   <p class="muted">Déposez la lettre de mission Word du cabinet : l'outil repère les endroits à compléter, vérifie les mentions obligatoires de l'ITAA, puis la remplit pour chaque client.</p>
   <a class="button" href="{% url 'lettre:models' %}">Gérer le modèle</a>
 </section>
+<form method="post" class="card" style="max-width: 760px; margin-top: 1rem">
+  {% csrf_token %}
+  <input type="hidden" name="action" value="ia">
+  <h2>Assistant IA</h2>
+  {% if ai_on %}
+    <p class="muted">L'assistant (Mistral, en Europe) aide à régler les modèles Word. Pour qu'il lise aussi les documents des clients que l'outil ne reconnaît pas, Mistral doit d'abord avoir confirmé par écrit qu'il ne garde rien (« zéro conservation »). Les numéros (national, d'entreprise, IBAN) et les e-mails sont toujours remplacés par des repères avant l'envoi ; chaque appel est noté dans le journal, sans le contenu.</p>
+    <div class="form-grid">{% for field in ai_form %}{{ field.as_field_group }}{% endfor %}</div>
+    <div class="actions"><button type="submit">Enregistrer</button></div>
+  {% else %}
+    <p class="muted">Pas encore branché : la clé de l'assistant est demandée par le script de mise à jour. Tout l'outil fonctionne sans lui.</p>
+  {% endif %}
+</form>
 {% endblock %}

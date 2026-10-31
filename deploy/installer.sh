@@ -101,6 +101,17 @@ if ! secret_exists DATABASE_URL; then
   unset DB_PASSWORD
 fi
 ok "DJANGO_SECRET_KEY, DATABASE_URL, MAILBOX_TOKEN_KEY"
+# Assistant IA (D-121) : la clé Mistral est collée par l'administrateur, une seule fois ; elle
+# ne s'affiche pas et va directement dans Secret Manager. Entrée vide : plus tard.
+if ! secret_exists MISTRAL_API_KEY; then
+  printf '\n  Assistant IA (Mistral) : collez la clé maintenant, ou appuyez sur Entrée pour plus tard.\n'
+  read -r -s -p "  Clé Mistral (elle ne s'affiche pas) : " MISTRAL_KEY; echo
+  if [[ -n "${MISTRAL_KEY}" ]]; then
+    new_secret MISTRAL_API_KEY "$MISTRAL_KEY"
+    ok "Clé de l'assistant IA rangée dans Secret Manager"
+  fi
+  unset MISTRAL_KEY
+fi
 
 say "6/9 Construction de l'application (5 à 10 minutes)"
 gcloud artifacts repositories describe "$REPOSITORY" --location="$REGION" >/dev/null 2>&1 \
@@ -112,7 +123,7 @@ ok "Image construite"
 SECRETS="DJANGO_SECRET_KEY=DJANGO_SECRET_KEY:latest,DATABASE_URL=DATABASE_URL:latest,MAILBOX_TOKEN_KEY=MAILBOX_TOKEN_KEY:latest"
 # Connexion Outlook (D-044) : les trois valeurs sont rangées dans Secret Manager quand elle
 # est prête ; elles sont alors reprises à chaque mise à jour.
-for optional in OUTLOOK_TENANT_ID OUTLOOK_CLIENT_ID OUTLOOK_CLIENT_SECRET; do
+for optional in OUTLOOK_TENANT_ID OUTLOOK_CLIENT_ID OUTLOOK_CLIENT_SECRET MISTRAL_API_KEY; do
   if secret_exists "$optional"; then
     SECRETS="${SECRETS},${optional}=${optional}:latest"
   fi

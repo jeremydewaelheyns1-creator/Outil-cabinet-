@@ -273,7 +273,21 @@ def cabinet_settings(request: AppRequest) -> HttpResponse:
             model = CabinetSettings
             fields = ("name", "enterprise_number", "spf_mandates_url")
 
+    class AiForm(forms.ModelForm[CabinetSettings]):
+        class Meta:
+            model = CabinetSettings
+            fields = ("ai_personal_data",)
+
     settings = CabinetSettings.current()
+    if request.method == "POST" and request.POST.get("action") == "ia":
+        ai_form = AiForm(request.POST, instance=settings)
+        if ai_form.is_valid():
+            ai_form.save()
+            details = {"écran": "réglages du cabinet", "partie": "assistant IA",
+                       "documents des clients": settings.ai_personal_data}  # fmt: skip
+            log_access(request, AccessLog.Action.UPDATE, settings, details=details)
+            messages.success(request, "Réglage de l'assistant IA enregistré.")
+        return redirect("core:cabinet_settings")
     if request.method == "POST" and request.POST.get("action") in {"logo", "retirer_logo"}:
         return _logo_change(request, settings)
     if request.method == "POST" and request.POST.get("action") == "mandats":
@@ -288,7 +302,8 @@ def cabinet_settings(request: AppRequest) -> HttpResponse:
             messages.success(request, "Identité du cabinet enregistrée.")
             return redirect("core:cabinet_settings")
         form = SettingsForm(instance=settings)
-        context = {"form": form, "mandates_form": mandates_form, "settings": settings}
+        context = {"form": form, "mandates_form": mandates_form, "settings": settings,
+                   "ai_form": AiForm(instance=settings), "ai_on": _ai_on()}  # fmt: skip
         return render(request, "core/cabinet_settings.html", context)
     form = SettingsForm(request.POST or None, instance=settings)
     if request.method == "POST" and form.is_valid():
@@ -298,8 +313,15 @@ def cabinet_settings(request: AppRequest) -> HttpResponse:
         )
         messages.success(request, "Réglages enregistrés.")
         return redirect("core:cabinet_settings")
-    context = {"form": form, "mandates_form": MandatesForm(instance=settings), "settings": settings}
+    context = {"form": form, "mandates_form": MandatesForm(instance=settings), "settings": settings,
+               "ai_form": AiForm(instance=settings), "ai_on": _ai_on()}  # fmt: skip
     return render(request, "core/cabinet_settings.html", context)
+
+
+def _ai_on() -> bool:
+    from apps.ai import client as ai
+
+    return ai.enabled()
 
 
 def _logo_change(request: AppRequest, settings: Any) -> HttpResponse:

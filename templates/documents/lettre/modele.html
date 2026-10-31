@@ -27,7 +27,7 @@
       <tbody>
       {% for item in holes %}
         <tr>
-          <td class="small">…{{ item.hole.before|slice:"-60:" }} <mark>{{ item.hole.text }}</mark> {{ item.hole.after|truncatechars:40 }}</td>
+          <td class="small">…{{ item.hole.before|slice:"-60:" }} <mark>{{ item.hole.text }}</mark> {{ item.hole.after|truncatechars:40 }}{% if item.proposed %} <span class="badge">proposé par l'assistant</span>{% endif %}</td>
           <td>
             <select name="trou-{{ item.hole.key }}" aria-label="Contenu du trou">
               <option value="">— à choisir —</option>
@@ -84,6 +84,7 @@
   </section>
 
   <div class="actions" style="margin-top: 1rem">
+    {% if assistant %}<button type="submit" name="action" value="assistant" class="secondary" title="L'assistant IA lit le modèle et propose ; vous vérifiez avant d'activer. Enregistrez d'abord vos changements.">Proposer avec l'assistant IA</button>{% endif %}
     <button type="submit" name="action" value="enregistrer" class="secondary">Enregistrer</button>
     {% if template.active %}
       <button type="submit" name="action" value="desactiver" class="secondary">Désactiver</button>

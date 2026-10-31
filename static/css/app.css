@@ -1835,3 +1835,5 @@ button.cl-box:not(.is-done):hover { border-color: #2ea043; color: #166534; backg
 .ag-known dt { color: var(--text-muted); }
 .ag-known dd { margin: 0; font-weight: 600; }
 @media (max-width: 760px) { .ag-row, .ag-grid { grid-template-columns: minmax(0, 1fr); } }
+/* D-121 : proposition de l'assistant IA dans « À classer ». */
+.depot-suggestion { display: flex; flex-wrap: wrap; gap: .4rem; align-items: center; margin-top: .3rem; }

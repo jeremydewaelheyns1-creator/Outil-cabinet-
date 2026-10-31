@@ -330,6 +330,14 @@ class CabinetSettings(models.Model):
         help_text="Permet de mettre le comptable d'un dossier sur « Hybride » : pas de comptable "
         "fixe, le dossier est pris par un comptable qui a du temps.",
     )
+    # Assistant IA (D-121) : les documents des clients ne partent vers l'assistant que si le
+    # fournisseur a confirmé par écrit qu'il ne garde rien (« zéro conservation »).
+    ai_personal_data = models.BooleanField(
+        "l'assistant IA peut lire les documents des clients",
+        default=False,
+        help_text="À cocher seulement quand Mistral a confirmé par écrit le « zéro "
+        "conservation » (Zero Data Retention) pour votre compte.",
+    )
     hybrid_release_days = models.PositiveSmallIntegerField(
         "dossier hybride rendu libre après (jours sans temps encodé)", default=14
     )

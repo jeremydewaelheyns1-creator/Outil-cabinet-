@@ -1566,3 +1566,21 @@ même taille (« Clôture » : checklists et clôtures ; « Dépôts ») ; le no
 - Choix de Jeremy (30/10/2026) : l'outil n'est pas un logiciel para-comptable et ne calcule pas
   les versements anticipés (ambition pour plus tard). Sans calcul, l'onglet doublait MyMinfin :
   il est retiré des onglets du haut. Les dates restent dans les échéances et sur l'Accueil.
+
+## D-123 — Assistant IA : Mistral, et ses deux premiers usages
+
+- Fournisseur : Mistral (Jeremy, 31/10/2026), offre payante à l'usage (jamais l'offre
+  gratuite, qui peut entraîner sur les requêtes), compte de l'éditeur (pas du cabinet),
+  limite de dépense, refus de l'entraînement, zéro conservation demandé. Remplace Amazon dans
+  D-121 (inscription bloquée). Clé `MISTRAL_API_KEY` demandée par le script d'installation,
+  rangée dans Secret Manager ; jamais dans le dépôt ni la conversation.
+- Module `apps/ai` : éteint sans clé ; journal `AiCall` (fonction, dossier, jetons, coût,
+  erreur — jamais le contenu) ; plafond mensuel (`AI_MONTHLY_CAP_EUR`, 30 € par défaut) ;
+  identifiants masqués avant l'envoi (`privacy.mask`) ; en panne → l'outil continue sans.
+- Usage 1 — réglage des modèles Word (lettre de mission, PV d'AG) : « Proposer avec
+  l'assistant IA » propose le contenu des trous et les passages à options ; marqué « proposé
+  par l'assistant », le modèle est désactivé jusqu'à vérification. Pas de donnée de client.
+- Usage 2 — « À classer » : « Demander à l'assistant » lit le document et propose titre et
+  endroit ; le dossier est retrouvé par l'outil (numéros imprimés, sinon nom proposé, parmi
+  les dossiers visibles) ; « Ranger ainsi » d'un clic. Seulement si le cabinet a coché, dans
+  Réglages du cabinet, que Mistral a confirmé le zéro conservation.

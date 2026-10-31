@@ -3,6 +3,16 @@
 Ce qui a été ajouté à l'outil, du plus récent au plus ancien. Toutes les données de la démo
 sont inventées.
 
+## 31 octobre 2026 — Assistant IA (prêt, à brancher)
+
+- Paramètres › modèles de lettre de mission et de PV d'AG : bouton « Proposer avec
+  l'assistant IA » — il lit le modèle Word et propose ce que contient chaque trou. Vous
+  vérifiez avant d'activer.
+- « À classer » : bouton « Demander à l'assistant » — il lit un document non reconnu et
+  propose le dossier, l'endroit et le titre ; « Ranger ainsi » d'un clic.
+- S'allume quand la clé Mistral est collée à la mise à jour. Les documents des clients ne
+  partent que si Mistral a confirmé qu'il ne garde rien (case dans Réglages du cabinet).
+
 ## 30 octobre 2026 — Onglet « Versements anticipés » retiré
 
 - La fiche client a un onglet de moins : les versements anticipés se suivent dans MyMinfin,

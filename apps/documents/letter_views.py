@@ -92,6 +92,26 @@ def model_page(request: AppRequest, template_id: int) -> HttpResponse:
             template.delete()
             messages.success(request, "Modèle supprimé.")
             return redirect(_list_url(template.kind))
+        if action == "assistant":
+            from apps.ai import client as ai
+            from apps.ai import templates_assist
+
+            try:
+                found_holes, found_options = templates_assist.suggest(template, request.user)
+            except ai.Unavailable as error:
+                messages.error(request, str(error))
+            else:
+                if template.active:
+                    template.active = False  # à revoir avant de resservir
+                    template.save(update_fields=["active"])
+                messages.success(
+                    request,
+                    f"L'assistant propose {found_holes} trou(s) et {found_options} passage(s) à "
+                    "options : "
+                    "vérifiez, puis enregistrez et activez.",
+                )
+            log_access(request, AccessLog.Action.UPDATE, template, details={"modèle": "assistant"})
+            return redirect("lettre:model", template.pk)
         _save(request, template, content)
         if action == "activer":
             missing = letter.problems(template)
@@ -118,6 +138,7 @@ def model_page(request: AppRequest, template_id: int) -> HttpResponse:
             "hole": h,
             "field": (template.holes.get(h.key) or {}).get("field", ""),
             "label": (template.holes.get(h.key) or {}).get("label", ""),
+            "proposed": (template.holes.get(h.key) or {}).get("source") == "assistant",
         }
         for h in letter.holes(content, template.kind)
     ]
@@ -143,8 +164,15 @@ def model_page(request: AppRequest, template_id: int) -> HttpResponse:
         "is_ag": is_ag,
         "forms": letter.FORMS,
         "list_url": _list_url(template.kind),
+        "assistant": _assistant_on(),
     }
     return render(request, "documents/lettre/modele.html", context)
+
+
+def _assistant_on() -> bool:
+    from apps.ai import client as ai
+
+    return ai.enabled()
 
 
 def _save(request: AppRequest, template: LetterTemplate, content: bytes) -> None:

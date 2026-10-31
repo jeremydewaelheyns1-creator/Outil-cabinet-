@@ -57,6 +57,7 @@ INSTALLED_APPS = [
     "apps.outlook",
     "apps.timesheet",
     "apps.mailbox",
+    "apps.ai",
 ]
 
 MIDDLEWARE = [
@@ -236,6 +237,13 @@ MAIL_UNCLASSED_DAYS = env.int("MAIL_UNCLASSED_DAYS", default=365)
 MAIL_KEEP_YEARS_AFTER_CLIENT = env.int("MAIL_KEEP_YEARS_AFTER_CLIENT", default=10)
 # Clé qui chiffre les jetons Microsoft en base (Fernet). Vide : dérivée de DJANGO_SECRET_KEY.
 MAILBOX_TOKEN_KEY = env("MAILBOX_TOKEN_KEY", default="")
+
+# Assistant IA (D-121) : Mistral, en Europe. Éteint sans clé (rangée dans Secret Manager par
+# le script d'installation, jamais dans le code). Plafond de dépense par mois.
+MISTRAL_API_KEY = env("MISTRAL_API_KEY", default="").strip()
+AI_ENDPOINT = env("AI_ENDPOINT", default="https://api.mistral.ai/v1/chat/completions")
+AI_MODEL = env("AI_MODEL", default="mistral-medium-latest")
+AI_MONTHLY_CAP_EUR = env.float("AI_MONTHLY_CAP_EUR", default=30.0)
 
 # Politique de sécurité du contenu : le navigateur n'exécute que les scripts de l'outil lui-même
 # (aucun script en ligne, aucun site tiers) ; l'outil ne peut pas être affiché dans un autre site.

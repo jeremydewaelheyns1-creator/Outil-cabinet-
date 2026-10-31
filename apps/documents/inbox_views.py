@@ -34,6 +34,12 @@ def _items(request: AppRequest) -> list[InboxItem]:
     )
 
 
+def _assistant_reads_documents() -> bool:
+    from apps.ai import client as ai
+
+    return ai.enabled() and ai.personal_data_allowed()
+
+
 @require_capability(Capability.CLIENTS_EDIT)
 def index(request: AppRequest) -> HttpResponse:
     if request.method == "POST":
@@ -59,6 +65,7 @@ def index(request: AppRequest) -> HttpResponse:
         "cards": list(cards),
         "kinds": [(VAT, KIND_LABELS[VAT]), (IC, KIND_LABELS[IC])],
         "retention": settings.INBOX_RETENTION_DAYS,
+        "assistant": _assistant_reads_documents(),
         "max_files": MAX_FILES,
     }
     return render(request, "documents/inbox.html", context)
@@ -145,6 +152,25 @@ def item_classify(request: AppRequest, item_id: str) -> HttpResponse:
         return redirect("depot:index")
     log_access(request, AccessLog.Action.CREATE, document, details={"client": client.pk})
     messages.success(request, f"« {document.title} » rangé → {client.display_name}.")
+    return redirect("depot:index")
+
+
+@require_POST
+@require_capability(Capability.CLIENTS_EDIT)
+def item_assist(request: AppRequest, item_id: str) -> HttpResponse:
+    """« À classer » : l'assistant IA propose dossier, endroit et titre (D-121) ; l'utilisateur
+    range d'un clic, ou classe lui-même."""
+    from apps.ai import client as ai
+    from apps.ai import documents_assist
+
+    item = get_object_or_404(InboxItem, pk=item_id, uploaded_by=request.user)
+    try:
+        proposal = documents_assist.suggest(item, _visible_clients(request), request.user)
+    except ai.Unavailable as error:
+        messages.error(request, str(error))
+    else:
+        details = {"assistant IA": "proposition", "dossier": proposal.get("client")}
+        log_access(request, AccessLog.Action.VIEW, item, details=details)
     return redirect("depot:index")
 
 

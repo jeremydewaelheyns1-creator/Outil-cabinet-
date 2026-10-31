@@ -272,6 +272,8 @@ class InboxItem(models.Model):
     # Doublon ajouté dans une case ou un dossier précis (onglet Documents) : où le ranger si
     # l'utilisateur confirme (dossier, case / dossier d'archives, titre, type, personne).
     intended = models.JSONField("destination prévue", default=dict, blank=True)
+    # Proposition de l'assistant IA (D-121) : dossier, endroit, titre — à valider d'un clic.
+    suggestion = models.JSONField("proposition de l'assistant", default=dict, blank=True)
     uploaded_by = models.ForeignKey(User, on_delete=models.PROTECT, related_name="+")
     uploaded_at = models.DateTimeField("déposé le", default=timezone.now, db_index=True)
 
