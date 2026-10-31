@@ -381,6 +381,7 @@ def ag_prepare(request: AppRequest, pk: int, year_id: int) -> HttpResponse:
     questions = letter.questions(chosen) if chosen is not None else []
     saved = year.ag_answers or {}
     errors: list[str] = []
+    amounts_wrong: list[str] = []
     if request.method == "POST" and chosen is not None:
         answers = {key: request.POST.get(key, "").strip()[:300] for key, _ in questions}
         answers = _amounts(chosen, answers)
@@ -400,8 +401,14 @@ def ag_prepare(request: AppRequest, pk: int, year_id: int) -> HttpResponse:
             and not answers[key]
             and letter.condition_of(chosen, key) not in skipped
         ]
+        amounts_wrong = [] if errors else ag.check_amounts(chosen, answers)
+        if amounts_wrong and request.POST.get("montants_ok"):
+            amounts_wrong = []  # le comptable a confirmé
         if errors:
             messages.error(request, "À compléter : " + ", ".join(errors) + ".")
+        elif amounts_wrong:
+            messages.error(request, "Les montants ne collent pas : " + " ; ".join(amounts_wrong)
+                           + ". Corrigez-les, ou cochez « Les montants sont justes ».")  # fmt: skip
         else:
             ctx = ag.context(year, day, start, end, request.POST.get("dividende") == "oui",
                              request.POST.get("autres", "").strip()[:2000])  # fmt: skip
@@ -421,7 +428,7 @@ def ag_prepare(request: AppRequest, pk: int, year_id: int) -> HttpResponse:
         return {
             "year": year, "templates": templates, "chosen": chosen, "questions": questions,
             "values": values, "known": ag.known(c),
-            "others": chosen is not None and ag.uses_others(chosen),
+            "amounts_wrong": amounts_wrong,
             "conditional": {
                 key: letter.condition_of(chosen, key) for key, _ in questions
             } if chosen is not None else {},

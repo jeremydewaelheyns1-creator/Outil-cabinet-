@@ -3,6 +3,13 @@
 Ce qui a été ajouté à l'outil, du plus récent au plus ancien. Toutes les données de la démo
 sont inventées.
 
+## 31 octobre 2026 — PV d'AG : montants vérifiés et ajouts libres
+
+- Si les montants tapés ne collent pas (le total d'un tableau, le bénéfice reporté), l'outil
+  le dit avant de faire le PV. Vous corrigez, ou vous confirmez qu'ils sont justes.
+- Nouvelle case « Quelque chose de particulier ? » : votre texte est ajouté au PV comme une
+  résolution de plus, avec la même mise en page.
+
 ## 31 octobre 2026 — Modèle depuis un document rempli : bien meilleur
 
 - L'outil retrouve beaucoup mieux ce qu'il faut remplacer (nom en en-tête, adresse avec

@@ -44,14 +44,20 @@
         {% endif %}
       {% endfor %}
     </div>
+    {% if amounts_wrong %}
+      <div class="alert alert-warning small" style="margin-top:.6rem">
+        <strong>Les montants ne collent pas :</strong>
+        <ul>{% for p in amounts_wrong %}<li>{{ p }}</li>{% endfor %}</ul>
+        <label><input type="checkbox" name="montants_ok" value="1"> Les montants sont justes tels quels</label>
+      </div>
+    {% endif %}
   </div>
   {% endif %}
 
-  {% if others %}
-  <div class="ag-sec"><h2><span class="ag-num">{% if questions %}4{% else %}3{% endif %}</span>Autre chose ? <span class="small muted">(facultatif)</span></h2>
-    <textarea name="autres" rows="3" maxlength="2000" placeholder="Résolution supplémentaire">{{ values.autres }}</textarea>
+  <div class="ag-sec"><h2><span class="ag-num">{% if questions %}4{% else %}3{% endif %}</span>Quelque chose de particulier ? <span class="small muted">(facultatif)</span></h2>
+    <textarea name="autres" rows="3" maxlength="2000" placeholder="Ex. : L'assemblée décide d'augmenter la rémunération du gérant à partir du 1er janvier.">{{ values.autres }}</textarea>
+    <p class="small muted">Ajouté au PV comme une résolution de plus, avec la même mise en page que les autres.</p>
   </div>
-  {% endif %}
 
   <div class="ag-sec"><h3>Déjà rempli par l'outil</h3>
     <dl class="ag-known">{% for label, value in known %}<dt>{{ label }}</dt><dd>{{ value }}</dd>{% endfor %}

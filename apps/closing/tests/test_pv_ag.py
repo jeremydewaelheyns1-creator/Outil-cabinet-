@@ -243,3 +243,95 @@ def test_the_prepared_minutes_can_be_downloaded_in_word(admin_web):
     response = admin_web.get(word)
     assert response.status_code == 200 and "Garage Fictif" in _text(response.content)
     assert "30/06/2026" in _text(response.content)
+
+
+def model_with_tables() -> bytes:
+    from docx import Document as Word
+
+    doc = Word()
+    doc.add_paragraph("[SOCIÉTÉ]")
+    doc.add_paragraph("La séance est ouverte à [HEURE].")
+    doc.add_paragraph("Résolution 1 :")
+    doc.add_paragraph("L'assemblée approuve les comptes, bénéfice net déterminé comme suit :")
+    first = doc.add_table(rows=0, cols=3)
+    for label, sign in (("Bénéfice d'exploitation", "(+)"), ("Charges financières", "(-)"),
+                        ("Bénéfice net à affecter", "")):  # fmt: skip
+        cells = first.add_row().cells
+        cells[0].text, cells[1].text, cells[2].text = label, sign, "[MONTANT]"
+    doc.add_paragraph("Résolution 2 :")
+    doc.add_paragraph("L'assemblée décide de reporter l'intégralité du bénéfice, soit [MONTANT].")
+    second = doc.add_table(rows=0, cols=2)
+    for label in ("Rémunération ordinaire", "ATN Auto", "Emoluments de l'exercice"):
+        cells = second.add_row().cells
+        cells[0].text, cells[1].text = label, "[MONTANT]"
+    doc.add_paragraph("Toutes ces résolutions sont adoptées à l'unanimité.")
+    doc.add_paragraph("La séance est levée à [HEURE].")
+    out = io.BytesIO()
+    doc.save(out)
+    return out.getvalue()
+
+
+def _tables_setup(admin_web):
+    from django.core.files.uploadedfile import SimpleUploadedFile
+
+    from apps.documents import letter
+    from apps.documents.models import LetterTemplate
+
+    upload = SimpleUploadedFile("pv.docx", model_with_tables())
+    admin_web.post(reverse("lettre:models"), {"sorte": "pv_ag", "modele": upload})
+    template = LetterTemplate.objects.get()
+    data = {"action": "activer", "relu": "1"}
+    for hole in letter.holes(bytes(template.content), "pv_ag"):
+        value = template.holes[hole.key]
+        data[f"trou-{hole.key}"], data[f"libelle-{hole.key}"] = value["field"], value["label"]
+    admin_web.post(reverse("lettre:model", args=[template.pk]), data)
+    template.refresh_from_db()
+    assert template.active
+    company = ClientFactory(name="Garage Fictif", legal_form="SRL", fiscal_year_end_month=12,
+                            fiscal_year_end_day=31)  # fmt: skip
+    services.ensure_years(company, date(2026, 10, 30))
+    year = ClosingYear.objects.get(client=company)
+    keys = {label: key for key, label in letter.questions(template)}
+    return template, company, year, keys
+
+
+def test_amounts_that_do_not_add_up_are_flagged(admin_web):
+    template, company, year, keys = _tables_setup(admin_web)
+    assert len(ag.sums(template)) == 2
+    amounts = {"Bénéfice d'exploitation": "100000", "Charges financières": "25000",
+               "Bénéfice net à affecter": "75000", "Rémunération ordinaire": "20000",
+               "ATN Auto": "500", "Emoluments de l'exercice": "5000"}  # fmt: skip
+    report = next(label for label in keys if "intégralité" in label)
+    data = {"modele": template.pk, "date": "2026-06-30", "debut": "18:00", "fin": "18:30",
+            "dividende": "non", keys[report]: "70000",
+            **{keys[label]: value for label, value in amounts.items()}}  # fmt: skip
+    url = reverse("clients:closing_ag", args=[company.pk, year.pk])
+    page = admin_web.post(url, data).content.decode()
+    year.refresh_from_db()
+    assert year.ag_draft is None  # rien de préparé
+    assert "20.500,00" in page and "5.000,00" in page and "75.000,00" in page
+    assert "montants_ok" in page
+    response = admin_web.post(url, {**data, "montants_ok": "1"})  # confirmé : préparé
+    year.refresh_from_db()
+    assert response.status_code == 302 and year.ag_draft is not None
+
+
+def test_correct_amounts_pass(admin_web):
+    template, _company, _year, keys = _tables_setup(admin_web)
+    report = next(label for label in keys if "intégralité" in label)
+    answers = {keys["Bénéfice d'exploitation"]: "100.000,00", keys["Charges financières"]: "25000",
+               keys["Bénéfice net à affecter"]: "75000", keys[report]: "75 000",
+               keys["Rémunération ordinaire"]: "20000", keys["ATN Auto"]: "500",
+               keys["Emoluments de l'exercice"]: "20500"}  # fmt: skip
+    assert ag.check_amounts(template, answers) == []
+
+
+def test_something_particular_becomes_one_more_resolution(admin_web):
+    template, company, year, _keys = _tables_setup(admin_web)
+    ctx = ag.context(year, date(2026, 6, 30), *_times(), False,
+                     "L'assemblée décide d'augmenter la rémunération du gérant.")  # fmt: skip
+    text = _text(ag.build(template, company, {}, ctx))
+    lines = [line for line in text.splitlines() if line.strip()]
+    added = lines.index("Résolution 3 :")
+    assert lines[added + 1] == "L'assemblée décide d'augmenter la rémunération du gérant."
+    assert lines[added + 2].startswith("Toutes ces résolutions")

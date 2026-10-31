@@ -1638,3 +1638,15 @@ même taille (« Clôture » : checklists et clôtures ; « Dépôts ») ; le no
   police incorporée dans le Word (Word › Options › Enregistrement) est reprise telle quelle par
   le PDF (testé : police absente du serveur, PDF identique) ; (3) la page du modèle signale
   les polices ni présentes ni incorporées, et comment les incorporer.
+
+## D-126 — PV d'AG : contrôle des montants et « quelque chose de particulier »
+
+- Contrôle des montants (avertissement, pas un blocage) : dans chaque tableau de montants du
+  modèle, la dernière ligne est le total des autres (« (-) » dans la ligne = à retrancher) ;
+  le bénéfice « reporté en intégralité » doit égaler le bénéfice net. Si ça ne colle pas, le
+  PV n'est pas préparé : le comptable corrige, ou coche « Les montants sont justes ».
+- « Quelque chose de particulier ? » toujours proposé : le texte devient une résolution de
+  plus (« Résolution 7 : »), dans la mise en forme des précédentes, avant « Toutes ces
+  résolutions… » / la levée de séance ; dans le PDF et dans le Word. Aucune IA.
+- Modèle depuis un document rempli : seul le nom du client (en-tête) devient [SOCIÉTÉ] ; une
+  autre société citée (le cabinet « Fiduciaire X & Y SRL ») reste telle quelle.

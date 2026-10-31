@@ -259,3 +259,15 @@ def test_fonts_the_pdf_cannot_copy_are_reported(monkeypatch):
                 parse_xml(data)
             target.writestr(item, data)
     assert letter.missing_fonts(rebuilt.getvalue()) == ["Garamond"]
+
+
+def test_another_company_such_as_the_cabinet_is_not_the_client():
+    d = Word()
+    for line in ("Agence Essai SRL", "Rue des Essais 11", "La séance de Agence Essai est ouverte.",
+                 "Mandat donné à la Fiduciaire Exemple & Partenaire Essai SRL."):  # fmt: skip
+        d.add_paragraph(line)
+    out = io.BytesIO()
+    d.save(out)
+    text = from_example.text_of(from_example.convert(out.getvalue(), None).content)
+    assert text.startswith("[SOCIÉTÉ]") and "La séance de [SOCIÉTÉ] est" in text
+    assert "Fiduciaire Exemple & Partenaire Essai SRL" in text

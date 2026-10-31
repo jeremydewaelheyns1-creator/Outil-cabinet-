@@ -193,7 +193,8 @@ Rules = list[tuple[re.Pattern[str], str]]
 
 
 def _rules(client: Client | None, closing: list[str],
-           found: tuple[list[str], list[str]] = ([], [])) -> Rules:  # fmt: skip
+           found: tuple[list[str], list[str]] = ([], []),
+           company: list[str] | None = None) -> Rules:  # fmt: skip
     """Ce qui se remplace, dans l'ordre : le plus précis d'abord. Avec la fiche du client
     (retrouvé par son numéro dans le document), on remplace aussi son adresse, ses gérants et
     associés ; sans elle, ce qui se reconnaît à sa forme — l'assistant IA fait le reste."""
@@ -225,7 +226,9 @@ def _rules(client: Client | None, closing: list[str],
     rules.append((_literal(found[0]), "[GÉRANT]"))
     rules.extend((p, "[GÉRANT]") for p in LEADER_CONTEXT)
     rules.append((_literal(found[1]), "[ASSOCIÉ]"))
-    rules.append((COMPANY, "[SOCIÉTÉ]"))
+    # Le nom du client seulement (celui de l'en-tête) : une autre société citée, comme le
+    # cabinet (« Fiduciaire X & Y SRL »), reste telle quelle.
+    rules.append((_literal(company or []), "[SOCIÉTÉ]"))
     rules.append((STREET, "[ADRESSE]"))
     rules.append((PLACE, "[LOCALITÉ]"))
     rules.append((TOWN, "[VILLE]"))
@@ -288,9 +291,10 @@ def convert(
     document = letter._open(content)
     paragraphs = letter._paragraphs(document)
     found = people([p.text for p in paragraphs])
-    rules = _rules(client, _closing_dates(client) if client is not None else [], found)
-    counts: dict[str, int] = {}
     names = _name_lines(paragraphs)
+    rules = _rules(client, _closing_dates(client) if client is not None else [], found,
+                   _company_names(paragraphs, names))  # fmt: skip
+    counts: dict[str, int] = {}
     partners_line = False  # le paragraphe précédent était la liste des associés
     for index, paragraph in enumerate(paragraphs):
         text = paragraph.text
@@ -318,6 +322,19 @@ def convert(
     out = io.BytesIO()
     document.save(out)
     return Conversion(out.getvalue(), counts)
+
+
+def _company_names(paragraphs: list[Any], names: set[int]) -> list[str]:
+    """Le nom du client : la ligne d'en-tête au-dessus de « S.R.L. », sinon la première société
+    nommée en haut du document ; avec et sans sa forme juridique."""
+    found = [paragraphs[i].text.strip() for i in sorted(names)]
+    if not found:
+        top = [p.text for p in paragraphs if p.text.strip()][:6]
+        match = next((m for text in top for m in COMPANY.finditer(text)
+                      if not text[: m.start()].rstrip().endswith("&")), None)  # fmt: skip
+        found = [match.group(0).strip()] if match else []
+    bare = [re.sub(r"\s+" + FORMS + r"$", "", name).strip() for name in found]
+    return [n for n in found + bare if len(n) > 2]
 
 
 def _name_lines(paragraphs: list[Any]) -> set[int]:
