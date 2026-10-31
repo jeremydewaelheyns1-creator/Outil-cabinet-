@@ -166,3 +166,37 @@ def test_numbers_are_masked_before_the_document_leaves(web, settings, monkeypatc
     web.post(reverse("depot:assist", args=[item.pk]))
     sent = seen[0]["messages"][1]["content"]
     assert "5390" not in sent and "x@y.be" not in sent and "[IBAN]" in sent
+
+
+def test_assistant_finds_what_the_rules_left_in_a_filled_document(client, make_user, settings,
+                                                                  monkeypatch):  # fmt: skip
+    from django.core.files.uploadedfile import SimpleUploadedFile
+
+    from apps.core.models import CabinetSettings
+    from apps.core.testing.factories import ClientFactory
+    from apps.documents import from_example
+    from apps.documents.models import LetterTemplate
+    from apps.documents.tests.test_from_example import filled_pv
+
+    company = ClientFactory(name="Menuiserie Fictive", legal_form="SRL")
+    admin = make_user(is_staff=True, capabilities=["clients.edit"])
+    client.force_login(admin)
+    settings.MISTRAL_API_KEY = "fictive"
+    current = CabinetSettings.current()
+    current.ai_personal_data = True
+    current.save()
+    # La fiche ne connaît ni le gérant ni les associés : l'assistant les retrouve.
+    fake_reply(monkeypatch, {"elements": [
+        {"texte": "Paul Testeur", "repere": "[GÉRANT]"},
+        {"texte": "Marie Essai", "repere": "[ASSOCIÉ]"},
+        {"texte": "texte inventé absent", "repere": "[MONTANT]"},
+        {"texte": "Namur", "repere": "[INCONNU]"},
+    ]})  # fmt: skip
+    upload = SimpleUploadedFile("pv.docx", filled_pv())
+    client.post(reverse("lettre:models"), {"sorte": "pv_ag", "exemple": "1",
+                "client": company.pk, "modele": upload})  # fmt: skip
+    template = LetterTemplate.objects.get()
+    text = from_example.text_of(bytes(template.content))
+    assert "Paul Testeur" not in text and "Marie Essai" not in text
+    assert template.origin["assistant"] >= 2
+    assert AiCall.objects.get().feature == "modele_depuis_exemple"

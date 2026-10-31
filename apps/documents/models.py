@@ -372,6 +372,9 @@ class LetterTemplate(models.Model):
                             default=Kind.LETTER)  # fmt: skip
     # PV d'AG : formes juridiques pour lesquelles le modèle sert (vide : toutes).
     forms = models.JSONField("formes juridiques", default=list, blank=True)
+    # Modèle tiré d'un document rempli (D-124) : combien de choses remplacées, par sorte —
+    # jamais les valeurs du client d'origine.
+    origin = models.JSONField("origine du modèle", default=dict, blank=True)
     name = models.CharField("nom du fichier", max_length=200)
     content = models.BinaryField("fichier Word")
     holes = models.JSONField("trous et leur contenu", default=dict, blank=True)

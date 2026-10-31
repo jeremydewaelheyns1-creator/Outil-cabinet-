@@ -1588,3 +1588,17 @@ même taille (« Clôture » : checklists et clôtures ; « Dépôts ») ; le no
   point d'accès européen `api.eu.mistral.ai` (inférence dans l'UE), uniquement l'API sans
   mémoire `/v1/chat/completions` (couverte par le zéro conservation) — ni agents, ni batch,
   ni modèles « Labs ».
+
+## D-124 — Un modèle à partir d'un document déjà rempli
+
+- Demande de Jeremy (31/10/2026) : déposer une lettre de mission ou un PV d'AG réel, fait pour
+  un client, et en tirer un modèle pour les autres. Paramètres › Modèles (lettre ou PV d'AG) ›
+  « Partir d'un document déjà rempli » : le document + le client pour qui il a été fait.
+- L'outil remplace par des repères ce qu'il connaît de la fiche (nom, numéro d'entreprise,
+  adresse, code postal et ville, gérants et administrateurs, associés, dates de clôture, nom du
+  cabinet) et ce qui se reconnaît à sa forme (dates, heures, montants, e-mails, IBAN) ; noms en
+  mots entiers ; mise en forme gardée. Puis, si l'assistant IA peut lire les documents des
+  clients (D-123), il signale ce qui reste (valeurs exactes, repères permis seulement).
+- Sécurité : le document rempli n'est jamais enregistré ; le rapport ne garde que des sortes et
+  des nombres (« montant (2) »), jamais une valeur. Le modèle n'est pas actif : bandeau
+  « relisez-le », téléchargement du Word pour vérifier, puis activation par l'administrateur.

@@ -3,6 +3,15 @@
 Ce qui a été ajouté à l'outil, du plus récent au plus ancien. Toutes les données de la démo
 sont inventées.
 
+## 31 octobre 2026 — Un modèle à partir d'un document déjà rempli
+
+- Dans les modèles de lettre de mission et de PV d'AG : « Partir d'un document déjà rempli ».
+  Vous déposez une lettre ou un PV fait pour un client et vous dites lequel : l'outil
+  remplace nom, numéro, adresse, gérant, associés, dates, heures et montants par des trous, et
+  en fait un modèle pour les autres clients. L'assistant IA cherche ce qui reste.
+- Le document d'origine n'est pas gardé. Relisez le modèle (bouton « ouvrir dans Word ») avant
+  de l'activer.
+
 ## 31 octobre 2026 — Assistant IA (prêt, à brancher)
 
 - Paramètres › modèles de lettre de mission et de PV d'AG : bouton « Proposer avec

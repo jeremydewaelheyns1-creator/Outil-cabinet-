@@ -46,6 +46,8 @@ def models_page(request: AppRequest) -> HttpResponse:
     """Liste des modèles déposés et dépôt d'un nouveau (lettre de mission ou PV d'AG)."""
     _admin(request)
     kind = _kind(request)
+    if request.method == "POST" and request.POST.get("exemple"):
+        return _from_example(request, kind)
     if request.method == "POST":
         upload = request.FILES.get("modele")
         if upload is None:
@@ -76,8 +78,78 @@ def models_page(request: AppRequest) -> HttpResponse:
         )
         return redirect("lettre:model", template.pk)
     templates = LetterTemplate.objects.filter(kind=kind).select_related("uploaded_by")
-    context = {"templates": templates, "kind": kind, "is_ag": kind == LetterTemplate.Kind.AG}
+    context = {"templates": templates, "kind": kind, "is_ag": kind == LetterTemplate.Kind.AG,
+               "assistant_reads": _assistant_reads()}  # fmt: skip
     return render(request, "documents/lettre/modeles.html", context)
+
+
+def _from_example(request: AppRequest, kind: str) -> HttpResponse:
+    """Un document déjà rempli pour un client devient un modèle (D-124). Le document d'origine
+    n'est pas gardé ; le modèle obtenu est à relire avant d'être activé."""
+    from apps.clients.views import _visible_clients
+
+    from . import from_example
+
+    upload = request.FILES.get("modele")
+    client = _visible_clients(request).filter(pk=request.POST.get("client") or 0).first()
+    if upload is None or client is None:
+        messages.error(
+            request, "Choisissez le document Word rempli et le client pour qui il a été fait."
+        )
+        return redirect(_list_url(kind))
+    content = upload.read()
+    try:
+        letter.check_upload(upload.name or "", content)
+        result = from_example.convert(content, client)
+    except ValidationError as error:
+        messages.error(request, " ".join(error.messages))
+        return redirect(_list_url(kind))
+    del content  # le document rempli n'est gardé nulle part
+    assisted = 0
+    from apps.ai import client as ai
+
+    if ai.enabled() and ai.personal_data_allowed():
+        from apps.ai import templates_assist
+
+        try:
+            extra = templates_assist.residuals(
+                from_example.text_of(result.content), list(from_example.MARKERS), request.user
+            )
+        except ai.Unavailable:
+            extra = []
+        if extra:
+            again = from_example.convert(result.content, client, extra)
+            assisted = sum(again.counts.values())
+            result = from_example.Conversion(again.content, result.counts)
+    template = LetterTemplate.objects.create(
+        kind=kind,
+        name=f"Modèle tiré de « {(upload.name or 'document.docx')[:150]} »",
+        content=result.content,
+        holes=from_example.holes_for(result.content, kind),
+        origin={"exemple": True, "remplace": result.report(), "assistant": assisted},
+        uploaded_by=request.user,
+    )
+    details = {"modèle": kind, "depuis": "document rempli", "client": client.pk}
+    log_access(request, AccessLog.Action.IMPORT, template, details=details)
+    messages.success(
+        request,
+        "Modèle créé à partir du document rempli. Relisez-le : tout ce qui resterait du client "
+        "d'origine serait recopié chez les autres.",
+    )
+    return redirect("lettre:model", template.pk)
+
+
+def model_download(request: AppRequest, template_id: int) -> HttpResponse:
+    """Le modèle Word tel que l'outil l'a préparé (pour le relire ou le retoucher dans Word)."""
+    _admin(request)
+    template = get_object_or_404(LetterTemplate, pk=template_id)
+    response = HttpResponse(
+        bytes(template.content),
+        content_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    )
+    response["Content-Disposition"] = f'attachment; filename="modele-{template.pk}.docx"'
+    log_access(request, AccessLog.Action.EXPORT, template, details={"modèle": "téléchargé"})
+    return response
 
 
 def model_page(request: AppRequest, template_id: int) -> HttpResponse:
@@ -167,6 +239,12 @@ def model_page(request: AppRequest, template_id: int) -> HttpResponse:
         "assistant": _assistant_on(),
     }
     return render(request, "documents/lettre/modele.html", context)
+
+
+def _assistant_reads() -> bool:
+    from apps.ai import client as ai
+
+    return ai.enabled() and ai.personal_data_allowed()
 
 
 def _assistant_on() -> bool:

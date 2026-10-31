@@ -68,3 +68,29 @@ def suggest(template: Any, user: User | None) -> tuple[int, int]:
     template.holes, template.options = holes, options
     template.save(update_fields=["holes", "options"])
     return count_holes, count_options
+
+
+RESIDUALS = (
+    "Voici un document d'un cabinet comptable belge transformé en modèle : les éléments propres "
+    "au client ont été remplacés par des repères entre crochets. Repère ce qui reste propre à CE "
+    "client et devrait aussi devenir un repère (nom d'une personne, lieu, date, montant, nombre "
+    "de parts, référence…). Ne propose jamais le texte général du cabinet. Recopie chaque élément "
+    "EXACTEMENT comme il est écrit. Repères possibles : {markers}. Réponds uniquement en JSON : "
+    '{{"elements": [{{"texte": "...", "repere": "[...]"}}]}}'
+)
+
+
+def residuals(text: str, markers: list[str], user: User | None) -> list[tuple[str, str]]:
+    """Ce qui reste du client d'origine dans un modèle tiré d'un document rempli (D-124).
+    Données de client : seulement si le zéro conservation est confirmé (`personal`)."""
+    system = RESIDUALS.format(markers=", ".join(markers))
+    answer = client.ask_json("modele_depuis_exemple", system, privacy.mask(text[:12000]),
+                             user=user, personal=True)  # fmt: skip
+    found: list[tuple[str, str]] = []
+    for item in answer.data.get("elements") or []:
+        if not isinstance(item, dict):
+            continue
+        value, marker = str(item.get("texte") or "").strip(), str(item.get("repere") or "")
+        if len(value) > 2 and marker in markers and value in text and "[" not in value:
+            found.append((value, marker))
+    return found

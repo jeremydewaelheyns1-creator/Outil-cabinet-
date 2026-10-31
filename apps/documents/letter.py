@@ -95,6 +95,7 @@ AG_FIELDS: dict[str, tuple[str, Callable[[Client, dict[str, str]], str]]] = {
     "client.adresse": ("Rue et numéro du siège", lambda c, x: c.street or ""),
     "client.localite": ("Localité du siège", lambda c, x: " ".join(
         v for v in (c.postal_code, c.city) if v)),
+    "client.ville": ("Ville du siège (sans code postal)", lambda c, x: c.city or ""),
     "client.associes": ("Associés / actionnaires (avec leur part)", lambda c, x: _partners(c)),
     "ag.autres": ("Résolutions supplémentaires (texte libre)", lambda c, x: x.get("autres", "")),
 }  # fmt: skip
@@ -103,7 +104,12 @@ AG_FIELDS: dict[str, tuple[str, Callable[[Client, dict[str, str]], str]]] = {
 def choices(kind: str) -> list[tuple[str, str]]:
     """Ce qu'un trou peut contenir, selon la sorte de modèle."""
     if kind != "pv_ag":
-        return CHOICES
+        # Lettre de mission : en plus, l'adresse et la localité séparées (modèle tiré d'un
+        # document rempli, D-124).
+        extra = [
+            (c, AG_FIELDS[c][0]) for c in ("client.adresse", "client.localite", "client.ville")
+        ]
+        return [*CHOICES[: len(FIELDS)], *extra, *CHOICES[len(FIELDS) :]]
     return [
         *[(code, label) for code, (label, _) in FIELDS.items()],
         *[(code, label) for code, (label, _) in AG_FIELDS.items()],

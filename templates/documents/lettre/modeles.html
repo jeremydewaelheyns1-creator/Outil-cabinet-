@@ -17,6 +17,20 @@
   </form>
 </section>
 <section class="card" style="max-width: 860px; margin-top: 1rem">
+  <h2>Ou : partir d'un document déjà rempli</h2>
+  <p class="muted">Vous avez {% if is_ag %}un PV d'AG{% else %}une lettre de mission{% endif %} déjà faite pour un client ? Déposez-la et dites pour quel client : l'outil remplace par des trous tout ce qui est propre à ce client (nom, numéro, adresse, gérant, associés, dates, heures, montants{% if assistant_reads %} ; l'assistant IA cherche ce qui reste{% endif %}) et en fait un modèle pour les autres. Le document d'origine n'est pas gardé.</p>
+  <form method="post" enctype="multipart/form-data">{% csrf_token %}
+    <input type="hidden" name="sorte" value="{{ kind }}"><input type="hidden" name="exemple" value="1">
+    <label for="exemple-file">Document Word rempli (.docx)</label>
+    <input id="exemple-file" type="file" name="modele" accept=".docx" required>
+    <label for="exemple-client" style="margin-top:.6rem">Fait pour le client</label>
+    <input id="exemple-client" type="search" autocomplete="off" placeholder="Nom, n° d'entreprise…" name="q"
+           hx-get="{% url 'clients:picker' %}?champ=client" hx-trigger="input changed delay:300ms" hx-target="#exemple-picker">
+    <div id="exemple-picker"></div>
+    <div class="actions" style="margin-top: .6rem"><button type="submit">Créer le modèle</button></div>
+  </form>
+</section>
+<section class="card" style="max-width: 860px; margin-top: 1rem">
   <h2>Modèles déposés</h2>
   {% if templates %}
   <table class="table">
