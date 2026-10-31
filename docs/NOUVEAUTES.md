@@ -5,8 +5,8 @@ sont inventées.
 
 ## 31 octobre 2026 — Un modèle à partir d'un document déjà rempli
 
-- Dans les modèles de lettre de mission et de PV d'AG : « Partir d'un document déjà rempli ».
-  Vous déposez une lettre ou un PV fait pour un client et vous dites lequel : l'outil
+- Dans les modèles de lettre de mission et de PV d'AG, un seul endroit pour déposer : « vide »
+  (avec des trous) ou « déjà rempli pour un client ». Rempli : vous dites pour quel client : l'outil
   remplace nom, numéro, adresse, gérant, associés, dates, heures et montants par des trous, et
   en fait un modèle pour les autres clients. L'assistant IA cherche ce qui reste.
 - Le document d'origine n'est pas gardé. Relisez le modèle (bouton « ouvrir dans Word ») avant

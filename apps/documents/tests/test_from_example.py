@@ -87,6 +87,8 @@ def test_upload_a_filled_document_and_reuse_it_for_another_client(client, make_u
     assert template.origin["exemple"] and "Menuiserie" not in str(template.origin)
     page = client.get(reverse("lettre:model", args=[template.pk])).content.decode()
     assert "Modèle tiré d'un document rempli" in page
+    listing = client.get(reverse("lettre:models") + "?sorte=pv_ag").content.decode()
+    assert "vide ou déjà rempli" in listing and "déjà rempli pour un client" in listing
     assert client.get(reverse("lettre:download", args=[template.pk])).status_code == 200
     # Réutilisé pour un autre client : son nom apparaît, plus rien de la Menuiserie.
     other = ClientFactory(name="Garage Autre", legal_form="SRL", street="Avenue B 3",

@@ -3,31 +3,29 @@
 {% block page_title %}{% if is_ag %}<a href="{% url 'core:settings' %}" class="muted">Paramètres</a> › Modèles de PV d'assemblée générale{% else %}<a href="{% url 'core:cabinet_settings' %}" class="muted">Réglages du cabinet</a> › Modèle de lettre de mission{% endif %}{% endblock %}
 {% block content %}
 <section class="card" style="max-width: 860px">
-  <h2>Déposer le modèle du cabinet</h2>
-  {% if is_ag %}
-  <p class="muted">Déposez vos modèles de PV Word (.docx) tels que vous les utilisez : un par forme de société si besoin (SRL, SA, ASBL…), autant que vous voulez. L'outil repère les endroits à compléter (« [DATE] », « [MONTANT] », « XXX », « …… » ou du texte surligné) et devine ce qu'il faut y mettre d'après le mot entre crochets et le texte autour. Vous vérifiez une fois, puis vous activez.</p>
-  {% else %}
-  <p class="muted">Déposez votre lettre de mission Word (.docx) telle que vous l'utilisez. Rien à changer dedans : l'outil repère les endroits à compléter (« XXX », « …… », « ____ », « [à compléter] » ou du texte surligné) et propose ce qu'il faut y mettre. Vous vérifiez, puis vous activez.</p>
-  {% endif %}
+  <h2>Déposer un modèle — vide ou déjà rempli</h2>
+  <p class="muted">Déposez votre {% if is_ag %}PV d'AG{% else %}lettre de mission{% endif %} Word (.docx), comme vous l'avez :</p>
+  <ul class="muted small">
+    <li><strong>Vide</strong>, avec des endroits à compléter (« [DATE] », « XXX », « …… » ou du texte surligné) : l'outil devine ce qu'il faut y mettre.</li>
+    <li><strong>Déjà rempli pour un client</strong> : dites lequel ; l'outil remplace son nom, son numéro, son adresse, le gérant, les associés, les dates, les heures et les montants par des trous{% if assistant_reads %}, et l'assistant IA cherche ce qui reste{% endif %}. Le document d'origine n'est pas gardé.</li>
+  </ul>
+  <p class="muted small">Dans les deux cas, vous vérifiez, puis vous activez.</p>
   <form method="post" enctype="multipart/form-data">{% csrf_token %}
     <input type="hidden" name="sorte" value="{{ kind }}">
     <label for="modele-file">Fichier Word (5 Mo au plus)</label>
     <input id="modele-file" type="file" name="modele" accept=".docx" required>
+    <label for="modele-etat" style="margin-top:.6rem">Ce document est</label>
+    <select id="modele-etat" name="exemple">
+      <option value="">vide : avec des trous à compléter</option>
+      <option value="1">déjà rempli pour un client</option>
+    </select>
+    <div data-show-if="exemple=1" style="margin-top:.6rem">
+      <label for="exemple-client">Rempli pour le client</label>
+      <input id="exemple-client" type="search" autocomplete="off" placeholder="Nom, n° d'entreprise…" name="q"
+             hx-get="{% url 'clients:picker' %}?champ=client" hx-trigger="input changed delay:300ms" hx-target="#exemple-picker">
+      <div id="exemple-picker"></div>
+    </div>
     <div class="actions" style="margin-top: .6rem"><button type="submit">Déposer</button></div>
-  </form>
-</section>
-<section class="card" style="max-width: 860px; margin-top: 1rem">
-  <h2>Ou : partir d'un document déjà rempli</h2>
-  <p class="muted">Vous avez {% if is_ag %}un PV d'AG{% else %}une lettre de mission{% endif %} déjà faite pour un client ? Déposez-la et dites pour quel client : l'outil remplace par des trous tout ce qui est propre à ce client (nom, numéro, adresse, gérant, associés, dates, heures, montants{% if assistant_reads %} ; l'assistant IA cherche ce qui reste{% endif %}) et en fait un modèle pour les autres. Le document d'origine n'est pas gardé.</p>
-  <form method="post" enctype="multipart/form-data">{% csrf_token %}
-    <input type="hidden" name="sorte" value="{{ kind }}"><input type="hidden" name="exemple" value="1">
-    <label for="exemple-file">Document Word rempli (.docx)</label>
-    <input id="exemple-file" type="file" name="modele" accept=".docx" required>
-    <label for="exemple-client" style="margin-top:.6rem">Fait pour le client</label>
-    <input id="exemple-client" type="search" autocomplete="off" placeholder="Nom, n° d'entreprise…" name="q"
-           hx-get="{% url 'clients:picker' %}?champ=client" hx-trigger="input changed delay:300ms" hx-target="#exemple-picker">
-    <div id="exemple-picker"></div>
-    <div class="actions" style="margin-top: .6rem"><button type="submit">Créer le modèle</button></div>
   </form>
 </section>
 <section class="card" style="max-width: 860px; margin-top: 1rem">

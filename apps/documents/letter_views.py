@@ -46,7 +46,7 @@ def models_page(request: AppRequest) -> HttpResponse:
     """Liste des modèles déposés et dépôt d'un nouveau (lettre de mission ou PV d'AG)."""
     _admin(request)
     kind = _kind(request)
-    if request.method == "POST" and request.POST.get("exemple"):
+    if request.method == "POST" and request.POST.get("exemple") == "1":
         return _from_example(request, kind)
     if request.method == "POST":
         upload = request.FILES.get("modele")
