@@ -1629,3 +1629,7 @@ même taille (« Clôture » : checklists et clôtures ; « Dépôts ») ; le no
   liste de la fiche du client ; « R.P.M. Liège, division … » devient une question (tribunal) ;
   la ligne « S.R.L. » sous le nom disparaît (la forme est dans le nom). Nouveau champ « Tous
   les dirigeants » (« Paul X et Marie Y »).
+- Typographie : le modèle Word garde la police, la taille, le gras et la couleur du document
+  déposé (seul le texte remplacé change). Pour le PDF, le serveur n'a pas les polices
+  Microsoft : il prend un sosie libre (Calibri → Carlito, Arial → Liberation Sans, Garamond →
+  EB Garamond, Century Gothic → URW Gothic, Aptos → Open Sans…, `deploy/fonts`).

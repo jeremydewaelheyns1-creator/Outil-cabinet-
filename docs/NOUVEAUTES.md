@@ -13,6 +13,8 @@ sont inventées.
 - Avant d'activer un tel modèle, cochez « J'ai relu ce modèle ».
 - Les noms des dirigeants et associés sont retrouvés même sans « Monsieur » ; la liste des
   associés reprend celle de la fiche du client. Nouveau champ « Tous les dirigeants ».
+- Le PDF reprend la typographie de votre Word (police, taille, gras, couleur), y compris
+  pour Garamond, Century Gothic, Aptos ou Book Antiqua.
 
 ## 31 octobre 2026 — Un modèle à partir d'un document déjà rempli
 

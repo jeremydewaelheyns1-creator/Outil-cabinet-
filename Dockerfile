@@ -13,12 +13,17 @@ WORKDIR /app
 
 # Lecture des cartes d'identité (D-035, OCR local) et fabrication des PDF (D-039, WeasyPrint).
 # LibreOffice (sans interface) : PDF fidèle des modèles Word du cabinet (D-125), avec les polices
-# équivalentes à Calibri, Cambria, Arial et Times.
+# équivalentes à Calibri, Cambria, Arial et Times, et des sosies libres des autres polices
+# courantes (Garamond, Century Gothic, Book Antiqua, Aptos…, voir deploy/fonts).
 RUN apt-get update \
     && apt-get install -y --no-install-recommends tesseract-ocr tesseract-ocr-fra poppler-utils \
        libpango-1.0-0 libpangoft2-1.0-0 fonts-dejavu-core \
        libreoffice-writer-nogui fonts-liberation fonts-crosextra-carlito fonts-crosextra-caladea \
+       fonts-ebgaramond fonts-urw-base35 fonts-open-sans fonts-lato \
     && rm -rf /var/lib/apt/lists/*
+
+COPY deploy/fonts/60-polices-cabinet.conf /etc/fonts/conf.d/60-polices-cabinet.conf
+RUN fc-cache -f
 
 # Dépendances d'abord : cette couche n'est reconstruite que si elles changent.
 COPY pyproject.toml uv.lock ./

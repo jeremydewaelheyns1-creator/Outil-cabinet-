@@ -202,3 +202,31 @@ def test_all_leaders_are_written():
         Relation.objects.create(entity=company, role=Relation.Role.MANAGER,
                                 person=PersonFactory(name=last, first_name=first))  # fmt: skip
     assert letter.FIELDS["client.dirigeants"][1](company) == "Marie Essaideux et Paul Essaiun"
+
+
+def test_the_typography_of_the_document_is_kept():
+    from docx.shared import Pt, RGBColor
+
+    d = Word()
+    run = d.add_paragraph().add_run("Société Essai SRL, séance ouverte à 18h00")
+    run.font.name, run.font.size, run.bold = "Garamond", Pt(13), True
+    run.font.color.rgb = RGBColor(0x1F, 0x4E, 0x79)
+    out = io.BytesIO()
+    d.save(out)
+    result = from_example.convert(out.getvalue(), None)
+    kept = letter._open(result.content).paragraphs[0].runs[0]
+    assert "[HEURE]" in kept.text
+    assert (kept.font.name, kept.font.size, kept.bold) == ("Garamond", Pt(13), True)
+    assert kept.font.color.rgb == RGBColor(0x1F, 0x4E, 0x79)
+
+
+def test_the_server_has_lookalikes_of_the_usual_word_fonts():
+    from pathlib import Path
+
+    from django.conf import settings
+
+    root = Path(settings.BASE_DIR)
+    rules = (root / "deploy/fonts/60-polices-cabinet.conf").read_text()
+    for font in ("Garamond", "Century Gothic", "Aptos", "Book Antiqua"):
+        assert f"<family>{font}</family>" in rules
+    assert "60-polices-cabinet.conf" in (root / "Dockerfile").read_text()
